@@ -51,7 +51,7 @@ public class EEWBot {
 		loadConfigs();
 		client = createClient(config.token, true);
 		final EventDispatcher dispatcher = client.getDispatcher();
-		dispatcher.registerListener(new EventListener());
+		dispatcher.registerListener(new DiscordEventListener());
 
 		executor.scheduleAtFixedRate(ntp = new NTPDispatcher(), 0, EEWBot.config.timeFixDelay>=3600 ? EEWBot.config.timeFixDelay : 3600, TimeUnit.SECONDS);
 		executor.scheduleAtFixedRate(new EEWDispatcher(), 10, config.kyoshinDelay, TimeUnit.SECONDS);
