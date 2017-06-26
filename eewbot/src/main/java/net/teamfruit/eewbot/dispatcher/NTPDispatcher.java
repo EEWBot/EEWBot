@@ -24,6 +24,7 @@ public class NTPDispatcher implements Runnable {
 			client.open();
 			final InetAddress hostAddr = InetAddress.getByName(EEWBot.config.nptServer);
 			final TimeInfo info = client.getTime(hostAddr);
+			EEWBot.client.getDispatcher().dispatch(new TimeEvent(EEWBot.client, info));
 			info.computeDetails();
 			final Long offsetValue = info.getOffset();
 			final Long delayValue = info.getDelay();

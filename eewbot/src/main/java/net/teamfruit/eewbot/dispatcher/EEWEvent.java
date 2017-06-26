@@ -6,7 +6,7 @@ import sx.blah.discord.api.events.Event;
 
 public class EEWEvent extends Event {
 
-	protected EEW eew;
+	protected final EEW eew;
 
 	public EEWEvent(final IDiscordClient client, final EEW eew) {
 		this.client = client;
