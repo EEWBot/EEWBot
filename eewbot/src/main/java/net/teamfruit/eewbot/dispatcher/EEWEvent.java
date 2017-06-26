@@ -12,4 +12,8 @@ public class EEWEvent extends Event {
 		this.client = client;
 		this.eew = eew;
 	}
+
+	public EEW getEEW() {
+		return this.eew;
+	}
 }
