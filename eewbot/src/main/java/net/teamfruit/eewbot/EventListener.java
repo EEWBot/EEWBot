@@ -53,7 +53,7 @@ public class EventListener {
 				final long serverid = e.getGuild().getLongID();
 				final long channelid = e.getChannel().getLongID();
 				Collection<Channel> channels = EEWBot.channels.get(serverid);
-				Channel channel = Channel.getChannel(serverid, channelid);
+				Channel channel = BotUtils.getChannel(serverid, channelid);
 				if (channels==null)
 					channels = new ArrayList<>();
 				if (channel==null)
