@@ -10,6 +10,10 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +24,8 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
+import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
+import net.teamfruit.eewbot.dispatcher.NTPDispatcher;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventDispatcher;
@@ -29,10 +35,16 @@ public class EEWBot {
 	public static final Logger LOGGER = LoggerFactory.getLogger(EEWBot.class);
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final File JARPATH = new File(".").getAbsoluteFile();
-	public static final NTPClient NTP_CLIENT = new NTPClient();
+	public static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, new ThreadFactory() {
+		@Override
+		public Thread newThread(final Runnable r) {
+			return new Thread(r, "EEWBot-communication-thread");
+		}
+	});
 
 	public static Config config;
 	public static Map<Long, Collection<Channel>> channels;
+	public static NTPDispatcher ntp;
 	public static IDiscordClient client;
 
 	public static void main(final String[] args) throws ConfigException {
@@ -40,6 +52,9 @@ public class EEWBot {
 		client = createClient(config.token, true);
 		final EventDispatcher dispatcher = client.getDispatcher();
 		dispatcher.registerListener(new EventListener());
+
+		executor.scheduleAtFixedRate(ntp = new NTPDispatcher(), 0, EEWBot.config.timeFixDelay>=3600 ? EEWBot.config.timeFixDelay : 3600, TimeUnit.SECONDS);
+		executor.scheduleAtFixedRate(new EEWDispatcher(), 10, config.kyoshinDelay, TimeUnit.SECONDS);
 		LOGGER.info("Hello");
 	}
 
