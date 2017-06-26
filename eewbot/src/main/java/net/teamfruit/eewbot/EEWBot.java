@@ -29,6 +29,8 @@ public class EEWBot {
 	public static final Logger LOGGER = LoggerFactory.getLogger(EEWBot.class);
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final File JARPATH = new File(".").getAbsoluteFile();
+	public static final NTPClient NTP_CLIENT = new NTPClient();
+
 	public static Config config;
 	public static Map<Long, Collection<Channel>> channels;
 	public static IDiscordClient client;

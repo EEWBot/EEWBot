@@ -12,8 +12,6 @@ import org.apache.commons.net.ntp.TimeInfo;
 
 public class NTPClient {
 
-	public static final NTPClient INSTANCE = new NTPClient();
-
 	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
 		@Override
 		public Thread newThread(final Runnable r) {
@@ -23,7 +21,7 @@ public class NTPClient {
 
 	private volatile long offset;
 
-	public final Runnable ntpclient = new Runnable() {
+	private final Runnable ntpclient = new Runnable() {
 		@Override
 		public void run() {
 			final NTPUDPClient client = new NTPUDPClient();
@@ -42,11 +40,15 @@ public class NTPClient {
 		}
 	};
 
-	private NTPClient() {
+	public NTPClient() {
 		this.executor.scheduleAtFixedRate(this.ntpclient, 0, EEWBot.config.timeFixDelay>=3600 ? EEWBot.config.timeFixDelay : 3600, TimeUnit.SECONDS);
 	}
 
 	public long getOffset() {
 		return this.offset;
+	}
+
+	public void run() {
+		this.executor.submit(this.ntpclient);
 	}
 }
