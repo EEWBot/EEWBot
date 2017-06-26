@@ -38,7 +38,7 @@ public class EEWBot {
 		client = createClient(config.token, true);
 		final EventDispatcher dispatcher = client.getDispatcher();
 		dispatcher.registerListener(new EventListener());
-		LOGGER.info("Running EEWBot");
+		LOGGER.info("Hello");
 	}
 
 	public static IDiscordClient createClient(final String token, final boolean login) {
