@@ -32,7 +32,7 @@ public class EventListener {
 
 	@EventSubscriber
 	public void onChannelDelete(final ChannelDeleteEvent e) {
-		final Collection<Channel> channels = EEWBot.channels.get(e.getChannel().getGuild().getLongID());
+		final Collection<Channel> channels = EEWBot.channels.get(e.getGuild().getLongID());
 		if (channels!=null) {
 			final long id = e.getChannel().getLongID();
 			for (final Iterator<Channel> it = channels.iterator(); it.hasNext();)
@@ -50,20 +50,15 @@ public class EventListener {
 		register {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				final long serverid = e.getChannel().getGuild().getLongID();
+				final long serverid = e.getGuild().getLongID();
 				final long channelid = e.getChannel().getLongID();
 				Collection<Channel> channels = EEWBot.channels.get(serverid);
-				Channel channel = null;
-				if (channels!=null) {
-					for (final Iterator<Channel> it = channels.iterator(); it.hasNext();) {
-						final Channel c = it.next();
-						if (c.getId()==channelid)
-							channel = c;
-					}
-				} else
+				Channel channel = Channel.getChannel(serverid, channelid);
+				if (channels==null)
 					channels = new ArrayList<>();
 				if (channel==null)
 					channel = new Channel(channelid);
+
 				if (args.length<=0)
 					channel.eewAlart = true;
 				else if (args.length%2!=0)
@@ -82,6 +77,7 @@ public class EventListener {
 						}
 					}
 				}
+
 				channels.add(channel);
 				EEWBot.channels.put(serverid, channels);
 				try {
@@ -96,10 +92,23 @@ public class EventListener {
 		unregister {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-
+				final Collection<Channel> channels = EEWBot.channels.get(e.getGuild().getLongID());
+				if (channels!=null) {
+					final long id = e.getChannel().getLongID();
+					for (final Iterator<Channel> it = channels.iterator(); it.hasNext();)
+						if (it.next().getId()==id)
+							it.remove();
+					try {
+						EEWBot.saveConfigs();
+					} catch (final ConfigException ex) {
+						EEWBot.LOGGER.error("Error on channel delete", ex);
+					}
+				} else
+					BotUtils.reply(e, "このチャンネルには設定がありません");
 			}
 		};
 
 		public abstract void onCommand(MessageReceivedEvent e, String[] args);
 	}
+
 }
