@@ -106,6 +106,18 @@ public class EventListener {
 				} else
 					BotUtils.reply(e, "このチャンネルには設定がありません");
 			}
+		},
+		reload {
+			@Override
+			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				try {
+					EEWBot.loadConfigs();
+					BotUtils.reply(e, ":ok:");
+				} catch (final ConfigException ex) {
+					BotUtils.reply(e, "エラーが発生しました");
+					EEWBot.LOGGER.error("Load error", ex);
+				}
+			}
 		};
 
 		public abstract void onCommand(MessageReceivedEvent e, String[] args);
