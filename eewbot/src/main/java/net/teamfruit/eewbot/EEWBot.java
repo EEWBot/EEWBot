@@ -54,7 +54,7 @@ public class EEWBot {
 		dispatcher.registerListener(new DiscordEventListener());
 
 		executor.scheduleAtFixedRate(ntp = new NTPDispatcher(), 0, EEWBot.config.timeFixDelay>=3600 ? EEWBot.config.timeFixDelay : 3600, TimeUnit.SECONDS);
-		executor.scheduleAtFixedRate(new EEWDispatcher(), 10, config.kyoshinDelay, TimeUnit.SECONDS);
+		executor.scheduleAtFixedRate(new EEWDispatcher(), 10, config.kyoshinDelay>=2 ? config.kyoshinDelay : 2, TimeUnit.SECONDS);
 		LOGGER.info("Hello");
 	}
 

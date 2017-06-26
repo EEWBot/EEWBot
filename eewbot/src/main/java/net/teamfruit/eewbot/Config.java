@@ -9,7 +9,7 @@ public class Config {
 	public static Config getDefault() {
 		final Config c = new Config();
 		c.token = "";
-		c.kyoshinDelay = 1;
+		c.kyoshinDelay = 2;
 		c.timeFixDelay = 86400;
 		c.nptServer = "time.google.com";
 		return c;
