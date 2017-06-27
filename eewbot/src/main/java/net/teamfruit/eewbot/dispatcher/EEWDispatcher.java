@@ -90,8 +90,12 @@ public class EEWDispatcher implements Runnable {
 			}
 		}
 
-		public boolean isAlart() {
-			return this.alertflg.equals("警報");
+		public String getAlertFlg() {
+			return this.alertflg;
+		}
+
+		public boolean isAlert() {
+			return "警報".equals(this.alertflg);
 		}
 
 		public String getIntensity() {
