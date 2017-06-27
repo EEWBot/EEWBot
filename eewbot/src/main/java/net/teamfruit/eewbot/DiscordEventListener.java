@@ -66,7 +66,7 @@ public class DiscordEventListener {
 					final Field[] fields = Channel.class.getFields();
 					for (int i = 0; i<args.length; i += 2) {
 						for (final Field line : fields) {
-							if (line.getName().equals(args[i]))
+							if (line.getName().equalsIgnoreCase(args[i])||args[i].equals("*"))
 								try {
 									line.setBoolean(channel, BooleanUtils.toBoolean(args[i+1]));
 								} catch (IllegalArgumentException|IllegalAccessException ex) {
