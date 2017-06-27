@@ -24,7 +24,7 @@ public class EEWEventListener {
 				if ((eew.isAlert()&&channel.eewAlert)||(!eew.isAlert()&&channel.eewPrediction)) {
 					final IGuild id = EEWBot.client.getGuildByID(entry.getKey());
 					final IChannel c = id.getChannelByID(channel.getId());
-					c.sendMessage(":warning: **緊急地震速報("+eew.getAlertFlg()+")** "+(eew.isFinal() ? "最終報" : "第"+eew.getReportNum()+"報"), buildEmbed(eew));
+					c.sendMessage(buildEmbed(eew));
 				}
 			}
 		}
@@ -34,7 +34,7 @@ public class EEWEventListener {
 		final EmbedBuilder builder = new EmbedBuilder();
 
 		builder.appendField("震央", eew.getRegionName(), true);
-		builder.appendField("深さ", String.valueOf(eew.getDepth()), true);
+		builder.appendField("深さ", eew.getDepth()+"km", true);
 		builder.appendField("マグニチュード", String.valueOf(eew.getMagnitude()), true);
 		builder.appendField("予想震度", String.valueOf(eew.getIntensity()), false);
 
@@ -42,7 +42,7 @@ public class EEWEventListener {
 			builder.withColor(255, 0, 0);
 		else
 			builder.withColor(0, 0, 255);
-		builder.withTitle("緊急地震速報 ("+eew.getAlertFlg()+")");
+		builder.withTitle("緊急地震速報 ("+eew.getAlertFlg()+") "+(eew.isFinal() ? "最終報" : "第"+eew.getReportNum()+"報"));
 		builder.withTimestamp(eew.getReportTime().getTime());
 
 		builder.withFooterText("新強震モニタ");

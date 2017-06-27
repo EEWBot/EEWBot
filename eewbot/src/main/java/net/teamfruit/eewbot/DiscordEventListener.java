@@ -1,13 +1,19 @@
 package net.teamfruit.eewbot;
 
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import net.teamfruit.eewbot.dispatcher.EEWDispatcher.EEW;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelDeleteEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -122,6 +128,34 @@ public class DiscordEventListener {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				BotUtils.reply(e, "http://ch.nicovideo.jp/bousai-share");
+			}
+		},
+		joinserver {
+			@Override
+			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				BotUtils.reply(e, "https://discordapp.com/oauth2/authorize?client_id="+EEWBot.client.getApplicationClientID()+"&scope=bot");
+			}
+		},
+		test {
+			@Override
+			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				if (args.length<=0) {
+					BotUtils.reply(e, "引数が不足しています");
+				} else {
+					EEW eew = null;
+					try {
+						if (args[0].startsWith("http://"))
+							try (InputStreamReader isr = new InputStreamReader(new URL(args[0]).openStream(), StandardCharsets.UTF_8)) {
+								eew = EEWBot.GSON.fromJson(isr, EEW.class);
+							}
+						else
+							eew = EEWBot.GSON.fromJson(StringUtils.remove(e.getMessage().getContent(), "!eew test "), EEW.class);
+						BotUtils.reply(e, "**これは訓練です！**", EEWEventListener.buildEmbed(eew));
+					} catch (final Exception ex) {
+						EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
+						BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");
+					}
+				}
 			}
 		};
 
