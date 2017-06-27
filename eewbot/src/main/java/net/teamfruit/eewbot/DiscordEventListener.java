@@ -117,6 +117,13 @@ public class DiscordEventListener {
 					EEWBot.LOGGER.error("Load error", ex);
 				}
 			}
+		},
+		bsc24 {
+
+			@Override
+			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				BotUtils.reply(e, "http://ch.nicovideo.jp/bousai-share");
+			}
 		};
 
 		public abstract void onCommand(MessageReceivedEvent e, String[] args);
