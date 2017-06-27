@@ -1,40 +1,41 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>net.teamfruit</groupId>
-  <artifactId>eewbot</artifactId>
-  <version>1.0.0</version>
-  <name>EEWBot</name>
-  <description>EEWBot</description>
-     <properties>
-        <java.version>1.8</java.version>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.compiler.source>1.8</maven.compiler.source>
-    </properties>
-  <repositories>
-  <repository> <!-- This repo fixes issues with transitive dependencies -->
-    <id>jcenter</id>
-    <url>http://jcenter.bintray.com</url>
-  </repository>
-  <repository>
-    <id>jitpack.io</id>
-    <url>https://jitpack.io</url>
-  </repository>
-</repositories>
-<dependencies>
-  <dependency>
-    <groupId>com.github.austinv11</groupId>
-    <artifactId>Discord4J</artifactId>
-    <version>2.8.3</version>
-  </dependency>
-  <dependency>
-    <groupId>com.google.code.gson</groupId>
-    <artifactId>gson</artifactId>
-    <version>2.8.1</version>
-</dependency>
-<dependency>
-    <groupId>commons-net</groupId>
-    <artifactId>commons-net</artifactId>
-    <version>3.3</version>
-</dependency>
-</dependencies>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>net.teamfruit</groupId>
+	<artifactId>eewbot</artifactId>
+	<version>1.0.0</version>
+	<name>EEWBot</name>
+	<description>EEWBot</description>
+	<properties>
+		<java.version>1.8</java.version>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>1.8</maven.compiler.source>
+	</properties>
+	<repositories>
+		<repository>
+			<id>jcenter</id>
+			<url>http://jcenter.bintray.com</url>
+		</repository>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+	<dependencies>
+		<dependency>
+			<groupId>com.github.austinv11</groupId>
+			<artifactId>Discord4J</artifactId>
+			<version>2.8.3</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.8.1</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-net</groupId>
+			<artifactId>commons-net</artifactId>
+			<version>3.3</version>
+		</dependency>
+	</dependencies>
 </project>
