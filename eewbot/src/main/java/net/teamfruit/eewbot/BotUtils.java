@@ -4,11 +4,12 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.util.RequestBuffer;
 
 public class BotUtils {
 
 	public static void reply(final MessageReceivedEvent e, final String message) {
-		e.getMessage().getChannel().sendMessage(message);
+		RequestBuffer.request(() -> e.getMessage().getChannel().sendMessage(message));
 	}
 
 	public static Channel getChannel(final long serverId, final long channelId) {
