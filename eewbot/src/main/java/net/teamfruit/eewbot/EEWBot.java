@@ -52,9 +52,10 @@ public class EEWBot {
 		client = createClient(config.token, true);
 		final EventDispatcher dispatcher = client.getDispatcher();
 		dispatcher.registerListener(new DiscordEventListener());
+		dispatcher.registerListener(new EEWEventListener());
 
 		executor.scheduleAtFixedRate(ntp = new NTPDispatcher(), 0, EEWBot.config.timeFixDelay>=3600 ? EEWBot.config.timeFixDelay : 3600, TimeUnit.SECONDS);
-		executor.scheduleAtFixedRate(new EEWDispatcher(), 10, config.kyoshinDelay>=2 ? config.kyoshinDelay : 2, TimeUnit.SECONDS);
+		executor.scheduleAtFixedRate(new EEWDispatcher(), 10, config.kyoshinDelay>=1 ? config.kyoshinDelay : 1, TimeUnit.SECONDS);
 		LOGGER.info("Hello");
 	}
 
