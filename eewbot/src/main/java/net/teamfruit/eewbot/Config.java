@@ -5,13 +5,14 @@ public class Config {
 	private int kyoshinDelay;
 	private int timeFixDelay;
 	private String nptServer;
+	private boolean debug;
 
 	public Config() {
 		this.token = "";
 		this.kyoshinDelay = 2;
 		this.timeFixDelay = 86400;
 		this.nptServer = "time.google.com";
-
+		this.debug = false;
 	}
 
 	public Config(final Config src) {
@@ -19,10 +20,11 @@ public class Config {
 	}
 
 	public Config set(final Config src) {
-		this.token = src.token;
-		this.kyoshinDelay = src.kyoshinDelay;
-		this.timeFixDelay = src.timeFixDelay;
-		this.nptServer = src.nptServer;
+		this.token = src.getToken();
+		this.kyoshinDelay = src.getKyoshinDelay();
+		this.timeFixDelay = src.getTimeFixDelay();
+		this.nptServer = src.getNptServer();
+		this.debug = src.isDebug();
 		return this;
 	}
 
@@ -40,6 +42,10 @@ public class Config {
 
 	public String getNptServer() {
 		return this.nptServer;
+	}
+
+	public boolean isDebug() {
+		return this.debug;
 	}
 
 	@Override
