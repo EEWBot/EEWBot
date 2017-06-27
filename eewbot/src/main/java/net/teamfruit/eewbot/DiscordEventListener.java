@@ -4,8 +4,10 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -156,6 +158,12 @@ public class DiscordEventListener {
 						BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");
 					}
 				}
+			}
+		},
+		help {
+			@Override
+			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(command -> command.name()).collect(Collectors.joining(" "))+"```");
 			}
 		};
 
