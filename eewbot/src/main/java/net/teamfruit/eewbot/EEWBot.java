@@ -98,7 +98,7 @@ public class EEWBot {
 			}
 
 			final File channelFile = new File(JARPATH, "channels.json");
-			final Type type = new TypeToken<Map<Long, Collection<Long>>>() {
+			final Type type = new TypeToken<Map<Long, Collection<Channel>>>() {
 			}.getType();
 			if (!channelFile.exists()) {
 				try (Writer w = new BufferedWriter(new FileWriter(channelFile))) {
