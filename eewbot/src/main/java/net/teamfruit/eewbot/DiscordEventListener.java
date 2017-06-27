@@ -59,7 +59,7 @@ public class DiscordEventListener {
 					channel = new Channel(channelid);
 
 				if (args.length<=0)
-					channel.eewAlart = true;
+					channel.eewAlert = true;
 				else if (args.length%2!=0)
 					BotUtils.reply(e, "引数が不足しています");
 				else {
