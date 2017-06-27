@@ -7,6 +7,8 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -21,16 +23,22 @@ public class EEWDispatcher implements Runnable {
 	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/webservice/hypo/eew/";
 	public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
 
+	private final Set<EEW> prev = new HashSet<>();
+
 	@Override
 	public void run() {
 		try {
 			final Date date = new Date(System.currentTimeMillis()+EEWBot.ntp.getOffset()-1000);
 			final URL url = new java.net.URL(REMOTE+FORMAT.format(date)+".json");
 			final EEW res = EEWBot.GSON.fromJson(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8), EEW.class);
-			if (res.alertflg!=null) { //EEW
-				final EEWEvent event = new EEWEvent(EEWBot.client, res);
-				EEWBot.client.getDispatcher().dispatch(event);
-			}
+			if (res.isEEW()) {
+				if (!this.prev.contains(res)) {
+					this.prev.add(res);
+					final EEWEvent event = new EEWEvent(EEWBot.client, res);
+					EEWBot.client.getDispatcher().dispatch(event);
+				}
+			} else
+				this.prev.clear();
 		} catch (final JsonSyntaxException|JsonIOException|IOException e) {
 			EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
 		}
@@ -88,6 +96,10 @@ public class EEWDispatcher implements Runnable {
 			public String getReam() {
 				return this.realm;
 			}
+		}
+
+		public boolean isEEW() {
+			return getAlertFlg()!=null;
 		}
 
 		public String getAlertFlg() {
@@ -165,7 +177,7 @@ public class EEWDispatcher implements Runnable {
 			return Long.parseLong(this.report_id);
 		}
 
-		public int gerReportNum() {
+		public int getReportNum() {
 			if (StringUtils.isEmpty(this.depth))
 				return -1;
 			return Integer.parseInt(this.report_num);
@@ -194,5 +206,31 @@ public class EEWDispatcher implements Runnable {
 				return null;
 			}
 		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime*result+((this.report_id==null) ? 0 : this.report_id.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (this==obj)
+				return true;
+			if (obj==null)
+				return false;
+			if (!(obj instanceof EEW))
+				return false;
+			final EEW other = (EEW) obj;
+			if (this.report_id==null) {
+				if (other.report_id!=null)
+					return false;
+			} else if (!this.report_id.equals(other.report_id))
+				return false;
+			return true;
+		}
+
 	}
 }
