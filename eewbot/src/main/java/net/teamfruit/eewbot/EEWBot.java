@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
@@ -18,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -28,13 +28,14 @@ import com.google.gson.reflect.TypeToken;
 
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
 import net.teamfruit.eewbot.dispatcher.NTPDispatcher;
+import sx.blah.discord.Discord4J.Discord4JLogger;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventDispatcher;
 
 public class EEWBot {
 
-	public static final Logger LOGGER = LoggerFactory.getLogger(EEWBot.class);
+	public static final Logger LOGGER = new Discord4JLogger(EEWBot.class.getName());
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final File JARPATH = new File(".").getAbsoluteFile();
 	public static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, new ThreadFactory() {
@@ -44,16 +45,16 @@ public class EEWBot {
 		}
 	});
 
-	public static Config config;
-	public static Map<Long, CopyOnWriteArrayList<Channel>> channels;
+	public static Config config = Config.getDefault();
+	public static Map<Long, CopyOnWriteArrayList<Channel>> channels = new ConcurrentHashMap<>();
 	public static NTPDispatcher ntp;
 	public static IDiscordClient client;
 
-	public static void main(final String[] args) throws ConfigException {
+	public static void main(final String[] args) throws Exception {
 		loadConfigs();
 		if (StringUtils.isEmpty(config.token)) {
-			LOGGER.error("tokenを設定して下さい");
-			return;
+			LOGGER.info("Please set a token");
+			System.exit(0);
 		}
 		client = createClient(config.token, true);
 		final EventDispatcher dispatcher = client.getDispatcher();
@@ -77,16 +78,28 @@ public class EEWBot {
 	public static void loadConfigs() throws ConfigException {
 		try {
 			final File cfgFile = new File(JARPATH, "config.json");
-			if (!cfgFile.exists())
-				GSON.toJson(Config.getDefault(), new BufferedWriter(new FileWriter(cfgFile)));
-			config = GSON.fromJson(new BufferedReader(new FileReader(cfgFile)), Config.class);
+			if (!cfgFile.exists()) {
+				final Writer w = new BufferedWriter(new FileWriter(cfgFile));
+				GSON.toJson(config, w);
+				w.close();
+			} else {
+				final Config c = GSON.fromJson(new BufferedReader(new FileReader(cfgFile)), Config.class);
+				if (c!=null)
+					config = c;
+			}
 
 			final File channelFile = new File(JARPATH, "channels.json");
 			final Type type = new TypeToken<Map<Long, Collection<Long>>>() {
 			}.getType();
-			if (!channelFile.exists())
-				GSON.toJson(new ConcurrentHashMap<Long, Collection<Channel>>(), new BufferedWriter(new FileWriter(channelFile)));
-			channels = new ConcurrentHashMap<>(GSON.fromJson(new BufferedReader(new FileReader(channelFile)), type));
+			if (!channelFile.exists()) {
+				final Writer w = new BufferedWriter(new FileWriter(channelFile));
+				GSON.toJson(new ConcurrentHashMap<Long, CopyOnWriteArrayList<Channel>>(), w);
+				w.close();
+			} else {
+				final Map<Long, CopyOnWriteArrayList<Channel>> map = GSON.fromJson(new BufferedReader(new FileReader(channelFile)), type);
+				if (map!=null)
+					channels.putAll(map);
+			}
 		} catch (JsonSyntaxException|JsonIOException|IOException e) {
 			throw new ConfigException("Config load error", e);
 		}
@@ -95,7 +108,7 @@ public class EEWBot {
 	public static void saveConfigs() throws ConfigException {
 		try {
 			final File cfgFile = new File(JARPATH, "config.json");
-			GSON.toJson(Config.getDefault(), new BufferedWriter(new FileWriter(cfgFile)));
+			GSON.toJson(Config.getDefault(), new FileWriter(cfgFile));
 
 			final File channelFile = new File(JARPATH, "channels.json");
 			final Type type = new TypeToken<Map<Long, Collection<Channel>>>() {

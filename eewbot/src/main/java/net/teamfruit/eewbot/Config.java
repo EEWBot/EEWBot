@@ -15,4 +15,9 @@ public class Config {
 		return c;
 	}
 
+	@Override
+	public String toString() {
+		return "Config [token="+this.token+", kyoshinDelay="+this.kyoshinDelay+", timeFixDelay="+this.timeFixDelay+", nptServer="+this.nptServer+"]";
+	}
+
 }
