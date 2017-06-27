@@ -119,7 +119,6 @@ public class DiscordEventListener {
 			}
 		},
 		bsc24 {
-
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				BotUtils.reply(e, "http://ch.nicovideo.jp/bousai-share");

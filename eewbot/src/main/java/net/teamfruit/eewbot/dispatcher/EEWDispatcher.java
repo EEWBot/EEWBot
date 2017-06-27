@@ -27,10 +27,12 @@ public class EEWDispatcher implements Runnable {
 
 	@Override
 	public void run() {
-		try {
-			final Date date = new Date(System.currentTimeMillis()+EEWBot.ntp.getOffset()-1000);
-			final URL url = new java.net.URL(REMOTE+FORMAT.format(date)+".json");
-			final EEW res = EEWBot.GSON.fromJson(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8), EEW.class);
+		final Date date = new Date(System.currentTimeMillis()+EEWBot.ntp.getOffset()-1000);
+		final String url = REMOTE+FORMAT.format(date)+".json";
+		EEWBot.LOGGER.debug("Remote: "+url);
+		try (InputStreamReader isr = new InputStreamReader(new URL(url).openStream(), StandardCharsets.UTF_8)) {
+			final EEW res = EEWBot.GSON.fromJson(isr, EEW.class);
+			EEWBot.LOGGER.debug(res.toString());
 			if (res.isEEW()) {
 				if (!this.prev.contains(res)) {
 					this.prev.add(res);
@@ -83,6 +85,12 @@ public class EEWDispatcher implements Runnable {
 			public boolean getStatus() {
 				return "success".equals(this.status);
 			}
+
+			@Override
+			public String toString() {
+				return "Result [is_auth="+this.is_auth+", message="+this.message+", status="+this.status+"]";
+			}
+
 		}
 
 		public static class Security {
@@ -95,6 +103,11 @@ public class EEWDispatcher implements Runnable {
 
 			public String getReam() {
 				return this.realm;
+			}
+
+			@Override
+			public String toString() {
+				return "Security [hash="+this.hash+", realm="+this.realm+"]";
 			}
 		}
 
@@ -230,6 +243,13 @@ public class EEWDispatcher implements Runnable {
 			} else if (!this.report_id.equals(other.report_id))
 				return false;
 			return true;
+		}
+
+		@Override
+		public String toString() {
+			return "EEW [alertflg="+this.alertflg+", calcintensity="+this.calcintensity+", depth="+this.depth+", is_cancel="+this.is_cancel+", is_final="+this.is_final+", is_training="+this.is_training+", latitude="+this.latitude+", longitude="+this.longitude+", magunitude="+this.magunitude+", origin_time="+this.origin_time+", region_code="+this.region_code+", region_name="+this.region_name+", report_id="+this.report_id+", report_num="+this.report_num+", report_time="+this.report_time+", request_hypo_type="
+					+this.request_hypo_type+", request_time="+this.request_time+", result="+this.result
+					+", security="+this.security+"]";
 		}
 
 	}
