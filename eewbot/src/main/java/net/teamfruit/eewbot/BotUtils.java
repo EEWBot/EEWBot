@@ -1,7 +1,7 @@
 package net.teamfruit.eewbot;
 
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.util.RequestBuffer;
@@ -13,7 +13,7 @@ public class BotUtils {
 	}
 
 	public static Channel getChannel(final long serverId, final long channelId) {
-		final Collection<Channel> channels = EEWBot.channels.get(serverId);
+		final CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(serverId);
 		if (channels!=null)
 			for (final Iterator<Channel> it = channels.iterator(); it.hasNext();) {
 				final Channel c = it.next();

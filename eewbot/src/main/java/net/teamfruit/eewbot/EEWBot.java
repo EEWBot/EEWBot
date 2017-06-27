@@ -8,13 +8,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,12 +45,16 @@ public class EEWBot {
 	});
 
 	public static Config config;
-	public static Map<Long, Collection<Channel>> channels;
+	public static Map<Long, CopyOnWriteArrayList<Channel>> channels;
 	public static NTPDispatcher ntp;
 	public static IDiscordClient client;
 
 	public static void main(final String[] args) throws ConfigException {
 		loadConfigs();
+		if (StringUtils.isEmpty(config.token)) {
+			LOGGER.error("tokenを設定して下さい");
+			return;
+		}
 		client = createClient(config.token, true);
 		final EventDispatcher dispatcher = client.getDispatcher();
 		dispatcher.registerListener(new DiscordEventListener());
@@ -79,8 +85,8 @@ public class EEWBot {
 			final Type type = new TypeToken<Map<Long, Collection<Long>>>() {
 			}.getType();
 			if (!channelFile.exists())
-				GSON.toJson(new HashMap<Long, Collection<Channel>>(), new BufferedWriter(new FileWriter(channelFile)));
-			channels = GSON.fromJson(new BufferedReader(new FileReader(channelFile)), type);
+				GSON.toJson(new ConcurrentHashMap<Long, Collection<Channel>>(), new BufferedWriter(new FileWriter(channelFile)));
+			channels = new ConcurrentHashMap<>(GSON.fromJson(new BufferedReader(new FileReader(channelFile)), type));
 		} catch (JsonSyntaxException|JsonIOException|IOException e) {
 			throw new ConfigException("Config load error", e);
 		}

@@ -1,9 +1,8 @@
 package net.teamfruit.eewbot;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -32,7 +31,7 @@ public class DiscordEventListener {
 
 	@EventSubscriber
 	public void onChannelDelete(final ChannelDeleteEvent e) {
-		final Collection<Channel> channels = EEWBot.channels.get(e.getGuild().getLongID());
+		final CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(e.getGuild().getLongID());
 		if (channels!=null) {
 			final long id = e.getChannel().getLongID();
 			for (final Iterator<Channel> it = channels.iterator(); it.hasNext();)
@@ -52,10 +51,10 @@ public class DiscordEventListener {
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				final long serverid = e.getGuild().getLongID();
 				final long channelid = e.getChannel().getLongID();
-				Collection<Channel> channels = EEWBot.channels.get(serverid);
+				CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(serverid);
 				Channel channel = BotUtils.getChannel(serverid, channelid);
 				if (channels==null)
-					channels = new ArrayList<>();
+					channels = new CopyOnWriteArrayList<>();
 				if (channel==null)
 					channel = new Channel(channelid);
 
@@ -92,7 +91,7 @@ public class DiscordEventListener {
 		unregister {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				final Collection<Channel> channels = EEWBot.channels.get(e.getGuild().getLongID());
+				final CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(e.getGuild().getLongID());
 				if (channels!=null) {
 					final long id = e.getChannel().getLongID();
 					for (final Iterator<Channel> it = channels.iterator(); it.hasNext();)
