@@ -1,18 +1,45 @@
 package net.teamfruit.eewbot;
 
 public class Config {
-	public String token;
-	public int kyoshinDelay;
-	public int timeFixDelay;
-	public String nptServer;
+	private String token;
+	private int kyoshinDelay;
+	private int timeFixDelay;
+	private String nptServer;
 
-	public static Config getDefault() {
-		final Config c = new Config();
-		c.token = "";
-		c.kyoshinDelay = 2;
-		c.timeFixDelay = 86400;
-		c.nptServer = "time.google.com";
-		return c;
+	public Config() {
+		this.token = "";
+		this.kyoshinDelay = 2;
+		this.timeFixDelay = 86400;
+		this.nptServer = "time.google.com";
+
+	}
+
+	public Config(final Config src) {
+		set(src);
+	}
+
+	public Config set(final Config src) {
+		this.token = src.token;
+		this.kyoshinDelay = src.kyoshinDelay;
+		this.timeFixDelay = src.timeFixDelay;
+		this.nptServer = src.nptServer;
+		return this;
+	}
+
+	public String getToken() {
+		return this.token;
+	}
+
+	public int getKyoshinDelay() {
+		return this.kyoshinDelay;
+	}
+
+	public int getTimeFixDelay() {
+		return this.timeFixDelay;
+	}
+
+	public String getNptServer() {
+		return this.nptServer;
 	}
 
 	@Override

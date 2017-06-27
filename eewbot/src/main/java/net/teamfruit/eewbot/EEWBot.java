@@ -45,24 +45,24 @@ public class EEWBot {
 		}
 	});
 
-	public static Config config = Config.getDefault();
+	public static Config config = new Config();
 	public static Map<Long, CopyOnWriteArrayList<Channel>> channels = new ConcurrentHashMap<>();
 	public static NTPDispatcher ntp;
 	public static IDiscordClient client;
 
 	public static void main(final String[] args) throws Exception {
 		loadConfigs();
-		if (StringUtils.isEmpty(config.token)) {
+		if (StringUtils.isEmpty(config.getToken())) {
 			LOGGER.info("Please set a token");
 			System.exit(0);
 		}
-		client = createClient(config.token, true);
+		client = createClient(config.getToken(), true);
 		final EventDispatcher dispatcher = client.getDispatcher();
 		dispatcher.registerListener(new DiscordEventListener());
 		dispatcher.registerListener(new EEWEventListener());
 
-		executor.scheduleAtFixedRate(ntp = new NTPDispatcher(), 0, EEWBot.config.timeFixDelay>=3600 ? EEWBot.config.timeFixDelay : 3600, TimeUnit.SECONDS);
-		executor.scheduleAtFixedRate(new EEWDispatcher(), 10, config.kyoshinDelay>=1 ? config.kyoshinDelay : 1, TimeUnit.SECONDS);
+		executor.scheduleAtFixedRate(ntp = new NTPDispatcher(), 0, EEWBot.config.getTimeFixDelay()>=3600 ? EEWBot.config.getTimeFixDelay() : 3600, TimeUnit.SECONDS);
+		executor.scheduleAtFixedRate(new EEWDispatcher(), 10, config.getKyoshinDelay()>=1 ? config.getKyoshinDelay() : 1, TimeUnit.SECONDS);
 		LOGGER.info("Hello");
 	}
 
@@ -86,6 +86,9 @@ public class EEWBot {
 				final Config c = GSON.fromJson(new BufferedReader(new FileReader(cfgFile)), Config.class);
 				if (c!=null)
 					config = c;
+				final Writer w = new BufferedWriter(new FileWriter(cfgFile));
+				GSON.toJson(new Config().set(c), w);
+				w.close();
 			}
 
 			final File channelFile = new File(JARPATH, "channels.json");
@@ -108,7 +111,7 @@ public class EEWBot {
 	public static void saveConfigs() throws ConfigException {
 		try {
 			final File cfgFile = new File(JARPATH, "config.json");
-			GSON.toJson(Config.getDefault(), new FileWriter(cfgFile));
+			GSON.toJson(config, new FileWriter(cfgFile));
 
 			final File channelFile = new File(JARPATH, "channels.json");
 			final Type type = new TypeToken<Map<Long, Collection<Channel>>>() {
