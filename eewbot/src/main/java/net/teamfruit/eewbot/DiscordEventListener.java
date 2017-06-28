@@ -5,7 +5,6 @@ import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -41,9 +40,7 @@ public class DiscordEventListener {
 		final CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(e.getGuild().getLongID());
 		if (channels!=null) {
 			final long id = e.getChannel().getLongID();
-			for (final Iterator<Channel> it = channels.iterator(); it.hasNext();)
-				if (it.next().getId()==id)
-					it.remove();
+			channels.removeIf(channel -> channel.getId()==id);
 			try {
 				EEWBot.saveConfigs();
 			} catch (final ConfigException ex) {
@@ -101,9 +98,7 @@ public class DiscordEventListener {
 				final CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(e.getGuild().getLongID());
 				if (channels!=null) {
 					final long id = e.getChannel().getLongID();
-					for (final Iterator<Channel> it = channels.iterator(); it.hasNext();)
-						if (it.next().getId()==id)
-							it.remove();
+					channels.removeIf(channel -> channel.getId()==id);
 					try {
 						EEWBot.saveConfigs();
 					} catch (final ConfigException ex) {
