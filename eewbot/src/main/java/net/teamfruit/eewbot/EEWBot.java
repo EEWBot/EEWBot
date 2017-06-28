@@ -123,8 +123,6 @@ public class EEWBot {
 				GSON.toJson(config, w);
 			}
 			final File channelFile = new File(JARPATH, "channels.json");
-			final Type type = new TypeToken<Map<Long, Collection<Channel>>>() {
-			}.getType();
 			try (Writer w = new BufferedWriter(new FileWriter(channelFile))) {
 				GSON.toJson(channels, w);
 			}
