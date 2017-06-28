@@ -6,6 +6,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher.EEW;
 import net.teamfruit.eewbot.dispatcher.EEWEvent;
+import net.teamfruit.eewbot.dispatcher.MonitorEvent;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.IChannel;
@@ -28,6 +29,21 @@ public class EEWEventListener {
 				}
 			}
 		}
+	}
+
+	@EventSubscriber
+	public void onMonitor(final MonitorEvent e) {
+		for (final Iterator<Entry<Long, CopyOnWriteArrayList<Channel>>> it1 = EEWBot.channels.entrySet().iterator(); it1.hasNext();) {
+			final Entry<Long, CopyOnWriteArrayList<Channel>> entry = it1.next();
+			for (final Iterator<Channel> it2 = entry.getValue().iterator(); it2.hasNext();) {
+				final Channel channel = it2.next();
+				final IGuild id = EEWBot.client.getGuildByID(entry.getKey());
+				final IChannel c = id.getChannelByID(channel.getId());
+				c.sendFile("", e.getImage(), "kyoshinmonitor.png");
+
+			}
+		}
+
 	}
 
 	public static EmbedObject buildEmbed(final EEW eew) {
