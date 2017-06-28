@@ -12,6 +12,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher.EEW;
+import net.teamfruit.eewbot.dispatcher.MonitorDispatcher;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelDeleteEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -157,7 +158,13 @@ public class DiscordEventListener {
 		getmonitor {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-
+				EEWBot.executor.execute(() -> {
+					try {
+						e.getChannel().sendFile("", MonitorDispatcher.get(), "kyoshinmonitor.png");
+					} catch (final Exception ex) {
+						EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(ex));
+					}
+				});
 			}
 		},
 		help {
