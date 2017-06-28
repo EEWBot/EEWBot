@@ -11,6 +11,7 @@ import java.io.Writer;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -106,9 +107,10 @@ public class EEWBot {
 				}
 			} else {
 				try (Reader r = new BufferedReader(new FileReader(channelFile))) {
-					final Map<Long, CopyOnWriteArrayList<Channel>> map = GSON.fromJson(r, type);
+					final Map<Long, Collection<Channel>> map = GSON.fromJson(r, type);
 					if (map!=null)
-						channels.putAll(map);
+						for (final Entry<Long, Collection<Channel>> entry : map.entrySet())
+							channels.put(entry.getKey(), new CopyOnWriteArrayList<>(entry.getValue()));
 				}
 			}
 		} catch (JsonSyntaxException|JsonIOException|IOException e) {
