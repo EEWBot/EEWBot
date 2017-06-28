@@ -25,7 +25,7 @@ public class EEWDispatcher implements Runnable {
 
 	@Override
 	public void run() {
-		final Date date = new Date(System.currentTimeMillis()+EEWBot.ntp.getOffset()-TimeUnit.SECONDS.toMillis(1));
+		final Date date = new Date(System.currentTimeMillis()+EEWBot.instance.getNtp().getOffset()-TimeUnit.SECONDS.toMillis(1));
 		final String url = REMOTE+FORMAT.format(date)+".json";
 		try {
 			final EEW res = get(url);
@@ -33,8 +33,8 @@ public class EEWDispatcher implements Runnable {
 				if (res.isEEW()) {
 					if (!this.prev.contains(res)) {
 						this.prev.add(res);
-						final EEWEvent event = new EEWEvent(EEWBot.client, res);
-						EEWBot.client.getDispatcher().dispatch(event);
+						final EEWEvent event = new EEWEvent(EEWBot.instance.getClient(), res);
+						EEWBot.instance.getClient().getDispatcher().dispatch(event);
 					}
 				} else
 					this.prev.clear();

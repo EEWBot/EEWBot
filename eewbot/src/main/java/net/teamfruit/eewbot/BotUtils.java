@@ -21,7 +21,7 @@ public class BotUtils {
 	}
 
 	public static Channel getChannel(final long serverId, final long channelId) {
-		final CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(serverId);
+		final CopyOnWriteArrayList<Channel> channels = EEWBot.instance.getChannels().get(serverId);
 		if (channels!=null)
 			return channels.stream().filter(c -> c.getId()==channelId).findFirst().orElse(null);
 		return null;

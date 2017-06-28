@@ -30,14 +30,14 @@ public class MonitorDispatcher implements Runnable {
 	@Override
 	public void run() {
 		try {
-			EEWBot.client.getDispatcher().dispatch(new MonitorEvent(EEWBot.client, get()));
+			EEWBot.instance.getClient().getDispatcher().dispatch(new MonitorEvent(EEWBot.instance.getClient(), get()));
 		} catch (final IOException e) {
 			EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
 		}
 	}
 
 	public static InputStream get() throws IOException {
-		final Date date = new Date(System.currentTimeMillis()+EEWBot.ntp.getOffset()-TimeUnit.SECONDS.toMillis(1));
+		final Date date = new Date(System.currentTimeMillis()+EEWBot.instance.getNtp().getOffset()-TimeUnit.SECONDS.toMillis(1));
 		final List<BufferedImage> images = new ArrayList<>();
 
 		final String dateStr = FORMAT.format(date);

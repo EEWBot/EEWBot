@@ -22,10 +22,10 @@ public class NTPDispatcher implements Runnable {
 		client.setDefaultTimeout(10000);
 		try {
 			client.open();
-			final InetAddress hostAddr = InetAddress.getByName(EEWBot.config.getNptServer());
+			final InetAddress hostAddr = InetAddress.getByName(EEWBot.instance.getConfig().getNptServer());
 			final TimeInfo info = client.getTime(hostAddr);
 			info.computeDetails();
-			EEWBot.client.getDispatcher().dispatch(new TimeEvent(EEWBot.client, info));
+			EEWBot.instance.getClient().getDispatcher().dispatch(new TimeEvent(EEWBot.instance.getClient(), info));
 			final Long offsetValue = info.getOffset();
 			final Long delayValue = info.getDelay();
 			this.offset = (offsetValue!=null ? offsetValue.longValue() : 0)+(delayValue!=null ? delayValue.longValue() : 0);

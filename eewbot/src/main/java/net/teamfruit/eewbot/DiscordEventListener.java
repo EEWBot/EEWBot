@@ -36,12 +36,12 @@ public class DiscordEventListener {
 
 	@EventSubscriber
 	public void onChannelDelete(final ChannelDeleteEvent e) {
-		final CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(e.getGuild().getLongID());
+		final CopyOnWriteArrayList<Channel> channels = EEWBot.instance.getChannels().get(e.getGuild().getLongID());
 		if (channels!=null) {
 			final long id = e.getChannel().getLongID();
 			channels.removeIf(channel -> channel.getId()==id);
 			try {
-				EEWBot.saveConfigs();
+				EEWBot.instance.saveConfigs();
 			} catch (final ConfigException ex) {
 				EEWBot.LOGGER.error("Error on channel delete", ex);
 			}
@@ -54,7 +54,7 @@ public class DiscordEventListener {
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				final long serverid = e.getGuild().getLongID();
 				final long channelid = e.getChannel().getLongID();
-				CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(serverid);
+				CopyOnWriteArrayList<Channel> channels = EEWBot.instance.getChannels().get(serverid);
 				Channel channel = BotUtils.getChannel(serverid, channelid);
 				if (channels==null)
 					channels = new CopyOnWriteArrayList<>();
@@ -81,9 +81,9 @@ public class DiscordEventListener {
 				}
 
 				channels.add(channel);
-				EEWBot.channels.put(serverid, channels);
+				EEWBot.instance.getChannels().put(serverid, channels);
 				try {
-					EEWBot.saveConfigs();
+					EEWBot.instance.saveConfigs();
 				} catch (final ConfigException ex) {
 					BotUtils.reply(e, "ConfigException");
 					EEWBot.LOGGER.error("Save error", ex);
@@ -96,10 +96,10 @@ public class DiscordEventListener {
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				final long serverid = e.getGuild().getLongID();
 				final long channelid = e.getChannel().getLongID();
-				final CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(serverid);
+				final CopyOnWriteArrayList<Channel> channels = EEWBot.instance.getChannels().get(serverid);
 				if (channels.removeIf(channel -> channel.getId()==channelid)) {
 					try {
-						EEWBot.saveConfigs();
+						EEWBot.instance.saveConfigs();
 						BotUtils.reply(e, ":ok:");
 					} catch (final ConfigException ex) {
 						EEWBot.LOGGER.error("Error on channel delete", ex);
@@ -113,11 +113,12 @@ public class DiscordEventListener {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				try {
-					EEWBot.loadConfigs();
+					EEWBot.instance = new EEWBot();
+					System.gc();
 					BotUtils.reply(e, ":ok:");
-				} catch (final ConfigException ex) {
-					BotUtils.reply(e, "エラーが発生しました");
-					EEWBot.LOGGER.error("Load error", ex);
+				} catch (final Throwable t) {
+					EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(t));
+					System.exit(1);
 				}
 			}
 		},
@@ -130,7 +131,7 @@ public class DiscordEventListener {
 		joinserver {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				BotUtils.reply(e, "https://discordapp.com/oauth2/authorize?client_id="+EEWBot.client.getApplicationClientID()+"&scope=bot");
+				BotUtils.reply(e, "https://discordapp.com/oauth2/authorize?client_id="+EEWBot.instance.getClient().getApplicationClientID()+"&scope=bot");
 			}
 		},
 		test {
@@ -139,7 +140,7 @@ public class DiscordEventListener {
 				if (args.length<=0) {
 					BotUtils.reply(e, "引数が不足しています");
 				} else {
-					EEWBot.executor.execute(() -> {
+					EEWBot.instance.getExecutor().execute(() -> {
 						EEW eew = null;
 						try {
 							if (args[0].startsWith("http://"))
@@ -158,7 +159,7 @@ public class DiscordEventListener {
 		getmonitor {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				EEWBot.executor.execute(() -> {
+				EEWBot.instance.getExecutor().execute(() -> {
 					try {
 						e.getChannel().sendFile("", MonitorDispatcher.get(), "kyoshinmonitor.png");
 					} catch (final Exception ex) {

@@ -34,38 +34,63 @@ import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventDispatcher;
 
 public class EEWBot {
+	public static EEWBot instance;
 
 	public static final Logger LOGGER = new Discord4JLogger(EEWBot.class.getName());
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-	public static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, new ThreadFactory() {
+
+	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, new ThreadFactory() {
 		@Override
 		public Thread newThread(final Runnable r) {
 			return new Thread(r, "EEWBot-communication-thread");
 		}
 	});
+	private Config config = new Config();
+	private final Map<Long, CopyOnWriteArrayList<Channel>> channels = new ConcurrentHashMap<>();
+	private NTPDispatcher ntp;
+	private IDiscordClient client;
 
-	public static Config config = new Config();
-	public static Map<Long, CopyOnWriteArrayList<Channel>> channels = new ConcurrentHashMap<>();
-	public static NTPDispatcher ntp;
-	public static IDiscordClient client;
-
-	public static void main(final String[] args) throws Exception {
+	public EEWBot() throws Exception {
 		loadConfigs();
-		if (config.isDebug())
-			((Discord4JLogger) LOGGER).setLevel(Discord4JLogger.Level.DEBUG);
+		if (this.config.isDebug())
+			((Discord4JLogger) EEWBot.LOGGER).setLevel(Discord4JLogger.Level.DEBUG);
 
-		if (StringUtils.isEmpty(config.getToken())) {
-			LOGGER.info("Please set a token");
+		if (StringUtils.isEmpty(this.config.getToken())) {
+			EEWBot.LOGGER.info("Please set a token");
 			return;
 		}
-		client = createClient(config.getToken(), true);
-		final EventDispatcher dispatcher = client.getDispatcher();
+		this.client = createClient(this.config.getToken(), true);
+		final EventDispatcher dispatcher = this.client.getDispatcher();
 		dispatcher.registerListener(new DiscordEventListener());
 		dispatcher.registerListener(new EEWEventListener());
 
-		executor.scheduleAtFixedRate(ntp = new NTPDispatcher(), 0, EEWBot.config.getTimeFixDelay()>=3600 ? EEWBot.config.getTimeFixDelay() : 3600, TimeUnit.SECONDS);
-		executor.scheduleAtFixedRate(new EEWDispatcher(), 10, config.getKyoshinDelay()>=1 ? config.getKyoshinDelay() : 1, TimeUnit.SECONDS);
-		LOGGER.info("Hello");
+		this.executor.scheduleAtFixedRate(this.ntp = new NTPDispatcher(), 0, this.config.getTimeFixDelay()>=3600 ? this.config.getTimeFixDelay() : 3600, TimeUnit.SECONDS);
+		this.executor.scheduleAtFixedRate(new EEWDispatcher(), 10, this.config.getKyoshinDelay()>=1 ? this.config.getKyoshinDelay() : 1, TimeUnit.SECONDS);
+		EEWBot.LOGGER.info("Hello");
+	}
+
+	public ScheduledExecutorService getExecutor() {
+		return this.executor;
+	}
+
+	public Config getConfig() {
+		return this.config;
+	}
+
+	public Map<Long, CopyOnWriteArrayList<Channel>> getChannels() {
+		return this.channels;
+	}
+
+	public NTPDispatcher getNtp() {
+		return this.ntp;
+	}
+
+	public IDiscordClient getClient() {
+		return this.client;
+	}
+
+	public static void main(final String[] args) throws Exception {
+		instance = new EEWBot();
 	}
 
 	public static IDiscordClient createClient(final String token, final boolean login) {
@@ -77,21 +102,21 @@ public class EEWBot {
 			return clientBuilder.build();
 	}
 
-	public static void loadConfigs() throws ConfigException {
+	public void loadConfigs() throws ConfigException {
 		try {
 			final Path cfgPath = Paths.get("config.json");
 			if (!cfgPath.toFile().exists()) {
 				try (Writer w = Files.newBufferedWriter(cfgPath)) {
-					GSON.toJson(config, w);
+					EEWBot.GSON.toJson(this.config, w);
 				}
 			} else {
 				try (Reader r = Files.newBufferedReader(cfgPath)) {
-					final Config c = GSON.fromJson(r, Config.class);
+					final Config c = EEWBot.GSON.fromJson(r, Config.class);
 					if (c!=null)
-						config = c;
+						this.config = c;
 				}
 				try (Writer w = Files.newBufferedWriter(cfgPath)) {
-					GSON.toJson(new Config().set(config), w);
+					EEWBot.GSON.toJson(new Config().set(this.config), w);
 				}
 			}
 
@@ -100,14 +125,14 @@ public class EEWBot {
 			}.getType();
 			if (!channelPath.toFile().exists()) {
 				try (Writer w = Files.newBufferedWriter(channelPath)) {
-					GSON.toJson(new ConcurrentHashMap<Long, CopyOnWriteArrayList<Channel>>(), w);
+					EEWBot.GSON.toJson(new ConcurrentHashMap<Long, CopyOnWriteArrayList<Channel>>(), w);
 				}
 			} else {
 				try (Reader r = Files.newBufferedReader(channelPath)) {
-					final Map<Long, Collection<Channel>> map = GSON.fromJson(r, type);
+					final Map<Long, Collection<Channel>> map = EEWBot.GSON.fromJson(r, type);
 					if (map!=null)
 						for (final Entry<Long, Collection<Channel>> entry : map.entrySet())
-							channels.put(entry.getKey(), new CopyOnWriteArrayList<>(entry.getValue()));
+							this.channels.put(entry.getKey(), new CopyOnWriteArrayList<>(entry.getValue()));
 				}
 			}
 		} catch (JsonSyntaxException|JsonIOException|IOException e) {
@@ -115,15 +140,15 @@ public class EEWBot {
 		}
 	}
 
-	public static void saveConfigs() throws ConfigException {
+	public void saveConfigs() throws ConfigException {
 		try {
 			final Path cfgPath = Paths.get("config.json");
 			try (Writer w = Files.newBufferedWriter(cfgPath)) {
-				GSON.toJson(config, w);
+				EEWBot.GSON.toJson(this.config, w);
 			}
 			final Path channelPath = Paths.get("channels.json");
 			try (Writer w = Files.newBufferedWriter(channelPath)) {
-				GSON.toJson(channels, w);
+				EEWBot.GSON.toJson(this.channels, w);
 			}
 		} catch (JsonIOException|IOException e) {
 			throw new ConfigException("Config save error", e);
