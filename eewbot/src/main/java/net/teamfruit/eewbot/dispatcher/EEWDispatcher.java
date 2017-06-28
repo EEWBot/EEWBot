@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -27,7 +28,7 @@ public class EEWDispatcher implements Runnable {
 
 	@Override
 	public void run() {
-		final Date date = new Date(System.currentTimeMillis()+EEWBot.ntp.getOffset()-1000);
+		final Date date = new Date(System.currentTimeMillis()+EEWBot.ntp.getOffset()-TimeUnit.SECONDS.toMillis(1));
 		final String url = REMOTE+FORMAT.format(date)+".json";
 		EEWBot.LOGGER.debug("Remote: "+url);
 		try (InputStreamReader isr = new InputStreamReader(new URL(url).openStream(), StandardCharsets.UTF_8)) {
