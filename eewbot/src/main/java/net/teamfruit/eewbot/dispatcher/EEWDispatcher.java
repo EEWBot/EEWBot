@@ -14,9 +14,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
-
 import net.teamfruit.eewbot.EEWBot;
 
 public class EEWDispatcher implements Runnable {
@@ -30,20 +27,28 @@ public class EEWDispatcher implements Runnable {
 	public void run() {
 		final Date date = new Date(System.currentTimeMillis()+EEWBot.ntp.getOffset()-TimeUnit.SECONDS.toMillis(1));
 		final String url = REMOTE+FORMAT.format(date)+".json";
+		try {
+			final EEW res = get(url);
+			if (res!=null)
+				if (res.isEEW()) {
+					if (!this.prev.contains(res)) {
+						this.prev.add(res);
+						final EEWEvent event = new EEWEvent(EEWBot.client, res);
+						EEWBot.client.getDispatcher().dispatch(event);
+					}
+				} else
+					this.prev.clear();
+		} catch (final IOException e) {
+			EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
+		}
+	}
+
+	public static EEW get(final String url) throws IOException {
 		EEWBot.LOGGER.debug("Remote: "+url);
 		try (InputStreamReader isr = new InputStreamReader(new URL(url).openStream(), StandardCharsets.UTF_8)) {
 			final EEW res = EEWBot.GSON.fromJson(isr, EEW.class);
 			EEWBot.LOGGER.debug(res.toString());
-			if (res.isEEW()) {
-				if (!this.prev.contains(res)) {
-					this.prev.add(res);
-					final EEWEvent event = new EEWEvent(EEWBot.client, res);
-					EEWBot.client.getDispatcher().dispatch(event);
-				}
-			} else
-				this.prev.clear();
-		} catch (final JsonSyntaxException|JsonIOException|IOException e) {
-			EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
+			return res;
 		}
 	}
 
