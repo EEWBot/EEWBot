@@ -95,14 +95,16 @@ public class DiscordEventListener {
 		unregister {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				final CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(e.getGuild().getLongID());
-				if (channels!=null) {
-					final long id = e.getChannel().getLongID();
-					channels.removeIf(channel -> channel.getId()==id);
+				final long serverid = e.getGuild().getLongID();
+				final long channelid = e.getChannel().getLongID();
+				final CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(serverid);
+				if (channels.removeIf(channel -> channel.getId()==channelid)) {
 					try {
 						EEWBot.saveConfigs();
+						BotUtils.reply(e, ":ok:");
 					} catch (final ConfigException ex) {
 						EEWBot.LOGGER.error("Error on channel delete", ex);
+						BotUtils.reply(e, "設定のセーブに失敗しました");
 					}
 				} else
 					BotUtils.reply(e, "このチャンネルには設定がありません");
@@ -157,7 +159,8 @@ public class DiscordEventListener {
 		help {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(command -> command.name()).collect(Collectors.joining(" "))+"```");
+				BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(command -> command.name()).collect(Collectors.joining(" "))+"```"+
+						"EEWを通知したいチャンネルでregisterコマンドを使用してチャンネルを設定出来ます。");
 			}
 		};
 
