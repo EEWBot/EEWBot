@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot;
 
-import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
@@ -24,11 +23,7 @@ public class BotUtils {
 	public static Channel getChannel(final long serverId, final long channelId) {
 		final CopyOnWriteArrayList<Channel> channels = EEWBot.channels.get(serverId);
 		if (channels!=null)
-			for (final Iterator<Channel> it = channels.iterator(); it.hasNext();) {
-				final Channel c = it.next();
-				if (c.getId()==channelId)
-					return c;
-			}
+			return channels.stream().filter(c -> c.getId()==channelId).findFirst().orElse(null);
 		return null;
 	}
 
