@@ -170,8 +170,7 @@ public class DiscordEventListener {
 		help {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(command -> command.name()).collect(Collectors.joining(" "))+"```"+
-						"EEWを通知したいチャンネルでregisterコマンドを使用してチャンネルを設定出来ます。");
+				BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(command -> command.name()).collect(Collectors.joining(" "))+"```"+"EEWを通知したいチャンネルでregisterコマンドを使用してチャンネルを設定出来ます。");
 			}
 		};
 
