@@ -30,12 +30,12 @@ public class EEWDispatcher implements Runnable {
 		try {
 			final EEW res = get(url);
 			if (res!=null&&res.isEEW()) {
-				final Integer latestReport = this.prev.get(res.getReportId());
+				final Integer latestReport = this.prev.get(Long.valueOf(res.getReportId()));
 				if (latestReport==null||latestReport<res.getReportNum()) {
 					if (res.isFinal())
-						this.prev.remove(res.getReportId());
+						this.prev.remove(Long.valueOf(res.getReportId()));
 					else
-						this.prev.put(res.getReportId(), res.getReportNum());
+						this.prev.put(Long.valueOf(res.getReportId()), res.getReportNum());
 					EEWBot.instance.getClient().getDispatcher().dispatch(new EEWEvent(EEWBot.instance.getClient(), res));
 				}
 			}
