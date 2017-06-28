@@ -1,9 +1,6 @@
 package net.teamfruit.eewbot;
 
-import java.io.InputStreamReader;
 import java.lang.reflect.Field;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -13,6 +10,7 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher.EEW;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelDeleteEvent;
@@ -89,7 +87,7 @@ public class DiscordEventListener {
 					BotUtils.reply(e, "ConfigException");
 					EEWBot.LOGGER.error("Save error", ex);
 				}
-				BotUtils.reply(e, "チャンネルを設定しました");
+				BotUtils.reply(e, ":ok:");
 			}
 		},
 		unregister {
@@ -140,20 +138,26 @@ public class DiscordEventListener {
 				if (args.length<=0) {
 					BotUtils.reply(e, "引数が不足しています");
 				} else {
-					EEW eew = null;
-					try {
-						if (args[0].startsWith("http://"))
-							try (InputStreamReader isr = new InputStreamReader(new URL(args[0]).openStream(), StandardCharsets.UTF_8)) {
-								eew = EEWBot.GSON.fromJson(isr, EEW.class);
-							}
-						else
-							eew = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
-						BotUtils.reply(e, "**これは訓練です！**", EEWEventListener.buildEmbed(eew));
-					} catch (final Exception ex) {
-						EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
-						BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");
-					}
+					EEWBot.executor.execute(() -> {
+						EEW eew = null;
+						try {
+							if (args[0].startsWith("http://"))
+								eew = EEWDispatcher.get(args[0]);
+							else
+								eew = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
+							BotUtils.reply(e, "**これは訓練です！**", EEWEventListener.buildEmbed(eew));
+						} catch (final Exception ex) {
+							EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
+							BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");
+						}
+					});
 				}
+			}
+		},
+		getmonitor {
+			@Override
+			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+
 			}
 		},
 		help {
