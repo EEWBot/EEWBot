@@ -30,12 +30,12 @@ public class EEWDispatcher implements Runnable {
 		try {
 			final EEW res = get(url);
 			if (res!=null&&res.isEEW()) {
-				final Integer latestReport = this.prev.get(Long.valueOf(res.getReportId()));
+				final Integer latestReport = this.prev.get(res.getReportId());
 				if (latestReport==null||latestReport<res.getReportNum()) {
 					if (res.isFinal())
-						this.prev.remove(Long.valueOf(res.getReportId()));
+						this.prev.remove(res.getReportId());
 					else
-						this.prev.put(Long.valueOf(res.getReportId()), res.getReportNum());
+						this.prev.put(res.getReportId(), res.getReportNum());
 					EEWBot.instance.getClient().getDispatcher().dispatch(new EEWEvent(EEWBot.instance.getClient(), res));
 				}
 			}
@@ -153,25 +153,25 @@ public class EEWDispatcher implements Runnable {
 		}
 
 		public float getLat() {
-			if (StringUtils.isEmpty(this.depth))
+			if (StringUtils.isEmpty(this.latitude))
 				return -1;
 			return Float.parseFloat(this.latitude);
 		}
 
 		public float getLon() {
-			if (StringUtils.isEmpty(this.depth))
+			if (StringUtils.isEmpty(this.longitude))
 				return -1;
 			return Float.parseFloat(this.longitude);
 		}
 
 		public float getMagnitude() {
-			if (StringUtils.isEmpty(this.depth))
+			if (StringUtils.isEmpty(this.magunitude))
 				return -1;
 			return Float.parseFloat(this.magunitude);
 		}
 
 		public Date getOriginTime() {
-			if (StringUtils.isEmpty(this.depth))
+			if (StringUtils.isEmpty(this.origin_time))
 				return null;
 			try {
 				return EEWDispatcher.FORMAT.parse(this.origin_time);
@@ -182,7 +182,7 @@ public class EEWDispatcher implements Runnable {
 
 		@Deprecated
 		public int getRegionCode() {
-			if (StringUtils.isEmpty(this.depth))
+			if (StringUtils.isEmpty(this.region_code))
 				return -1;
 			return Integer.parseInt(this.region_code);
 		}
@@ -192,19 +192,19 @@ public class EEWDispatcher implements Runnable {
 		}
 
 		public long getReportId() {
-			if (StringUtils.isEmpty(this.depth))
+			if (StringUtils.isEmpty(this.report_id))
 				return -1;
 			return Long.parseLong(this.report_id);
 		}
 
 		public int getReportNum() {
-			if (StringUtils.isEmpty(this.depth))
+			if (StringUtils.isEmpty(this.report_num))
 				return -1;
 			return Integer.parseInt(this.report_num);
 		}
 
 		public Date getReportTime() {
-			if (StringUtils.isEmpty(this.depth))
+			if (StringUtils.isEmpty(this.report_time))
 				return null;
 			try {
 				return FORMAT.parse(this.report_time);
@@ -218,38 +218,13 @@ public class EEWDispatcher implements Runnable {
 		}
 
 		public Date getRequestTime() {
-			if (StringUtils.isEmpty(this.depth))
+			if (StringUtils.isEmpty(this.request_time))
 				return null;
 			try {
 				return EEWDispatcher.FORMAT.parse(this.request_time);
 			} catch (final ParseException e) {
 				return null;
 			}
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime*result+((this.report_id==null) ? 0 : this.report_id.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(final Object obj) {
-			if (this==obj)
-				return true;
-			if (obj==null)
-				return false;
-			if (!(obj instanceof EEW))
-				return false;
-			final EEW other = (EEW) obj;
-			if (this.report_id==null) {
-				if (other.report_id!=null)
-					return false;
-			} else if (!this.report_id.equals(other.report_id))
-				return false;
-			return true;
 		}
 
 		@Override
