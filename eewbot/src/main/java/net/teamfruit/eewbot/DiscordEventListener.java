@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.EnumUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher.EEW;
@@ -151,7 +150,7 @@ public class DiscordEventListener {
 								eew = EEWBot.GSON.fromJson(isr, EEW.class);
 							}
 						else
-							eew = EEWBot.GSON.fromJson(StringUtils.remove(e.getMessage().getContent(), "!eew test "), EEW.class);
+							eew = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
 						BotUtils.reply(e, "**これは訓練です！**", EEWEventListener.buildEmbed(eew));
 					} catch (final Exception ex) {
 						EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
