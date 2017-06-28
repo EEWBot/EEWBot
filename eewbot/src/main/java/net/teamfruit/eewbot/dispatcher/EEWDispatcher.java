@@ -7,8 +7,8 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
@@ -21,7 +21,7 @@ public class EEWDispatcher implements Runnable {
 	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/webservice/hypo/eew/";
 	public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
 
-	private final Set<EEW> prev = new HashSet<>();
+	private final Map<Long, Integer> prev = new HashMap<>();
 
 	@Override
 	public void run() {
@@ -29,15 +29,16 @@ public class EEWDispatcher implements Runnable {
 		final String url = REMOTE+FORMAT.format(date)+".json";
 		try {
 			final EEW res = get(url);
-			if (res!=null)
-				if (res.isEEW()) {
-					if (!this.prev.contains(res)) {
-						this.prev.add(res);
-						final EEWEvent event = new EEWEvent(EEWBot.instance.getClient(), res);
-						EEWBot.instance.getClient().getDispatcher().dispatch(event);
-					}
-				} else
-					this.prev.clear();
+			if (res!=null&&res.isEEW()) {
+				final Integer latestReport = this.prev.get(res.getReportId());
+				if (latestReport==null||latestReport<res.getReportNum()) {
+					if (res.isFinal())
+						this.prev.remove(res.getReportId());
+					else
+						this.prev.put(res.getReportId(), res.getReportNum());
+					EEWBot.instance.getClient().getDispatcher().dispatch(new EEWEvent(EEWBot.instance.getClient(), res));
+				}
+			}
 		} catch (final IOException e) {
 			EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
 		}
