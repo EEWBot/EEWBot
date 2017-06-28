@@ -1,14 +1,12 @@
 package net.teamfruit.eewbot;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -39,7 +37,6 @@ public class EEWBot {
 
 	public static final Logger LOGGER = new Discord4JLogger(EEWBot.class.getName());
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-	public static final File JARPATH = new File(".").getAbsoluteFile();
 	public static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, new ThreadFactory() {
 		@Override
 		public Thread newThread(final Runnable r) {
@@ -82,31 +79,31 @@ public class EEWBot {
 
 	public static void loadConfigs() throws ConfigException {
 		try {
-			final File cfgFile = new File(JARPATH, "config.json");
-			if (!cfgFile.exists()) {
-				try (Writer w = new BufferedWriter(new FileWriter(cfgFile))) {
+			final Path cfgPath = Paths.get("config.json");
+			if (!cfgPath.toFile().exists()) {
+				try (Writer w = Files.newBufferedWriter(cfgPath)) {
 					GSON.toJson(config, w);
 				}
 			} else {
-				try (Reader r = new BufferedReader(new FileReader(cfgFile))) {
+				try (Reader r = Files.newBufferedReader(cfgPath)) {
 					final Config c = GSON.fromJson(r, Config.class);
 					if (c!=null)
 						config = c;
 				}
-				try (Writer w = new BufferedWriter(new FileWriter(cfgFile))) {
+				try (Writer w = Files.newBufferedWriter(cfgPath)) {
 					GSON.toJson(new Config().set(config), w);
 				}
 			}
 
-			final File channelFile = new File(JARPATH, "channels.json");
+			final Path channelPath = Paths.get("channels.json");
 			final Type type = new TypeToken<Map<Long, Collection<Channel>>>() {
 			}.getType();
-			if (!channelFile.exists()) {
-				try (Writer w = new BufferedWriter(new FileWriter(channelFile))) {
+			if (!channelPath.toFile().exists()) {
+				try (Writer w = Files.newBufferedWriter(channelPath)) {
 					GSON.toJson(new ConcurrentHashMap<Long, CopyOnWriteArrayList<Channel>>(), w);
 				}
 			} else {
-				try (Reader r = new BufferedReader(new FileReader(channelFile))) {
+				try (Reader r = Files.newBufferedReader(channelPath)) {
 					final Map<Long, Collection<Channel>> map = GSON.fromJson(r, type);
 					if (map!=null)
 						for (final Entry<Long, Collection<Channel>> entry : map.entrySet())
@@ -120,12 +117,12 @@ public class EEWBot {
 
 	public static void saveConfigs() throws ConfigException {
 		try {
-			final File cfgFile = new File(JARPATH, "config.json");
-			try (Writer w = new BufferedWriter(new FileWriter(cfgFile))) {
+			final Path cfgPath = Paths.get("config.json");
+			try (Writer w = Files.newBufferedWriter(cfgPath)) {
 				GSON.toJson(config, w);
 			}
-			final File channelFile = new File(JARPATH, "channels.json");
-			try (Writer w = new BufferedWriter(new FileWriter(channelFile))) {
+			final Path channelPath = Paths.get("channels.json");
+			try (Writer w = Files.newBufferedWriter(channelPath)) {
 				GSON.toJson(channels, w);
 			}
 		} catch (JsonIOException|IOException e) {
