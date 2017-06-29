@@ -109,9 +109,11 @@ public class DiscordEventListener {
 					BotUtils.reply(e, "このチャンネルには設定がありません");
 			}
 		},
-		reload {
+		restart {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				EEWBot.instance.getExecutor().shutdown();
+				EEWBot.instance.getClient().logout();
 				try {
 					EEWBot.instance = new EEWBot();
 					System.gc();
