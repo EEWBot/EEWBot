@@ -24,8 +24,13 @@ import net.teamfruit.eewbot.EEWBot;
 
 public class MonitorDispatcher implements Runnable {
 
+	public static final MonitorDispatcher INSTANCE = new MonitorDispatcher();
+
 	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/data/map_img/";
 	public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
+
+	private MonitorDispatcher() {
+	}
 
 	@Override
 	public void run() {
@@ -37,7 +42,7 @@ public class MonitorDispatcher implements Runnable {
 	}
 
 	public static InputStream get() throws IOException {
-		final Date date = new Date(System.currentTimeMillis()+EEWBot.instance.getNtp().getOffset()-TimeUnit.SECONDS.toMillis(1));
+		final Date date = new Date(System.currentTimeMillis()+NTPDispatcher.INSTANCE.getOffset()-TimeUnit.SECONDS.toMillis(1));
 		final List<BufferedImage> images = new ArrayList<>();
 
 		final String dateStr = FORMAT.format(date);

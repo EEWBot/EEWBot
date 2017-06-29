@@ -22,7 +22,7 @@ public class EEWEventListener {
 			final Entry<Long, CopyOnWriteArrayList<Channel>> entry = it1.next();
 			for (final Iterator<Channel> it2 = entry.getValue().iterator(); it2.hasNext();) {
 				final Channel channel = it2.next();
-				if ((eew.isAlert()&&channel.eewAlert)||(!eew.isAlert()&&channel.eewPrediction)) {
+				if (channel.all||(eew.isAlert()&&channel.eewAlert)||(!eew.isAlert()&&channel.eewPrediction)) {
 					final IGuild id = EEWBot.instance.getClient().getGuildByID(entry.getKey());
 					final IChannel c = id.getChannelByID(channel.getId());
 					c.sendMessage(buildEmbed(eew));

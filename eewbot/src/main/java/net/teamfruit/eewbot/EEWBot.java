@@ -47,7 +47,6 @@ public class EEWBot {
 	});
 	private Config config = new Config();
 	private final Map<Long, CopyOnWriteArrayList<Channel>> channels = new ConcurrentHashMap<>();
-	private NTPDispatcher ntp;
 	private IDiscordClient client;
 
 	public EEWBot() throws Exception {
@@ -64,8 +63,8 @@ public class EEWBot {
 		dispatcher.registerListener(new DiscordEventListener());
 		dispatcher.registerListener(new EEWEventListener());
 
-		this.executor.scheduleAtFixedRate(this.ntp = new NTPDispatcher(), 0, this.config.getTimeFixDelay()>=3600 ? this.config.getTimeFixDelay() : 3600, TimeUnit.SECONDS);
-		this.executor.scheduleAtFixedRate(new EEWDispatcher(), 10, this.config.getKyoshinDelay()>=1 ? this.config.getKyoshinDelay() : 1, TimeUnit.SECONDS);
+		this.executor.scheduleAtFixedRate(NTPDispatcher.INSTANCE, 0, this.config.getTimeFixDelay()>=3600 ? this.config.getTimeFixDelay() : 3600, TimeUnit.SECONDS);
+		this.executor.scheduleAtFixedRate(EEWDispatcher.INSTANCE, 10, this.config.getKyoshinDelay()>=1 ? this.config.getKyoshinDelay() : 1, TimeUnit.SECONDS);
 		EEWBot.LOGGER.info("Hello");
 	}
 
@@ -79,10 +78,6 @@ public class EEWBot {
 
 	public Map<Long, CopyOnWriteArrayList<Channel>> getChannels() {
 		return this.channels;
-	}
-
-	public NTPDispatcher getNtp() {
-		return this.ntp;
 	}
 
 	public IDiscordClient getClient() {

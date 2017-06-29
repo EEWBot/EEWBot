@@ -90,6 +90,11 @@ public class DiscordEventListener {
 				}
 				BotUtils.reply(e, ":ok:");
 			}
+
+			@Override
+			public String getHelp() {
+				return super.getHelp();
+			}
 		},
 		unregister {
 			@Override
@@ -112,12 +117,12 @@ public class DiscordEventListener {
 		restart {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				BotUtils.reply(e, ":repeat:");
 				EEWBot.instance.getExecutor().shutdown();
 				EEWBot.instance.getClient().logout();
 				try {
 					EEWBot.instance = new EEWBot();
 					System.gc();
-					BotUtils.reply(e, ":ok:");
 				} catch (final Throwable t) {
 					EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(t));
 					System.exit(1);
@@ -178,6 +183,10 @@ public class DiscordEventListener {
 		};
 
 		public abstract void onCommand(MessageReceivedEvent e, String[] args);
+
+		public String getHelp() {
+			return null;
+		}
 	}
 
 }

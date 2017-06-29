@@ -18,14 +18,19 @@ import net.teamfruit.eewbot.EEWBot;
 
 public class EEWDispatcher implements Runnable {
 
+	public static final EEWDispatcher INSTANCE = new EEWDispatcher();
+
 	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/webservice/hypo/eew/";
 	public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
 
 	private final Map<Long, Integer> prev = new HashMap<>();
 
+	private EEWDispatcher() {
+	}
+
 	@Override
 	public void run() {
-		final Date date = new Date(System.currentTimeMillis()+EEWBot.instance.getNtp().getOffset()-TimeUnit.SECONDS.toMillis(1));
+		final Date date = new Date(System.currentTimeMillis()+NTPDispatcher.INSTANCE.getOffset()-TimeUnit.SECONDS.toMillis(1));
 		final String url = REMOTE+FORMAT.format(date)+".json";
 		try {
 			final EEW res = get(url);

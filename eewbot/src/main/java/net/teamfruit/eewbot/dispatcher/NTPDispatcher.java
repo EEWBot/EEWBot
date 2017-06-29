@@ -9,8 +9,12 @@ import org.apache.commons.net.ntp.TimeInfo;
 import net.teamfruit.eewbot.EEWBot;
 
 public class NTPDispatcher implements Runnable {
+	public static final NTPDispatcher INSTANCE = new NTPDispatcher();
 
 	private volatile long offset;
+
+	private NTPDispatcher() {
+	}
 
 	public long getOffset() {
 		return this.offset;
@@ -18,19 +22,28 @@ public class NTPDispatcher implements Runnable {
 
 	@Override
 	public void run() {
-		final NTPUDPClient client = new NTPUDPClient();
-		client.setDefaultTimeout(10000);
 		try {
-			client.open();
-			final InetAddress hostAddr = InetAddress.getByName(EEWBot.instance.getConfig().getNptServer());
-			final TimeInfo info = client.getTime(hostAddr);
+			final TimeInfo info = get();
 			info.computeDetails();
 			EEWBot.instance.getClient().getDispatcher().dispatch(new TimeEvent(EEWBot.instance.getClient(), info));
-			final Long offsetValue = info.getOffset();
-			final Long delayValue = info.getDelay();
-			this.offset = (offsetValue!=null ? offsetValue.longValue() : 0)+(delayValue!=null ? delayValue.longValue() : 0);
+			setOffset(info);
 		} catch (final IOException e) {
 			EEWBot.LOGGER.error("NTPClient error", e);
 		}
+	}
+
+	public static TimeInfo get() throws IOException {
+		final NTPUDPClient client = new NTPUDPClient();
+		client.setDefaultTimeout(10000);
+		client.open();
+		final InetAddress hostAddr = InetAddress.getByName(EEWBot.instance.getConfig().getNptServer());
+		return client.getTime(hostAddr);
+	}
+
+	public void setOffset(final TimeInfo info) {
+		final Long offsetValue = info.getOffset();
+		final Long delayValue = info.getDelay();
+		this.offset = (offsetValue!=null ? offsetValue.longValue() : 0)+(delayValue!=null ? delayValue.longValue() : 0);
+
 	}
 }

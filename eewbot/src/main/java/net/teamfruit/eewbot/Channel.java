@@ -2,6 +2,7 @@ package net.teamfruit.eewbot;
 
 public class Channel {
 	private final long id;
+	public boolean all;
 	public boolean eewAlert;
 	public boolean eewPrediction;
 
