@@ -1,18 +1,13 @@
 package net.teamfruit.eewbot;
 
 public class Config {
-	private String token;
-	private int kyoshinDelay;
-	private int timeFixDelay;
-	private String nptServer;
-	private boolean debug;
+	private String token = "";
+	private int kyoshinDelay = 1;
+	private int timeFixDelay = 86400;
+	private String nptServer = "time.google.com";
+	private boolean debug = false;
 
 	public Config() {
-		this.token = "";
-		this.kyoshinDelay = 2;
-		this.timeFixDelay = 86400;
-		this.nptServer = "time.google.com";
-		this.debug = false;
 	}
 
 	public Config(final Config src) {

@@ -21,7 +21,8 @@ public class EEWDispatcher implements Runnable {
 	public static final EEWDispatcher INSTANCE = new EEWDispatcher();
 
 	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/webservice/hypo/eew/";
-	public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
+	public static final SimpleDateFormat FORMAT1 = new SimpleDateFormat("yyyyMMddHHmmss");
+	public static final SimpleDateFormat FORMAT2 = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
 	private final Map<Long, Integer> prev = new HashMap<>();
 
@@ -31,14 +32,15 @@ public class EEWDispatcher implements Runnable {
 	@Override
 	public void run() {
 		final Date date = new Date(System.currentTimeMillis()+NTPDispatcher.INSTANCE.getOffset()-TimeUnit.SECONDS.toMillis(1));
-		final String url = REMOTE+FORMAT.format(date)+".json";
+		final String url = REMOTE+FORMAT1.format(date)+".json";
 		try {
 			final EEW res = get(url);
 			if (res!=null&&res.isEEW()) {
 				final Integer latestReport = this.prev.get(res.getReportId());
-				if (latestReport==null||latestReport<res.getReportNum())
+				if (latestReport==null||latestReport<res.getReportNum()) {
 					this.prev.put(res.getReportId(), res.getReportNum());
-				EEWBot.instance.getClient().getDispatcher().dispatch(new EEWEvent(EEWBot.instance.getClient(), res));
+					EEWBot.instance.getClient().getDispatcher().dispatch(new EEWEvent(EEWBot.instance.getClient(), res));
+				}
 			} else
 				this.prev.clear();
 		} catch (final IOException e) {
@@ -56,8 +58,6 @@ public class EEWDispatcher implements Runnable {
 	}
 
 	public static class EEW {
-		private static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-
 		private String alertflg;
 		private String calcintensity;
 		private String depth;
@@ -176,7 +176,7 @@ public class EEWDispatcher implements Runnable {
 			if (StringUtils.isEmpty(this.origin_time))
 				return null;
 			try {
-				return EEWDispatcher.FORMAT.parse(this.origin_time);
+				return EEWDispatcher.FORMAT1.parse(this.origin_time);
 			} catch (final ParseException e) {
 				return null;
 			}
@@ -209,7 +209,7 @@ public class EEWDispatcher implements Runnable {
 			if (StringUtils.isEmpty(this.report_time))
 				return null;
 			try {
-				return FORMAT.parse(this.report_time);
+				return FORMAT2.parse(this.report_time);
 			} catch (final ParseException e) {
 				return null;
 			}
@@ -223,7 +223,7 @@ public class EEWDispatcher implements Runnable {
 			if (StringUtils.isEmpty(this.request_time))
 				return null;
 			try {
-				return EEWDispatcher.FORMAT.parse(this.request_time);
+				return EEWDispatcher.FORMAT1.parse(this.request_time);
 			} catch (final ParseException e) {
 				return null;
 			}

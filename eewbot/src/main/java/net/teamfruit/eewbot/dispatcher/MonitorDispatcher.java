@@ -2,12 +2,10 @@ package net.teamfruit.eewbot.dispatcher;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -19,6 +17,16 @@ import javax.imageio.ImageIO;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.net.ntp.NtpV3Packet;
+import org.apache.commons.net.ntp.TimeInfo;
+import org.apache.commons.net.ntp.TimeStamp;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
 
 import net.teamfruit.eewbot.EEWBot;
 
@@ -50,11 +58,31 @@ public class MonitorDispatcher implements Runnable {
 		Stream.of(REMOTE+"EstShindoImg/eew/"+dayStr+"/"+dateStr+".eew.gif",
 				REMOTE+"RealTimeImg/jma_s/"+dayStr+"/"+dateStr+".jma_s.gif",
 				REMOTE+"PSWaveImg/eew/"+dayStr+"/"+dateStr+".eew.gif").forEach(str -> {
+					final RequestConfig config = RequestConfig.custom()
+							.setConnectTimeout(10000)
+							.setSocketTimeout(10000)
+							.build();
+					final HttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+					final HttpGet get = new HttpGet(str);
 					try {
-						final URL url = new URL(str);
-						try (InputStream is = new BufferedInputStream(url.openStream())) {
-							images.add(ImageIO.read(is));
-						}
+						final HttpResponse response = client.execute(get);
+						final StatusLine statusLine = response.getStatusLine();
+						if (statusLine.getStatusCode()==HttpStatus.SC_OK)
+							images.add(ImageIO.read(response.getEntity().getContent()));
+						else if (statusLine.getStatusCode()==HttpStatus.SC_NOT_FOUND)
+							EEWBot.instance.getExecutor().execute(() -> {
+								try {
+									final TimeInfo info = NTPDispatcher.get();
+									info.computeDetails();
+									final NtpV3Packet message = info.getMessage();
+									final TimeStamp origNtpTime = message.getOriginateTimeStamp();
+									final TimeStamp refNtpTime = message.getReferenceTimeStamp();
+									final long offset = NTPDispatcher.getOffset(info);
+									NTPDispatcher.INSTANCE.setOffset(offset);
+								} catch (final IOException ex) {
+									EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(ex));
+								}
+							});
 					} catch (final IOException e) {
 						EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
 					}
@@ -69,7 +97,8 @@ public class MonitorDispatcher implements Runnable {
 		final Graphics2D g = base.createGraphics();
 		g.drawImage(ImageIO.read(MonitorDispatcher.class.getResource("/nied_jma_s_w_scale.gif")), 305, 99, null);
 		g.dispose();
-		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+		try (
+				ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			ImageIO.write(base, "png", baos);
 			return new ByteArrayInputStream(baos.toByteArray());
 		}

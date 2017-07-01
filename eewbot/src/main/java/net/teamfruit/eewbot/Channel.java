@@ -2,9 +2,8 @@ package net.teamfruit.eewbot;
 
 public class Channel {
 	private final long id;
-	public boolean all;
-	public boolean eewAlert;
-	public boolean eewPrediction;
+	public boolean eewAlert = true;
+	public boolean eewPrediction = false;
 
 	public Channel(final long id) {
 		this.id = id;

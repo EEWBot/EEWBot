@@ -1,6 +1,8 @@
 package net.teamfruit.eewbot;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -9,10 +11,14 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.net.ntp.NtpV3Packet;
+import org.apache.commons.net.ntp.TimeInfo;
+import org.apache.commons.net.ntp.TimeStamp;
 
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher.EEW;
 import net.teamfruit.eewbot.dispatcher.MonitorDispatcher;
+import net.teamfruit.eewbot.dispatcher.NTPDispatcher;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelDeleteEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -114,18 +120,15 @@ public class DiscordEventListener {
 					BotUtils.reply(e, "このチャンネルには設定がありません");
 			}
 		},
-		restart {
+		reload {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				BotUtils.reply(e, ":repeat:");
-				EEWBot.instance.getExecutor().shutdown();
-				EEWBot.instance.getClient().logout();
 				try {
-					EEWBot.instance = new EEWBot();
-					System.gc();
-				} catch (final Throwable t) {
-					EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(t));
-					System.exit(1);
+					EEWBot.instance.loadConfigs();
+					BotUtils.reply(e, ":ok:");
+				} catch (final ConfigException ex) {
+					EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(ex));
+					BotUtils.reply(e, ":warning: エラーが発生しました");
 				}
 			}
 		},
@@ -163,7 +166,7 @@ public class DiscordEventListener {
 				}
 			}
 		},
-		getmonitor {
+		monitor {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				EEWBot.instance.getExecutor().execute(() -> {
@@ -171,6 +174,31 @@ public class DiscordEventListener {
 						e.getChannel().sendFile("", MonitorDispatcher.get(), "kyoshinmonitor.png");
 					} catch (final Exception ex) {
 						EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(ex));
+						BotUtils.reply(e, ":warning: エラーが発生しました");
+					}
+				});
+			}
+		},
+		timefix {
+			@Override
+			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				EEWBot.instance.getExecutor().execute(() -> {
+					try {
+						final StringBuilder sb = new StringBuilder();
+						final TimeInfo info = NTPDispatcher.get();
+						info.computeDetails();
+						final NtpV3Packet message = info.getMessage();
+						final TimeStamp origNtpTime = message.getOriginateTimeStamp();
+						sb.append("コンピューターの時刻: `").append(origNtpTime.toDateString()).append("`\n");
+						final TimeStamp refNtpTime = message.getReferenceTimeStamp();
+						sb.append("サーバーからの時刻: `").append(refNtpTime.toDateString()).append("`\n");
+						final long offset = NTPDispatcher.getOffset(info);
+						sb.append("オフセット: `").append(offset).append("ms`");
+						BotUtils.reply(e, sb.toString());
+						NTPDispatcher.INSTANCE.setOffset(offset);
+					} catch (final IOException ex) {
+						EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(ex));
+						BotUtils.reply(e, ":warning: エラーが発生しました");
 					}
 				});
 			}
@@ -181,6 +209,8 @@ public class DiscordEventListener {
 				BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(command -> command.name()).collect(Collectors.joining(" "))+"```"+"EEWを通知したいチャンネルでregisterコマンドを使用してチャンネルを設定出来ます。");
 			}
 		};
+
+		public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
 
 		public abstract void onCommand(MessageReceivedEvent e, String[] args);
 
