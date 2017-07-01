@@ -69,20 +69,15 @@ public class MonitorDispatcher implements Runnable {
 						final StatusLine statusLine = response.getStatusLine();
 						if (statusLine.getStatusCode()==HttpStatus.SC_OK)
 							images.add(ImageIO.read(response.getEntity().getContent()));
-						else if (statusLine.getStatusCode()==HttpStatus.SC_NOT_FOUND)
-							EEWBot.instance.getExecutor().execute(() -> {
-								try {
-									final TimeInfo info = NTPDispatcher.get();
-									info.computeDetails();
-									final NtpV3Packet message = info.getMessage();
-									final TimeStamp origNtpTime = message.getOriginateTimeStamp();
-									final TimeStamp refNtpTime = message.getReferenceTimeStamp();
-									final long offset = NTPDispatcher.getOffset(info);
-									NTPDispatcher.INSTANCE.setOffset(offset);
-								} catch (final IOException ex) {
-									EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(ex));
-								}
-							});
+						else if (statusLine.getStatusCode()==HttpStatus.SC_NOT_FOUND) {
+							final TimeInfo info = NTPDispatcher.get();
+							info.computeDetails();
+							final NtpV3Packet message = info.getMessage();
+							final TimeStamp origNtpTime = message.getOriginateTimeStamp();
+							final TimeStamp refNtpTime = message.getReferenceTimeStamp();
+							final long offset = NTPDispatcher.getOffset(info);
+							NTPDispatcher.INSTANCE.setOffset(offset);
+						}
 					} catch (final IOException e) {
 						EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
 					}
