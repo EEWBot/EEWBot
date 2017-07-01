@@ -20,13 +20,17 @@ public class NTPDispatcher implements Runnable {
 		return this.offset;
 	}
 
+	public void setOffset(final long millis) {
+		this.offset = millis;
+	}
+
 	@Override
 	public void run() {
 		try {
 			final TimeInfo info = get();
 			info.computeDetails();
 			EEWBot.instance.getClient().getDispatcher().dispatch(new TimeEvent(EEWBot.instance.getClient(), info));
-			setOffset(info);
+			this.offset = getOffset(info);
 		} catch (final IOException e) {
 			EEWBot.LOGGER.error("NTPClient error", e);
 		}
@@ -40,10 +44,10 @@ public class NTPDispatcher implements Runnable {
 		return client.getTime(hostAddr);
 	}
 
-	public void setOffset(final TimeInfo info) {
+	public static long getOffset(final TimeInfo info) {
 		final Long offsetValue = info.getOffset();
 		final Long delayValue = info.getDelay();
-		this.offset = (offsetValue!=null ? offsetValue.longValue() : 0)+(delayValue!=null ? delayValue.longValue() : 0);
+		return (offsetValue!=null ? offsetValue.longValue() : 0)+(delayValue!=null ? delayValue.longValue() : 0);
 
 	}
 }
