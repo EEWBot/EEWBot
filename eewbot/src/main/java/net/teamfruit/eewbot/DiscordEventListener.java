@@ -121,7 +121,9 @@ public class DiscordEventListener {
 
 			@Override
 			public String getHelp() {
-				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
+				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields())
+						.filter(field -> !Modifier.isStatic(field.getModifiers()))
+						.map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
 			}
 		},
 		remove {
@@ -158,7 +160,9 @@ public class DiscordEventListener {
 
 			@Override
 			public String getHelp() {
-				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
+				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields())
+						.filter(field -> !Modifier.isStatic(field.getModifiers()))
+						.map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
 			}
 		},
 		unregister {
@@ -282,7 +286,8 @@ public class DiscordEventListener {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				if (args.length<=0)
-					BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(command -> command.name()).collect(Collectors.joining(" "))+"```"+"EEWを通知したいチャンネルでregisterコマンドを使用してチャンネルを設定出来ます。");
+					BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(command -> command.name()).collect(Collectors.joining(" "))
+							+"```"+"EEWを通知したいチャンネルで`register`コマンドを使用してチャンネルを設定出来ます。");
 				else {
 					final Command command = EnumUtils.getEnum(Command.class, args[0]);
 					if (command!=null) {
