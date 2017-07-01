@@ -17,9 +17,7 @@ import javax.imageio.ImageIO;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.net.ntp.NtpV3Packet;
 import org.apache.commons.net.ntp.TimeInfo;
-import org.apache.commons.net.ntp.TimeStamp;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -72,9 +70,6 @@ public class MonitorDispatcher implements Runnable {
 						else if (statusLine.getStatusCode()==HttpStatus.SC_NOT_FOUND) {
 							final TimeInfo info = NTPDispatcher.get();
 							info.computeDetails();
-							final NtpV3Packet message = info.getMessage();
-							final TimeStamp origNtpTime = message.getOriginateTimeStamp();
-							final TimeStamp refNtpTime = message.getReferenceTimeStamp();
 							final long offset = NTPDispatcher.getOffset(info);
 							NTPDispatcher.INSTANCE.setOffset(offset);
 						}
