@@ -87,8 +87,7 @@ public class MonitorDispatcher implements Runnable {
 		final Graphics2D g = base.createGraphics();
 		g.drawImage(ImageIO.read(MonitorDispatcher.class.getResource("/nied_jma_s_w_scale.gif")), 305, 99, null);
 		g.dispose();
-		try (
-				ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			ImageIO.write(base, "png", baos);
 			return new ByteArrayInputStream(baos.toByteArray());
 		}

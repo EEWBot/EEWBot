@@ -2,13 +2,13 @@ package net.teamfruit.eewbot;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.net.ntp.NtpV3Packet;
@@ -64,42 +64,27 @@ public class DiscordEventListener {
 				Channel channel = BotUtils.getChannel(serverid, channelid);
 				if (channels==null)
 					channels = new CopyOnWriteArrayList<>();
-				if (channel==null)
+				if (channel==null) {
 					channel = new Channel(channelid);
-
-				if (args.length<=0)
-					channel.eewAlert = true;
-				else if (args.length%2!=0)
-					BotUtils.reply(e, "引数が不足しています");
-				else {
-					final Field[] fields = Channel.class.getFields();
-					for (int i = 0; i<args.length; i += 2) {
-						for (final Field line : fields) {
-							if (line.getName().equalsIgnoreCase(args[i])||args[i].equals("*"))
-								try {
-									line.setBoolean(channel, BooleanUtils.toBoolean(args[i+1]));
-								} catch (IllegalArgumentException|IllegalAccessException ex) {
-									BotUtils.reply(e, "エラが発生しました");
-									EEWBot.LOGGER.error("Reflection error", ex);
-								}
-						}
+					channels.add(channel);
+					EEWBot.instance.getChannels().put(serverid, channels);
+					try {
+						EEWBot.instance.saveConfigs();
+					} catch (final ConfigException ex) {
+						BotUtils.reply(e, "ConfigException");
+						EEWBot.LOGGER.error("Save error", ex);
 					}
-				}
-
-				channels.add(channel);
-				EEWBot.instance.getChannels().put(serverid, channels);
-				try {
-					EEWBot.instance.saveConfigs();
-				} catch (final ConfigException ex) {
-					BotUtils.reply(e, "ConfigException");
-					EEWBot.LOGGER.error("Save error", ex);
-				}
-				BotUtils.reply(e, ":ok:");
+					BotUtils.reply(e, "チャンネルを設定しました！初期設定 :arrow_down_small: \n"+channel);
+				} else
+					BotUtils.reply(e, "このチャンネルには既に設定が存在します！");
+				BotUtils.reply(e, getHelp());
 			}
 
 			@Override
 			public String getHelp() {
-				return super.getHelp();
+				return "コマンドを実行したチャンネルをBotのメッセージ送信先に設定します。\n"+
+						"初期状態では以下の設定になります。```"+Channel.DEFAULT+
+						"```送信するイベントを追加するには`add`, 消去するには`remove`, チャンネルの設定を消去するには`unregister`を使用してください。";
 			}
 		},
 		add {
@@ -109,20 +94,34 @@ public class DiscordEventListener {
 					BotUtils.reply(e, "引数が不足しています");
 				else {
 					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
-					final Field[] fields = Channel.class.getFields();
-					Arrays.stream(args).forEach(str -> {
-						Arrays.stream(Channel.class.getFields()).forEach(field -> {
-							if (field.getName().equalsIgnoreCase(str)||str.equals("*"))
-								try {
-									field.setBoolean(channel, true);
-								} catch (IllegalArgumentException|IllegalAccessException ex) {
-									BotUtils.reply(e, "エラが発生しました");
-									EEWBot.LOGGER.error("Reflection error", ex);
-								}
-
+					if (channel!=null) {
+						final Field[] fields = Channel.class.getFields();
+						Arrays.stream(args).forEach(str -> {
+							Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).forEach(field -> {
+								if (field.getName().equalsIgnoreCase(str)||str.equals("*"))
+									try {
+										field.setBoolean(channel, true);
+									} catch (IllegalArgumentException|IllegalAccessException ex) {
+										BotUtils.reply(e, "エラが発生しました");
+										EEWBot.LOGGER.error("Reflection error", ex);
+									}
+							});
 						});
-					});
+						try {
+							EEWBot.instance.saveConfigs();
+						} catch (final ConfigException ex) {
+							BotUtils.reply(e, "ConfigException");
+							EEWBot.LOGGER.error("Save error", ex);
+						}
+						BotUtils.reply(e, ":ok:");
+					} else
+						BotUtils.reply(e, "このチャンネルには設定が存在しません！");
 				}
+			}
+
+			@Override
+			public String getHelp() {
+				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
 			}
 		},
 		remove {
@@ -132,20 +131,34 @@ public class DiscordEventListener {
 					BotUtils.reply(e, "引数が不足しています");
 				else {
 					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
-					final Field[] fields = Channel.class.getFields();
-					Arrays.stream(args).forEach(str -> {
-						Arrays.stream(Channel.class.getFields()).forEach(field -> {
-							if (field.getName().equalsIgnoreCase(str)||str.equals("*"))
-								try {
-									field.setBoolean(channel, false);
-								} catch (IllegalArgumentException|IllegalAccessException ex) {
-									BotUtils.reply(e, "エラが発生しました");
-									EEWBot.LOGGER.error("Reflection error", ex);
-								}
-
+					if (channel!=null) {
+						final Field[] fields = Channel.class.getFields();
+						Arrays.stream(args).forEach(str -> {
+							Arrays.stream(Channel.class.getFields()).forEach(field -> {
+								if (field.getName().equalsIgnoreCase(str)||str.equals("*"))
+									try {
+										field.setBoolean(channel, false);
+									} catch (IllegalArgumentException|IllegalAccessException ex) {
+										BotUtils.reply(e, "エラが発生しました");
+										EEWBot.LOGGER.error("Reflection error", ex);
+									}
+							});
 						});
-					});
+						try {
+							EEWBot.instance.saveConfigs();
+						} catch (final ConfigException ex) {
+							BotUtils.reply(e, "ConfigException");
+							EEWBot.LOGGER.error("Save error", ex);
+						}
+						BotUtils.reply(e, ":ok:");
+					} else
+						BotUtils.reply(e, "このチャンネルには設定が存在しません！");
 				}
+			}
+
+			@Override
+			public String getHelp() {
+				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
 			}
 		},
 		unregister {
@@ -163,7 +176,23 @@ public class DiscordEventListener {
 						BotUtils.reply(e, "設定のセーブに失敗しました");
 					}
 				} else
-					BotUtils.reply(e, "このチャンネルには設定がありません");
+					BotUtils.reply(e, "このチャンネルには設定がありません！");
+			}
+
+			@Override
+			public String getHelp() {
+				return "コマンドを実行したチャンネルをBotのメッセージ送信先から除外します。\n"+
+						"送信するイベントを消去するには`remove`を使用してください。";
+			}
+		},
+		details {
+			@Override
+			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
+				if (channel!=null)
+					BotUtils.reply(e, channel.toString());
+				else
+					BotUtils.reply(e, "このチャンネルには設定がありません！");
 			}
 		},
 		reload {
@@ -252,7 +281,19 @@ public class DiscordEventListener {
 		help {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(command -> command.name()).collect(Collectors.joining(" "))+"```"+"EEWを通知したいチャンネルでregisterコマンドを使用してチャンネルを設定出来ます。");
+				if (args.length<=0)
+					BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(command -> command.name()).collect(Collectors.joining(" "))+"```"+"EEWを通知したいチャンネルでregisterコマンドを使用してチャンネルを設定出来ます。");
+				else {
+					final Command command = EnumUtils.getEnum(Command.class, args[0]);
+					if (command!=null) {
+						final String help = command.getHelp();
+						if (help!=null)
+							BotUtils.reply(e, help);
+						else
+							BotUtils.reply(e, "ヘルプが存在しません");
+					} else
+						BotUtils.reply(e, "コマンドが存在しません");
+				}
 			}
 		};
 
