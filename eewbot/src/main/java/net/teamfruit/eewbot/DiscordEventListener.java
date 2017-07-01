@@ -102,6 +102,52 @@ public class DiscordEventListener {
 				return super.getHelp();
 			}
 		},
+		add {
+			@Override
+			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				if (args.length<=0)
+					BotUtils.reply(e, "引数が不足しています");
+				else {
+					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
+					final Field[] fields = Channel.class.getFields();
+					Arrays.stream(args).forEach(str -> {
+						Arrays.stream(Channel.class.getFields()).forEach(field -> {
+							if (field.getName().equalsIgnoreCase(str)||str.equals("*"))
+								try {
+									field.setBoolean(channel, true);
+								} catch (IllegalArgumentException|IllegalAccessException ex) {
+									BotUtils.reply(e, "エラが発生しました");
+									EEWBot.LOGGER.error("Reflection error", ex);
+								}
+
+						});
+					});
+				}
+			}
+		},
+		remove {
+			@Override
+			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				if (args.length<=0)
+					BotUtils.reply(e, "引数が不足しています");
+				else {
+					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
+					final Field[] fields = Channel.class.getFields();
+					Arrays.stream(args).forEach(str -> {
+						Arrays.stream(Channel.class.getFields()).forEach(field -> {
+							if (field.getName().equalsIgnoreCase(str)||str.equals("*"))
+								try {
+									field.setBoolean(channel, false);
+								} catch (IllegalArgumentException|IllegalAccessException ex) {
+									BotUtils.reply(e, "エラが発生しました");
+									EEWBot.LOGGER.error("Reflection error", ex);
+								}
+
+						});
+					});
+				}
+			}
+		},
 		unregister {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
