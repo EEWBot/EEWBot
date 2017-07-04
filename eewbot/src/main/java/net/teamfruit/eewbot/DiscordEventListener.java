@@ -45,12 +45,12 @@ public class DiscordEventListener {
 		final CopyOnWriteArrayList<Channel> channels = EEWBot.instance.getChannels().get(e.getGuild().getLongID());
 		if (channels!=null) {
 			final long id = e.getChannel().getLongID();
-			channels.removeIf(channel -> channel.getId()==id);
-			try {
-				EEWBot.instance.saveConfigs();
-			} catch (final ConfigException ex) {
-				EEWBot.LOGGER.error("Error on channel delete", ex);
-			}
+			if (channels.removeIf(channel -> channel.getId()==id))
+				try {
+					EEWBot.instance.saveConfigs();
+				} catch (final ConfigException ex) {
+					EEWBot.LOGGER.error("Error on channel delete", ex);
+				}
 		}
 	}
 
@@ -95,17 +95,17 @@ public class DiscordEventListener {
 				else {
 					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
 					if (channel!=null) {
-						final Field[] fields = Channel.class.getFields();
 						Arrays.stream(args).forEach(str -> {
-							Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).forEach(field -> {
-								if (field.getName().equalsIgnoreCase(str)||str.equals("*"))
-									try {
-										field.setBoolean(channel, true);
-									} catch (IllegalArgumentException|IllegalAccessException ex) {
-										BotUtils.reply(e, "エラが発生しました");
-										EEWBot.LOGGER.error("Reflection error", ex);
-									}
-							});
+							Arrays.stream(Channel.class.getFields())
+									.filter(field -> !Modifier.isStatic(field.getModifiers()))
+									.filter(field -> field.getName().equalsIgnoreCase(str)||str.equals("*")).forEach(field -> {
+										try {
+											field.setBoolean(channel, true);
+										} catch (IllegalArgumentException|IllegalAccessException ex) {
+											BotUtils.reply(e, "エラが発生しました");
+											EEWBot.LOGGER.error("Reflection error", ex);
+										}
+									});
 						});
 						try {
 							EEWBot.instance.saveConfigs();
@@ -134,17 +134,17 @@ public class DiscordEventListener {
 				else {
 					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
 					if (channel!=null) {
-						final Field[] fields = Channel.class.getFields();
 						Arrays.stream(args).forEach(str -> {
-							Arrays.stream(Channel.class.getFields()).forEach(field -> {
-								if (field.getName().equalsIgnoreCase(str)||str.equals("*"))
-									try {
-										field.setBoolean(channel, false);
-									} catch (IllegalArgumentException|IllegalAccessException ex) {
-										BotUtils.reply(e, "エラが発生しました");
-										EEWBot.LOGGER.error("Reflection error", ex);
-									}
-							});
+							Arrays.stream(Channel.class.getFields())
+									.filter(field -> !Modifier.isStatic(field.getModifiers()))
+									.filter(field -> field.getName().equalsIgnoreCase(str)||str.equals("*")).forEach(field -> {
+										try {
+											field.setBoolean(channel, false);
+										} catch (IllegalArgumentException|IllegalAccessException ex) {
+											BotUtils.reply(e, "エラが発生しました");
+											EEWBot.LOGGER.error("Reflection error", ex);
+										}
+									});
 						});
 						try {
 							EEWBot.instance.saveConfigs();
@@ -286,7 +286,7 @@ public class DiscordEventListener {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				if (args.length<=0)
-					BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(command -> command.name()).collect(Collectors.joining(" "))
+					BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(Command::name).collect(Collectors.joining(" "))
 							+"```"+"EEWを通知したいチャンネルで`register`コマンドを使用してチャンネルを設定出来ます。");
 				else {
 					final Command command = EnumUtils.getEnum(Command.class, args[0]);
