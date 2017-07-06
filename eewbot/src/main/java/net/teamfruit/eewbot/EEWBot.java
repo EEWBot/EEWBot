@@ -52,7 +52,8 @@ public class EEWBot {
 	private final Map<Long, CopyOnWriteArrayList<Channel>> channels = new ConcurrentHashMap<>();
 	private Map<String, Permission> permissions = new HashMap<String, Permission>() {
 		{
-			put("everyone", Permission.EVERYONE);
+			put("owner", Permission.ALL);
+			put("everyone", Permission.DEFAULT_EVERYONE);
 		}
 	};
 	private IDiscordClient client;
@@ -66,6 +67,7 @@ public class EEWBot {
 			EEWBot.LOGGER.info("Please set a token");
 			return;
 		}
+
 		this.client = createClient(this.config.getToken(), true);
 		final EventDispatcher dispatcher = this.client.getDispatcher();
 		dispatcher.registerListener(new DiscordEventListener());

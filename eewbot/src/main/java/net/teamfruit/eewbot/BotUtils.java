@@ -34,7 +34,7 @@ public class BotUtils {
 		return EEWBot.instance.getPermissions().values().stream()
 				.filter(permission -> permission.getUserid().stream()
 						.anyMatch(id -> id==userid))
-				.findAny().orElse(EEWBot.instance.getPermissions().getOrDefault("everyone", Permission.EVERYONE))
+				.findAny().orElse(EEWBot.instance.getPermissions().getOrDefault("everyone", Permission.DEFAULT_EVERYONE))
 				.getCommand().stream()
 				.map(str -> EnumUtils.getEnum(Command.class, str))
 				.anyMatch(cmd -> cmd==command);
