@@ -1,8 +1,8 @@
 package net.teamfruit.eewbot;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class Permission {
 
@@ -25,7 +25,7 @@ public class Permission {
 	public List<String> getCommand() {
 		if (this.command!=null)
 			return this.command;
-		return this.command = Stream.generate(()->);
+		return this.command = Arrays.asList("details", "monitor");
 	}
 
 }
