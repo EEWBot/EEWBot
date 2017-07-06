@@ -6,23 +6,17 @@ import java.util.List;
 
 public class Permission {
 
-	public static final Permission EVERYONE = new Permission("everyone", null, Arrays.asList("details", "monitor"));
+	public static final Permission EVERYONE = new Permission(Collections.emptyList(), Arrays.asList("details", "monitor"));
 
-	private String group;
 	private List<Long> userid;
 	private List<String> command;
 
 	public Permission() {
 	}
 
-	public Permission(final String group, final List<Long> userid, final List<String> command) {
-		this.group = group;
+	public Permission(final List<Long> userid, final List<String> command) {
 		this.userid = userid;
 		this.command = command;
-	}
-
-	public String getGroup() {
-		return this.group;
 	}
 
 	public List<Long> getUserid() {

@@ -7,9 +7,8 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,9 +50,9 @@ public class EEWBot {
 	});
 	private Config config = new Config();
 	private final Map<Long, CopyOnWriteArrayList<Channel>> channels = new ConcurrentHashMap<>();
-	private List<Permission> permissions = new ArrayList<Permission>() {
+	private Map<String, Permission> permissions = new HashMap<String, Permission>() {
 		{
-			add(Permission.EVERYONE);
+			put("everyone", Permission.EVERYONE);
 		}
 	};
 	private IDiscordClient client;
@@ -89,7 +88,7 @@ public class EEWBot {
 		return this.channels;
 	}
 
-	public List<Permission> getPermissions() {
+	public Map<String, Permission> getPermissions() {
 		return this.permissions;
 	}
 
@@ -149,7 +148,7 @@ public class EEWBot {
 				}
 			}
 
-			final Type type = new TypeToken<List<Permission>>() {
+			final Type type = new TypeToken<Map<String, Permission>>() {
 			}.getType();
 			final Path permissionPath = Paths.get("permission.json");
 			if (!permissionPath.toFile().exists()) {
@@ -158,7 +157,7 @@ public class EEWBot {
 				}
 			} else {
 				try (Reader r = Files.newBufferedReader(permissionPath)) {
-					final List<Permission> permissions = EEWBot.GSON.fromJson(r, type);
+					final Map<String, Permission> permissions = EEWBot.GSON.fromJson(r, type);
 					if (permissions!=null&&!permissions.isEmpty())
 						this.permissions = permissions;
 				}

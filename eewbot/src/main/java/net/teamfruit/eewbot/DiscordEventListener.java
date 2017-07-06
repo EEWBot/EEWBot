@@ -35,7 +35,7 @@ public class DiscordEventListener {
 			else {
 				final Command command = EnumUtils.getEnum(Command.class, args[1]);
 				if (command!=null)
-					if (EEWBot.instance.getPermissions().stream()
+					if (EEWBot.instance.getPermissions().values().stream()
 							.filter(permission -> permission.getUserid().stream()
 									.anyMatch(id -> id==e.getAuthor().getLongID()))
 							.findAny().orElse(Permission.EVERYONE)
