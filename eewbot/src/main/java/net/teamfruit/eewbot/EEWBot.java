@@ -168,6 +168,10 @@ public class EEWBot {
 			try (Writer w = Files.newBufferedWriter(channelPath)) {
 				EEWBot.GSON.toJson(this.channels, w);
 			}
+			final Path permissionPath = Paths.get("permission.json");
+			try (Writer w = Files.newBufferedWriter(permissionPath)) {
+				EEWBot.GSON.toJson(this.permissions, w);
+			}
 		} catch (JsonIOException|IOException e) {
 			throw new ConfigException("Config save error", e);
 		}
