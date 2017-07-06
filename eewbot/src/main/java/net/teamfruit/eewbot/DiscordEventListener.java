@@ -43,6 +43,8 @@ public class DiscordEventListener {
 							.map(str -> EnumUtils.getEnum(Command.class, str))
 							.anyMatch(cmd -> cmd==command))
 						command.onCommand(e, ArrayUtils.subarray(args, 2, args.length+1));
+					else
+						BotUtils.reply(e, "権限がありません！");
 			}
 		}
 	}
