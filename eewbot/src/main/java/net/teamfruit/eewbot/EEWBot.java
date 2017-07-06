@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,6 +17,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -47,6 +50,7 @@ public class EEWBot {
 	});
 	private Config config = new Config();
 	private final Map<Long, CopyOnWriteArrayList<Channel>> channels = new ConcurrentHashMap<>();
+	private List<Permission> permissions = Stream.generate(() -> new Permission()).collect(Collectors.toList());
 	private IDiscordClient client;
 
 	public EEWBot() throws Exception {
@@ -78,6 +82,10 @@ public class EEWBot {
 
 	public Map<Long, CopyOnWriteArrayList<Channel>> getChannels() {
 		return this.channels;
+	}
+
+	public List<Permission> getPermissions() {
+		return this.permissions;
 	}
 
 	public IDiscordClient getClient() {
@@ -116,18 +124,33 @@ public class EEWBot {
 			}
 
 			final Path channelPath = Paths.get("channels.json");
-			final Type type = new TypeToken<Map<Long, Collection<Channel>>>() {
-			}.getType();
 			if (!channelPath.toFile().exists()) {
 				try (Writer w = Files.newBufferedWriter(channelPath)) {
 					EEWBot.GSON.toJson(new ConcurrentHashMap<Long, CopyOnWriteArrayList<Channel>>(), w);
 				}
 			} else {
 				try (Reader r = Files.newBufferedReader(channelPath)) {
+					final Type type = new TypeToken<Map<Long, Collection<Channel>>>() {
+					}.getType();
 					final Map<Long, Collection<Channel>> map = EEWBot.GSON.fromJson(r, type);
 					if (map!=null)
 						for (final Entry<Long, Collection<Channel>> entry : map.entrySet())
 							this.channels.put(entry.getKey(), new CopyOnWriteArrayList<>(entry.getValue()));
+				}
+			}
+
+			final Type type = new TypeToken<List<Permission>>() {
+			}.getType();
+			final Path permissionPath = Paths.get("permission.json");
+			if (!permissionPath.toFile().exists()) {
+				try (Writer w = Files.newBufferedWriter(permissionPath)) {
+					EEWBot.GSON.toJson(this.permissions, type, w);
+				}
+			} else {
+				try (Reader r = Files.newBufferedReader(permissionPath)) {
+					final List<Permission> permissions = EEWBot.GSON.fromJson(r, type);
+					if (permissions!=null&&!permissions.isEmpty())
+						this.permissions = permissions;
 				}
 			}
 		} catch (JsonSyntaxException|JsonIOException|IOException e) {
