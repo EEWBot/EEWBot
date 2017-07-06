@@ -7,6 +7,7 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +18,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -50,7 +49,11 @@ public class EEWBot {
 	});
 	private Config config = new Config();
 	private final Map<Long, CopyOnWriteArrayList<Channel>> channels = new ConcurrentHashMap<>();
-	private List<Permission> permissions = Stream.generate(() -> new Permission()).collect(Collectors.toList());
+	private List<Permission> permissions = new ArrayList<Permission>() {
+		{
+			add(Permission.EVERYONE);
+		}
+	};
 	private IDiscordClient client;
 
 	public EEWBot() throws Exception {
@@ -153,7 +156,9 @@ public class EEWBot {
 						this.permissions = permissions;
 				}
 			}
-		} catch (JsonSyntaxException|JsonIOException|IOException e) {
+		} catch (JsonSyntaxException|JsonIOException|
+
+				IOException e) {
 			throw new ConfigException("Config load error", e);
 		}
 	}
@@ -168,10 +173,10 @@ public class EEWBot {
 			try (Writer w = Files.newBufferedWriter(channelPath)) {
 				EEWBot.GSON.toJson(this.channels, w);
 			}
-			final Path permissionPath = Paths.get("permission.json");
-			try (Writer w = Files.newBufferedWriter(permissionPath)) {
-				EEWBot.GSON.toJson(this.permissions, w);
-			}
+			//			final Path permissionPath = Paths.get("permission.json");
+			//			try (Writer w = Files.newBufferedWriter(permissionPath)) {
+			//				EEWBot.GSON.toJson(this.permissions, w);
+			//			}
 		} catch (JsonIOException|IOException e) {
 			throw new ConfigException("Config save error", e);
 		}
