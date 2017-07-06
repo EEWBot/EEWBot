@@ -6,7 +6,7 @@ import java.util.List;
 
 public class Permission {
 
-	public static final Permission EVERYONE = new Permission(Collections.emptyList(), Arrays.asList("details", "monitor"));
+	public static final Permission EVERYONE = new Permission(Collections.emptyList(), Arrays.asList("details", "monitor", "help"));
 
 	private List<Long> userid;
 	private List<String> command;

@@ -2,6 +2,9 @@ package net.teamfruit.eewbot;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.commons.lang3.EnumUtils;
+
+import net.teamfruit.eewbot.DiscordEventListener.Command;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.util.RequestBuffer;
@@ -27,4 +30,13 @@ public class BotUtils {
 		return null;
 	}
 
+	public static boolean userHasPermission(final long userid, final Command command) {
+		return EEWBot.instance.getPermissions().values().stream()
+				.filter(permission -> permission.getUserid().stream()
+						.anyMatch(id -> id==userid))
+				.findAny().orElse(Permission.EVERYONE)
+				.getCommand().stream()
+				.map(str -> EnumUtils.getEnum(Command.class, str))
+				.anyMatch(cmd -> cmd==command);
+	}
 }
