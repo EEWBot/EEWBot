@@ -35,7 +35,14 @@ public class DiscordEventListener {
 			else {
 				final Command command = EnumUtils.getEnum(Command.class, args[1]);
 				if (command!=null)
-					command.onCommand(e, ArrayUtils.subarray(args, 2, args.length+1));
+					if (EEWBot.instance.getPermissions().stream()
+							.filter(permission -> permission.getUserid().stream()
+									.anyMatch(id -> id==e.getAuthor().getLongID()))
+							.findAny().orElse(Permission.EVERYONE)
+							.getCommand().stream()
+							.map(str -> EnumUtils.getEnum(Command.class, str))
+							.anyMatch(cmd -> cmd==command))
+						command.onCommand(e, ArrayUtils.subarray(args, 2, args.length+1));
 			}
 		}
 	}
