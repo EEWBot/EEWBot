@@ -162,9 +162,7 @@ public class EEWBot {
 						this.permissions = permissions;
 				}
 			}
-		} catch (JsonSyntaxException|JsonIOException|
-
-				IOException e) {
+		} catch (JsonSyntaxException|JsonIOException|IOException e) {
 			throw new ConfigException("Config load error", e);
 		}
 	}
