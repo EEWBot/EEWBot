@@ -80,5 +80,10 @@
 			<artifactId>commons-net</artifactId>
 			<version>3.3</version>
 		</dependency>
+		<dependency>
+    <groupId>org.jsoup</groupId>
+    <artifactId>jsoup</artifactId>
+    <version>1.10.3</version>
+</dependency>
 	</dependencies>
 </project>
