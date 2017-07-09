@@ -16,9 +16,9 @@ import org.apache.commons.net.ntp.TimeInfo;
 import org.apache.commons.net.ntp.TimeStamp;
 
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
-import net.teamfruit.eewbot.dispatcher.EEWDispatcher.EEW;
 import net.teamfruit.eewbot.dispatcher.MonitorDispatcher;
 import net.teamfruit.eewbot.dispatcher.NTPDispatcher;
+import net.teamfruit.eewbot.node.EEW;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelDeleteEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -214,12 +214,6 @@ public class DiscordEventListener {
 				}
 			}
 		},
-		//		bsc24 {
-		//			@Override
-		//			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-		//				BotUtils.reply(e, "http://ch.nicovideo.jp/bousai-share");
-		//			}
-		//		},
 		joinserver {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {

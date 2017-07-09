@@ -5,11 +5,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import net.teamfruit.eewbot.dispatcher.EEWDispatcher.EEW;
 import net.teamfruit.eewbot.dispatcher.EEWEvent;
 import net.teamfruit.eewbot.dispatcher.MonitorEvent;
-import net.teamfruit.eewbot.dispatcher.QuakeInfoDispather.QuakeInfo;
 import net.teamfruit.eewbot.dispatcher.QuakeInfoEvent;
+import net.teamfruit.eewbot.node.EEW;
+import net.teamfruit.eewbot.node.QuakeInfo;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.IChannel;

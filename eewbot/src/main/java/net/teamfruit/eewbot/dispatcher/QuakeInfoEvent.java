@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.dispatcher;
 
-import net.teamfruit.eewbot.dispatcher.QuakeInfoDispather.QuakeInfo;
+import net.teamfruit.eewbot.node.QuakeInfo;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.Event;
 
