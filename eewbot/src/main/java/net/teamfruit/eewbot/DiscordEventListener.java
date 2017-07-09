@@ -3,7 +3,9 @@ package net.teamfruit.eewbot;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -21,6 +23,7 @@ import net.teamfruit.eewbot.dispatcher.NTPDispatcher;
 import net.teamfruit.eewbot.dispatcher.QuakeInfoDispather;
 import net.teamfruit.eewbot.node.EEW;
 import net.teamfruit.eewbot.node.Embeddable;
+import net.teamfruit.eewbot.node.QuakeInfo;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelDeleteEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -218,15 +221,17 @@ public class DiscordEventListener {
 					BotUtils.reply(e, "引数が不足しています");
 				} else {
 					EEWBot.instance.getExecutor().execute(() -> {
-						Embeddable embeddable = null;
+						final List<Embeddable> list = new ArrayList<>();
 						try {
 							if (args[0].startsWith("http://"))
-								embeddable = EEWDispatcher.get(args[0]);
-							else if (args[0].startsWith("https://typhoon.yahoo.co.jp/weather/jp/earthquake/"))
-								embeddable = QuakeInfoDispather.get(args[0]);
-							else
-								embeddable = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
-							BotUtils.reply(e, "**これはテストです！**", embeddable.buildEmbed());
+								list.add(EEWDispatcher.get(args[0]));
+							else if (args[0].startsWith("https://typhoon.yahoo.co.jp/weather/jp/earthquake/")) {
+								final QuakeInfo info = QuakeInfoDispather.get(args[0]);
+								list.add(info);
+								list.addAll(info.getDetails());
+							} else
+								list.add(EEWBot.GSON.fromJson(String.join(" ", args), EEW.class));
+							list.forEach(embeddable -> BotUtils.reply(e, "**これはテストです！**", embeddable.buildEmbed()));
 						} catch (final Exception ex) {
 							EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
 							BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");

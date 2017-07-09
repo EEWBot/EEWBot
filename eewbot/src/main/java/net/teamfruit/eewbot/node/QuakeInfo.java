@@ -2,21 +2,21 @@ package net.teamfruit.eewbot.node;
 
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.util.EmbedBuilder;
@@ -35,10 +35,10 @@ public class QuakeInfo implements Embeddable {
 	private final float magnitude;
 	private final String info;
 	private final SeismicIntensity maxIntensity;
-	private final Set<PrefectureDetail> details = new TreeSet<>(Comparator.reverseOrder());
+	private final List<PrefectureDetail> details;
 
 	public QuakeInfo(final Document doc) {
-		this.url = "https://typhoon.yahoo.co.jp"+doc.getElementById("history").getElementsByTag("tr").get(1).getElementsByTag("td").first().getElementsByTag("a").first().attr("href");
+		this.url = "https://typhoon.yahoo.co.jp"+Optional.ofNullable(doc.getElementById("history")).map(history -> history.getElementsByTag("tr").get(1).getElementsByTag("td").first().getElementsByTag("a").first().attr("href")).orElse("");
 		this.imageUrl = doc.getElementById("yjw_keihou").getElementsByTag("img").first().attr("src");
 		final Element info = doc.getElementById("eqinfdtl");
 		final Map<String, String> data = info.getElementsByTag("table").get(0).getElementsByTag("tr").stream()
@@ -60,15 +60,18 @@ public class QuakeInfo implements Embeddable {
 
 		final Element yjw = info.getElementsByTag("table").get(1);
 		this.maxIntensity = SeismicIntensity.get(yjw.getElementsByTag("td").first().getElementsByTag("td").first().text());
+		final Map<String, PrefectureDetail> details = new HashMap<>();
 		yjw.getElementsByTag("tr").stream().filter(tr -> tr.attr("valign").equals("middle")).forEach(tr -> {
 			final SeismicIntensity intensity = SeismicIntensity.get(tr.getElementsByTag("td").first().getElementsByTag("td").first().text());
-			final Elements td = tr.getElementsByTag("table").first().getElementsByTag("td");
-			final String prefecture = td.get(0).text();
-			final PrefectureDetail detail = this.details.stream().filter(line -> line.getPrefecture().equals(prefecture)).findAny()
-					.orElseGet(() -> new PrefectureDetail(prefecture));
-			detail.addCity(intensity, prefecture);
-			this.details.add(detail);
+			tr.getElementsByTag("table").first().getElementsByTag("tr").stream().map(line -> line.getElementsByTag("td")).collect(Collectors.toMap(td -> td.get(0).text(), td -> td.get(1).text())).entrySet().forEach(entry -> {
+				final String prefecture = entry.getKey();
+				final PrefectureDetail detail = details.computeIfAbsent(prefecture, key -> new PrefectureDetail(prefecture));
+				Stream.of(StringUtils.split(entry.getValue(), "　")).forEach(str -> detail.addCity(intensity, str));
+			});
 		});
+
+		this.details = new ArrayList<>(details.values());
+		Collections.sort(this.details, Comparator.reverseOrder());
 	}
 
 	public String getUrl() {
@@ -115,7 +118,7 @@ public class QuakeInfo implements Embeddable {
 		return this.maxIntensity;
 	}
 
-	public Set<PrefectureDetail> getDetails() {
+	public List<PrefectureDetail> getDetails() {
 		return this.details;
 	}
 
@@ -203,6 +206,7 @@ public class QuakeInfo implements Embeddable {
 		builder.appendField("深さ", getDepth(), true);
 		builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
 		builder.appendField("最大震度", getMaxIntensity().getSimple(), false);
+		builder.appendField("情報", getInfo(), true);
 
 		builder.withColor(128, 128, 128);
 		builder.withTitle("地震情報");
@@ -219,7 +223,7 @@ public class QuakeInfo implements Embeddable {
 		return "QuakeInfo [imageUrl="+this.imageUrl+", announceTime="+this.announceTime+", quakeTime="+this.quakeTime+", epicenter="+this.epicenter+", lat="+this.lat+", lon="+this.lon+", depth="+this.depth+", magnitude="+this.magnitude+", info="+this.info+", maxIntensity="+this.maxIntensity+", details="+this.details+"]";
 	}
 
-	public static class PrefectureDetail implements Comparable<PrefectureDetail> {
+	public static class PrefectureDetail implements Comparable<PrefectureDetail>, Embeddable {
 
 		private final String prefecture;
 		private final Map<SeismicIntensity, List<String>> cities = new TreeMap<>(Comparator.reverseOrder());
@@ -253,28 +257,13 @@ public class QuakeInfo implements Embeddable {
 		};
 
 		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime*result+((this.prefecture==null) ? 0 : this.prefecture.hashCode());
-			return result;
-		}
+		public EmbedObject buildEmbed() {
+			final EmbedBuilder builder = new EmbedBuilder();
 
-		@Override
-		public boolean equals(final Object obj) {
-			if (this==obj)
-				return true;
-			if (obj==null)
-				return false;
-			if (!(obj instanceof PrefectureDetail))
-				return false;
-			final PrefectureDetail other = (PrefectureDetail) obj;
-			if (this.prefecture==null) {
-				if (other.prefecture!=null)
-					return false;
-			} else if (!this.prefecture.equals(other.prefecture))
-				return false;
-			return true;
+			getCities().entrySet().stream().forEach(entry -> builder.appendField(entry.getKey().toString(), String.join(" ", entry.getValue()), false));
+
+			builder.withTitle(getPrefecture());
+			return builder.build();
 		}
 	}
 }
