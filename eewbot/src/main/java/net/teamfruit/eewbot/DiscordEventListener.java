@@ -18,7 +18,9 @@ import org.apache.commons.net.ntp.TimeStamp;
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
 import net.teamfruit.eewbot.dispatcher.MonitorDispatcher;
 import net.teamfruit.eewbot.dispatcher.NTPDispatcher;
+import net.teamfruit.eewbot.dispatcher.QuakeInfoDispather;
 import net.teamfruit.eewbot.node.EEW;
+import net.teamfruit.eewbot.node.Embeddable;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelDeleteEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -85,9 +87,7 @@ public class DiscordEventListener {
 
 			@Override
 			public String getHelp() {
-				return "コマンドを実行したチャンネルをBotのメッセージ送信先に設定します。\n"+
-						"初期状態では以下の設定になります。```"+Channel.DEFAULT+
-						"```送信するイベントを追加するには`add`, 消去するには`remove`, チャンネルの設定を消去するには`unregister`を使用してください。";
+				return "コマンドを実行したチャンネルをBotのメッセージ送信先に設定します。\n"+"初期状態では以下の設定になります。```"+Channel.DEFAULT+"```送信するイベントを追加するには`add`, 消去するには`remove`, チャンネルの設定を消去するには`unregister`を使用してください。";
 			}
 		},
 		add {
@@ -99,16 +99,14 @@ public class DiscordEventListener {
 					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
 					if (channel!=null) {
 						Arrays.stream(args).forEach(str -> {
-							Arrays.stream(Channel.class.getFields())
-									.filter(field -> !Modifier.isStatic(field.getModifiers()))
-									.filter(field -> field.getName().equalsIgnoreCase(str)||str.equals("*")).forEach(field -> {
-										try {
-											field.setBoolean(channel, true);
-										} catch (IllegalArgumentException|IllegalAccessException ex) {
-											BotUtils.reply(e, "エラが発生しました");
-											EEWBot.LOGGER.error("Reflection error", ex);
-										}
-									});
+							Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).filter(field -> field.getName().equalsIgnoreCase(str)||str.equals("*")).forEach(field -> {
+								try {
+									field.setBoolean(channel, true);
+								} catch (IllegalArgumentException|IllegalAccessException ex) {
+									BotUtils.reply(e, "エラが発生しました");
+									EEWBot.LOGGER.error("Reflection error", ex);
+								}
+							});
 						});
 						try {
 							EEWBot.instance.saveConfigs();
@@ -124,9 +122,7 @@ public class DiscordEventListener {
 
 			@Override
 			public String getHelp() {
-				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields())
-						.filter(field -> !Modifier.isStatic(field.getModifiers()))
-						.map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
+				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
 			}
 		},
 		remove {
@@ -138,16 +134,14 @@ public class DiscordEventListener {
 					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
 					if (channel!=null) {
 						Arrays.stream(args).forEach(str -> {
-							Arrays.stream(Channel.class.getFields())
-									.filter(field -> !Modifier.isStatic(field.getModifiers()))
-									.filter(field -> field.getName().equalsIgnoreCase(str)||str.equals("*")).forEach(field -> {
-										try {
-											field.setBoolean(channel, false);
-										} catch (IllegalArgumentException|IllegalAccessException ex) {
-											BotUtils.reply(e, "エラが発生しました");
-											EEWBot.LOGGER.error("Reflection error", ex);
-										}
-									});
+							Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).filter(field -> field.getName().equalsIgnoreCase(str)||str.equals("*")).forEach(field -> {
+								try {
+									field.setBoolean(channel, false);
+								} catch (IllegalArgumentException|IllegalAccessException ex) {
+									BotUtils.reply(e, "エラが発生しました");
+									EEWBot.LOGGER.error("Reflection error", ex);
+								}
+							});
 						});
 						try {
 							EEWBot.instance.saveConfigs();
@@ -163,9 +157,7 @@ public class DiscordEventListener {
 
 			@Override
 			public String getHelp() {
-				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields())
-						.filter(field -> !Modifier.isStatic(field.getModifiers()))
-						.map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
+				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
 			}
 		},
 		unregister {
@@ -188,8 +180,7 @@ public class DiscordEventListener {
 
 			@Override
 			public String getHelp() {
-				return "コマンドを実行したチャンネルをBotのメッセージ送信先から除外します。\n"+
-						"送信するイベントを消去するには`remove`を使用してください。";
+				return "コマンドを実行したチャンネルをBotのメッセージ送信先から除外します。\n"+"送信するイベントを消去するには`remove`を使用してください。";
 			}
 		},
 		details {
@@ -227,13 +218,16 @@ public class DiscordEventListener {
 					BotUtils.reply(e, "引数が不足しています");
 				} else {
 					EEWBot.instance.getExecutor().execute(() -> {
-						EEW eew = null;
+						Embeddable embeddable = null;
 						try {
 							if (args[0].startsWith("http://"))
-								eew = EEWDispatcher.get(args[0]);
+								if (args[0].startsWith("https://typhoon.yahoo.co.jp/weather/jp/earthquake/"))
+									embeddable = QuakeInfoDispather.get(args[0]);
+								else
+									embeddable = EEWDispatcher.get(args[0]);
 							else
-								eew = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
-							BotUtils.reply(e, "**これは訓練です！**", eew.buildEmbed());
+								embeddable = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
+							BotUtils.reply(e, "**これはテストです！**", embeddable.buildEmbed());
 						} catch (final Exception ex) {
 							EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
 							BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");
@@ -283,8 +277,7 @@ public class DiscordEventListener {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				if (args.length<=0)
-					BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(Command::name).collect(Collectors.joining(" "))
-							+"```"+"EEWを通知したいチャンネルで`register`コマンドを使用してチャンネルを設定出来ます。");
+					BotUtils.reply(e, "```"+Arrays.stream(Command.values()).filter(command -> command!=Command.help).map(Command::name).collect(Collectors.joining(" "))+"```"+"EEWを通知したいチャンネルで`register`コマンドを使用してチャンネルを設定出来ます。");
 				else {
 					final Command command = EnumUtils.getEnum(Command.class, args[0]);
 					if (command!=null) {
