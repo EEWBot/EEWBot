@@ -2,6 +2,8 @@ package net.teamfruit.eewbot.node;
 
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
+
 public enum SeismicIntensity {
 	ONE("震度1"),
 	TWO("震度2"),
@@ -17,6 +19,10 @@ public enum SeismicIntensity {
 
 	private SeismicIntensity(final String name) {
 		this.name = name;
+	}
+
+	public String getSimple() {
+		return StringUtils.substring(this.name, 2, name().length());
 	}
 
 	@Override

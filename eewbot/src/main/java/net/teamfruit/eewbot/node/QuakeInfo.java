@@ -24,6 +24,7 @@ import sx.blah.discord.util.EmbedBuilder;
 public class QuakeInfo implements Embeddable {
 	public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyy年M月d日 H時mm分");
 
+	private final String url;
 	private final String imageUrl;
 	private final Date announceTime;
 	private final Date quakeTime;
@@ -37,6 +38,7 @@ public class QuakeInfo implements Embeddable {
 	private final Set<PrefectureDetail> details = new TreeSet<>(Comparator.reverseOrder());
 
 	public QuakeInfo(final Document doc) {
+		this.url = "https://typhoon.yahoo.co.jp"+doc.getElementById("history").getElementsByTag("tr").get(1).getElementsByTag("td").first().getElementsByTag("a").first().attr("href");
 		this.imageUrl = doc.getElementById("yjw_keihou").getElementsByTag("img").first().attr("src");
 		final Element info = doc.getElementById("eqinfdtl");
 		final Map<String, String> data = info.getElementsByTag("table").get(0).getElementsByTag("tr").stream()
@@ -67,6 +69,10 @@ public class QuakeInfo implements Embeddable {
 			detail.addCity(intensity, prefecture);
 			this.details.add(detail);
 		});
+	}
+
+	public String getUrl() {
+		return this.url;
 	}
 
 	public String getImageUrl() {
@@ -196,7 +202,7 @@ public class QuakeInfo implements Embeddable {
 		builder.appendField("震央", getEpicenter(), true);
 		builder.appendField("深さ", getDepth(), true);
 		builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
-		builder.appendField("最大震度", getMaxIntensity().toString(), false);
+		builder.appendField("最大震度", getMaxIntensity().getSimple(), false);
 
 		builder.withColor(128, 128, 128);
 		builder.withTitle("地震情報");
@@ -204,6 +210,7 @@ public class QuakeInfo implements Embeddable {
 		Optional.ofNullable(getImageUrl()).ifPresent(url -> builder.withImage(url));
 
 		builder.withFooterText("地震情報 - Yahoo!天気・災害");
+		builder.withUrl(getUrl());
 		return builder.build();
 	}
 
