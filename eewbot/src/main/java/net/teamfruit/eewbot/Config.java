@@ -3,6 +3,7 @@ package net.teamfruit.eewbot;
 public class Config {
 	private String token = "";
 	private int kyoshinDelay = 1;
+	private int quakeInfoDelay = 15;
 	private int timeFixDelay = 86400;
 	private String nptServer = "time.google.com";
 	private boolean enablePermission = true;
@@ -18,6 +19,7 @@ public class Config {
 	public Config set(final Config src) {
 		this.token = src.getToken();
 		this.kyoshinDelay = src.getKyoshinDelay();
+		this.quakeInfoDelay = src.getQuakeInfoDelay();
 		this.timeFixDelay = src.getTimeFixDelay();
 		this.nptServer = src.getNptServer();
 		this.enablePermission = src.isEnablePermission();
@@ -31,6 +33,10 @@ public class Config {
 
 	public int getKyoshinDelay() {
 		return this.kyoshinDelay;
+	}
+
+	public int getQuakeInfoDelay() {
+		return this.quakeInfoDelay;
 	}
 
 	public int getTimeFixDelay() {
