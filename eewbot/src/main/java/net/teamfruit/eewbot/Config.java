@@ -5,6 +5,7 @@ public class Config {
 	private int kyoshinDelay = 1;
 	private int timeFixDelay = 86400;
 	private String nptServer = "time.google.com";
+	private boolean enablePermission = true;
 	private boolean debug = false;
 
 	public Config() {
@@ -19,6 +20,7 @@ public class Config {
 		this.kyoshinDelay = src.getKyoshinDelay();
 		this.timeFixDelay = src.getTimeFixDelay();
 		this.nptServer = src.getNptServer();
+		this.enablePermission = src.isEnablePermission();
 		this.debug = src.isDebug();
 		return this;
 	}
@@ -37,6 +39,10 @@ public class Config {
 
 	public String getNptServer() {
 		return this.nptServer;
+	}
+
+	public boolean isEnablePermission() {
+		return this.enablePermission;
 	}
 
 	public boolean isDebug() {

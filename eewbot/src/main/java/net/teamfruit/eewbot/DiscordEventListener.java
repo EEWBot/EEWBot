@@ -37,7 +37,7 @@ public class DiscordEventListener {
 			else {
 				final Command command = EnumUtils.getEnum(Command.class, args[1]);
 				if (command!=null)
-					if (BotUtils.userHasPermission(e.getAuthor().getLongID(), command))
+					if (!EEWBot.instance.getConfig().isEnablePermission()||BotUtils.userHasPermission(e.getAuthor().getLongID(), command))
 						command.onCommand(e, ArrayUtils.subarray(args, 2, args.length+1));
 					else
 						BotUtils.reply(e, "権限がありません！");
