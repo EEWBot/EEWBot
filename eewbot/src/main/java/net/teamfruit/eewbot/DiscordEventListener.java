@@ -221,10 +221,9 @@ public class DiscordEventListener {
 						Embeddable embeddable = null;
 						try {
 							if (args[0].startsWith("http://"))
-								if (args[0].startsWith("https://typhoon.yahoo.co.jp/weather/jp/earthquake/"))
-									embeddable = QuakeInfoDispather.get(args[0]);
-								else
-									embeddable = EEWDispatcher.get(args[0]);
+								embeddable = EEWDispatcher.get(args[0]);
+							else if (args[0].startsWith("https://typhoon.yahoo.co.jp/weather/jp/earthquake/"))
+								embeddable = QuakeInfoDispather.get(args[0]);
 							else
 								embeddable = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
 							BotUtils.reply(e, "**これはテストです！**", embeddable.buildEmbed());

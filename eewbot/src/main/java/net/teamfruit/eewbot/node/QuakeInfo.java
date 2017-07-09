@@ -56,16 +56,16 @@ public class QuakeInfo implements Embeddable {
 			throw new RuntimeException("Parse Error", e);
 		}
 
-		final Elements yjw = info.getElementsByTag("table").get(1).getElementsByTag("tr");
-		this.maxIntensity = SeismicIntensity.get(yjw.first().getElementsByTag("td").first().text());
-		yjw.forEach(tr -> {
-			final SeismicIntensity intensity = SeismicIntensity.get(tr.getElementsByTag("td").first().text());
+		final Element yjw = info.getElementsByTag("table").get(1);
+		this.maxIntensity = SeismicIntensity.get(yjw.getElementsByTag("td").first().getElementsByTag("td").first().text());
+		yjw.getElementsByTag("tr").stream().filter(tr -> tr.attr("valign").equals("middle")).forEach(tr -> {
+			final SeismicIntensity intensity = SeismicIntensity.get(tr.getElementsByTag("td").first().getElementsByTag("td").first().text());
 			final Elements td = tr.getElementsByTag("table").first().getElementsByTag("td");
 			final String prefecture = td.get(0).text();
 			final PrefectureDetail detail = this.details.stream().filter(line -> line.getPrefecture().equals(prefecture)).findAny()
 					.orElseGet(() -> new PrefectureDetail(prefecture));
-			this.details.add(detail);
 			detail.addCity(intensity, prefecture);
+			this.details.add(detail);
 		});
 	}
 
@@ -205,6 +205,11 @@ public class QuakeInfo implements Embeddable {
 
 		builder.withFooterText("地震情報 - Yahoo!天気・災害");
 		return builder.build();
+	}
+
+	@Override
+	public String toString() {
+		return "QuakeInfo [imageUrl="+this.imageUrl+", announceTime="+this.announceTime+", quakeTime="+this.quakeTime+", epicenter="+this.epicenter+", lat="+this.lat+", lon="+this.lon+", depth="+this.depth+", magnitude="+this.magnitude+", info="+this.info+", maxIntensity="+this.maxIntensity+", details="+this.details+"]";
 	}
 
 	public static class PrefectureDetail implements Comparable<PrefectureDetail> {
