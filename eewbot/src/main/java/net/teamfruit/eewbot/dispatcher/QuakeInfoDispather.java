@@ -34,9 +34,10 @@ public class QuakeInfoDispather implements Runnable {
 	@Override
 	public void run() {
 		try {
-			final QuakeInfo info = get();
+			final QuakeInfo info = get(REMOTE);
 			if (!info.equals(this.prev)) {
-				EEWBot.instance.getClient().getDispatcher().dispatch(new QuakeInfoEvent(EEWBot.instance.getClient(), info));
+				if (this.prev!=null)
+					EEWBot.instance.getClient().getDispatcher().dispatch(new QuakeInfoEvent(EEWBot.instance.getClient(), info));
 				this.prev = info;
 			}
 		} catch (final IOException e) {
@@ -44,8 +45,8 @@ public class QuakeInfoDispather implements Runnable {
 		}
 	}
 
-	public static QuakeInfo get() throws IOException {
-		return new QuakeInfo(Jsoup.connect(REMOTE).get());
+	public static QuakeInfo get(final String remote) throws IOException {
+		return new QuakeInfo(Jsoup.connect(remote).get());
 	}
 
 	public static class QuakeInfo {
