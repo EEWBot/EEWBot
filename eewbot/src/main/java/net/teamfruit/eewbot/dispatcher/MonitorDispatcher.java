@@ -6,7 +6,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -17,6 +16,7 @@ import javax.imageio.ImageIO;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.commons.net.ntp.TimeInfo;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -33,7 +33,7 @@ public class MonitorDispatcher implements Runnable {
 	public static final MonitorDispatcher INSTANCE = new MonitorDispatcher();
 
 	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/data/map_img/";
-	public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
+	public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyyMMddHHmmss");
 
 	private MonitorDispatcher() {
 	}

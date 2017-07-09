@@ -3,7 +3,6 @@ package net.teamfruit.eewbot;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -11,6 +10,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.commons.net.ntp.NtpV3Packet;
 import org.apache.commons.net.ntp.TimeInfo;
 import org.apache.commons.net.ntp.TimeStamp;
@@ -292,7 +292,7 @@ public class DiscordEventListener {
 			}
 		};
 
-		public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
+		public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyy/MM/dd HH:mm:ss.SSS");
 
 		public abstract void onCommand(MessageReceivedEvent e, String[] args);
 

@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
 
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.node.EEW;
@@ -20,7 +20,7 @@ public class EEWDispatcher implements Runnable {
 	public static final EEWDispatcher INSTANCE = new EEWDispatcher();
 
 	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/webservice/hypo/eew/";
-	public static final SimpleDateFormat FORMAT1 = new SimpleDateFormat("yyyyMMddHHmmss");
+	public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyyMMddHHmmss");
 
 	private final Map<Long, Integer> prev = new HashMap<>();
 
@@ -30,7 +30,7 @@ public class EEWDispatcher implements Runnable {
 	@Override
 	public void run() {
 		final Date date = new Date(System.currentTimeMillis()+NTPDispatcher.INSTANCE.getOffset()-TimeUnit.SECONDS.toMillis(1));
-		final String url = REMOTE+FORMAT1.format(date)+".json";
+		final String url = REMOTE+FORMAT.format(date)+".json";
 		try {
 			final EEW res = get(url);
 			if (res!=null&&res.isEEW()) {

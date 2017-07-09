@@ -1,17 +1,17 @@
 package net.teamfruit.eewbot.node;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
 
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.util.EmbedBuilder;
 
 public class EEW implements Embeddable {
-	public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+	public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyy/MM/dd HH:mm:ss");
 
 	private String alertflg;
 	private String calcintensity;
@@ -131,7 +131,7 @@ public class EEW implements Embeddable {
 		if (StringUtils.isEmpty(this.origin_time))
 			return null;
 		try {
-			return EEWDispatcher.FORMAT1.parse(this.origin_time);
+			return EEWDispatcher.FORMAT.parse(this.origin_time);
 		} catch (final ParseException e) {
 			return null;
 		}
@@ -178,7 +178,7 @@ public class EEW implements Embeddable {
 		if (StringUtils.isEmpty(this.request_time))
 			return null;
 		try {
-			return EEWDispatcher.FORMAT1.parse(this.request_time);
+			return EEWDispatcher.FORMAT.parse(this.request_time);
 		} catch (final ParseException e) {
 			return null;
 		}

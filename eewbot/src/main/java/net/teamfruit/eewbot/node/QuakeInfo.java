@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot.node;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -14,6 +13,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -22,7 +22,7 @@ import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.util.EmbedBuilder;
 
 public class QuakeInfo implements Embeddable {
-	public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy年M月d日 H時mm分");
+	public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyy年M月d日 H時mm分");
 
 	private final String imageUrl;
 	private final Date announceTime;
@@ -67,10 +67,6 @@ public class QuakeInfo implements Embeddable {
 			this.details.add(detail);
 			detail.addCity(intensity, prefecture);
 		});
-	}
-
-	public static SimpleDateFormat getFormat() {
-		return FORMAT;
 	}
 
 	public String getImageUrl() {
