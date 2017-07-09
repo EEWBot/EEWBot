@@ -16,20 +16,32 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.dispatcher.QuakeInfoDispather.QuakeInfo.PrefectureDetail.SeismicIntensity;
 
 public class QuakeInfoDispather implements Runnable {
 
 	public static final String REMOTE = "https://typhoon.yahoo.co.jp/weather/earthquake/";
 
+	private QuakeInfo prev;
+
 	@Override
 	public void run() {
-		//TODO
+		try {
+			final QuakeInfo info = get();
+			if (!info.equals(this.prev)) {
+				EEWBot.instance.getClient().getDispatcher().dispatch(new QuakeInfoEvent(EEWBot.instance.getClient(), info));
+				this.prev = info;
+			}
+		} catch (final IOException e) {
+			EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
+		}
 	}
 
 	public static QuakeInfo get() throws IOException {
@@ -79,6 +91,126 @@ public class QuakeInfoDispather implements Runnable {
 				this.details.add(detail);
 				detail.addCity(intensity, prefecture);
 			});
+		}
+
+		public static SimpleDateFormat getFormat() {
+			return FORMAT;
+		}
+
+		public String getImageUrl() {
+			return this.imageUrl;
+		}
+
+		public Date getAnnounceTime() {
+			return this.announceTime;
+		}
+
+		public Date getQuakeTime() {
+			return this.quakeTime;
+		}
+
+		public String getEpicenter() {
+			return this.epicenter;
+		}
+
+		public String getLat() {
+			return this.lat;
+		}
+
+		public String getLon() {
+			return this.lon;
+		}
+
+		public String getDepth() {
+			return this.depth;
+		}
+
+		public float getMagnitude() {
+			return this.magnitude;
+		}
+
+		public String getInfo() {
+			return this.info;
+		}
+
+		public Set<PrefectureDetail> getDetails() {
+			return this.details;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime*result+((this.announceTime==null) ? 0 : this.announceTime.hashCode());
+			result = prime*result+((this.depth==null) ? 0 : this.depth.hashCode());
+			result = prime*result+((this.details==null) ? 0 : this.details.hashCode());
+			result = prime*result+((this.epicenter==null) ? 0 : this.epicenter.hashCode());
+			result = prime*result+((this.imageUrl==null) ? 0 : this.imageUrl.hashCode());
+			result = prime*result+((this.info==null) ? 0 : this.info.hashCode());
+			result = prime*result+((this.lat==null) ? 0 : this.lat.hashCode());
+			result = prime*result+((this.lon==null) ? 0 : this.lon.hashCode());
+			result = prime*result+Float.floatToIntBits(this.magnitude);
+			result = prime*result+((this.quakeTime==null) ? 0 : this.quakeTime.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (this==obj)
+				return true;
+			if (obj==null)
+				return false;
+			if (!(obj instanceof QuakeInfo))
+				return false;
+			final QuakeInfo other = (QuakeInfo) obj;
+			if (this.announceTime==null) {
+				if (other.announceTime!=null)
+					return false;
+			} else if (!this.announceTime.equals(other.announceTime))
+				return false;
+			if (this.depth==null) {
+				if (other.depth!=null)
+					return false;
+			} else if (!this.depth.equals(other.depth))
+				return false;
+			if (this.details==null) {
+				if (other.details!=null)
+					return false;
+			} else if (!this.details.equals(other.details))
+				return false;
+			if (this.epicenter==null) {
+				if (other.epicenter!=null)
+					return false;
+			} else if (!this.epicenter.equals(other.epicenter))
+				return false;
+			if (this.imageUrl==null) {
+				if (other.imageUrl!=null)
+					return false;
+			} else if (!this.imageUrl.equals(other.imageUrl))
+				return false;
+			if (this.info==null) {
+				if (other.info!=null)
+					return false;
+			} else if (!this.info.equals(other.info))
+				return false;
+			if (this.lat==null) {
+				if (other.lat!=null)
+					return false;
+			} else if (!this.lat.equals(other.lat))
+				return false;
+			if (this.lon==null) {
+				if (other.lon!=null)
+					return false;
+			} else if (!this.lon.equals(other.lon))
+				return false;
+			if (Float.floatToIntBits(this.magnitude)!=Float.floatToIntBits(other.magnitude))
+				return false;
+			if (this.quakeTime==null) {
+				if (other.quakeTime!=null)
+					return false;
+			} else if (!this.quakeTime.equals(other.quakeTime))
+				return false;
+			return true;
 		}
 
 		public static class PrefectureDetail implements Comparable<PrefectureDetail> {
