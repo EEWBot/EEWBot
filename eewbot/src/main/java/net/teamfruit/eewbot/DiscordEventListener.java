@@ -3,9 +3,7 @@ package net.teamfruit.eewbot;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -214,24 +212,43 @@ public class DiscordEventListener {
 				BotUtils.reply(e, "https://discordapp.com/oauth2/authorize?client_id="+EEWBot.instance.getClient().getApplicationClientID()+"&scope=bot");
 			}
 		},
+		quakeinfo {
+			@Override
+			public void onCommand(final MessageReceivedEvent e, final String[] args) {
+				String remote = null;
+				if (args.length<=0)
+					remote = QuakeInfoDispather.REMOTE;
+				else if (args[0].startsWith("https://typhoon.yahoo.co.jp/weather/jp/earthquake/"))
+					remote = args[0];
+				else
+					BotUtils.reply(e, "URLが不正です");
+				if (remote!=null)
+					EEWBot.instance.getExecutor().execute(() -> {
+						try {
+							final QuakeInfo info = QuakeInfoDispather.get(args[0]);
+							BotUtils.reply(e, info.buildEmbed());
+							info.getDetails().forEach(detail -> BotUtils.reply(e, detail.buildEmbed()));
+						} catch (final Exception ex) {
+							EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
+							BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");
+						}
+					});
+			}
+		},
 		test {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				if (args.length<=0) {
+				if (args.length<=0)
 					BotUtils.reply(e, "引数が不足しています");
-				} else {
+				else {
 					EEWBot.instance.getExecutor().execute(() -> {
-						final List<Embeddable> list = new ArrayList<>();
+						Embeddable embeddable = null;
 						try {
 							if (args[0].startsWith("http://"))
-								list.add(EEWDispatcher.get(args[0]));
-							else if (args[0].startsWith("https://typhoon.yahoo.co.jp/weather/jp/earthquake/")) {
-								final QuakeInfo info = QuakeInfoDispather.get(args[0]);
-								list.add(info);
-								list.addAll(info.getDetails());
-							} else
-								list.add(EEWBot.GSON.fromJson(String.join(" ", args), EEW.class));
-							list.forEach(embeddable -> BotUtils.reply(e, "**これはテストです！**", embeddable.buildEmbed()));
+								embeddable = EEWDispatcher.get(args[0]);
+							else
+								embeddable = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
+							BotUtils.reply(e, "**これはテストです！**", embeddable.buildEmbed());
 						} catch (final Exception ex) {
 							EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
 							BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");
