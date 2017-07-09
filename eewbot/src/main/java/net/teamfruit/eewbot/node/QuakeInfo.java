@@ -20,8 +20,10 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import net.teamfruit.eewbot.node.QuakeInfo.PrefectureDetail.SeismicIntensity;
+import sx.blah.discord.api.internal.json.objects.EmbedObject;
+import sx.blah.discord.util.EmbedBuilder;
 
-public class QuakeInfo {
+public class QuakeInfo implements Embeddable {
 	public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy年M月d日 H時mm分");
 
 	private final String imageUrl;
@@ -191,6 +193,24 @@ public class QuakeInfo {
 		} else if (!this.quakeTime.equals(other.quakeTime))
 			return false;
 		return true;
+	}
+
+	@Override
+	public EmbedObject buildEmbed() {
+		final EmbedBuilder builder = new EmbedBuilder();
+
+		builder.appendField("震央", getEpicenter(), true);
+		builder.appendField("深さ", getDepth(), true);
+		builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
+		builder.appendField("最大震度", getMaxIntensity().toString(), false);
+
+		builder.withColor(128, 128, 128);
+		builder.withTitle("地震情報");
+		builder.withTimestamp(getAnnounceTime().getTime());
+		Optional.ofNullable(getImageUrl()).ifPresent(url -> builder.withImage(url));
+
+		builder.withFooterText("地震情報 - Yahoo!天気・災害");
+		return builder.build();
 	}
 
 	public static class PrefectureDetail implements Comparable<PrefectureDetail> {

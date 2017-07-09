@@ -7,8 +7,10 @@ import java.util.Date;
 import org.apache.commons.lang3.StringUtils;
 
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
+import sx.blah.discord.api.internal.json.objects.EmbedObject;
+import sx.blah.discord.util.EmbedBuilder;
 
-public class EEW {
+public class EEW implements Embeddable {
 	public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
 	private String alertflg;
@@ -189,4 +191,23 @@ public class EEW {
 				+", security="+this.security+"]";
 	}
 
+	@Override
+	public EmbedObject buildEmbed() {
+		final EmbedBuilder builder = new EmbedBuilder();
+
+		builder.appendField("震央", getRegionName(), true);
+		builder.appendField("深さ", getDepth()+"km", true);
+		builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
+		builder.appendField("予想震度", String.valueOf(getIntensity()), false);
+
+		if (isAlert())
+			builder.withColor(255, 0, 0);
+		else
+			builder.withColor(0, 0, 255);
+		builder.withTitle("緊急地震速報 ("+getAlertFlg()+") "+(isFinal() ? "最終報" : "第"+getReportNum()+"報"));
+		builder.withTimestamp(getReportTime().getTime());
+
+		builder.withFooterText("新強震モニタ");
+		return builder.build();
+	}
 }
