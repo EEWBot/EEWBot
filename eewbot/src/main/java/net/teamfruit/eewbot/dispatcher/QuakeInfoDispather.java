@@ -61,6 +61,7 @@ public class QuakeInfoDispather implements Runnable {
 		private final String depth;
 		private final float magnitude;
 		private final String info;
+		private final SeismicIntensity maxIntensity;
 		private final Set<PrefectureDetail> details = new TreeSet<>(Comparator.reverseOrder());
 
 		public QuakeInfo(final Document doc) {
@@ -83,7 +84,9 @@ public class QuakeInfoDispather implements Runnable {
 				throw new RuntimeException("Parse Error", e);
 			}
 
-			info.getElementsByTag("table").get(1).getElementsByTag("tr").forEach(tr -> {
+			final Elements yjw = info.getElementsByTag("table").get(1).getElementsByTag("tr");
+			this.maxIntensity = SeismicIntensity.get(yjw.first().getElementsByTag("td").first().text());
+			yjw.forEach(tr -> {
 				final SeismicIntensity intensity = SeismicIntensity.get(tr.getElementsByTag("td").first().text());
 				final Elements td = tr.getElementsByTag("table").first().getElementsByTag("td");
 				final String prefecture = td.get(0).text();
@@ -132,6 +135,10 @@ public class QuakeInfoDispather implements Runnable {
 
 		public String getInfo() {
 			return this.info;
+		}
+
+		public SeismicIntensity getMaxIntensity() {
+			return this.maxIntensity;
 		}
 
 		public Set<PrefectureDetail> getDetails() {
