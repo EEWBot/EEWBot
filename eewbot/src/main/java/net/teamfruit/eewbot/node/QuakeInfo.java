@@ -12,14 +12,12 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import net.teamfruit.eewbot.node.QuakeInfo.PrefectureDetail.SeismicIntensity;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.util.EmbedBuilder;
 
@@ -269,33 +267,6 @@ public class QuakeInfo implements Embeddable {
 			} else if (!this.prefecture.equals(other.prefecture))
 				return false;
 			return true;
-		}
-
-		public static enum SeismicIntensity {
-			ONE("震度1"),
-			TWO("震度2"),
-			THREE("震度3"),
-			FOUR("震度4"),
-			FIVE_MINUS("震度5弱"),
-			FIVE_PLUS("震度5強"),
-			SIX_MINUS("震度6弱"),
-			SIX_PLUS("震度6強"),
-			SEVEN("震度7");
-
-			private final String name;
-
-			private SeismicIntensity(final String name) {
-				this.name = name;
-			}
-
-			@Override
-			public String toString() {
-				return this.name;
-			}
-
-			public static SeismicIntensity get(final String name) {
-				return Stream.of(values()).filter(value -> value.toString().equals(name)).findAny().orElse(null);
-			}
 		}
 	}
 }

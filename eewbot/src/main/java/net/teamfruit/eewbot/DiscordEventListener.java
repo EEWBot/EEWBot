@@ -233,7 +233,7 @@ public class DiscordEventListener {
 								eew = EEWDispatcher.get(args[0]);
 							else
 								eew = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
-							BotUtils.reply(e, "**これは訓練です！**", EEWEventListener.buildEmbed(eew));
+							BotUtils.reply(e, "**これは訓練です！**", eew.buildEmbed());
 						} catch (final Exception ex) {
 							EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
 							BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");

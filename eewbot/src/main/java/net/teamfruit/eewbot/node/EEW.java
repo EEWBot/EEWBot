@@ -87,8 +87,8 @@ public class EEW implements Embeddable {
 		return "警報".equals(this.alertflg);
 	}
 
-	public String getIntensity() {
-		return this.calcintensity;
+	public SeismicIntensity getIntensity() {
+		return SeismicIntensity.get(this.calcintensity);
 	}
 
 	public int getDepth() {
@@ -198,7 +198,7 @@ public class EEW implements Embeddable {
 		builder.appendField("震央", getRegionName(), true);
 		builder.appendField("深さ", getDepth()+"km", true);
 		builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
-		builder.appendField("予想震度", String.valueOf(getIntensity()), false);
+		builder.appendField("予想震度", getIntensity().toString(), false);
 
 		if (isAlert())
 			builder.withColor(255, 0, 0);
