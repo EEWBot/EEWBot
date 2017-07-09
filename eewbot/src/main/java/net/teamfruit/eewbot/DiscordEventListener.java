@@ -218,7 +218,7 @@ public class DiscordEventListener {
 				String remote = null;
 				if (args.length<=0)
 					remote = QuakeInfoDispather.REMOTE;
-				else if (args[0].startsWith("https://typhoon.yahoo.co.jp/weather/jp/earthquake/"))
+				else if (args[0].startsWith("http://")||args[0].startsWith("https://"))
 					remote = args[0];
 				else
 					BotUtils.reply(e, "URLが不正です");
@@ -244,7 +244,7 @@ public class DiscordEventListener {
 					EEWBot.instance.getExecutor().execute(() -> {
 						Embeddable embeddable = null;
 						try {
-							if (args[0].startsWith("http://"))
+							if (args[0].startsWith("http://")||args[0].startsWith("https://"))
 								embeddable = EEWDispatcher.get(args[0]);
 							else
 								embeddable = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
