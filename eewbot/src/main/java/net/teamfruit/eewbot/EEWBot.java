@@ -30,6 +30,7 @@ import com.google.gson.reflect.TypeToken;
 
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
 import net.teamfruit.eewbot.dispatcher.NTPDispatcher;
+import net.teamfruit.eewbot.dispatcher.QuakeInfoDispather;
 import net.teamfruit.eewbot.gui.EEWBotGui;
 import sx.blah.discord.Discord4J.Discord4JLogger;
 import sx.blah.discord.api.ClientBuilder;
@@ -75,6 +76,7 @@ public class EEWBot {
 
 		this.executor.scheduleAtFixedRate(NTPDispatcher.INSTANCE, 0, this.config.getTimeFixDelay()>=3600 ? this.config.getTimeFixDelay() : 3600, TimeUnit.SECONDS);
 		this.executor.scheduleAtFixedRate(EEWDispatcher.INSTANCE, 10, this.config.getKyoshinDelay()>=1 ? this.config.getKyoshinDelay() : 1, TimeUnit.SECONDS);
+		this.executor.scheduleAtFixedRate(QuakeInfoDispather.INSTANCE, 0, this.config.getQuakeInfoDelay()>=10 ? this.config.getQuakeInfoDelay() : 10, TimeUnit.SECONDS);
 		EEWBot.LOGGER.info("Hello");
 	}
 

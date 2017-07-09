@@ -10,9 +10,14 @@ import net.teamfruit.eewbot.node.QuakeInfo;
 
 public class QuakeInfoDispather implements Runnable {
 
+	public static final QuakeInfoDispather INSTANCE = new QuakeInfoDispather();
+
 	public static final String REMOTE = "https://typhoon.yahoo.co.jp/weather/earthquake/";
 
 	private QuakeInfo prev;
+
+	private QuakeInfoDispather() {
+	}
 
 	@Override
 	public void run() {
