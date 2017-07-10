@@ -12,6 +12,7 @@ import net.teamfruit.eewbot.node.QuakeInfo;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.util.RequestBuffer;
 
 public class EEWEventListener {
 
@@ -42,6 +43,8 @@ public class EEWEventListener {
 					final IGuild id = EEWBot.instance.getClient().getGuildByID(entry.getKey());
 					final IChannel c = id.getChannelByID(channel.getId());
 					c.sendMessage(info.buildEmbed());
+					if (channel.quakeInfo)
+						info.getDetails().forEach(detail -> RequestBuffer.request(() -> c.sendMessage(detail.buildEmbed())));
 				}
 			}
 		}

@@ -7,6 +7,7 @@ public class Channel {
 	public boolean eewAlert = true;
 	public boolean eewPrediction = false;
 	public boolean quakeInfo = true;
+	public boolean quakeInfoDetail = false;
 
 	public Channel(final long id) {
 		this.id = id;
