@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -60,7 +60,9 @@ public class EEWBot {
 	private IDiscordClient client;
 
 	public EEWBot() throws Exception {
+		createConfigs();
 		loadConfigs();
+		saveConfigs();
 		if (this.config.isDebug())
 			((Discord4JLogger) EEWBot.LOGGER).setLevel(Discord4JLogger.Level.DEBUG);
 
@@ -69,7 +71,7 @@ public class EEWBot {
 			return;
 		}
 
-		this.client = createClient(this.config.getToken(), true);
+		this.client = new ClientBuilder().withToken(this.config.getToken()).login();
 		final EventDispatcher dispatcher = this.client.getDispatcher();
 		dispatcher.registerListener(new DiscordEventListener());
 		dispatcher.registerListener(new EEWEventListener());
@@ -109,63 +111,54 @@ public class EEWBot {
 		instance = new EEWBot();
 	}
 
-	public static IDiscordClient createClient(final String token, final boolean login) {
-		final ClientBuilder clientBuilder = new ClientBuilder();
-		clientBuilder.withToken(token);
-		if (login)
-			return clientBuilder.login();
-		else
-			return clientBuilder.build();
+	private static void writeConfig(final Path path, final Object obj, final Type type) throws IOException {
+		try (Writer w = Files.newBufferedWriter(path)) {
+			if (type!=null)
+				EEWBot.GSON.toJson(obj, type, w);
+			else
+				EEWBot.GSON.toJson(obj, w);
+		}
+	}
+
+	private static <T> Optional<T> readConfig(final Path path, final Class<T> clazz) throws IOException {
+		try (Reader r = Files.newBufferedReader(path)) {
+			return Optional.ofNullable(EEWBot.GSON.fromJson(r, clazz));
+		}
+	}
+
+	private static <T> Optional<T> readConfig(final Path path, final Type type) throws IOException {
+		try (Reader r = Files.newBufferedReader(path)) {
+			return Optional.ofNullable((T) EEWBot.GSON.fromJson(r, type));
+		}
+	}
+
+	public final Path cfgPath = Paths.get("config.json");
+	public final Path channelPath = Paths.get("channels.json");
+	public final Path permissionPath = Paths.get("permission.json");
+
+	private void createConfigs() throws ConfigException {
+		try {
+			if (!this.cfgPath.toFile().exists())
+				writeConfig(this.cfgPath, this.config, null);
+			if (!this.channelPath.toFile().exists())
+				writeConfig(this.channelPath, new ConcurrentHashMap<Long, CopyOnWriteArrayList<Channel>>(), null);
+			if (!this.permissionPath.toFile().exists())
+				writeConfig(this.permissionPath, this.permissions, new TypeToken<Map<String, Permission>>() {
+				}.getType());
+		} catch (final IOException e) {
+			throw new ConfigException("Config create Error", e);
+		}
 	}
 
 	public void loadConfigs() throws ConfigException {
 		try {
-			final Path cfgPath = Paths.get("config.json");
-			if (!cfgPath.toFile().exists()) {
-				try (Writer w = Files.newBufferedWriter(cfgPath)) {
-					EEWBot.GSON.toJson(this.config, w);
-				}
-			} else {
-				try (Reader r = Files.newBufferedReader(cfgPath)) {
-					final Config c = EEWBot.GSON.fromJson(r, Config.class);
-					if (c!=null)
-						this.config = c;
-				}
-				try (Writer w = Files.newBufferedWriter(cfgPath)) {
-					EEWBot.GSON.toJson(new Config().set(this.config), w);
-				}
-			}
-
-			final Path channelPath = Paths.get("channels.json");
-			if (!channelPath.toFile().exists()) {
-				try (Writer w = Files.newBufferedWriter(channelPath)) {
-					EEWBot.GSON.toJson(new ConcurrentHashMap<Long, CopyOnWriteArrayList<Channel>>(), w);
-				}
-			} else {
-				try (Reader r = Files.newBufferedReader(channelPath)) {
-					final Type type = new TypeToken<Map<Long, Collection<Channel>>>() {
-					}.getType();
-					final Map<Long, Collection<Channel>> map = EEWBot.GSON.fromJson(r, type);
-					if (map!=null)
-						for (final Entry<Long, Collection<Channel>> entry : map.entrySet())
-							this.channels.put(entry.getKey(), new CopyOnWriteArrayList<>(entry.getValue()));
-				}
-			}
-
-			final Type type = new TypeToken<Map<String, Permission>>() {
-			}.getType();
-			final Path permissionPath = Paths.get("permission.json");
-			if (!permissionPath.toFile().exists()) {
-				try (Writer w = Files.newBufferedWriter(permissionPath)) {
-					EEWBot.GSON.toJson(this.permissions, type, w);
-				}
-			} else {
-				try (Reader r = Files.newBufferedReader(permissionPath)) {
-					final Map<String, Permission> permissions = EEWBot.GSON.fromJson(r, type);
-					if (permissions!=null&&!permissions.isEmpty())
-						this.permissions = permissions;
-				}
-			}
+			readConfig(this.cfgPath, Config.class).ifPresent(config -> this.config = config);
+			final Optional<Map<Long, Collection<Channel>>> map = readConfig(this.channelPath, new TypeToken<Map<Long, Collection<Channel>>>() {
+			}.getType());
+			map.ifPresent(channel -> channel.entrySet().forEach(entry -> this.channels.put(entry.getKey(), new CopyOnWriteArrayList<>(entry.getValue()))));
+			final Optional<Map<String, Permission>> permissions = readConfig(this.permissionPath, new TypeToken<Map<String, Permission>>() {
+			}.getType());
+			permissions.filter(permissio -> permissio.isEmpty()).ifPresent(perm -> this.permissions = perm);
 		} catch (JsonSyntaxException|JsonIOException|IOException e) {
 			throw new ConfigException("Config load error", e);
 		}
@@ -173,18 +166,9 @@ public class EEWBot {
 
 	public void saveConfigs() throws ConfigException {
 		try {
-			final Path cfgPath = Paths.get("config.json");
-			try (Writer w = Files.newBufferedWriter(cfgPath)) {
-				EEWBot.GSON.toJson(this.config, w);
-			}
-			final Path channelPath = Paths.get("channels.json");
-			try (Writer w = Files.newBufferedWriter(channelPath)) {
-				EEWBot.GSON.toJson(this.channels, w);
-			}
-			//			final Path permissionPath = Paths.get("permission.json");
-			//			try (Writer w = Files.newBufferedWriter(permissionPath)) {
-			//				EEWBot.GSON.toJson(this.permissions, w);
-			//			}
+			writeConfig(this.cfgPath, this.config, null);
+			writeConfig(this.channelPath, this.channels, null);
+			writeConfig(this.permissionPath, this.permissions, null);
 		} catch (JsonIOException|IOException e) {
 			throw new ConfigException("Config save error", e);
 		}
