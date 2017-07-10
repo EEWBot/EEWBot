@@ -158,7 +158,7 @@ public class EEWBot {
 			map.ifPresent(channel -> channel.entrySet().forEach(entry -> this.channels.put(entry.getKey(), new CopyOnWriteArrayList<>(entry.getValue()))));
 			final Optional<Map<String, Permission>> permissions = readConfig(this.permissionPath, new TypeToken<Map<String, Permission>>() {
 			}.getType());
-			permissions.filter(permissio -> permissio.isEmpty()).ifPresent(perm -> this.permissions = perm);
+			permissions.ifPresent(perm -> this.permissions = perm);
 		} catch (JsonSyntaxException|JsonIOException|IOException e) {
 			throw new ConfigException("Config load error", e);
 		}
@@ -168,7 +168,8 @@ public class EEWBot {
 		try {
 			writeConfig(this.cfgPath, this.config, null);
 			writeConfig(this.channelPath, this.channels, null);
-			writeConfig(this.permissionPath, this.permissions, null);
+			writeConfig(this.permissionPath, this.permissions, new TypeToken<Map<String, Permission>>() {
+			}.getType());
 		} catch (JsonIOException|IOException e) {
 			throw new ConfigException("Config save error", e);
 		}
