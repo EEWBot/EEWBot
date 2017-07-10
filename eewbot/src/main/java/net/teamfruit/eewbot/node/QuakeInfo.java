@@ -135,7 +135,9 @@ public class QuakeInfo implements Embeddable {
 		result = prime*result+((this.lat==null) ? 0 : this.lat.hashCode());
 		result = prime*result+((this.lon==null) ? 0 : this.lon.hashCode());
 		result = prime*result+Float.floatToIntBits(this.magnitude);
+		result = prime*result+((this.maxIntensity==null) ? 0 : this.maxIntensity.hashCode());
 		result = prime*result+((this.quakeTime==null) ? 0 : this.quakeTime.hashCode());
+		result = prime*result+((this.url==null) ? 0 : this.url.hashCode());
 		return result;
 	}
 
@@ -190,10 +192,17 @@ public class QuakeInfo implements Embeddable {
 			return false;
 		if (Float.floatToIntBits(this.magnitude)!=Float.floatToIntBits(other.magnitude))
 			return false;
+		if (this.maxIntensity!=other.maxIntensity)
+			return false;
 		if (this.quakeTime==null) {
 			if (other.quakeTime!=null)
 				return false;
 		} else if (!this.quakeTime.equals(other.quakeTime))
+			return false;
+		if (this.url==null) {
+			if (other.url!=null)
+				return false;
+		} else if (!this.url.equals(other.url))
 			return false;
 		return true;
 	}
@@ -208,7 +217,7 @@ public class QuakeInfo implements Embeddable {
 		builder.appendField("最大震度", getMaxIntensity().getSimple(), false);
 		builder.appendField("情報", getInfo(), true);
 
-		builder.withColor(128, 128, 128);
+		builder.withColor(getMaxIntensity().getColor());
 		builder.withTitle("地震情報");
 		builder.withTimestamp(getAnnounceTime().getTime());
 		Optional.ofNullable(getImageUrl()).ifPresent(url -> builder.withImage(url));
@@ -220,7 +229,7 @@ public class QuakeInfo implements Embeddable {
 
 	@Override
 	public String toString() {
-		return "QuakeInfo [imageUrl="+this.imageUrl+", announceTime="+this.announceTime+", quakeTime="+this.quakeTime+", epicenter="+this.epicenter+", lat="+this.lat+", lon="+this.lon+", depth="+this.depth+", magnitude="+this.magnitude+", info="+this.info+", maxIntensity="+this.maxIntensity+", details="+this.details+"]";
+		return "QuakeInfo [url="+this.url+", imageUrl="+this.imageUrl+", announceTime="+this.announceTime+", quakeTime="+this.quakeTime+", epicenter="+this.epicenter+", lat="+this.lat+", lon="+this.lon+", depth="+this.depth+", magnitude="+this.magnitude+", info="+this.info+", maxIntensity="+this.maxIntensity+", details="+this.details+"]";
 	}
 
 	public static class PrefectureDetail implements Comparable<PrefectureDetail>, Embeddable {
@@ -262,8 +271,41 @@ public class QuakeInfo implements Embeddable {
 
 			getCities().entrySet().stream().forEach(entry -> builder.appendField(entry.getKey().toString(), String.join(" ", entry.getValue()), false));
 
+			getMaxIntensity().ifPresent(intensity -> builder.withColor(intensity.getColor()));
 			builder.withTitle(getPrefecture());
 			return builder.build();
 		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime*result+((this.cities==null) ? 0 : this.cities.hashCode());
+			result = prime*result+((this.prefecture==null) ? 0 : this.prefecture.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (this==obj)
+				return true;
+			if (obj==null)
+				return false;
+			if (!(obj instanceof PrefectureDetail))
+				return false;
+			final PrefectureDetail other = (PrefectureDetail) obj;
+			if (this.cities==null) {
+				if (other.cities!=null)
+					return false;
+			} else if (!this.cities.equals(other.cities))
+				return false;
+			if (this.prefecture==null) {
+				if (other.prefecture!=null)
+					return false;
+			} else if (!this.prefecture.equals(other.prefecture))
+				return false;
+			return true;
+		}
+
 	}
 }

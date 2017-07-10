@@ -215,24 +215,25 @@ public class DiscordEventListener {
 		quakeinfo {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				String remote = null;
-				if (args.length<=0)
-					remote = QuakeInfoDispather.REMOTE;
-				else if (args[0].startsWith("http://")||args[0].startsWith("https://"))
-					remote = args[0];
-				else
-					BotUtils.reply(e, "URLが不正です");
-				if (remote!=null)
-					EEWBot.instance.getExecutor().execute(() -> {
-						try {
-							final QuakeInfo info = QuakeInfoDispather.get(args[0]);
-							BotUtils.reply(e, info.buildEmbed());
-							info.getDetails().forEach(detail -> BotUtils.reply(e, detail.buildEmbed()));
-						} catch (final Exception ex) {
-							EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
-							BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");
-						}
-					});
+				EEWBot.instance.getExecutor().execute(() -> {
+					String remote = null;
+					if (args.length<=0)
+						remote = QuakeInfoDispather.REMOTE;
+					else if (args[0].startsWith("http://")||args[0].startsWith("https://"))
+						remote = args[0];
+					else
+						BotUtils.reply(e, "URLが不正です");
+
+					try {
+						final QuakeInfo info = QuakeInfoDispather.get(remote);
+						e.getChannel().sendMessage(info.buildEmbed());
+						info.getDetails().forEach(detail -> BotUtils.reply(e, detail.buildEmbed()));
+						info.getDetails().forEach(detail -> System.out.println(detail.getPrefecture()));
+					} catch (final Exception ex) {
+						EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
+						BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");
+					}
+				});
 			}
 		},
 		test {
