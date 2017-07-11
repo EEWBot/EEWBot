@@ -21,7 +21,9 @@ public class Channel {
 	public String toString() {
 		final StringBuilder sb = new StringBuilder();
 		sb.append("EEW警報: ").append(this.eewAlert).append("\n");
-		sb.append("EEW予報: ").append(this.eewPrediction);
+		sb.append("EEW予報: ").append(this.eewPrediction).append("\n");
+		sb.append("地震情報: ").append(this.quakeInfo).append("\n");
+		sb.append("詳細地震情報: ").append(this.quakeInfoDetail);
 		return sb.toString();
 	}
 }
