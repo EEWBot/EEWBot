@@ -192,7 +192,10 @@ public class QuakeInfo implements Embeddable {
 			return false;
 		if (Float.floatToIntBits(this.magnitude)!=Float.floatToIntBits(other.magnitude))
 			return false;
-		if (this.maxIntensity!=other.maxIntensity)
+		if (this.maxIntensity==null) {
+			if (other.maxIntensity!=null)
+				return false;
+		} else if (!this.maxIntensity.equals(other.maxIntensity))
 			return false;
 		if (this.quakeTime==null) {
 			if (other.quakeTime!=null)

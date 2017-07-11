@@ -42,6 +42,8 @@ public class DiscordEventListener {
 						command.onCommand(e, ArrayUtils.subarray(args, 2, args.length+1));
 					else
 						BotUtils.reply(e, "権限がありません！");
+				else
+					BotUtils.reply(e, "コマンドが存在しません\nコマンド一覧は`help`コマンドで確認出来ます");
 			}
 		}
 	}
@@ -99,23 +101,23 @@ public class DiscordEventListener {
 				else {
 					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
 					if (channel!=null) {
-						Arrays.stream(args).forEach(str -> {
-							Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).filter(field -> field.getName().equalsIgnoreCase(str)||str.equals("*")).forEach(field -> {
-								try {
-									field.setBoolean(channel, true);
-								} catch (IllegalArgumentException|IllegalAccessException ex) {
-									BotUtils.reply(e, "エラが発生しました");
-									EEWBot.LOGGER.error("Reflection error", ex);
-								}
-							});
-						});
-						try {
-							EEWBot.instance.saveConfigs();
-						} catch (final ConfigException ex) {
-							BotUtils.reply(e, "ConfigException");
-							EEWBot.LOGGER.error("Save error", ex);
+						final Field field = Arrays.stream(Channel.class.getFields()).filter(f -> !Modifier.isStatic(f.getModifiers())&&(f.getName().equalsIgnoreCase(args[0])||args[0].equals("*"))).findAny().orElse(null);
+						if (field!=null) {
+							try {
+								field.setBoolean(channel, true);
+								EEWBot.instance.saveConfigs();
+								BotUtils.reply(e, ":ok:");
+							} catch (IllegalArgumentException|IllegalAccessException ex) {
+								BotUtils.reply(e, "エラが発生しました");
+								EEWBot.LOGGER.error("Reflection error", ex);
+							} catch (final ConfigException ex) {
+								BotUtils.reply(e, "ConfigException");
+								EEWBot.LOGGER.error("Save error", ex);
+							}
+						} else {
+							BotUtils.reply(e, args[0]+"という項目は存在しません！");
+							return;
 						}
-						BotUtils.reply(e, ":ok:");
 					} else
 						BotUtils.reply(e, "このチャンネルには設定が存在しません！");
 				}
@@ -134,23 +136,23 @@ public class DiscordEventListener {
 				else {
 					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
 					if (channel!=null) {
-						Arrays.stream(args).forEach(str -> {
-							Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).filter(field -> field.getName().equalsIgnoreCase(str)||str.equals("*")).forEach(field -> {
-								try {
-									field.setBoolean(channel, false);
-								} catch (IllegalArgumentException|IllegalAccessException ex) {
-									BotUtils.reply(e, "エラが発生しました");
-									EEWBot.LOGGER.error("Reflection error", ex);
-								}
-							});
-						});
-						try {
-							EEWBot.instance.saveConfigs();
-						} catch (final ConfigException ex) {
-							BotUtils.reply(e, "ConfigException");
-							EEWBot.LOGGER.error("Save error", ex);
+						final Field field = Arrays.stream(Channel.class.getFields()).filter(f -> !Modifier.isStatic(f.getModifiers())&&(f.getName().equalsIgnoreCase(args[0])||args[0].equals("*"))).findAny().orElse(null);
+						if (field!=null) {
+							try {
+								field.setBoolean(channel, false);
+								EEWBot.instance.saveConfigs();
+								BotUtils.reply(e, ":ok:");
+							} catch (IllegalArgumentException|IllegalAccessException ex) {
+								BotUtils.reply(e, "エラが発生しました");
+								EEWBot.LOGGER.error("Reflection error", ex);
+							} catch (final ConfigException ex) {
+								BotUtils.reply(e, "ConfigException");
+								EEWBot.LOGGER.error("Save error", ex);
+							}
+						} else {
+							BotUtils.reply(e, args[0]+"という項目は存在しません！");
+							return;
 						}
-						BotUtils.reply(e, ":ok:");
 					} else
 						BotUtils.reply(e, "このチャンネルには設定が存在しません！");
 				}
@@ -161,7 +163,10 @@ public class DiscordEventListener {
 				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
 			}
 		},
-		unregister {
+		unregister
+
+		{
+
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				final long serverid = e.getGuild().getLongID();
@@ -183,8 +188,10 @@ public class DiscordEventListener {
 			public String getHelp() {
 				return "コマンドを実行したチャンネルをBotのメッセージ送信先から除外します。\n"+"送信するイベントを消去するには`remove`を使用してください。";
 			}
+
 		},
 		details {
+
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
@@ -193,8 +200,10 @@ public class DiscordEventListener {
 				else
 					BotUtils.reply(e, "このチャンネルには設定がありません！");
 			}
+
 		},
 		reload {
+
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				try {
@@ -205,14 +214,18 @@ public class DiscordEventListener {
 					BotUtils.reply(e, ":warning: エラーが発生しました");
 				}
 			}
+
 		},
 		joinserver {
+
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				BotUtils.reply(e, "https://discordapp.com/oauth2/authorize?client_id="+EEWBot.instance.getClient().getApplicationClientID()+"&scope=bot");
 			}
+
 		},
 		quakeinfo {
+
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				EEWBot.instance.getExecutor().execute(() -> {
@@ -234,8 +247,10 @@ public class DiscordEventListener {
 					}
 				});
 			}
+
 		},
 		test {
+
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				if (args.length<=0)
@@ -256,8 +271,10 @@ public class DiscordEventListener {
 					});
 				}
 			}
+
 		},
 		monitor {
+
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				EEWBot.instance.getExecutor().execute(() -> {
@@ -269,8 +286,10 @@ public class DiscordEventListener {
 					}
 				});
 			}
+
 		},
 		timefix {
+
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				EEWBot.instance.getExecutor().execute(() -> {
@@ -293,8 +312,10 @@ public class DiscordEventListener {
 					}
 				});
 			}
+
 		},
 		help {
+
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				if (args.length<=0)
