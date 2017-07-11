@@ -57,19 +57,17 @@ public class EEWBot {
 			put("everyone", Permission.DEFAULT_EVERYONE);
 		}
 	};
-	private IDiscordClient client;
+	private final IDiscordClient client;
 
-	public EEWBot() throws Exception {
+	public EEWBot() throws ConfigException {
 		createConfigs();
 		loadConfigs();
 		saveConfigs();
 		if (this.config.isDebug())
 			((Discord4JLogger) EEWBot.LOGGER).setLevel(Discord4JLogger.Level.DEBUG);
 
-		if (StringUtils.isEmpty(this.config.getToken())) {
-			EEWBot.LOGGER.info("Please set a token");
-			return;
-		}
+		if (StringUtils.isEmpty(this.config.getToken()))
+			throw new ConfigException("Please set a token");
 
 		this.client = new ClientBuilder().withToken(this.config.getToken()).login();
 		final EventDispatcher dispatcher = this.client.getDispatcher();

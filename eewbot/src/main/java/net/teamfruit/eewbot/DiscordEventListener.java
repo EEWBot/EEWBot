@@ -82,10 +82,10 @@ public class DiscordEventListener {
 						BotUtils.reply(e, "ConfigException");
 						EEWBot.LOGGER.error("Save error", ex);
 					}
-					BotUtils.reply(e, "チャンネルを設定しました！初期設定 :arrow_down_small: \n"+channel);
+					BotUtils.reply(e, "チャンネルを設定しました！");
+					BotUtils.reply(e, getHelp());
 				} else
 					BotUtils.reply(e, "このチャンネルには既に設定が存在します！");
-				BotUtils.reply(e, getHelp());
 			}
 
 			@Override
@@ -163,9 +163,7 @@ public class DiscordEventListener {
 				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
 			}
 		},
-		unregister
-
-		{
+		unregister {
 
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
