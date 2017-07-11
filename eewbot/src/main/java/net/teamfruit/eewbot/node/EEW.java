@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.node;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
@@ -87,8 +88,8 @@ public class EEW implements Embeddable {
 		return "警報".equals(this.alertflg);
 	}
 
-	public SeismicIntensity getIntensity() {
-		return SeismicIntensity.get(this.calcintensity);
+	public Optional<SeismicIntensity> getIntensity() {
+		return Optional.ofNullable(SeismicIntensity.get(this.calcintensity));
 	}
 
 	public int getDepth() {
@@ -198,7 +199,7 @@ public class EEW implements Embeddable {
 		builder.appendField("震央", getRegionName(), true);
 		builder.appendField("深さ", getDepth()+"km", true);
 		builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
-		builder.appendField("予想震度", getIntensity().getSimple(), false);
+		getIntensity().ifPresent(intensity -> builder.appendField("予想震度", intensity.getSimple(), false));
 
 		if (isAlert())
 			builder.withColor(255, 0, 0);

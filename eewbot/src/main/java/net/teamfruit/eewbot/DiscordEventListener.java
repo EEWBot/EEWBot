@@ -228,7 +228,6 @@ public class DiscordEventListener {
 						final QuakeInfo info = QuakeInfoDispather.get(remote);
 						e.getChannel().sendMessage(info.buildEmbed());
 						info.getDetails().forEach(detail -> BotUtils.reply(e, detail.buildEmbed()));
-						info.getDetails().forEach(detail -> System.out.println(detail.getPrefecture()));
 					} catch (final Exception ex) {
 						EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
 						BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");

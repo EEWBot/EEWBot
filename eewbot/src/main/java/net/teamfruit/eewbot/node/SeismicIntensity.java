@@ -38,7 +38,7 @@ public enum SeismicIntensity {
 	}
 
 	public static SeismicIntensity get(final String name) {
-		return Stream.of(values()).filter(value -> value.toString().equals(name)).findAny().orElse(null);
+		return Stream.of(values()).filter(value -> value.toString().equals(name)||value.getSimple().equals(name)).findAny().orElse(null);
 	}
 
 }
