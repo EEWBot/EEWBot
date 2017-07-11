@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>net.teamfruit</groupId>
 	<artifactId>eewbot</artifactId>
-	<version>1.2.0</version>
+	<version>1.2.1</version>
 	<name>EEWBot</name>
 	<description>EEWBot</description>
 	<build>
