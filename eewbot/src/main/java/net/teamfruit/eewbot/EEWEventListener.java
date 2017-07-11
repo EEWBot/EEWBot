@@ -43,7 +43,7 @@ public class EEWEventListener {
 					final IGuild id = EEWBot.instance.getClient().getGuildByID(entry.getKey());
 					final IChannel c = id.getChannelByID(channel.getId());
 					c.sendMessage(info.buildEmbed());
-					if (channel.quakeInfo)
+					if (channel.quakeInfoDetail)
 						info.getDetails().forEach(detail -> RequestBuffer.request(() -> c.sendMessage(detail.buildEmbed())));
 				}
 			}

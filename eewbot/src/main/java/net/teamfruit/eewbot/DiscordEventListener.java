@@ -23,6 +23,7 @@ import net.teamfruit.eewbot.node.EEW;
 import net.teamfruit.eewbot.node.Embeddable;
 import net.teamfruit.eewbot.node.QuakeInfo;
 import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.guild.GuildLeaveEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelDeleteEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 
@@ -60,6 +61,16 @@ public class DiscordEventListener {
 					EEWBot.LOGGER.error("Error on channel delete", ex);
 				}
 		}
+	}
+
+	@EventSubscriber
+	public void onServerDelete(final GuildLeaveEvent e) {
+		if (EEWBot.instance.getChannels().remove(e.getGuild().getLongID())!=null)
+			try {
+				EEWBot.instance.saveConfigs();
+			} catch (final ConfigException ex) {
+				EEWBot.LOGGER.error("Error on guild delete", ex);
+			}
 	}
 
 	public static enum Command {
