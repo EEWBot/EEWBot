@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.node;
 
 import java.awt.Color;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
@@ -37,8 +38,8 @@ public enum SeismicIntensity {
 		return this.name;
 	}
 
-	public static SeismicIntensity get(final String name) {
-		return Stream.of(values()).filter(value -> value.toString().equals(name)||value.getSimple().equals(name)).findAny().orElse(null);
+	public static Optional<SeismicIntensity> get(final String name) {
+		return Optional.ofNullable(Stream.of(values()).filter(value -> value.toString().equals(name)||value.getSimple().equals(name)).findAny().orElse(null));
 	}
 
 }

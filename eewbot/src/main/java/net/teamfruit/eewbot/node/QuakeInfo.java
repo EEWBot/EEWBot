@@ -34,7 +34,7 @@ public class QuakeInfo implements Embeddable {
 	private final String depth;
 	private final float magnitude;
 	private final String info;
-	private final SeismicIntensity maxIntensity;
+	private final Optional<SeismicIntensity> maxIntensity;
 	private final List<PrefectureDetail> details;
 
 	public QuakeInfo(final Document doc) {
@@ -62,11 +62,11 @@ public class QuakeInfo implements Embeddable {
 		this.maxIntensity = SeismicIntensity.get(yjw.getElementsByTag("td").first().getElementsByTag("td").first().text());
 		final Map<String, PrefectureDetail> details = new HashMap<>();
 		yjw.getElementsByTag("tr").stream().filter(tr -> tr.attr("valign").equals("middle")).forEach(tr -> {
-			final SeismicIntensity intensity = SeismicIntensity.get(tr.getElementsByTag("td").first().getElementsByTag("td").first().text());
+			final Optional<SeismicIntensity> intensity = SeismicIntensity.get(tr.getElementsByTag("td").first().getElementsByTag("td").first().text());
 			tr.getElementsByTag("table").first().getElementsByTag("tr").stream().map(line -> line.getElementsByTag("td")).collect(Collectors.toMap(td -> td.get(0).text(), td -> td.get(1).text())).entrySet().forEach(entry -> {
 				final String prefecture = entry.getKey();
 				final PrefectureDetail detail = details.computeIfAbsent(prefecture, key -> new PrefectureDetail(prefecture));
-				Stream.of(StringUtils.split(entry.getValue(), "　")).forEach(str -> detail.addCity(intensity, str));
+				intensity.ifPresent(line -> Stream.of(StringUtils.split(entry.getValue(), "　")).forEach(str -> detail.addCity(line, str)));
 			});
 		});
 
@@ -114,7 +114,7 @@ public class QuakeInfo implements Embeddable {
 		return this.info;
 	}
 
-	public SeismicIntensity getMaxIntensity() {
+	public Optional<SeismicIntensity> getMaxIntensity() {
 		return this.maxIntensity;
 	}
 
@@ -214,10 +214,10 @@ public class QuakeInfo implements Embeddable {
 		builder.appendField("震央", getEpicenter(), true);
 		builder.appendField("深さ", getDepth(), true);
 		builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
-		builder.appendField("最大震度", getMaxIntensity().getSimple(), false);
+		getMaxIntensity().ifPresent(intensity -> builder.appendField("最大震度", intensity.getSimple(), false));
 		builder.appendField("情報", getInfo(), true);
 
-		builder.withColor(getMaxIntensity().getColor());
+		getMaxIntensity().ifPresent(intensity -> builder.withColor(intensity.getColor()));
 		builder.withTitle("地震情報");
 		builder.withTimestamp(getAnnounceTime().getTime());
 		Optional.ofNullable(getImageUrl()).ifPresent(url -> builder.withImage(url));

@@ -89,7 +89,7 @@ public class EEW implements Embeddable {
 	}
 
 	public Optional<SeismicIntensity> getIntensity() {
-		return Optional.ofNullable(SeismicIntensity.get(this.calcintensity));
+		return SeismicIntensity.get(this.calcintensity);
 	}
 
 	public int getDepth() {
