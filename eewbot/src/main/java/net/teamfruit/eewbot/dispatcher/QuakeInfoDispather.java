@@ -23,7 +23,6 @@ public class QuakeInfoDispather implements Runnable {
 	public void run() {
 		try {
 			final QuakeInfo info = get(REMOTE);
-			EEWBot.LOGGER.info(String.valueOf(info.equals(this.prev)));
 			if (!info.equals(this.prev)) {
 				if (this.prev!=null)
 					EEWBot.instance.getClient().getDispatcher().dispatch(new QuakeInfoEvent(EEWBot.instance.getClient(), info));

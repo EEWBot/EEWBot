@@ -25,7 +25,7 @@ public class QuakeInfo implements Embeddable {
 	public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyy年M月d日 H時mm分");
 
 	private final String url;
-	private final String imageUrl;
+	private final Optional<String> imageUrl;
 	private final Date announceTime;
 	private final Date quakeTime;
 	private final String epicenter;
@@ -39,7 +39,7 @@ public class QuakeInfo implements Embeddable {
 
 	public QuakeInfo(final Document doc) {
 		this.url = "https://typhoon.yahoo.co.jp"+Optional.ofNullable(doc.getElementById("history")).map(history -> history.getElementsByTag("tr").get(1).getElementsByTag("td").first().getElementsByTag("a").first().attr("href")).orElse("");
-		this.imageUrl = doc.getElementById("yjw_keihou").getElementsByTag("img").first().attr("src");
+		this.imageUrl = Optional.ofNullable(doc.getElementById("yjw_keihou").getElementsByTag("img").first()).map(image -> image.attr("src"));
 		final Element info = doc.getElementById("eqinfdtl");
 		final Map<String, String> data = info.getElementsByTag("table").get(0).getElementsByTag("tr").stream()
 				.map(tr -> tr.getElementsByTag("td")).collect(Collectors.toMap(td -> td.get(0).text(), td -> td.get(1).text()));
@@ -78,7 +78,7 @@ public class QuakeInfo implements Embeddable {
 		return this.url;
 	}
 
-	public String getImageUrl() {
+	public Optional<String> getImageUrl() {
 		return this.imageUrl;
 	}
 
@@ -223,7 +223,7 @@ public class QuakeInfo implements Embeddable {
 		getMaxIntensity().ifPresent(intensity -> builder.withColor(intensity.getColor()));
 		builder.withTitle("地震情報");
 		builder.withTimestamp(getAnnounceTime().getTime());
-		Optional.ofNullable(getImageUrl()).ifPresent(url -> builder.withImage(url));
+		getImageUrl().ifPresent(url -> builder.withImage(url));
 
 		builder.withFooterText("地震情報 - Yahoo!天気・災害");
 		builder.withUrl(getUrl());
