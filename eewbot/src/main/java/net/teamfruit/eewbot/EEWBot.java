@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -43,12 +42,7 @@ public class EEWBot {
 	public static final Logger LOGGER = new Discord4JLogger(EEWBot.class.getName());
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, new ThreadFactory() {
-		@Override
-		public Thread newThread(final Runnable r) {
-			return new Thread(r, "EEWBot-communication-thread");
-		}
-	});
+	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "EEWBot-communication-thread"));
 	private Config config = new Config();
 	private final Map<Long, CopyOnWriteArrayList<Channel>> channels = new ConcurrentHashMap<>();
 	private Map<String, Permission> permissions = new HashMap<String, Permission>() {

@@ -2,6 +2,7 @@ package net.teamfruit.eewbot;
 
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import net.teamfruit.eewbot.dispatcher.EEWEvent;
@@ -24,9 +25,8 @@ public class EEWEventListener {
 			for (final Iterator<Channel> it2 = entry.getValue().iterator(); it2.hasNext();) {
 				final Channel channel = it2.next();
 				if ((eew.isAlert()&&channel.eewAlert)||(!eew.isAlert()&&channel.eewPrediction)) {
-					final IGuild id = EEWBot.instance.getClient().getGuildByID(entry.getKey());
-					final IChannel c = id.getChannelByID(channel.getId());
-					c.sendMessage(eew.buildEmbed());
+					Optional.ofNullable(EEWBot.instance.getClient().getGuildByID(entry.getKey()))
+							.ifPresent(id -> id.getChannelByID(channel.getId()).sendMessage(eew.buildEmbed()));
 				}
 			}
 		}
@@ -40,11 +40,10 @@ public class EEWEventListener {
 			for (final Iterator<Channel> it2 = entry.getValue().iterator(); it2.hasNext();) {
 				final Channel channel = it2.next();
 				if (channel.quakeInfo) {
-					final IGuild id = EEWBot.instance.getClient().getGuildByID(entry.getKey());
-					final IChannel c = id.getChannelByID(channel.getId());
-					c.sendMessage(info.buildEmbed());
+					final Optional<IGuild> guild = Optional.ofNullable(EEWBot.instance.getClient().getGuildByID(entry.getKey()));
+					guild.ifPresent(id -> id.getChannelByID(channel.getId()).sendMessage(info.buildEmbed()));
 					if (channel.quakeInfoDetail)
-						info.getDetails().forEach(detail -> RequestBuffer.request(() -> c.sendMessage(detail.buildEmbed())));
+						info.getDetails().forEach(detail -> RequestBuffer.request(() -> guild.ifPresent(id -> id.getChannelByID(channel.getId()).sendMessage(detail.buildEmbed()))));
 				}
 			}
 		}
