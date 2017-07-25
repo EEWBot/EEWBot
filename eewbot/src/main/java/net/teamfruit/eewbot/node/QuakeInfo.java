@@ -39,7 +39,7 @@ public class QuakeInfo implements Embeddable {
 
 	public QuakeInfo(final Document doc) {
 		this.url = "https://typhoon.yahoo.co.jp"+Optional.ofNullable(doc.getElementById("history")).map(history -> history.getElementsByTag("tr").get(1).getElementsByTag("td").first().getElementsByTag("a").first().attr("href")).orElse("");
-		this.imageUrl = Optional.ofNullable(doc.getElementById("yjw_keihou").getElementsByTag("img").first()).map(image -> image.attr("src"));
+		this.imageUrl = Optional.ofNullable(doc.getElementById("yjw_keihou").getElementsByTag("img").first()).map(image -> StringUtils.substringBefore(image.attr("src"), "?"));
 		final Element info = doc.getElementById("eqinfdtl");
 		final Map<String, String> data = info.getElementsByTag("table").get(0).getElementsByTag("tr").stream()
 				.map(tr -> tr.getElementsByTag("td")).collect(Collectors.toMap(td -> td.get(0).text(), td -> td.get(1).text()));
@@ -130,7 +130,6 @@ public class QuakeInfo implements Embeddable {
 		result = prime*result+((this.depth==null) ? 0 : this.depth.hashCode());
 		result = prime*result+((this.details==null) ? 0 : this.details.hashCode());
 		result = prime*result+((this.epicenter==null) ? 0 : this.epicenter.hashCode());
-		result = prime*result+((this.imageUrl==null) ? 0 : this.imageUrl.hashCode());
 		result = prime*result+((this.info==null) ? 0 : this.info.hashCode());
 		result = prime*result+((this.lat==null) ? 0 : this.lat.hashCode());
 		result = prime*result+((this.lon==null) ? 0 : this.lon.hashCode());
@@ -169,11 +168,6 @@ public class QuakeInfo implements Embeddable {
 			if (other.epicenter!=null)
 				return false;
 		} else if (!this.epicenter.equals(other.epicenter))
-			return false;
-		if (this.imageUrl==null) {
-			if (other.imageUrl!=null)
-				return false;
-		} else if (!this.imageUrl.equals(other.imageUrl))
 			return false;
 		if (this.info==null) {
 			if (other.info!=null)
