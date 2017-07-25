@@ -27,7 +27,6 @@ public class QuakeInfoDispather implements Runnable {
 				if (this.prev!=null)
 					EEWBot.instance.getClient().getDispatcher().dispatch(new QuakeInfoEvent(EEWBot.instance.getClient(), info));
 				this.prev = info;
-				System.out.println(info);
 			}
 		} catch (final IOException e) {
 			EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
