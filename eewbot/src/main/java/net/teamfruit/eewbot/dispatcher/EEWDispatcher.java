@@ -13,6 +13,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.event.EEWEvent;
 import net.teamfruit.eewbot.node.EEW;
 
 public class EEWDispatcher implements Runnable {

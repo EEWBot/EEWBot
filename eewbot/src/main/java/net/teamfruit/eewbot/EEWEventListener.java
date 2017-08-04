@@ -5,9 +5,9 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import net.teamfruit.eewbot.dispatcher.EEWEvent;
-import net.teamfruit.eewbot.dispatcher.MonitorEvent;
-import net.teamfruit.eewbot.dispatcher.QuakeInfoEvent;
+import net.teamfruit.eewbot.event.EEWEvent;
+import net.teamfruit.eewbot.event.MonitorEvent;
+import net.teamfruit.eewbot.event.QuakeInfoEvent;
 import net.teamfruit.eewbot.node.EEW;
 import net.teamfruit.eewbot.node.QuakeInfo;
 import sx.blah.discord.api.events.EventSubscriber;
@@ -19,7 +19,7 @@ public class EEWEventListener {
 
 	@EventSubscriber
 	public void onEEW(final EEWEvent e) {
-		final EEW eew = e.getEEW();
+		final EEW eew = e.getElement();
 		for (final Iterator<Entry<Long, CopyOnWriteArrayList<Channel>>> it1 = EEWBot.instance.getChannels().entrySet().iterator(); it1.hasNext();) {
 			final Entry<Long, CopyOnWriteArrayList<Channel>> entry = it1.next();
 			for (final Iterator<Channel> it2 = entry.getValue().iterator(); it2.hasNext();) {
@@ -34,7 +34,7 @@ public class EEWEventListener {
 
 	@EventSubscriber
 	public void onQuakeInfo(final QuakeInfoEvent e) {
-		final QuakeInfo info = e.getQuakeInfo();
+		final QuakeInfo info = e.getElement();
 		for (final Iterator<Entry<Long, CopyOnWriteArrayList<Channel>>> it1 = EEWBot.instance.getChannels().entrySet().iterator(); it1.hasNext();) {
 			final Entry<Long, CopyOnWriteArrayList<Channel>> entry = it1.next();
 			for (final Iterator<Channel> it2 = entry.getValue().iterator(); it2.hasNext();) {
@@ -57,7 +57,7 @@ public class EEWEventListener {
 				final Channel channel = it2.next();
 				final IGuild id = EEWBot.instance.getClient().getGuildByID(entry.getKey());
 				final IChannel c = id.getChannelByID(channel.getId());
-				c.sendFile("", e.getImage(), "kyoshinmonitor.png");
+				c.sendFile("", e.getElement(), "kyoshinmonitor.png");
 			}
 		}
 	}

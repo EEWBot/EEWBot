@@ -7,6 +7,7 @@ import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
 
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.event.TimeEvent;
 
 public class NTPDispatcher implements Runnable {
 	public static final NTPDispatcher INSTANCE = new NTPDispatcher();

@@ -6,6 +6,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jsoup.Jsoup;
 
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.event.QuakeInfoEvent;
 import net.teamfruit.eewbot.node.QuakeInfo;
 
 public class QuakeInfoDispather implements Runnable {

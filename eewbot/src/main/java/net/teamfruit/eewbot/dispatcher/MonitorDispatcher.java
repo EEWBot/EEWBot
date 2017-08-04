@@ -27,6 +27,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.event.MonitorEvent;
 
 public class MonitorDispatcher implements Runnable {
 
