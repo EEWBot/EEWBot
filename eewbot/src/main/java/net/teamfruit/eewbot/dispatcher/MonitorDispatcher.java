@@ -54,8 +54,8 @@ public class MonitorDispatcher implements Runnable {
 
 		final String dateStr = FORMAT.format(date);
 		final String dayStr = StringUtils.substring(dateStr, 0, 8);
-		Stream.of(REMOTE+"EstShindoImg/eew/"+dayStr+"/"+dateStr+".eew.gif",
-				REMOTE+"RealTimeImg/jma_s/"+dayStr+"/"+dateStr+".jma_s.gif",
+		Stream.of(/*REMOTE+"EstShindoImg/eew/"+dayStr+"/"+dateStr+".eew.gif",*/
+				REMOTE+"RealTimeImg/acmap_s/"+dayStr+"/"+dateStr+".acmap_s.gif",
 				REMOTE+"PSWaveImg/eew/"+dayStr+"/"+dateStr+".eew.gif").forEach(str -> {
 					final RequestConfig config = RequestConfig.custom()
 							.setConnectTimeout(10000)
