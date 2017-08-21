@@ -260,7 +260,7 @@ public class QuakeInfo implements Embeddable {
 		public int compareTo(final PrefectureDetail o) {
 			return getMaxIntensity().map(intensity -> intensity.compareTo(o.getMaxIntensity().orElseThrow(() -> new IllegalArgumentException())))
 					.orElseThrow(() -> new IllegalStateException());
-		};
+		}
 
 		@Override
 		public EmbedObject buildEmbed() {

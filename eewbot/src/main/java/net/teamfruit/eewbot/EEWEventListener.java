@@ -63,11 +63,13 @@ public class EEWEventListener {
 			final Entry<Long, CopyOnWriteArrayList<Channel>> entry = it1.next();
 			for (final Iterator<Channel> it2 = entry.getValue().iterator(); it2.hasNext();) {
 				final Channel channel = it2.next();
-				final Optional<IGuild> guild = Optional.ofNullable(EEWBot.instance.getClient().getGuildByID(entry.getKey()));
-				try {
-					guild.ifPresent(id -> id.getChannelByID(channel.getId()).sendFile("", e.getElement(), "kyoshinmonitor.png"));
-				} catch (final MissingPermissionsException ex) {
-					EEWBot.LOGGER.warn("ファイルを送信する権限がありません: "+guild.get().getName()+" #"+guild.get().getChannelByID(channel.getId()).getName());
+				if (channel.monitor) {
+					final Optional<IGuild> guild = Optional.ofNullable(EEWBot.instance.getClient().getGuildByID(entry.getKey()));
+					try {
+						guild.ifPresent(id -> id.getChannelByID(channel.getId()).sendFile("", e.getElement(), "kyoshinmonitor.png"));
+					} catch (final MissingPermissionsException ex) {
+						EEWBot.LOGGER.warn("ファイルを送信する権限がありません: "+guild.get().getName()+" #"+guild.get().getChannelByID(channel.getId()).getName());
+					}
 				}
 			}
 		}

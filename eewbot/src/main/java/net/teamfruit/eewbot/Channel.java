@@ -8,6 +8,7 @@ public class Channel {
 	public boolean eewPrediction = false;
 	public boolean quakeInfo = true;
 	public boolean quakeInfoDetail = false;
+	public boolean monitor = true;
 
 	public Channel(final long id) {
 		this.id = id;
@@ -24,6 +25,7 @@ public class Channel {
 		sb.append("EEW予報: ").append(this.eewPrediction).append("\n");
 		sb.append("地震情報: ").append(this.quakeInfo).append("\n");
 		sb.append("詳細地震情報: ").append(this.quakeInfoDetail);
+		sb.append("強震モニタ: ").append(this.monitor);
 		return sb.toString();
 	}
 }
