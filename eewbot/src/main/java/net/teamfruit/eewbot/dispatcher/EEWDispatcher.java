@@ -39,6 +39,8 @@ public class EEWDispatcher implements Runnable {
 				if (latestReport==null||latestReport<res.getReportNum()) {
 					this.prev.put(res.getReportId(), res.getReportNum());
 					EEWBot.instance.getClient().getDispatcher().dispatch(new EEWEvent(EEWBot.instance.getClient(), res));
+					if (res.getReportNum()==1||res.isFinal())
+						EEWBot.instance.getExecutor().execute(MonitorDispatcher.INSTANCE);
 				}
 			} else
 				this.prev.clear();
