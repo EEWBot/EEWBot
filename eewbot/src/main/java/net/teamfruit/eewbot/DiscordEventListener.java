@@ -15,6 +15,7 @@ import org.apache.commons.net.ntp.NtpV3Packet;
 import org.apache.commons.net.ntp.TimeInfo;
 import org.apache.commons.net.ntp.TimeStamp;
 
+import net.teamfruit.eewbot.Channel.ChannelElement;
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
 import net.teamfruit.eewbot.dispatcher.MonitorDispatcher;
 import net.teamfruit.eewbot.dispatcher.NTPDispatcher;
@@ -112,15 +113,12 @@ public class DiscordEventListener {
 				else {
 					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
 					if (channel!=null) {
-						final Field field = Arrays.stream(Channel.class.getFields()).filter(f -> !Modifier.isStatic(f.getModifiers())&&(f.getName().equalsIgnoreCase(args[0])||args[0].equals("*"))).findAny().orElse(null);
-						if (field!=null) {
+						final ChannelElement element = channel.getElement(args[0]);
+						if (element!=null) {
 							try {
-								field.setBoolean(channel, true);
+								element.set(true);
 								EEWBot.instance.saveConfigs();
 								BotUtils.reply(e, ":ok:");
-							} catch (IllegalArgumentException|IllegalAccessException ex) {
-								BotUtils.reply(e, "エラが発生しました");
-								EEWBot.LOGGER.error("Reflection error", ex);
 							} catch (final ConfigException ex) {
 								BotUtils.reply(e, "ConfigException");
 								EEWBot.LOGGER.error("Save error", ex);
@@ -147,15 +145,12 @@ public class DiscordEventListener {
 				else {
 					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
 					if (channel!=null) {
-						final Field field = Arrays.stream(Channel.class.getFields()).filter(f -> !Modifier.isStatic(f.getModifiers())&&(f.getName().equalsIgnoreCase(args[0])||args[0].equals("*"))).findAny().orElse(null);
-						if (field!=null) {
+						final ChannelElement element = channel.getElement(args[0]);
+						if (element!=null) {
 							try {
-								field.setBoolean(channel, false);
+								element.set(false);
 								EEWBot.instance.saveConfigs();
 								BotUtils.reply(e, ":ok:");
-							} catch (IllegalArgumentException|IllegalAccessException ex) {
-								BotUtils.reply(e, "エラが発生しました");
-								EEWBot.LOGGER.error("Reflection error", ex);
 							} catch (final ConfigException ex) {
 								BotUtils.reply(e, "ConfigException");
 								EEWBot.LOGGER.error("Save error", ex);

@@ -40,7 +40,7 @@ public class EEWBot {
 	public static EEWBot instance;
 
 	public static final Logger LOGGER = new Discord4JLogger(EEWBot.class.getName());
-	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	public static final Gson GSON = new GsonBuilder().registerTypeHierarchyAdapter(Channel.class, new Channel.ChannelTypeAdapter()).setPrettyPrinting().create();
 
 	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "EEWBot-communication-thread"));
 	private Config config = new Config();
