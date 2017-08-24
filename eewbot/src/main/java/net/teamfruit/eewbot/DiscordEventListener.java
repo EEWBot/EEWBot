@@ -94,8 +94,8 @@ public class DiscordEventListener {
 						BotUtils.reply(e, "ConfigException");
 						EEWBot.LOGGER.error("Save error", ex);
 					}
+					BotUtils.reply(e, "チャンネルの設定を確認するには`details`, 送信するイベントを追加するには`add`, 消去するには`remove`, チャンネルの設定を消去するには`unregister`を使用してください。");
 					BotUtils.reply(e, "チャンネルを設定しました！");
-					BotUtils.reply(e, getHelp());
 				} else
 					BotUtils.reply(e, "このチャンネルには既に設定が存在します！");
 			}
@@ -176,8 +176,10 @@ public class DiscordEventListener {
 				final long serverid = e.getGuild().getLongID();
 				final long channelid = e.getChannel().getLongID();
 				final CopyOnWriteArrayList<Channel> channels = EEWBot.instance.getChannels().get(serverid);
-				if (channels.removeIf(channel -> channel.id==channelid)) {
+				if (channels!=null&&channels.removeIf(channel -> channel.id==channelid)) {
 					try {
+						if (channels.isEmpty())
+							EEWBot.instance.getChannels().remove(serverid);
 						EEWBot.instance.saveConfigs();
 						BotUtils.reply(e, ":ok:");
 					} catch (final ConfigException ex) {
