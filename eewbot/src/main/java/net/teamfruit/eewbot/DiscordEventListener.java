@@ -55,7 +55,7 @@ public class DiscordEventListener {
 		final CopyOnWriteArrayList<Channel> channels = EEWBot.instance.getChannels().get(e.getGuild().getLongID());
 		if (channels!=null) {
 			final long id = e.getChannel().getLongID();
-			if (channels.removeIf(channel -> channel.getId()==id))
+			if (channels.removeIf(channel -> channel.id==id))
 				try {
 					EEWBot.instance.saveConfigs();
 				} catch (final ConfigException ex) {
@@ -102,7 +102,7 @@ public class DiscordEventListener {
 
 			@Override
 			public String getHelp() {
-				return "コマンドを実行したチャンネルをBotのメッセージ送信先に設定します。\n"+"初期状態では以下の設定になります。```"+Channel.DEFAULT+"```送信するイベントを追加するには`add`, 消去するには`remove`, チャンネルの設定を消去するには`unregister`を使用してください。";
+				return "コマンドを実行したチャンネルをBotのメッセージ送信先に設定します。\nチャンネルの設定を確認するには`details`, 送信するイベントを追加するには`add`, 消去するには`remove`, チャンネルの設定を消去するには`unregister`を使用してください。";
 			}
 		},
 		add {
@@ -176,7 +176,7 @@ public class DiscordEventListener {
 				final long serverid = e.getGuild().getLongID();
 				final long channelid = e.getChannel().getLongID();
 				final CopyOnWriteArrayList<Channel> channels = EEWBot.instance.getChannels().get(serverid);
-				if (channels.removeIf(channel -> channel.getId()==channelid)) {
+				if (channels.removeIf(channel -> channel.id==channelid)) {
 					try {
 						EEWBot.instance.saveConfigs();
 						BotUtils.reply(e, ":ok:");

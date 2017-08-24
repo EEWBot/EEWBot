@@ -27,9 +27,9 @@ public class EEWEventListener {
 				if ((eew.isAlert()&&channel.eewAlert.get())||(!eew.isAlert()&&channel.eewPrediction.get())) {
 					final Optional<IGuild> guild = Optional.ofNullable(EEWBot.instance.getClient().getGuildByID(entry.getKey()));
 					try {
-						guild.ifPresent(id -> id.getChannelByID(channel.getId()).sendMessage(eew.buildEmbed()));
+						guild.ifPresent(id -> id.getChannelByID(channel.id).sendMessage(eew.buildEmbed()));
 					} catch (final MissingPermissionsException ex) {
-						EEWBot.LOGGER.warn("メッセージを送信する権限がありません: "+guild.get().getName()+" #"+guild.get().getChannelByID(channel.getId()).getName());
+						EEWBot.LOGGER.warn("メッセージを送信する権限がありません: "+guild.get().getName()+" #"+guild.get().getChannelByID(channel.id).getName());
 					}
 				}
 			}
@@ -46,11 +46,11 @@ public class EEWEventListener {
 				if (channel.quakeInfo.get()) {
 					final Optional<IGuild> guild = Optional.ofNullable(EEWBot.instance.getClient().getGuildByID(entry.getKey()));
 					try {
-						guild.ifPresent(id -> id.getChannelByID(channel.getId()).sendMessage(info.buildEmbed()));
+						guild.ifPresent(id -> id.getChannelByID(channel.id).sendMessage(info.buildEmbed()));
 						if (channel.quakeInfoDetail.get())
-							info.getDetails().forEach(detail -> RequestBuffer.request(() -> guild.ifPresent(id -> id.getChannelByID(channel.getId()).sendMessage(detail.buildEmbed()))));
+							info.getDetails().forEach(detail -> RequestBuffer.request(() -> guild.ifPresent(id -> id.getChannelByID(channel.id).sendMessage(detail.buildEmbed()))));
 					} catch (final MissingPermissionsException ex) {
-						EEWBot.LOGGER.warn("メッセージを送信する権限がありません: "+guild.get().getName()+" #"+guild.get().getChannelByID(channel.getId()).getName());
+						EEWBot.LOGGER.warn("メッセージを送信する権限がありません: "+guild.get().getName()+" #"+guild.get().getChannelByID(channel.id).getName());
 					}
 				}
 			}
@@ -66,9 +66,9 @@ public class EEWEventListener {
 				if (channel.monitor.get()) {
 					final Optional<IGuild> guild = Optional.ofNullable(EEWBot.instance.getClient().getGuildByID(entry.getKey()));
 					try {
-						guild.ifPresent(id -> id.getChannelByID(channel.getId()).sendFile("", e.getElement(), "kyoshinmonitor.png"));
+						guild.ifPresent(id -> id.getChannelByID(channel.id).sendFile("", e.getElement(), "kyoshinmonitor.png"));
 					} catch (final MissingPermissionsException ex) {
-						EEWBot.LOGGER.warn("ファイルを送信する権限がありません: "+guild.get().getName()+" #"+guild.get().getChannelByID(channel.getId()).getName());
+						EEWBot.LOGGER.warn("ファイルを送信する権限がありません: "+guild.get().getName()+" #"+guild.get().getChannelByID(channel.id).getName());
 					}
 				}
 			}
