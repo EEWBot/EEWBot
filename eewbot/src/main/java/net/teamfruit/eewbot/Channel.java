@@ -106,7 +106,7 @@ public class Channel {
 			while (in.hasNext()) {
 				final ChannelElement element = map.get(in.nextName());
 				if (element!=null)
-					element.set(Boolean.valueOf(in.nextString()));
+					element.set(Boolean.valueOf(in.nextBoolean()));
 			}
 			in.endObject();
 			return channel;
