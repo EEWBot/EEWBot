@@ -1,8 +1,6 @@
 package net.teamfruit.eewbot;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -115,18 +113,19 @@ public class DiscordEventListener {
 					if (channel!=null) {
 						final ChannelElement element = channel.getElement(args[0]);
 						if (element!=null) {
-							try {
-								element.set(true);
-								EEWBot.instance.saveConfigs();
-								BotUtils.reply(e, ":ok:");
-							} catch (final ConfigException ex) {
-								BotUtils.reply(e, "ConfigException");
-								EEWBot.LOGGER.error("Save error", ex);
-							}
-						} else {
+							if (!element.get()) {
+								try {
+									element.set(true);
+									EEWBot.instance.saveConfigs();
+									BotUtils.reply(e, ":ok:");
+								} catch (final ConfigException ex) {
+									BotUtils.reply(e, "ConfigException");
+									EEWBot.LOGGER.error("Save error", ex);
+								}
+							} else
+								BotUtils.reply(e, args[0]+"は既に有効です。");
+						} else
 							BotUtils.reply(e, args[0]+"という項目は存在しません！");
-							return;
-						}
 					} else
 						BotUtils.reply(e, "このチャンネルには設定が存在しません！");
 				}
@@ -134,7 +133,15 @@ public class DiscordEventListener {
 
 			@Override
 			public String getHelp() {
-				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
+				//TODO なんとかしよう
+				final Channel channel = new Channel(-1);
+				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(f -> f.getType()==ChannelElement.class).map(f -> {
+					try {
+						return ((ChannelElement) f.get(channel)).name;
+					} catch (final IllegalAccessException e) {
+						throw new RuntimeException(e);
+					}
+				}).collect(Collectors.joining(" "))+"```";
 			}
 		},
 		remove {
@@ -147,14 +154,17 @@ public class DiscordEventListener {
 					if (channel!=null) {
 						final ChannelElement element = channel.getElement(args[0]);
 						if (element!=null) {
-							try {
-								element.set(false);
-								EEWBot.instance.saveConfigs();
-								BotUtils.reply(e, ":ok:");
-							} catch (final ConfigException ex) {
-								BotUtils.reply(e, "ConfigException");
-								EEWBot.LOGGER.error("Save error", ex);
-							}
+							if (element.get()) {
+								try {
+									element.set(false);
+									EEWBot.instance.saveConfigs();
+									BotUtils.reply(e, ":ok:");
+								} catch (final ConfigException ex) {
+									BotUtils.reply(e, "ConfigException");
+									EEWBot.LOGGER.error("Save error", ex);
+								}
+							} else
+								BotUtils.reply(e, args[0]+"は既に無効です。");
 						} else {
 							BotUtils.reply(e, args[0]+"という項目は存在しません！");
 							return;
@@ -166,7 +176,15 @@ public class DiscordEventListener {
 
 			@Override
 			public String getHelp() {
-				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.joining(" ")).toString()+"```";
+				//TODO なんとかしよう
+				final Channel channel = new Channel(-1);
+				return "以下の項目が利用できます```"+Arrays.stream(Channel.class.getFields()).filter(f -> f.getType()==ChannelElement.class).map(f -> {
+					try {
+						return ((ChannelElement) f.get(channel)).name;
+					} catch (final IllegalAccessException e) {
+						throw new RuntimeException(e);
+					}
+				}).collect(Collectors.joining(" "))+"```";
 			}
 		},
 		unregister {

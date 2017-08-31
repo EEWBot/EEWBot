@@ -2,6 +2,7 @@ package net.teamfruit.eewbot;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -80,6 +81,7 @@ public class Channel {
 		@Override
 		public void write(final JsonWriter out, final Channel value) throws IOException {
 			out.beginObject();
+			out.name("id").value(value.id);
 			Arrays.stream(Channel.class.getFields()).filter(f -> f.getType()==ChannelElement.class).forEach(f -> {
 				try {
 					out.name(f.getName()).value(((ChannelElement) f.get(value)).get());
@@ -104,9 +106,20 @@ public class Channel {
 			}));
 			in.beginObject();
 			while (in.hasNext()) {
-				final ChannelElement element = map.get(in.nextName());
-				if (element!=null)
-					element.set(Boolean.valueOf(in.nextBoolean()));
+				final String line = in.nextName();
+				if (line.equals("id")) {
+					try {
+						final Field field = Channel.class.getField("id");
+						field.setAccessible(true);
+						field.setLong(channel, in.nextLong());
+					} catch (NoSuchFieldException|SecurityException|IllegalAccessException e) {
+						throw new RuntimeException(e);
+					}
+				} else {
+					final ChannelElement element = map.get(line);
+					if (element!=null)
+						element.set(Boolean.valueOf(in.nextBoolean()));
+				}
 			}
 			in.endObject();
 			return channel;
