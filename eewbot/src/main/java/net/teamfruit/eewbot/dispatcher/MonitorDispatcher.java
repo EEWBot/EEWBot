@@ -2,10 +2,8 @@ package net.teamfruit.eewbot.dispatcher;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -48,7 +46,7 @@ public class MonitorDispatcher implements Runnable {
 		}
 	}
 
-	public static InputStream get() throws IOException {
+	public static byte[] get() throws IOException {
 		final Date date = new Date(System.currentTimeMillis()+NTPDispatcher.INSTANCE.getOffset()-TimeUnit.SECONDS.toMillis(1));
 		final List<BufferedImage> images = new ArrayList<>();
 
@@ -90,7 +88,7 @@ public class MonitorDispatcher implements Runnable {
 		g.dispose();
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			ImageIO.write(base, "png", baos);
-			return new ByteArrayInputStream(baos.toByteArray());
+			return baos.toByteArray();
 		}
 	}
 }
