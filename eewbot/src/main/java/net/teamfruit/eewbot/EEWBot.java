@@ -118,6 +118,7 @@ public class EEWBot {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private static <T> Optional<T> readConfig(final Path path, final Type type) throws IOException {
 		try (Reader r = Files.newBufferedReader(path)) {
 			return Optional.ofNullable((T) EEWBot.GSON.fromJson(r, type));
