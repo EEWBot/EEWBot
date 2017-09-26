@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -52,7 +53,7 @@ public class QuakeInfo implements Embeddable {
 			this.lat = data.get("緯度");
 			this.lon = data.get("経度");
 			this.depth = data.get("深さ");
-			this.magnitude = Float.parseFloat(data.get("マグニチュード"));
+			this.magnitude = NumberUtils.toFloat(data.get("マグニチュード"), -1f);
 			this.info = data.get("情報");
 		} catch (final ParseException e) {
 			throw new RuntimeException("Parse Error", e);
@@ -210,7 +211,8 @@ public class QuakeInfo implements Embeddable {
 
 		builder.appendField("震央", getEpicenter(), true);
 		builder.appendField("深さ", getDepth(), true);
-		builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
+		if (getMagnitude()>0f)
+			builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
 		getMaxIntensity().ifPresent(intensity -> builder.appendField("最大震度", intensity.getSimple(), false));
 		builder.appendField("情報", getInfo(), true);
 

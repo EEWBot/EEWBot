@@ -1,12 +1,10 @@
 package net.teamfruit.eewbot.event;
 
-import java.io.InputStream;
-
 import sx.blah.discord.api.IDiscordClient;
 
-public class MonitorEvent extends EEWBotEvent<InputStream> {
+public class MonitorEvent extends EEWBotEvent<byte[]> {
 
-	public MonitorEvent(final IDiscordClient client, final InputStream is) {
-		super(client, is);
+	public MonitorEvent(final IDiscordClient client, final byte[] array) {
+		super(client, array);
 	}
 }

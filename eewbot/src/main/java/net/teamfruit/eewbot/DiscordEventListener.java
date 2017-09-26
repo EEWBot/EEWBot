@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -303,7 +304,7 @@ public class DiscordEventListener {
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				EEWBot.instance.getExecutor().execute(() -> {
 					try {
-						e.getChannel().sendFile("", MonitorDispatcher.get(), "kyoshinmonitor.png");
+						e.getChannel().sendFile("", new ByteArrayInputStream(MonitorDispatcher.get()), "kyoshinmonitor.png");
 					} catch (final Exception ex) {
 						EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(ex));
 						BotUtils.reply(e, ":warning: エラーが発生しました");
