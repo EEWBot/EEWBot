@@ -3,7 +3,7 @@ package net.teamfruit.eewbot.event;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.Event;
 
-public class EEWBotEvent<E> extends Event {
+public abstract class EEWBotEvent<E> extends Event {
 
 	protected E element;
 

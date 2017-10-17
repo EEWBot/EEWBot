@@ -7,4 +7,5 @@ public class MonitorEvent extends EEWBotEvent<byte[]> {
 	public MonitorEvent(final IDiscordClient client, final byte[] array) {
 		super(client, array);
 	}
+
 }

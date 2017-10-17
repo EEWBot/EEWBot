@@ -123,21 +123,25 @@ public class QuakeInfo implements Embeddable {
 		return this.details;
 	}
 
+	public List<EmbedObject> getDetailsEmbed() {
+		return getDetails().stream().map(PrefectureDetail::buildEmbed).collect(Collectors.toList());
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime*result+((this.announceTime==null) ? 0 : this.announceTime.hashCode());
-		result = prime*result+((this.depth==null) ? 0 : this.depth.hashCode());
-		result = prime*result+((this.details==null) ? 0 : this.details.hashCode());
-		result = prime*result+((this.epicenter==null) ? 0 : this.epicenter.hashCode());
-		result = prime*result+((this.info==null) ? 0 : this.info.hashCode());
-		result = prime*result+((this.lat==null) ? 0 : this.lat.hashCode());
-		result = prime*result+((this.lon==null) ? 0 : this.lon.hashCode());
+		result = prime*result+(this.announceTime==null ? 0 : this.announceTime.hashCode());
+		result = prime*result+(this.depth==null ? 0 : this.depth.hashCode());
+		result = prime*result+(this.details==null ? 0 : this.details.hashCode());
+		result = prime*result+(this.epicenter==null ? 0 : this.epicenter.hashCode());
+		result = prime*result+(this.info==null ? 0 : this.info.hashCode());
+		result = prime*result+(this.lat==null ? 0 : this.lat.hashCode());
+		result = prime*result+(this.lon==null ? 0 : this.lon.hashCode());
 		result = prime*result+Float.floatToIntBits(this.magnitude);
-		result = prime*result+((this.maxIntensity==null) ? 0 : this.maxIntensity.hashCode());
-		result = prime*result+((this.quakeTime==null) ? 0 : this.quakeTime.hashCode());
-		result = prime*result+((this.url==null) ? 0 : this.url.hashCode());
+		result = prime*result+(this.maxIntensity==null ? 0 : this.maxIntensity.hashCode());
+		result = prime*result+(this.quakeTime==null ? 0 : this.quakeTime.hashCode());
+		result = prime*result+(this.url==null ? 0 : this.url.hashCode());
 		return result;
 	}
 
@@ -279,8 +283,8 @@ public class QuakeInfo implements Embeddable {
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-			result = prime*result+((this.cities==null) ? 0 : this.cities.hashCode());
-			result = prime*result+((this.prefecture==null) ? 0 : this.prefecture.hashCode());
+			result = prime*result+(this.cities==null ? 0 : this.cities.hashCode());
+			result = prime*result+(this.prefecture==null ? 0 : this.prefecture.hashCode());
 			return result;
 		}
 
