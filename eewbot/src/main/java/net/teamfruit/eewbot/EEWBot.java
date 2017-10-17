@@ -16,7 +16,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -30,7 +29,6 @@ import com.google.gson.reflect.TypeToken;
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
 import net.teamfruit.eewbot.dispatcher.NTPDispatcher;
 import net.teamfruit.eewbot.dispatcher.QuakeInfoDispather;
-import net.teamfruit.eewbot.gui.EEWBotGui;
 import sx.blah.discord.Discord4J.Discord4JLogger;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
@@ -95,11 +93,6 @@ public class EEWBot {
 	}
 
 	public static void main(final String[] args) throws Exception {
-		if (args.length>0) {
-			final Stream<String> stream = Stream.of(args);
-			if (!stream.anyMatch(arg -> arg.equals("nogui")))
-				new EEWBotGui().setVisible(true);
-		}
 		instance = new EEWBot();
 	}
 
