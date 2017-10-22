@@ -23,8 +23,10 @@ public class EEWEventListener {
 
 	@EventSubscriber
 	public void onQuakeInfo(final QuakeInfoEvent e) {
-		final EmbedObject info = e.getElement().buildEmbed();
-		action("quakeInfo", c -> c.sendMessage(info));
+		if (!e.isDetailUpdate()) {
+			final EmbedObject info = e.getElement().buildEmbed();
+			action("quakeInfo", c -> c.sendMessage(info));
+		}
 		final List<EmbedObject> details = e.getElement().getDetailsEmbed();
 		action("quakeInfoDetail", c -> details.forEach(d -> RequestBuffer.request(() -> c.sendMessage(d))));
 	}

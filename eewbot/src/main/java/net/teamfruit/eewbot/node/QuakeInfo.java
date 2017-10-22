@@ -209,6 +209,27 @@ public class QuakeInfo implements Embeddable {
 		return true;
 	}
 
+	public boolean useDataEquals(final QuakeInfo info) {
+		if (!getEpicenter().equals(info.getEpicenter()))
+			return false;
+		if (!getDepth().equals(info.getDepth()))
+			return false;
+		if (getMagnitude()!=info.getMagnitude())
+			return false;
+		if (getMaxIntensity().isPresent()&&info.getMaxIntensity().isPresent()) {
+			if (getMaxIntensity().get()!=info.getMaxIntensity().get())
+				return false;
+		} else if (getMaxIntensity().isPresent()!=info.getMaxIntensity().isPresent())
+			return false;
+		if (!getInfo().equals(info.getInfo()))
+			return false;
+		if (!getImageUrl().equals(info.getImageUrl()))
+			return false;
+		if (!getUrl().equals(info.getUrl()))
+			return false;
+		return true;
+	}
+
 	@Override
 	public EmbedObject buildEmbed() {
 		final EmbedBuilder builder = new EmbedBuilder();
