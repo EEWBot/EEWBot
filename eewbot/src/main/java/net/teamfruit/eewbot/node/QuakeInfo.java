@@ -60,7 +60,10 @@ public class QuakeInfo implements Embeddable {
 		}
 
 		final Element yjw = info.getElementsByTag("table").get(1);
-		this.maxIntensity = SeismicIntensity.get(yjw.getElementsByTag("td").first().getElementsByTag("td").first().text());
+		if (yjw.getAllElements().size()>0)
+			this.maxIntensity = Optional.empty();
+		else
+			this.maxIntensity = SeismicIntensity.get(yjw.getElementsByTag("td").first().getElementsByTag("td").first().text());
 		final Map<String, PrefectureDetail> details = new HashMap<>();
 		yjw.getElementsByTag("tr").stream().filter(tr -> tr.attr("valign").equals("middle")).forEach(tr -> {
 			final Optional<SeismicIntensity> intensity = SeismicIntensity.get(tr.getElementsByTag("td").first().getElementsByTag("td").first().text());
@@ -235,7 +238,8 @@ public class QuakeInfo implements Embeddable {
 		final EmbedBuilder builder = new EmbedBuilder();
 
 		builder.appendField("震央", getEpicenter(), true);
-		builder.appendField("深さ", getDepth(), true);
+		if (!getDepth().equals("---"))
+			builder.appendField("深さ", getDepth(), true);
 		if (getMagnitude()>0f)
 			builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
 		getMaxIntensity().ifPresent(intensity -> builder.appendField("最大震度", intensity.getSimple(), false));
