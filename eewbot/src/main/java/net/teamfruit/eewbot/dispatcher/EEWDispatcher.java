@@ -2,8 +2,6 @@ package net.teamfruit.eewbot.dispatcher;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +9,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.HttpGet;
 
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.event.EEWEvent;
@@ -51,10 +52,14 @@ public class EEWDispatcher implements Runnable {
 
 	public static EEW get(final String url) throws IOException {
 		EEWBot.LOGGER.debug("Remote: "+url);
-		try (InputStreamReader isr = new InputStreamReader(new URL(url).openStream(), StandardCharsets.UTF_8)) {
-			final EEW res = EEWBot.GSON.fromJson(isr, EEW.class);
-			EEWBot.LOGGER.debug(res.toString());
-			return res;
-		}
+		final HttpGet get = new HttpGet(url);
+		final HttpResponse response = EEWBot.instance.getHttpClient().execute(get);
+		if (response.getStatusLine().getStatusCode()==HttpStatus.SC_OK)
+			try (InputStreamReader is = new InputStreamReader(response.getEntity().getContent())) {
+				final EEW res = EEWBot.GSON.fromJson(is, EEW.class);
+				EEWBot.LOGGER.debug(res.toString());
+				return res;
+			}
+		return null;
 	}
 }

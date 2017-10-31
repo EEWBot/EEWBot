@@ -14,6 +14,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 
 import com.google.gson.Gson;
@@ -34,7 +37,7 @@ public class EEWBot {
 	public static EEWBot instance;
 
 	public static final Logger LOGGER = new Discord4JLogger(EEWBot.class.getName());
-	public static final Gson GSON = new GsonBuilder().registerTypeHierarchyAdapter(Channel.class, new Channel.ChannelTypeAdapter()).setPrettyPrinting().create();
+	public static final Gson GSON = new GsonBuilder().registerTypeAdapter(Channel.class, new Channel.ChannelTypeAdapter()).setPrettyPrinting().create();
 
 	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "EEWBot-communication-thread"));
 	private Config config = new Config();
@@ -45,6 +48,11 @@ public class EEWBot {
 			put("everyone", Permission.DEFAULT_EVERYONE);
 		}
 	};
+	private final RequestConfig reqest = RequestConfig.custom()
+			.setConnectTimeout(1000*10)
+			.setSocketTimeout(10000*10)
+			.build();
+	private final HttpClient http = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest).build();
 	private final IDiscordClient client;
 
 	public EEWBot() throws ConfigException {
@@ -82,6 +90,10 @@ public class EEWBot {
 
 	public Map<String, Permission> getPermissions() {
 		return this.permissions;
+	}
+
+	public HttpClient getHttpClient() {
+		return this.http;
 	}
 
 	public IDiscordClient getClient() {

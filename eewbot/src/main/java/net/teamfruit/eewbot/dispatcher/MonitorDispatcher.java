@@ -19,10 +19,7 @@ import org.apache.commons.net.ntp.TimeInfo;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClientBuilder;
 
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.event.MonitorEvent;
@@ -55,14 +52,9 @@ public class MonitorDispatcher implements Runnable {
 		Stream.of(/*REMOTE+"EstShindoImg/eew/"+dayStr+"/"+dateStr+".eew.gif",*/
 				REMOTE+"RealTimeImg/acmap_s/"+dayStr+"/"+dateStr+".acmap_s.gif",
 				REMOTE+"PSWaveImg/eew/"+dayStr+"/"+dateStr+".eew.gif").forEach(str -> {
-					final RequestConfig config = RequestConfig.custom()
-							.setConnectTimeout(10000)
-							.setSocketTimeout(10000)
-							.build();
-					final HttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
 					final HttpGet get = new HttpGet(str);
 					try {
-						final HttpResponse response = client.execute(get);
+						final HttpResponse response = EEWBot.instance.getHttpClient().execute(get);
 						final StatusLine statusLine = response.getStatusLine();
 						if (statusLine.getStatusCode()==HttpStatus.SC_OK)
 							images.add(ImageIO.read(response.getEntity().getContent()));
