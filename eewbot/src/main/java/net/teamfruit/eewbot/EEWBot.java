@@ -53,9 +53,9 @@ public class EEWBot {
 			.setSocketTimeout(10000*10)
 			.build();
 	private final HttpClient http = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest).build();
-	private final IDiscordClient client;
+	private IDiscordClient client;
 
-	public EEWBot() throws ConfigException {
+	public void initialize() throws ConfigException {
 		createConfigs();
 		loadConfigs();
 		saveConfigs();
@@ -102,6 +102,7 @@ public class EEWBot {
 
 	public static void main(final String[] args) throws Exception {
 		instance = new EEWBot();
+		instance.initialize();
 	}
 
 	public final Path cfgPath = Paths.get("config.json");

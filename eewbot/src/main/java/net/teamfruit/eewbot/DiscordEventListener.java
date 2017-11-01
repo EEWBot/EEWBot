@@ -40,7 +40,10 @@ public class DiscordEventListener {
 				final Command command = EnumUtils.getEnum(Command.class, args[1]);
 				if (command!=null)
 					if (!EEWBot.instance.getConfig().isEnablePermission()||BotUtils.userHasPermission(e.getAuthor().getLongID(), command))
-						command.onCommand(e, ArrayUtils.subarray(args, 2, args.length+1));
+						if (args.length-2<command.getMinArgLength())
+							command.onCommand(e, ArrayUtils.subarray(args, 2, args.length+1));
+						else
+							BotUtils.reply(e, "引数が不足しています");
 					else
 						BotUtils.reply(e, "権限がありません！");
 				else
@@ -73,8 +76,9 @@ public class DiscordEventListener {
 			}
 	}
 
-	public static enum Command {
-		register {
+	public enum Command {
+
+		register(0) {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				final long serverid = e.getGuild().getLongID();
@@ -104,32 +108,29 @@ public class DiscordEventListener {
 				return "コマンドを実行したチャンネルをBotのメッセージ送信先に設定します。\nチャンネルの設定を確認するには`details`, 送信するイベントを追加するには`add`, 消去するには`remove`, チャンネルの設定を消去するには`unregister`を使用してください。";
 			}
 		},
-		add {
+		add(1) {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				if (args.length<=0)
-					BotUtils.reply(e, "引数が不足しています");
-				else {
-					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
-					if (channel!=null) {
-						final ChannelElement element = channel.getElement(args[0]);
-						if (element!=null) {
-							if (!element.get()) {
-								try {
-									element.set(true);
-									EEWBot.instance.saveConfigs();
-									BotUtils.reply(e, ":ok:");
-								} catch (final ConfigException ex) {
-									BotUtils.reply(e, "ConfigException");
-									EEWBot.LOGGER.error("Save error", ex);
-								}
-							} else
-								BotUtils.reply(e, args[0]+"は既に有効です。");
-						} else
-							BotUtils.reply(e, args[0]+"という項目は存在しません！");
+				final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
+				if (channel!=null) {
+					final ChannelElement element = channel.getElement(args[0]);
+					if (element!=null) {
+						if (!element.get())
+							try {
+								element.set(true);
+								EEWBot.instance.saveConfigs();
+								BotUtils.reply(e, ":ok:");
+							} catch (final ConfigException ex) {
+								BotUtils.reply(e, "ConfigException");
+								EEWBot.LOGGER.error("Save error", ex);
+							}
+						else
+							BotUtils.reply(e, args[0]+"は既に有効です。");
 					} else
-						BotUtils.reply(e, "このチャンネルには設定が存在しません！");
-				}
+						BotUtils.reply(e, args[0]+"という項目は存在しません！");
+				} else
+					BotUtils.reply(e, "このチャンネルには設定が存在しません！");
+
 			}
 
 			@Override
@@ -145,34 +146,32 @@ public class DiscordEventListener {
 				}).collect(Collectors.joining(" "))+"```";
 			}
 		},
-		remove {
+		remove(1) {
+
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				if (args.length<=0)
-					BotUtils.reply(e, "引数が不足しています");
-				else {
-					final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
-					if (channel!=null) {
-						final ChannelElement element = channel.getElement(args[0]);
-						if (element!=null) {
-							if (element.get()) {
-								try {
-									element.set(false);
-									EEWBot.instance.saveConfigs();
-									BotUtils.reply(e, ":ok:");
-								} catch (final ConfigException ex) {
-									BotUtils.reply(e, "ConfigException");
-									EEWBot.LOGGER.error("Save error", ex);
-								}
-							} else
-								BotUtils.reply(e, args[0]+"は既に無効です。");
-						} else {
-							BotUtils.reply(e, args[0]+"という項目は存在しません！");
-							return;
-						}
-					} else
-						BotUtils.reply(e, "このチャンネルには設定が存在しません！");
-				}
+				final Channel channel = BotUtils.getChannel(e.getGuild().getLongID(), e.getChannel().getLongID());
+				if (channel!=null) {
+					final ChannelElement element = channel.getElement(args[0]);
+					if (element!=null) {
+						if (element.get())
+							try {
+								element.set(false);
+								EEWBot.instance.saveConfigs();
+								BotUtils.reply(e, ":ok:");
+							} catch (final ConfigException ex) {
+								BotUtils.reply(e, "ConfigException");
+								EEWBot.LOGGER.error("Save error", ex);
+							}
+						else
+							BotUtils.reply(e, args[0]+"は既に無効です。");
+					} else {
+						BotUtils.reply(e, args[0]+"という項目は存在しません！");
+						return;
+					}
+				} else
+					BotUtils.reply(e, "このチャンネルには設定が存在しません！");
+
 			}
 
 			@Override
@@ -188,14 +187,14 @@ public class DiscordEventListener {
 				}).collect(Collectors.joining(" "))+"```";
 			}
 		},
-		unregister {
+		unregister(0) {
 
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				final long serverid = e.getGuild().getLongID();
 				final long channelid = e.getChannel().getLongID();
 				final CopyOnWriteArrayList<Channel> channels = EEWBot.instance.getChannels().get(serverid);
-				if (channels!=null&&channels.removeIf(channel -> channel.id==channelid)) {
+				if (channels!=null&&channels.removeIf(channel -> channel.id==channelid))
 					try {
 						if (channels.isEmpty())
 							EEWBot.instance.getChannels().remove(serverid);
@@ -205,7 +204,7 @@ public class DiscordEventListener {
 						EEWBot.LOGGER.error("Error on channel delete", ex);
 						BotUtils.reply(e, "設定のセーブに失敗しました");
 					}
-				} else
+				else
 					BotUtils.reply(e, "このチャンネルには設定がありません！");
 			}
 
@@ -215,7 +214,7 @@ public class DiscordEventListener {
 			}
 
 		},
-		details {
+		details(0) {
 
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
@@ -227,7 +226,7 @@ public class DiscordEventListener {
 			}
 
 		},
-		reload {
+		reload(0) {
 
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
@@ -241,7 +240,7 @@ public class DiscordEventListener {
 			}
 
 		},
-		joinserver {
+		joinserver(0) {
 
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
@@ -249,7 +248,7 @@ public class DiscordEventListener {
 			}
 
 		},
-		quakeinfo {
+		quakeinfo(0) {
 
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
@@ -274,31 +273,27 @@ public class DiscordEventListener {
 			}
 
 		},
-		test {
+		test(1) {
 
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
-				if (args.length<=0)
-					BotUtils.reply(e, "引数が不足しています");
-				else {
-					EEWBot.instance.getExecutor().execute(() -> {
-						Embeddable embeddable = null;
-						try {
-							if (args[0].startsWith("http://")||args[0].startsWith("https://"))
-								embeddable = EEWDispatcher.get(args[0]);
-							else
-								embeddable = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
-							BotUtils.reply(e, "**これはテストです！**", embeddable.buildEmbed());
-						} catch (final Exception ex) {
-							EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
-							BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");
-						}
-					});
-				}
+				EEWBot.instance.getExecutor().execute(() -> {
+					Embeddable embeddable = null;
+					try {
+						if (args[0].startsWith("http://")||args[0].startsWith("https://"))
+							embeddable = EEWDispatcher.get(args[0]);
+						else
+							embeddable = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
+						BotUtils.reply(e, "**これはテストです！**", embeddable.buildEmbed());
+					} catch (final Exception ex) {
+						EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
+						BotUtils.reply(e, "```"+ex.getClass().getSimpleName()+"```");
+					}
+				});
 			}
 
 		},
-		monitor {
+		monitor(0) {
 
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
@@ -313,7 +308,7 @@ public class DiscordEventListener {
 			}
 
 		},
-		timefix {
+		timefix(0) {
 
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
@@ -339,7 +334,7 @@ public class DiscordEventListener {
 			}
 
 		},
-		help {
+		help(0) {
 
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
@@ -359,9 +354,19 @@ public class DiscordEventListener {
 			}
 		};
 
+		private final int minarg;
+
+		private Command(final int minarg) {
+			this.minarg = minarg;
+		}
+
 		public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyy/MM/dd HH:mm:ss.SSS");
 
 		public abstract void onCommand(MessageReceivedEvent e, String[] args);
+
+		public int getMinArgLength() {
+			return this.minarg;
+		}
 
 		public String getHelp() {
 			return null;
