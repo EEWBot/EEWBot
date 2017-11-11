@@ -2,6 +2,7 @@ package net.teamfruit.eewbot;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
+import java.util.function.Consumer;
 
 import net.teamfruit.eewbot.event.EEWEvent;
 import net.teamfruit.eewbot.event.MonitorEvent;
@@ -36,27 +37,22 @@ public class EEWEventListener {
 		action("monitor", c -> c.sendFile("", new ByteArrayInputStream(e.getElement()), "kyoshinmonitor.png"));
 	}
 
-	public static void action(final String e, final ChannelAction a) {
+	public static void action(final String e, final Consumer<IChannel> a) {
 		EEWBot.instance.getChannels().entrySet()
 				.forEach(entry -> {
 					final IGuild guild = EEWBot.instance.getClient().getGuildByID(entry.getKey());
-					entry.getValue().stream()
-							.filter(channel -> channel.getElement(e).get())
-							.forEach(channel -> {
-								if (guild!=null) {
+					if (guild!=null)
+						entry.getValue().stream()
+								.filter(channel -> channel.getElement(e).get())
+								.forEach(channel -> {
 									final IChannel dc = guild.getChannelByID(channel.id);
 									try {
-										a.action(dc);
+										a.accept(dc);
 									} catch (final MissingPermissionsException ex) {
 										EEWBot.LOGGER.warn("権限がありません: "+guild.getName()+" #"+dc.getName());
 									}
-								}
-							});
+								});
 				});
 	}
 
-	public static interface ChannelAction {
-
-		void action(IChannel channel);
-	}
 }

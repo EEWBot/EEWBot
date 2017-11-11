@@ -31,7 +31,6 @@ import net.teamfruit.eewbot.dispatcher.QuakeInfoDispather;
 import sx.blah.discord.Discord4J.Discord4JLogger;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventDispatcher;
 
 public class EEWBot {
 	public static EEWBot instance;
@@ -65,10 +64,10 @@ public class EEWBot {
 		if (StringUtils.isEmpty(this.config.getToken()))
 			throw new ConfigException("Please set a token");
 
-		this.client = new ClientBuilder().withToken(this.config.getToken()).login();
-		final EventDispatcher dispatcher = this.client.getDispatcher();
-		dispatcher.registerListener(new DiscordEventListener());
-		dispatcher.registerListener(new EEWEventListener());
+		this.client = new ClientBuilder()
+				.withToken(this.config.getToken())
+				.registerListeners(new DiscordEventListener(), new EEWEventListener())
+				.login();
 
 		this.executor.scheduleAtFixedRate(NTPDispatcher.INSTANCE, 0, this.config.getTimeFixDelay()>=3600 ? this.config.getTimeFixDelay() : 3600, TimeUnit.SECONDS);
 		this.executor.scheduleAtFixedRate(EEWDispatcher.INSTANCE, 10, this.config.getKyoshinDelay()>=1 ? this.config.getKyoshinDelay() : 1, TimeUnit.SECONDS);
