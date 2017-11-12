@@ -35,12 +35,12 @@ public class DiscordEventListener {
 		if (msg.startsWith("!eew")) {
 			final String[] args = msg.split(" ");
 			if (args.length<=1)
-				BotUtils.reply(e, "引数が不足しています！");
+				BotUtils.reply(e, "引数が不足しています");
 			else {
 				final Command command = EnumUtils.getEnum(Command.class, args[1]);
 				if (command!=null)
 					if (!EEWBot.instance.getConfig().isEnablePermission()||BotUtils.userHasPermission(e.getAuthor().getLongID(), command))
-						if (args.length-2<command.getMinArgLength())
+						if (args.length-2>=command.getMinArgLength())
 							command.onCommand(e, ArrayUtils.subarray(args, 2, args.length+1));
 						else
 							BotUtils.reply(e, "引数が不足しています");
