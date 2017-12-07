@@ -253,7 +253,8 @@ public class DiscordEventListener {
 			@Override
 			public void onCommand(final MessageReceivedEvent e, final String[] args) {
 				try {
-					EEWBot.instance.getChannelRegistry().save();
+					EEWBot.instance.getConfigRegistry().load();
+					EEWBot.instance.getPermissionsRegistry().load();
 					reply(e, ":ok:");
 				} catch (final IOException ex) {
 					EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(ex));
