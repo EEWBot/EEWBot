@@ -65,11 +65,12 @@ public class EEWEventListener {
 						entry.getValue().stream().filter(filter)
 								.forEach(channel -> {
 									final IChannel dc = guild.getChannelByID(channel.id);
-									try {
-										a.accept(dc);
-									} catch (final MissingPermissionsException ex) {
-										EEWBot.LOGGER.warn("権限がありません: "+guild.getName()+" #"+dc.getName());
-									}
+									if (dc!=null)
+										try {
+											a.accept(dc);
+										} catch (final MissingPermissionsException ex) {
+											EEWBot.LOGGER.warn("権限がありません: "+guild.getName()+" #"+dc.getName());
+										}
 								});
 				});
 	}
