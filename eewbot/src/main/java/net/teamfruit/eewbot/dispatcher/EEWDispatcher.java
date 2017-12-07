@@ -24,7 +24,7 @@ public class EEWDispatcher implements Runnable {
 	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/webservice/hypo/eew/";
 	public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyyMMddHHmmss");
 
-	private final Map<Long, Integer> prev = new HashMap<>();
+	private final Map<Long, EEW> prev = new HashMap<>();
 
 	private EEWDispatcher() {
 	}
@@ -36,11 +36,11 @@ public class EEWDispatcher implements Runnable {
 		try {
 			final EEW res = get(url);
 			if (res!=null&&res.isEEW()) {
-				final Integer latestReport = this.prev.get(res.getReportId());
-				if (latestReport==null||latestReport<res.getReportNum()) {
-					this.prev.put(res.getReportId(), res.getReportNum());
-					EEWBot.instance.getClient().getDispatcher().dispatch(new EEWEvent(EEWBot.instance.getClient(), res));
-					if (res.getReportNum()==1||res.isFinal())
+				final EEW last = this.prev.get(res.getReportId());
+				if (last==null||last.getReportNum()<res.getReportNum()) {
+					EEWBot.instance.getClient().getDispatcher().dispatch(new EEWEvent(EEWBot.instance.getClient(), res, res.isInitial() ? null : last));
+					this.prev.put(res.getReportId(), res);
+					if (res.isInitial()||res.isFinal())
 						EEWBot.instance.getExecutor().execute(MonitorDispatcher.INSTANCE);
 				}
 			} else

@@ -5,8 +5,15 @@ import sx.blah.discord.api.IDiscordClient;
 
 public class EEWEvent extends EEWBotEvent<EEW> {
 
-	public EEWEvent(final IDiscordClient client, final EEW eew) {
+	protected final EEW prev;
+
+	public EEWEvent(final IDiscordClient client, final EEW eew, final EEW prev) {
 		super(client, eew);
+		this.prev = prev;
+	}
+
+	public EEW getPrev() {
+		return this.prev;
 	}
 
 }

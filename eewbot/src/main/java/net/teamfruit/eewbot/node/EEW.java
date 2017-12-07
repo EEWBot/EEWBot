@@ -102,6 +102,10 @@ public class EEW implements Embeddable {
 		return this.is_cancel;
 	}
 
+	public boolean isInitial() {
+		return getReportNum()==1;
+	}
+
 	public boolean isFinal() {
 		return this.is_final;
 	}

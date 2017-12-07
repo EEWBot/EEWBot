@@ -17,6 +17,7 @@ public class Channel {
 	public final long id;
 	public final ChannelElement eewAlert = new ChannelElement("EEW警報", true);
 	public final ChannelElement eewPrediction = new ChannelElement("EEW予報", false);
+	public final ChannelElement eewDecimation = new ChannelElement("EEW間引きモード", false);
 	public final ChannelElement quakeInfo = new ChannelElement("地震情報", true);
 	public final ChannelElement quakeInfoDetail = new ChannelElement("詳細地震情報", false);
 	public final ChannelElement monitor = new ChannelElement("強震モニタ", true);
@@ -34,7 +35,7 @@ public class Channel {
 			}
 		}).findAny().map(f -> {
 			try {
-				return ((ChannelElement) f.get(this));
+				return (ChannelElement) f.get(this);
 			} catch (final IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
@@ -107,7 +108,7 @@ public class Channel {
 			in.beginObject();
 			while (in.hasNext()) {
 				final String line = in.nextName();
-				if (line.equals("id")) {
+				if (line.equals("id"))
 					try {
 						final Field field = Channel.class.getField("id");
 						field.setAccessible(true);
@@ -115,7 +116,7 @@ public class Channel {
 					} catch (NoSuchFieldException|SecurityException|IllegalAccessException e) {
 						throw new RuntimeException(e);
 					}
-				} else {
+				else {
 					final ChannelElement element = map.get(line);
 					if (element!=null)
 						element.set(Boolean.valueOf(in.nextBoolean()));
