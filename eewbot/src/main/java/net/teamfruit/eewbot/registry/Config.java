@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot;
+package net.teamfruit.eewbot.registry;
 
 public class Config {
 	private String token = "";

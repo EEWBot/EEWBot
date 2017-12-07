@@ -1,14 +1,12 @@
 package net.teamfruit.eewbot;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -21,13 +19,15 @@ import org.slf4j.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import net.teamfruit.eewbot.dispatcher.EEWDispatcher;
 import net.teamfruit.eewbot.dispatcher.NTPDispatcher;
 import net.teamfruit.eewbot.dispatcher.QuakeInfoDispather;
+import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.Config;
+import net.teamfruit.eewbot.registry.ConfigurationRegistry;
+import net.teamfruit.eewbot.registry.Permission;
 import sx.blah.discord.Discord4J.Discord4JLogger;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
@@ -36,17 +36,23 @@ public class EEWBot {
 	public static EEWBot instance;
 
 	public static final Logger LOGGER = new Discord4JLogger(EEWBot.class.getName());
-	public static final Gson GSON = new GsonBuilder().registerTypeAdapter(Channel.class, new Channel.ChannelTypeAdapter()).setPrettyPrinting().create();
+	public static final Gson GSON = new GsonBuilder()
+			.registerTypeAdapter(Channel.class, new Channel.ChannelTypeAdapter())
+			.setPrettyPrinting()
+			.create();
 
 	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "EEWBot-communication-thread"));
-	private Config config = new Config();
-	private final Map<Long, CopyOnWriteArrayList<Channel>> channels = new ConcurrentHashMap<>();
-	private Map<String, Permission> permissions = new HashMap<String, Permission>() {
+	private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(Paths.get("config.json"), () -> new Config(), Config.class);
+	private final ConfigurationRegistry<Map<Long, List<Channel>>> channels = new ConfigurationRegistry<>(Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, List<Channel>>(), new TypeToken<Map<Long, Collection<Channel>>>() {
+	}.getType());
+	private final ConfigurationRegistry<Map<String, Permission>> permissions = new ConfigurationRegistry<>(Paths.get("permission.json"), () -> new HashMap<String, Permission>() {
 		{
 			put("owner", Permission.ALL);
 			put("everyone", Permission.DEFAULT_EVERYONE);
 		}
-	};
+	}, new TypeToken<Map<String, Permission>>() {
+	}.getType());
+
 	private final RequestConfig reqest = RequestConfig.custom()
 			.setConnectTimeout(1000*10)
 			.setSocketTimeout(10000*10)
@@ -54,24 +60,27 @@ public class EEWBot {
 	private final HttpClient http = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest).build();
 	private IDiscordClient client;
 
-	public void initialize() throws ConfigException {
-		createConfigs();
-		loadConfigs();
-		saveConfigs();
-		if (this.config.isDebug())
+	public void initialize() throws IOException {
+		this.config.init();
+		this.channels.init();
+		this.permissions.init();
+
+		if (getConfig().isDebug())
 			((Discord4JLogger) EEWBot.LOGGER).setLevel(Discord4JLogger.Level.DEBUG);
 
-		if (StringUtils.isEmpty(this.config.getToken()))
-			throw new ConfigException("Please set a token");
+		if (StringUtils.isEmpty(getConfig().getToken())) {
+			LOGGER.info("Please set a token");
+			return;
+		}
 
 		this.client = new ClientBuilder()
-				.withToken(this.config.getToken())
+				.withToken(getConfig().getToken())
 				.registerListeners(new DiscordEventListener(), new EEWEventListener())
 				.login();
 
-		this.executor.scheduleAtFixedRate(NTPDispatcher.INSTANCE, 0, this.config.getTimeFixDelay()>=3600 ? this.config.getTimeFixDelay() : 3600, TimeUnit.SECONDS);
-		this.executor.scheduleAtFixedRate(EEWDispatcher.INSTANCE, 10, this.config.getKyoshinDelay()>=1 ? this.config.getKyoshinDelay() : 1, TimeUnit.SECONDS);
-		this.executor.scheduleAtFixedRate(QuakeInfoDispather.INSTANCE, 0, this.config.getQuakeInfoDelay()>=10 ? this.config.getQuakeInfoDelay() : 10, TimeUnit.SECONDS);
+		this.executor.scheduleAtFixedRate(NTPDispatcher.INSTANCE, 0, getConfig().getTimeFixDelay()>=3600 ? getConfig().getTimeFixDelay() : 3600, TimeUnit.SECONDS);
+		this.executor.scheduleAtFixedRate(EEWDispatcher.INSTANCE, 10, getConfig().getKyoshinDelay()>=1 ? getConfig().getKyoshinDelay() : 1, TimeUnit.SECONDS);
+		this.executor.scheduleAtFixedRate(QuakeInfoDispather.INSTANCE, 0, getConfig().getQuakeInfoDelay()>=10 ? getConfig().getQuakeInfoDelay() : 10, TimeUnit.SECONDS);
 		EEWBot.LOGGER.info("Hello");
 	}
 
@@ -80,14 +89,26 @@ public class EEWBot {
 	}
 
 	public Config getConfig() {
-		return this.config;
+		return this.config.getElement();
 	}
 
-	public Map<Long, CopyOnWriteArrayList<Channel>> getChannels() {
-		return this.channels;
+	public Map<Long, List<Channel>> getChannels() {
+		return this.channels.getElement();
 	}
 
 	public Map<String, Permission> getPermissions() {
+		return this.permissions.getElement();
+	}
+
+	public ConfigurationRegistry<Config> getConfigRegistry() {
+		return this.config;
+	}
+
+	public ConfigurationRegistry<Map<Long, List<Channel>>> getChannelRegistry() {
+		return this.channels;
+	}
+
+	public ConfigurationRegistry<Map<String, Permission>> getPermissionsRegistry() {
 		return this.permissions;
 	}
 
@@ -102,48 +123,5 @@ public class EEWBot {
 	public static void main(final String[] args) throws Exception {
 		instance = new EEWBot();
 		instance.initialize();
-	}
-
-	public final Path cfgPath = Paths.get("config.json");
-	public final Path channelPath = Paths.get("channels.json");
-	public final Path permissionPath = Paths.get("permission.json");
-
-	private void createConfigs() throws ConfigException {
-		try {
-			if (!this.cfgPath.toFile().exists())
-				ConfigUtils.writeConfig(this.cfgPath, this.config, null);
-			if (!this.channelPath.toFile().exists())
-				ConfigUtils.writeConfig(this.channelPath, new ConcurrentHashMap<Long, CopyOnWriteArrayList<Channel>>(), null);
-			if (!this.permissionPath.toFile().exists())
-				ConfigUtils.writeConfig(this.permissionPath, this.permissions, new TypeToken<Map<String, Permission>>() {
-				}.getType());
-		} catch (final IOException e) {
-			throw new ConfigException("Config create Error", e);
-		}
-	}
-
-	public void loadConfigs() throws ConfigException {
-		try {
-			ConfigUtils.readConfig(this.cfgPath, Config.class).ifPresent(config -> this.config = config);
-			final Optional<Map<Long, Collection<Channel>>> map = ConfigUtils.readConfig(this.channelPath, new TypeToken<Map<Long, Collection<Channel>>>() {
-			}.getType());
-			map.ifPresent(channel -> channel.entrySet().forEach(entry -> this.channels.put(entry.getKey(), new CopyOnWriteArrayList<>(entry.getValue()))));
-			final Optional<Map<String, Permission>> permissions = ConfigUtils.readConfig(this.permissionPath, new TypeToken<Map<String, Permission>>() {
-			}.getType());
-			permissions.ifPresent(perm -> this.permissions = perm);
-		} catch (JsonSyntaxException|JsonIOException|IOException e) {
-			throw new ConfigException("Config load error", e);
-		}
-	}
-
-	public void saveConfigs() throws ConfigException {
-		try {
-			ConfigUtils.writeConfig(this.cfgPath, this.config, null);
-			ConfigUtils.writeConfig(this.channelPath, this.channels, null);
-			ConfigUtils.writeConfig(this.permissionPath, this.permissions, new TypeToken<Map<String, Permission>>() {
-			}.getType());
-		} catch (JsonIOException|IOException e) {
-			throw new ConfigException("Config save error", e);
-		}
 	}
 }

@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot;
+package net.teamfruit.eewbot.registry;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

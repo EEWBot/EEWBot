@@ -1,10 +1,12 @@
 package net.teamfruit.eewbot;
 
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
 
 import org.apache.commons.lang3.EnumUtils;
 
 import net.teamfruit.eewbot.DiscordEventListener.Command;
+import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.Permission;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.util.RequestBuffer;
@@ -24,7 +26,7 @@ public class BotUtils {
 	}
 
 	public static Channel getChannel(final long serverId, final long channelId) {
-		final CopyOnWriteArrayList<Channel> channels = EEWBot.instance.getChannels().get(serverId);
+		final List<Channel> channels = EEWBot.instance.getChannels().get(serverId);
 		if (channels!=null)
 			return channels.stream().filter(c -> c.id==channelId).findFirst().orElse(null);
 		return null;

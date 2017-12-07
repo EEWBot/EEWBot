@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot;
+package net.teamfruit.eewbot.registry;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import net.teamfruit.eewbot.DiscordEventListener;
 import net.teamfruit.eewbot.DiscordEventListener.Command;
 
 public class Permission {
