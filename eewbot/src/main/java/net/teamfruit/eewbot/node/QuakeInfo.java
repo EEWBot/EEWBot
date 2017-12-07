@@ -60,10 +60,11 @@ public class QuakeInfo implements Embeddable {
 		}
 
 		final Element yjw = info.getElementsByTag("table").get(1);
-		if (yjw.getAllElements().size()>0)
+		if (yjw.childNodeSize()<=1)
 			this.maxIntensity = Optional.empty();
 		else
 			this.maxIntensity = SeismicIntensity.get(yjw.getElementsByTag("td").first().getElementsByTag("td").first().text());
+
 		final Map<String, PrefectureDetail> details = new HashMap<>();
 		yjw.getElementsByTag("tr").stream().filter(tr -> tr.attr("valign").equals("middle")).forEach(tr -> {
 			final Optional<SeismicIntensity> intensity = SeismicIntensity.get(tr.getElementsByTag("td").first().getElementsByTag("td").first().text());
