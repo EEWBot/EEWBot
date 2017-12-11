@@ -22,6 +22,7 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.methods.HttpGet;
 
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.event.MonitorEvent;
 
 public class MonitorDispatcher implements Runnable {
@@ -39,7 +40,7 @@ public class MonitorDispatcher implements Runnable {
 		try {
 			EEWBot.instance.getClient().getDispatcher().dispatch(new MonitorEvent(EEWBot.instance.getClient(), get()));
 		} catch (final IOException e) {
-			EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
+			Log.logger.error(ExceptionUtils.getStackTrace(e));
 		}
 	}
 
@@ -65,7 +66,7 @@ public class MonitorDispatcher implements Runnable {
 							NTPDispatcher.INSTANCE.setOffset(offset);
 						}
 					} catch (final IOException e) {
-						EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
+						Log.logger.error(ExceptionUtils.getStackTrace(e));
 					}
 				});
 

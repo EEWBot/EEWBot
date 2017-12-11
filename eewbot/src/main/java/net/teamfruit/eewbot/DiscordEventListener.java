@@ -66,7 +66,7 @@ public class DiscordEventListener {
 				try {
 					EEWBot.instance.getChannelRegistry().save();
 				} catch (final IOException ex) {
-					EEWBot.LOGGER.error("Error on channel delete", ex);
+					Log.logger.error("Error on channel delete", ex);
 				}
 		}
 	}
@@ -77,7 +77,7 @@ public class DiscordEventListener {
 			try {
 				EEWBot.instance.getChannelRegistry().save();
 			} catch (final IOException ex) {
-				EEWBot.LOGGER.error("Error on guild delete", ex);
+				Log.logger.error("Error on guild delete", ex);
 			}
 	}
 
@@ -117,7 +117,7 @@ public class DiscordEventListener {
 						EEWBot.instance.getChannelRegistry().save();
 					} catch (final IOException ex) {
 						reply(e, "ConfigException");
-						EEWBot.LOGGER.error("Save error", ex);
+						Log.logger.error("Save error", ex);
 					}
 					reply(e, "チャンネルの設定を確認するには`details`, 送信するイベントを追加するには`add`, 消去するには`remove`, チャンネルの設定を消去するには`unregister`を使用してください。");
 					reply(e, "チャンネルを設定しました！");
@@ -144,7 +144,7 @@ public class DiscordEventListener {
 								reply(e, ":ok:");
 							} catch (final IOException ex) {
 								reply(e, "ConfigException");
-								EEWBot.LOGGER.error("Save error", ex);
+								Log.logger.error("Save error", ex);
 							}
 						else
 							reply(e, args[0]+"は既に有効です。");
@@ -183,7 +183,7 @@ public class DiscordEventListener {
 								reply(e, ":ok:");
 							} catch (final IOException ex) {
 								reply(e, "ConfigException");
-								EEWBot.LOGGER.error("Save error", ex);
+								Log.logger.error("Save error", ex);
 							}
 						else
 							reply(e, args[0]+"は既に無効です。");
@@ -223,7 +223,7 @@ public class DiscordEventListener {
 						EEWBot.instance.getChannelRegistry().save();
 						reply(e, ":ok:");
 					} catch (final IOException ex) {
-						EEWBot.LOGGER.error("Error on channel delete", ex);
+						Log.logger.error("Error on channel delete", ex);
 						reply(e, "設定のセーブに失敗しました");
 					}
 				else
@@ -257,7 +257,7 @@ public class DiscordEventListener {
 					EEWBot.instance.getPermissionsRegistry().load();
 					reply(e, ":ok:");
 				} catch (final IOException ex) {
-					EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(ex));
+					Log.logger.error(ExceptionUtils.getStackTrace(ex));
 					reply(e, ":warning: エラーが発生しました");
 				}
 			}
@@ -289,7 +289,7 @@ public class DiscordEventListener {
 						e.getChannel().sendMessage(info.buildEmbed());
 						info.getDetails().forEach(detail -> reply(e, detail.buildEmbed()));
 					} catch (final Exception ex) {
-						EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
+						Log.logger.info(ExceptionUtils.getStackTrace(ex));
 						reply(e, "```"+ex.getClass().getSimpleName()+"```");
 					}
 				});
@@ -309,7 +309,7 @@ public class DiscordEventListener {
 							embeddable = EEWBot.GSON.fromJson(String.join(" ", args), EEW.class);
 						reply(e, "**これはテストです！**", embeddable.buildEmbed());
 					} catch (final Exception ex) {
-						EEWBot.LOGGER.info(ExceptionUtils.getStackTrace(ex));
+						Log.logger.info(ExceptionUtils.getStackTrace(ex));
 						reply(e, "```"+ex.getClass().getSimpleName()+"```");
 					}
 				});
@@ -324,7 +324,7 @@ public class DiscordEventListener {
 					try {
 						e.getChannel().sendFile("", new ByteArrayInputStream(MonitorDispatcher.get()), "kyoshinmonitor.png");
 					} catch (final Exception ex) {
-						EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(ex));
+						Log.logger.error(ExceptionUtils.getStackTrace(ex));
 						reply(e, ":warning: エラーが発生しました");
 					}
 				});
@@ -350,7 +350,7 @@ public class DiscordEventListener {
 						reply(e, sb.toString());
 						NTPDispatcher.INSTANCE.setOffset(offset);
 					} catch (final IOException ex) {
-						EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(ex));
+						Log.logger.error(ExceptionUtils.getStackTrace(ex));
 						reply(e, ":warning: エラーが発生しました");
 					}
 				});

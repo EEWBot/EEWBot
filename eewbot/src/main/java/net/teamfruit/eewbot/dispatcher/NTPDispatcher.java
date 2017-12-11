@@ -7,6 +7,7 @@ import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
 
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.event.TimeEvent;
 
 public class NTPDispatcher implements Runnable {
@@ -33,7 +34,7 @@ public class NTPDispatcher implements Runnable {
 			EEWBot.instance.getClient().getDispatcher().dispatch(new TimeEvent(EEWBot.instance.getClient(), info));
 			this.offset = getOffset(info);
 		} catch (final IOException e) {
-			EEWBot.LOGGER.error("NTPClient error", e);
+			Log.logger.error("NTPClient error", e);
 		}
 	}
 

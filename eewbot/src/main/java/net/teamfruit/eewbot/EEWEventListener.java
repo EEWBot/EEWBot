@@ -69,7 +69,7 @@ public class EEWEventListener {
 										try {
 											a.accept(dc);
 										} catch (final MissingPermissionsException ex) {
-											EEWBot.LOGGER.warn("権限がありません: "+guild.getName()+" #"+dc.getName());
+											Log.logger.warn("権限がありません: "+guild.getName()+" #"+dc.getName());
 										}
 								});
 				});

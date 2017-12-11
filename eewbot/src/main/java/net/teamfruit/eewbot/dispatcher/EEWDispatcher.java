@@ -14,6 +14,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpGet;
 
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.event.EEWEvent;
 import net.teamfruit.eewbot.node.EEW;
 
@@ -46,18 +47,18 @@ public class EEWDispatcher implements Runnable {
 			} else
 				this.prev.clear();
 		} catch (final IOException e) {
-			EEWBot.LOGGER.error(ExceptionUtils.getStackTrace(e));
+			Log.logger.error(ExceptionUtils.getStackTrace(e));
 		}
 	}
 
 	public static EEW get(final String url) throws IOException {
-		EEWBot.LOGGER.debug("Remote: "+url);
+		Log.logger.debug("Remote: "+url);
 		final HttpGet get = new HttpGet(url);
 		final HttpResponse response = EEWBot.instance.getHttpClient().execute(get);
 		if (response.getStatusLine().getStatusCode()==HttpStatus.SC_OK)
 			try (InputStreamReader is = new InputStreamReader(response.getEntity().getContent())) {
 				final EEW res = EEWBot.GSON.fromJson(is, EEW.class);
-				EEWBot.LOGGER.debug(res.toString());
+				Log.logger.debug(res.toString());
 				return res;
 			}
 		return null;

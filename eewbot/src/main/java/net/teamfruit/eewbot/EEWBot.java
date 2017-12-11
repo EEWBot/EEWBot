@@ -15,7 +15,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.slf4j.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -35,7 +34,6 @@ import sx.blah.discord.api.IDiscordClient;
 public class EEWBot {
 	public static EEWBot instance;
 
-	public static final Logger LOGGER = new Discord4JLogger(EEWBot.class.getName());
 	public static final Gson GSON = new GsonBuilder()
 			.registerTypeAdapter(Channel.class, new Channel.ChannelTypeAdapter())
 			.setPrettyPrinting()
@@ -66,10 +64,10 @@ public class EEWBot {
 		this.permissions.init();
 
 		if (getConfig().isDebug())
-			((Discord4JLogger) EEWBot.LOGGER).setLevel(Discord4JLogger.Level.DEBUG);
+			((Discord4JLogger) Log.logger).setLevel(Discord4JLogger.Level.DEBUG);
 
 		if (StringUtils.isEmpty(getConfig().getToken())) {
-			LOGGER.info("Please set a token");
+			Log.logger.info("Please set a token");
 			return;
 		}
 
@@ -81,7 +79,7 @@ public class EEWBot {
 		this.executor.scheduleAtFixedRate(NTPDispatcher.INSTANCE, 0, getConfig().getTimeFixDelay()>=3600 ? getConfig().getTimeFixDelay() : 3600, TimeUnit.SECONDS);
 		this.executor.scheduleAtFixedRate(EEWDispatcher.INSTANCE, 10, getConfig().getKyoshinDelay()>=1 ? getConfig().getKyoshinDelay() : 1, TimeUnit.SECONDS);
 		this.executor.scheduleAtFixedRate(QuakeInfoDispather.INSTANCE, 0, getConfig().getQuakeInfoDelay()>=10 ? getConfig().getQuakeInfoDelay() : 10, TimeUnit.SECONDS);
-		EEWBot.LOGGER.info("Hello");
+		Log.logger.info("Hello");
 	}
 
 	public ScheduledExecutorService getExecutor() {
