@@ -12,9 +12,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -55,7 +56,8 @@ public class EEWBot {
 			.setConnectTimeout(1000*10)
 			.setSocketTimeout(10000*10)
 			.build();
-	private final HttpClient http = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest).build();
+	private final PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager();
+	private final CloseableHttpClient http = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest).setConnectionManager(this.manager).build();
 	private IDiscordClient client;
 
 	public void initialize() throws IOException {
@@ -110,7 +112,7 @@ public class EEWBot {
 		return this.permissions;
 	}
 
-	public HttpClient getHttpClient() {
+	public CloseableHttpClient getHttpClient() {
 		return this.http;
 	}
 

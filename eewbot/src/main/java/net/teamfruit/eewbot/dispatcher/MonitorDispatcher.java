@@ -16,9 +16,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.commons.net.ntp.TimeInfo;
-import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 
 import net.teamfruit.eewbot.EEWBot;
@@ -55,15 +55,16 @@ public class MonitorDispatcher implements Runnable {
 				REMOTE+"PSWaveImg/eew/"+dayStr+"/"+dateStr+".eew.gif").forEach(str -> {
 					final HttpGet get = new HttpGet(str);
 					try {
-						final HttpResponse response = EEWBot.instance.getHttpClient().execute(get);
-						final StatusLine statusLine = response.getStatusLine();
-						if (statusLine.getStatusCode()==HttpStatus.SC_OK)
-							images.add(ImageIO.read(response.getEntity().getContent()));
-						else if (statusLine.getStatusCode()==HttpStatus.SC_NOT_FOUND) {
-							final TimeInfo info = NTPDispatcher.get();
-							info.computeDetails();
-							final long offset = NTPDispatcher.getOffset(info);
-							NTPDispatcher.INSTANCE.setOffset(offset);
+						try (CloseableHttpResponse response = EEWBot.instance.getHttpClient().execute(get)) {
+							final StatusLine statusLine = response.getStatusLine();
+							if (statusLine.getStatusCode()==HttpStatus.SC_OK)
+								images.add(ImageIO.read(response.getEntity().getContent()));
+							else if (statusLine.getStatusCode()==HttpStatus.SC_NOT_FOUND) {
+								final TimeInfo info = NTPDispatcher.get();
+								info.computeDetails();
+								final long offset = NTPDispatcher.getOffset(info);
+								NTPDispatcher.INSTANCE.setOffset(offset);
+							}
 						}
 					} catch (final IOException e) {
 						Log.logger.error(ExceptionUtils.getStackTrace(e));

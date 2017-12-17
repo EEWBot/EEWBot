@@ -9,8 +9,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 
 import net.teamfruit.eewbot.EEWBot;
@@ -32,9 +32,9 @@ public class EEWDispatcher implements Runnable {
 
 	@Override
 	public void run() {
-		final Date date = new Date(System.currentTimeMillis()+NTPDispatcher.INSTANCE.getOffset()-TimeUnit.SECONDS.toMillis(1));
-		final String url = REMOTE+FORMAT.format(date)+".json";
 		try {
+			final Date date = new Date(System.currentTimeMillis()+NTPDispatcher.INSTANCE.getOffset()-TimeUnit.SECONDS.toMillis(1));
+			final String url = REMOTE+FORMAT.format(date)+".json";
 			final EEW res = get(url);
 			if (res!=null&&res.isEEW()) {
 				final EEW last = this.prev.get(res.getReportId());
@@ -46,7 +46,7 @@ public class EEWDispatcher implements Runnable {
 				}
 			} else
 				this.prev.clear();
-		} catch (final IOException e) {
+		} catch (final Exception e) {
 			Log.logger.error(ExceptionUtils.getStackTrace(e));
 		}
 	}
@@ -54,13 +54,14 @@ public class EEWDispatcher implements Runnable {
 	public static EEW get(final String url) throws IOException {
 		Log.logger.debug("Remote: "+url);
 		final HttpGet get = new HttpGet(url);
-		final HttpResponse response = EEWBot.instance.getHttpClient().execute(get);
-		if (response.getStatusLine().getStatusCode()==HttpStatus.SC_OK)
-			try (InputStreamReader is = new InputStreamReader(response.getEntity().getContent())) {
-				final EEW res = EEWBot.GSON.fromJson(is, EEW.class);
-				Log.logger.debug(res.toString());
-				return res;
-			}
-		return null;
+		try (CloseableHttpResponse response = EEWBot.instance.getHttpClient().execute(get)) {
+			if (response.getStatusLine().getStatusCode()==HttpStatus.SC_OK)
+				try (InputStreamReader is = new InputStreamReader(response.getEntity().getContent())) {
+					final EEW res = EEWBot.GSON.fromJson(is, EEW.class);
+					Log.logger.debug(res.toString());
+					return res;
+				}
+			return null;
+		}
 	}
 }
