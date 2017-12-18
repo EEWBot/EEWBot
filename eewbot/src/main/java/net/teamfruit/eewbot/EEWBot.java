@@ -31,6 +31,8 @@ import net.teamfruit.eewbot.registry.Permission;
 import sx.blah.discord.Discord4J.Discord4JLogger;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.ReadyEvent;
 
 public class EEWBot {
 	public static EEWBot instance;
@@ -75,13 +77,19 @@ public class EEWBot {
 
 		this.client = new ClientBuilder()
 				.withToken(getConfig().getToken())
-				.registerListeners(new DiscordEventListener(), new EEWEventListener())
+				.registerListeners(this, new DiscordEventListener(), new EEWEventListener())
 				.login();
+	}
 
+	@EventSubscriber
+	public void onReady(final ReadyEvent event) {
 		this.executor.scheduleAtFixedRate(NTPDispatcher.INSTANCE, 0, getConfig().getTimeFixDelay()>=3600 ? getConfig().getTimeFixDelay() : 3600, TimeUnit.SECONDS);
-		this.executor.scheduleAtFixedRate(EEWDispatcher.INSTANCE, 10, getConfig().getKyoshinDelay()>=1 ? getConfig().getKyoshinDelay() : 1, TimeUnit.SECONDS);
+		this.executor.scheduleAtFixedRate(EEWDispatcher.INSTANCE, 0, getConfig().getKyoshinDelay()>=1 ? getConfig().getKyoshinDelay() : 1, TimeUnit.SECONDS);
 		this.executor.scheduleAtFixedRate(QuakeInfoDispather.INSTANCE, 0, getConfig().getQuakeInfoDelay()>=10 ? getConfig().getQuakeInfoDelay() : 10, TimeUnit.SECONDS);
-		Log.logger.info("Hello");
+		Log.logger.info("Connected!");
+		Log.logger.info("Server List:");
+		event.getClient().getGuilds().forEach(guild -> Log.logger.info(" - "+guild.getName()));
+
 	}
 
 	public ScheduledExecutorService getExecutor() {
