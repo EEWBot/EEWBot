@@ -2,6 +2,7 @@ package net.teamfruit.eewbot;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -12,10 +13,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHeaders;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicHeader;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -59,7 +62,10 @@ public class EEWBot {
 			.setSocketTimeout(10000*10)
 			.build();
 	private final PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager();
-	private final CloseableHttpClient http = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest).setConnectionManager(this.manager).build();
+	private final CloseableHttpClient http = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest)
+			.setDefaultHeaders(Arrays.asList(new BasicHeader(HttpHeaders.ACCEPT_CHARSET, "UTF-8")))
+			.setConnectionManager(this.manager)
+			.build();
 	private IDiscordClient client;
 
 	public void initialize() throws IOException {
