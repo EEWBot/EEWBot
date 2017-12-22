@@ -30,6 +30,7 @@ public class EEWDispatcher implements Runnable {
 	private EEWDispatcher() {
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void run() {
 		try {
@@ -39,10 +40,14 @@ public class EEWDispatcher implements Runnable {
 			if (res!=null&&res.isEEW()) {
 				final EEW last = this.prev.get(res.getReportId());
 				if (last==null||last.getReportNum()<res.getReportNum()) {
-					EEWBot.instance.getClient().getDispatcher().dispatch(new EEWEvent(EEWBot.instance.getClient(), res, res.isInitial() ? null : last));
+					final EEWEvent event = new EEWEvent(EEWBot.instance.getClient(), res, res.isInitial() ? null : last);
+					if (res.isInitial()||res.isFinal()) {
+						final byte[] monitor = MonitorDispatcher.get();
+						event.setMonitor(monitor);
+						EEWBot.instance.getClient().getDispatcher().dispatch(new net.teamfruit.eewbot.event.MonitorEvent(EEWBot.instance.getClient(), monitor));
+					}
+					EEWBot.instance.getClient().getDispatcher().dispatch(event);
 					this.prev.put(res.getReportId(), res);
-					if (res.isInitial()||res.isFinal())
-						EEWBot.instance.getExecutor().execute(MonitorDispatcher.INSTANCE);
 				}
 			} else
 				this.prev.clear();

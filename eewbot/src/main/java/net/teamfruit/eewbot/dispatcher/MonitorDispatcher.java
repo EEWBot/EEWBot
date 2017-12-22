@@ -23,10 +23,10 @@ import org.apache.http.client.methods.HttpGet;
 
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.event.MonitorEvent;
 
 public class MonitorDispatcher implements Runnable {
 
+	@Deprecated
 	public static final MonitorDispatcher INSTANCE = new MonitorDispatcher();
 
 	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/data/map_img/";
@@ -37,11 +37,11 @@ public class MonitorDispatcher implements Runnable {
 
 	@Override
 	public void run() {
-		try {
-			EEWBot.instance.getClient().getDispatcher().dispatch(new MonitorEvent(EEWBot.instance.getClient(), get()));
-		} catch (final IOException e) {
-			Log.logger.error(ExceptionUtils.getStackTrace(e));
-		}
+		//		try {
+		//			EEWBot.instance.getClient().getDispatcher().dispatch(new MonitorEvent(EEWBot.instance.getClient(), get()));
+		//		} catch (final IOException e) {
+		//			Log.logger.error(ExceptionUtils.getStackTrace(e));
+		//		}
 	}
 
 	public static byte[] get() throws IOException {

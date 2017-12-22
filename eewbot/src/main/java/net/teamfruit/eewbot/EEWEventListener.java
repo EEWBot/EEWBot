@@ -6,7 +6,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import net.teamfruit.eewbot.event.EEWEvent;
-import net.teamfruit.eewbot.event.MonitorEvent;
 import net.teamfruit.eewbot.event.QuakeInfoEvent;
 import net.teamfruit.eewbot.node.EEW;
 import net.teamfruit.eewbot.registry.Channel;
@@ -40,6 +39,7 @@ public class EEWEventListener {
 			return false;
 		};
 		action(isAlert.and(decimation), c -> c.sendMessage(e.getElement().buildEmbed()));
+		e.getMonitor().ifPresent(m -> action(c -> c.getElement("monitor").get()&&(eew.isAlert()&&c.getElement("eewAlert").get()||!eew.isAlert()&&c.getElement("eewPrediction").get()), c -> c.sendFile("", new ByteArrayInputStream(m), "kyoshinmonitor.png")));
 	}
 
 	@EventSubscriber
@@ -50,11 +50,6 @@ public class EEWEventListener {
 		}
 		final List<EmbedObject> details = e.getElement().getDetailsEmbed();
 		action(c -> c.getElement("quakeInfoDetail").get(), c -> details.forEach(d -> RequestBuffer.request(() -> c.sendMessage(d))));
-	}
-
-	@EventSubscriber
-	public void onMonitor(final MonitorEvent e) {
-		action(c -> c.getElement("monitor").get(), c -> c.sendFile("", new ByteArrayInputStream(e.getElement()), "kyoshinmonitor.png"));
 	}
 
 	public static void action(final Predicate<Channel> filter, final Consumer<IChannel> a) {
