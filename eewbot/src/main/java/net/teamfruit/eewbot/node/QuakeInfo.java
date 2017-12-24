@@ -237,17 +237,28 @@ public class QuakeInfo implements Embeddable {
 	@Override
 	public EmbedObject buildEmbed() {
 		final EmbedBuilder builder = new EmbedBuilder();
-
-		builder.appendField("震央", getEpicenter(), true);
-		if (!getDepth().equals("---"))
-			builder.appendField("深さ", getDepth(), true);
-		if (getMagnitude()>0f)
-			builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
-		getMaxIntensity().ifPresent(intensity -> builder.appendField("最大震度", intensity.getSimple(), false));
+		if (getEpicenter().equals("---")&&getDepth().equals("---")) {
+			builder.withTitle("地震速報");
+			final Map<SeismicIntensity, List<String>> map = new TreeMap<>(Comparator.reverseOrder());
+			getDetails().forEach(detail -> detail.getCities().entrySet().forEach(city -> {
+				List<String> list = map.get(city.getKey());
+				if (list==null)
+					map.put(city.getKey(), list = new ArrayList<>());
+				list.addAll(city.getValue());
+			}));
+			map.entrySet().forEach(entry -> builder.appendField(entry.getKey().toString(), String.join(" ", entry.getValue()), false));
+		} else {
+			builder.withTitle("地震情報");
+			builder.appendField("震央", getEpicenter(), true);
+			if (!getDepth().equals("---"))
+				builder.appendField("深さ", getDepth(), true);
+			if (getMagnitude()>0f)
+				builder.appendField("マグニチュード", String.valueOf(getMagnitude()), true);
+			getMaxIntensity().ifPresent(intensity -> builder.appendField("最大震度", intensity.getSimple(), false));
+		}
 		builder.appendField("情報", getInfo(), true);
 
 		getMaxIntensity().ifPresent(intensity -> builder.withColor(intensity.getColor()));
-		builder.withTitle("地震情報");
 		builder.withTimestamp(getAnnounceTime().getTime());
 		getImageUrl().ifPresent(url -> builder.withImage(url));
 
