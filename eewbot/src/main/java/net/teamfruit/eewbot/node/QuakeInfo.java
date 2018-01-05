@@ -246,7 +246,7 @@ public class QuakeInfo implements Embeddable {
 					map.put(city.getKey(), list = new ArrayList<>());
 				list.addAll(city.getValue());
 			}));
-			map.entrySet().forEach(entry -> builder.appendField(entry.getKey().toString(), String.join(" ", entry.getValue()), false));
+			map.entrySet().forEach(entry -> builder.appendField(entry.getKey().toString(), String.join("  ", entry.getValue()), false));
 		} else {
 			builder.withTitle("地震情報");
 			builder.appendField("震央", getEpicenter(), true);
