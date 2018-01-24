@@ -123,11 +123,19 @@ public class QuakeInfo implements Embeddable {
 		return this.maxIntensity;
 	}
 
+	public boolean isPreliminaryReport() {
+		return getEpicenter().equals("---")&&getDepth().equals("---");
+	}
+
 	public List<PrefectureDetail> getDetails() {
+		if (isPreliminaryReport())
+			return Collections.emptyList();
 		return this.details;
 	}
 
 	public List<EmbedObject> getDetailsEmbed() {
+		if (isPreliminaryReport())
+			return Collections.emptyList();
 		return getDetails().stream().map(PrefectureDetail::buildEmbed).collect(Collectors.toList());
 	}
 
@@ -237,7 +245,7 @@ public class QuakeInfo implements Embeddable {
 	@Override
 	public EmbedObject buildEmbed() {
 		final EmbedBuilder builder = new EmbedBuilder();
-		if (getEpicenter().equals("---")&&getDepth().equals("---")) {
+		if (isPreliminaryReport()) {
 			builder.withTitle("地震速報");
 			final Map<SeismicIntensity, List<String>> map = new TreeMap<>(Comparator.reverseOrder());
 			getDetails().forEach(detail -> detail.getCities().entrySet().forEach(city -> {
@@ -309,7 +317,7 @@ public class QuakeInfo implements Embeddable {
 		public EmbedObject buildEmbed() {
 			final EmbedBuilder builder = new EmbedBuilder();
 
-			getCities().entrySet().stream().forEach(entry -> builder.appendField(entry.getKey().toString(), String.join(" ", entry.getValue()), false));
+			getCities().entrySet().stream().forEach(entry -> builder.appendField(entry.getKey().toString(), String.join("  ", entry.getValue()), false));
 
 			getMaxIntensity().ifPresent(intensity -> builder.withColor(intensity.getColor()));
 			builder.withTitle(getPrefecture());
