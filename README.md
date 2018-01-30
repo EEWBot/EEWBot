@@ -8,10 +8,13 @@ Earthquake Early Warning(EEW) Discord Bot for Japan
 [Releases](https://github.com/Team-Fruit/EEWBot/releases/latest)
 
 ## 導入
-DiscordのBotアプリケーションを持っていない場合は、[Discord Developers](https://discordapp.com/developers/applications/me)よりBotを作成し、BotユーザーのTokenを生成してください。  
-jarまたはexeをダウンロード後、フォルダを作って配置し、起動してください。  
+1. DiscordのBotアプリケーションを持っていない場合は、[Discord Developers](https://discordapp.com/developers/applications/me)よりBotを作成し、BotユーザーのTokenを生成してください。  
+1. jarまたはexeをダウンロード後、フォルダを作って配置し、起動してください。  
 jarの場合は、コマンドラインから起動する事をおすすめします。
+1. ファイルが生成されてBotが終了するので、`config.json`をテキストエディタで開き、空の文字列になっているtokenに自分のBotのものを入れてください。
+1. 再びBotを起動し、Botが入っているDiscordサーバーで、オンラインになっている事を確認してください。
 
+## コマンド
 準備中
 
 ## ライセンス
