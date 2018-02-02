@@ -8,7 +8,7 @@ import sx.blah.discord.api.IDiscordClient;
 public class EEWEvent extends EEWBotEvent<EEW> {
 
 	protected final EEW prev;
-	protected Optional<byte[]> monitor;
+	protected byte[] monitor;
 
 	public EEWEvent(final IDiscordClient client, final EEW eew, final EEW prev) {
 		super(client, eew);
@@ -20,10 +20,10 @@ public class EEWEvent extends EEWBotEvent<EEW> {
 	}
 
 	public void setMonitor(final byte[] png) {
-		this.monitor = Optional.ofNullable(png);
+		this.monitor = png;
 	}
 
 	public Optional<byte[]> getMonitor() {
-		return this.monitor;
+		return Optional.ofNullable(this.monitor);
 	}
 }
