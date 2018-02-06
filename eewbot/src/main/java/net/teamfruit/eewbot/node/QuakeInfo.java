@@ -54,7 +54,7 @@ public class QuakeInfo implements Embeddable {
 			this.lon = data.get("経度");
 			this.depth = data.get("深さ");
 			this.magnitude = NumberUtils.toFloat(data.get("マグニチュード"), -1f);
-			this.info = data.get("情報");
+			this.info = StringUtils.trim(StringUtils.remove(data.get("情報"), ">>津波情報を見る"));
 		} catch (final ParseException e) {
 			throw new RuntimeException("Parse Error", e);
 		}
