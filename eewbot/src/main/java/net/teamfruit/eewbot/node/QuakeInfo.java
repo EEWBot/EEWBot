@@ -25,6 +25,7 @@ import sx.blah.discord.util.EmbedBuilder;
 public class QuakeInfo implements Embeddable {
 	public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyy年M月d日 H時mm分");
 
+	private final Document original;
 	private final String url;
 	private final Optional<String> imageUrl;
 	private final Date announceTime;
@@ -39,6 +40,7 @@ public class QuakeInfo implements Embeddable {
 	private final List<PrefectureDetail> details;
 
 	public QuakeInfo(final Document doc) {
+		this.original = doc;
 		this.url = "https://typhoon.yahoo.co.jp"+Optional.ofNullable(doc.getElementById("history")).map(history -> history.getElementsByTag("tr").get(1).getElementsByTag("td").first().getElementsByTag("a").first().attr("href")).orElse("");
 		this.imageUrl = Optional.ofNullable(doc.getElementById("yjw_keihou").getElementsByTag("img").first()).map(image -> StringUtils.substringBefore(image.attr("src"), "?"));
 		final Element info = doc.getElementById("eqinfdtl");
@@ -77,6 +79,10 @@ public class QuakeInfo implements Embeddable {
 
 		this.details = new ArrayList<>(details.values());
 		Collections.sort(this.details, Comparator.reverseOrder());
+	}
+
+	public Document getOriginal() {
+		return this.original;
 	}
 
 	public String getUrl() {
@@ -249,10 +255,11 @@ public class QuakeInfo implements Embeddable {
 			builder.withTitle("地震速報");
 			final Map<SeismicIntensity, List<String>> map = new TreeMap<>(Comparator.reverseOrder());
 			getDetails().forEach(detail -> detail.getCities().entrySet().forEach(city -> {
-				List<String> list = map.get(city.getKey());
+				final List<String> list = map.get(city.getKey());
 				if (list==null)
-					map.put(city.getKey(), list = new ArrayList<>());
-				list.addAll(city.getValue());
+					map.put(city.getKey(), new ArrayList<>(city.getValue()));
+				else
+					list.addAll(city.getValue());
 			}));
 			map.entrySet().forEach(entry -> builder.appendField(entry.getKey().toString(), String.join("  ", entry.getValue()), false));
 		} else {
