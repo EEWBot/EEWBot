@@ -30,7 +30,6 @@ public class EEWDispatcher implements Runnable {
 	private EEWDispatcher() {
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public void run() {
 		try {
@@ -44,7 +43,6 @@ public class EEWDispatcher implements Runnable {
 					if (res.isInitial()||res.isFinal()) {
 						final byte[] monitor = MonitorDispatcher.get();
 						event.setMonitor(monitor);
-						EEWBot.instance.getClient().getDispatcher().dispatch(new net.teamfruit.eewbot.event.MonitorEvent(EEWBot.instance.getClient(), monitor));
 					}
 					EEWBot.instance.getClient().getDispatcher().dispatch(event);
 					this.prev.put(res.getReportId(), res);
