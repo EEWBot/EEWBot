@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import net.teamfruit.eewbot.dispatcher.QuakeInfoDispather.UpdateType;
 import net.teamfruit.eewbot.event.EEWEvent;
 import net.teamfruit.eewbot.event.QuakeInfoEvent;
 import net.teamfruit.eewbot.node.EEW;
@@ -44,7 +45,7 @@ public class EEWEventListener {
 
 	@EventSubscriber
 	public void onQuakeInfo(final QuakeInfoEvent e) {
-		if (!e.isDetailUpdate()) {
+		if (e.getUpdateType()!=UpdateType.DETAIL) {
 			final EmbedObject info = e.getElement().buildEmbed();
 			action(c -> c.getElement("quakeInfo").get(), c -> c.sendMessage(info));
 		}

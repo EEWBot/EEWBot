@@ -227,6 +227,69 @@ public class QuakeInfo implements Embeddable {
 		return true;
 	}
 
+	public boolean isImageUpdate(final QuakeInfo other) {
+		if (this==other)
+			return false;
+		if (this.announceTime==null) {
+			if (other.announceTime!=null)
+				return false;
+		} else if (!this.announceTime.equals(other.announceTime))
+			return false;
+		if (this.depth==null) {
+			if (other.depth!=null)
+				return false;
+		} else if (!this.depth.equals(other.depth))
+			return false;
+		if (this.details==null) {
+			if (other.details!=null)
+				return false;
+		} else if (!this.details.equals(other.details))
+			return false;
+		if (this.epicenter==null) {
+			if (other.epicenter!=null)
+				return false;
+		} else if (!this.epicenter.equals(other.epicenter))
+			return false;
+		if (this.info==null) {
+			if (other.info!=null)
+				return false;
+		} else if (!this.info.equals(other.info))
+			return false;
+		if (this.lat==null) {
+			if (other.lat!=null)
+				return false;
+		} else if (!this.lat.equals(other.lat))
+			return false;
+		if (this.lon==null) {
+			if (other.lon!=null)
+				return false;
+		} else if (!this.lon.equals(other.lon))
+			return false;
+		if (Float.floatToIntBits(this.magnitude)!=Float.floatToIntBits(other.magnitude))
+			return false;
+		if (this.maxIntensity==null) {
+			if (other.maxIntensity!=null)
+				return false;
+		} else if (!this.maxIntensity.equals(other.maxIntensity))
+			return false;
+		if (this.quakeTime==null) {
+			if (other.quakeTime!=null)
+				return false;
+		} else if (!this.quakeTime.equals(other.quakeTime))
+			return false;
+		if (this.url==null) {
+			if (other.url!=null)
+				return false;
+		} else if (!this.url.equals(other.url))
+			return false;
+		if (this.imageUrl==null) {
+			if (other.imageUrl!=null)
+				return true;
+		} else if (this.imageUrl.equals(other.imageUrl))
+			return false;
+		return true;
+	}
+
 	public boolean useDataEquals(final QuakeInfo info) {
 		if (!getEpicenter().equals(info.getEpicenter()))
 			return false;
@@ -243,8 +306,8 @@ public class QuakeInfo implements Embeddable {
 			return false;
 		if (!getImageUrl().equals(info.getImageUrl()))
 			return false;
-		if (!getUrl().equals(info.getUrl()))
-			return false;
+		//		if (!getUrl().equals(info.getUrl()))
+		//			return false;
 		return true;
 	}
 
@@ -363,4 +426,5 @@ public class QuakeInfo implements Embeddable {
 		}
 
 	}
+
 }
