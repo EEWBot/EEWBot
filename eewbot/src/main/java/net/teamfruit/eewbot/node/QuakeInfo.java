@@ -28,7 +28,6 @@ public class QuakeInfo implements Embeddable {
 	private final Document original;
 	private final String url;
 	private final Optional<String> imageUrl;
-	private final Date announceTime;
 	private final Date quakeTime;
 	private final String epicenter;
 	private final String lat;
@@ -48,7 +47,6 @@ public class QuakeInfo implements Embeddable {
 				.map(tr -> tr.getElementsByTag("td")).collect(Collectors.toMap(td -> td.get(0).text(), td -> td.get(1).text()));
 
 		try {
-			this.announceTime = FORMAT.parse(data.get("情報発表時刻"));
 			final String quakeTime = data.get("発生時刻");
 			this.quakeTime = FORMAT.parse(StringUtils.substring(quakeTime, 0, quakeTime.length()-2));
 			this.epicenter = data.get("震源地");
@@ -91,10 +89,6 @@ public class QuakeInfo implements Embeddable {
 
 	public Optional<String> getImageUrl() {
 		return this.imageUrl;
-	}
-
-	public Date getAnnounceTime() {
-		return this.announceTime;
 	}
 
 	public Date getQuakeTime() {
@@ -149,7 +143,6 @@ public class QuakeInfo implements Embeddable {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime*result+(this.announceTime==null ? 0 : this.announceTime.hashCode());
 		result = prime*result+(this.depth==null ? 0 : this.depth.hashCode());
 		result = prime*result+(this.details==null ? 0 : this.details.hashCode());
 		result = prime*result+(this.epicenter==null ? 0 : this.epicenter.hashCode());
@@ -172,11 +165,6 @@ public class QuakeInfo implements Embeddable {
 		if (!(obj instanceof QuakeInfo))
 			return false;
 		final QuakeInfo other = (QuakeInfo) obj;
-		if (this.announceTime==null) {
-			if (other.announceTime!=null)
-				return false;
-		} else if (!this.announceTime.equals(other.announceTime))
-			return false;
 		if (this.depth==null) {
 			if (other.depth!=null)
 				return false;
@@ -229,11 +217,6 @@ public class QuakeInfo implements Embeddable {
 
 	public boolean isImageUpdate(final QuakeInfo other) {
 		if (this==other)
-			return false;
-		if (this.announceTime==null) {
-			if (other.announceTime!=null)
-				return false;
-		} else if (!this.announceTime.equals(other.announceTime))
 			return false;
 		if (this.depth==null) {
 			if (other.depth!=null)
@@ -337,7 +320,7 @@ public class QuakeInfo implements Embeddable {
 		builder.appendField("情報", getInfo(), true);
 
 		getMaxIntensity().ifPresent(intensity -> builder.withColor(intensity.getColor()));
-		builder.withTimestamp(getAnnounceTime().getTime());
+		builder.withTimestamp(getQuakeTime().getTime());
 		getImageUrl().ifPresent(url -> builder.withImage(url));
 
 		builder.withFooterText("地震情報 - Yahoo!天気・災害");
@@ -347,7 +330,7 @@ public class QuakeInfo implements Embeddable {
 
 	@Override
 	public String toString() {
-		return "QuakeInfo [url="+this.url+", imageUrl="+this.imageUrl+", announceTime="+this.announceTime+", quakeTime="+this.quakeTime+", epicenter="+this.epicenter+", lat="+this.lat+", lon="+this.lon+", depth="+this.depth+", magnitude="+this.magnitude+", info="+this.info+", maxIntensity="+this.maxIntensity+", details="+this.details+"]";
+		return "QuakeInfo [url="+this.url+", imageUrl="+this.imageUrl+", quakeTime="+this.quakeTime+", epicenter="+this.epicenter+", lat="+this.lat+", lon="+this.lon+", depth="+this.depth+", magnitude="+this.magnitude+", info="+this.info+", maxIntensity="+this.maxIntensity+", details="+this.details+"]";
 	}
 
 	public static class PrefectureDetail implements Comparable<PrefectureDetail>, Embeddable {
