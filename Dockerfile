@@ -12,7 +12,7 @@ ENV CONFIG_DIRECTORY=/config \
 VOLUME ${DATA_DIRECTORY}
 
 # COPY channels.json ${DATA_DIRECTORY}/channels.json
-COPY config.json ${CONFIG_DIRECTORY}/config.json
-COPY permission.json ${CONFIG_DIRECTORY}/permission.json
+# COPY config.json ${CONFIG_DIRECTORY}/config.json
+# COPY permission.json ${CONFIG_DIRECTORY}/permission.json
 
 ENTRYPOINT ["java", "-jar", "eewbot.jar"]
