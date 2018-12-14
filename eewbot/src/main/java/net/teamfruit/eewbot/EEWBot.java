@@ -46,12 +46,13 @@ public class EEWBot {
 			.create();
 
 	public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
+	public static final String CONDIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
 	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "EEWBot-communication-thread"));
-	private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "config.json") : Paths.get("config.json"), () -> new Config(), Config.class);
+	private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(CONDIG_DIRECTORY!=null ? Paths.get(CONDIG_DIRECTORY, "config.json") : Paths.get("config.json"), () -> new Config(), Config.class);
 	private final ConfigurationRegistry<Map<Long, List<Channel>>> channels = new ConfigurationRegistry<>(DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, List<Channel>>(), new TypeToken<Map<Long, Collection<Channel>>>() {
 	}.getType());
-	private final ConfigurationRegistry<Map<String, Permission>> permissions = new ConfigurationRegistry<>(DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "permission.json") : Paths.get("permission.json"), () -> new HashMap<String, Permission>() {
+	private final ConfigurationRegistry<Map<String, Permission>> permissions = new ConfigurationRegistry<>(CONDIG_DIRECTORY!=null ? Paths.get(CONDIG_DIRECTORY, "permission.json") : Paths.get("permission.json"), () -> new HashMap<String, Permission>() {
 		{
 			put("owner", Permission.ALL);
 			put("everyone", Permission.DEFAULT_EVERYONE);
