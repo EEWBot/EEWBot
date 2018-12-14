@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,13 +19,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.util.EmbedBuilder;
 
 public class QuakeInfo implements Embeddable {
 	public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyy年M月d日 H時mm分");
+	public static final Pattern PATTERN = Pattern.compile("(\\d+(?:\\.\\d+)?)");
 
 	private final Document original;
 	private final String url;
@@ -42,31 +44,27 @@ public class QuakeInfo implements Embeddable {
 		this.original = doc;
 		this.url = "https://typhoon.yahoo.co.jp"+Optional.ofNullable(doc.getElementById("history")).map(history -> history.getElementsByTag("tr").get(1).getElementsByTag("td").first().getElementsByTag("a").first().attr("href")).orElse("");
 		this.imageUrl = Optional.ofNullable(doc.getElementById("yjw_keihou").getElementsByTag("img").first()).map(image -> StringUtils.substringBefore(image.attr("src"), "?"));
-		final Element info = doc.getElementById("eqinfdtl");
-		final Map<String, String> data = info.getElementsByTag("table").get(0).getElementsByTag("tr").stream()
-				.map(tr -> tr.getElementsByTag("td")).collect(Collectors.toMap(td -> td.get(0).text(), td -> td.get(1).text()));
 
 		try {
-			final String quakeTime = data.get("発生時刻");
+			final String quakeTime = doc.select("#eqinfdtl > table.yjw_table.boderset > tbody > tr:nth-child(1) > td:nth-child(2) > small").text();
 			this.quakeTime = FORMAT.parse(StringUtils.substring(quakeTime, 0, quakeTime.length()-2));
-			this.epicenter = data.get("震源地");
-			this.lat = data.get("緯度");
-			this.lon = data.get("経度");
-			this.depth = data.get("深さ");
-			this.magnitude = NumberUtils.toFloat(data.get("マグニチュード"), -1f);
-			this.info = StringUtils.trim(StringUtils.remove(data.get("情報"), ">>津波情報を見る"));
+			this.epicenter = doc.select("#eqinfdtl > table.yjw_table.boderset > tbody > tr:nth-child(2) > td:nth-child(2) > small > a").text();
+			final Matcher matcher = PATTERN.matcher(doc.select("#eqinfdtl > table.yjw_table.boderset > tbody > tr:nth-child(6) > td:nth-child(2) > small").text());
+			matcher.find();
+			this.lat = matcher.group();
+			matcher.find();
+			this.lon = matcher.group();
+			this.depth = doc.select("#eqinfdtl > table.yjw_table.boderset > tbody > tr:nth-child(5) > td:nth-child(2) > small").text();
+			this.magnitude = NumberUtils.toFloat(doc.select("#eqinfdtl > table.yjw_table.boderset > tbody > tr:nth-child(4) > td:nth-child(2) > small").text(), -1f);
+			this.info = StringUtils.trim(StringUtils.remove(doc.select("#eqinfdtl > table.yjw_table.boderset > tbody > tr:nth-child(7) > td:nth-child(2) > small").text(), ">>津波情報を見る"));
 		} catch (final ParseException e) {
 			throw new RuntimeException("Parse Error", e);
 		}
 
-		final Element yjw = info.getElementsByTag("table").get(1);
-		if (yjw.childNodeSize()<=1)
-			this.maxIntensity = Optional.empty();
-		else
-			this.maxIntensity = SeismicIntensity.get(yjw.getElementsByTag("td").first().getElementsByTag("td").first().text());
+		this.maxIntensity = SeismicIntensity.get(doc.select("#eqinfdtl > table.yjw_table.boderset > tbody > tr:nth-child(3) > td:nth-child(2) > small").text());
 
 		final Map<String, PrefectureDetail> details = new HashMap<>();
-		yjw.getElementsByTag("tr").stream().filter(tr -> tr.attr("valign").equals("middle")).forEach(tr -> {
+		doc.getElementById("eqinfdtl").getElementsByTag("table").get(1).getElementsByTag("tr").stream().filter(tr -> tr.attr("valign").equals("middle")).forEach(tr -> {
 			final Optional<SeismicIntensity> intensity = SeismicIntensity.get(tr.getElementsByTag("td").first().getElementsByTag("td").first().text());
 			tr.getElementsByTag("table").first().getElementsByTag("tr").stream().map(line -> line.getElementsByTag("td")).collect(Collectors.toMap(td -> td.get(0).text(), td -> td.get(1).text())).entrySet().forEach(entry -> {
 				final String prefecture = entry.getKey();
