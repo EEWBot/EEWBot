@@ -3,7 +3,7 @@
 FROM openjdk:8-jre-alpine
 
 RUN apk --no-cache add curl \
- && curl -L https://github.com/Team-Fruit/EEWBot/releases/download/1.4.2/eewbot-1.4.2.jar -o eewbot.jar \
+ && curl -L https://github.com/Team-Fruit/EEWBot/releases/download/1.4.3/eewbot-1.4.3.jar -o eewbot.jar \
  && apk del --purge curl
 
 ENV CONFIG_DIRECTORY=/config \
