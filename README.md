@@ -20,13 +20,9 @@ $ docker pull teamfruit/eewbot
 $ mkdir eewbot && cd $_
 $ docker run -e TOKEN=<Your bot token> \
              -v ${PWD}:/etc/eewbot \
+             -v ${PWD}:/var/lib/eewbot \
              --name eewbot \
              -t -d teamfruit/eewbot
-```
-#### ノート
-すでに`channels.json`を持っている場合
-```sh
--v ${PWD}:/var/lib/eewbot
 ```
 
 ## コマンド
