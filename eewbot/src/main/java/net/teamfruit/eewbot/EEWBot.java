@@ -79,6 +79,10 @@ public class EEWBot {
 		if (getConfig().isDebug())
 			((Discord4JLogger) Log.logger).setLevel(Discord4JLogger.Level.DEBUG);
 
+		final String token = System.getenv("TOKEN");
+		if (token!=null)
+			getConfig().setToken(token);
+
 		if (StringUtils.isEmpty(getConfig().getToken())) {
 			Log.logger.info("Please set a token");
 			return;
