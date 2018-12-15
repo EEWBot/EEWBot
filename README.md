@@ -12,12 +12,25 @@ jarの場合は、コマンドラインから起動する事をおすすめし�
 1. 再びBotを起動し、Botが入っているDiscordサーバーで、オンラインになっている事を確認してください。
 
 ## セットアップ (Docker)
-#### クイックスタート
+[Docker Hub](https://hub.docker.com/r/teamfruit/eewbot)よりimageをpull
 ```sh
 $ docker pull teamfruit/eewbot
 ```
+設定ファイル置き場のホストのディレクトリを作成、移動
 ```sh
 $ mkdir eewbot && cd $_
+```
+`channels.json`がない場合 (新規インスタンス作成)
+```sh
+$ docker volume create --name eewbot
+$ docker run -e TOKEN=<Your bot token> \
+             -v ${PWD}:/etc/eewbot \
+             -v eewbot:/var/lib/eewbot \
+             --name eewbot \
+             -t -d teamfruit/eewbot
+```
+`channels.json`がすでにある場合 (別の環境からの移行)
+```sh
 $ docker run -e TOKEN=<Your bot token> \
              -v ${PWD}:/etc/eewbot \
              -v ${PWD}:/var/lib/eewbot \

@@ -8,6 +8,4 @@ ENV CONFIG_DIRECTORY=/etc/eewbot \
     DATA_DIRECTORY=/var/lib/eewbot \
     TZ=Asia/Tokyo
 
-VOLUME ${DATA_DIRECTORY}
-
 ENTRYPOINT ["java", "-jar", "eewbot.jar"]
