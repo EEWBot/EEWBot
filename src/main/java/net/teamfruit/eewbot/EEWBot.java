@@ -42,7 +42,7 @@ public class EEWBot {
 
 	public static final Gson GSON = new GsonBuilder()
 			.registerTypeAdapter(Channel.class, new Channel.ChannelTypeAdapter())
-			.setPrettyPrinting()
+			//			.setPrettyPrinting()
 			.create();
 
 	public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
