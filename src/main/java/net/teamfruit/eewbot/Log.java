@@ -1,10 +1,9 @@
 package net.teamfruit.eewbot;
 
-import org.slf4j.Logger;
-
-import sx.blah.discord.Discord4J.Discord4JLogger;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 
 public class Log {
-	public static Logger logger = new Discord4JLogger(EEWBot.class.getName());
+	public static Logger logger = Loggers.getLogger(EEWBot.class);
 
 }
