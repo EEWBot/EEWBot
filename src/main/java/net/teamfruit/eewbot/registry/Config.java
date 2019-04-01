@@ -21,7 +21,7 @@ public class Config {
 	}
 
 	public int getKyoshinDelay() {
-		return this.kyoshinDelay;
+		return this.kyoshinDelay>=1 ? this.kyoshinDelay : 1;
 	}
 
 	public void setKyoshinDelay(final int kyoshinDelay) {
@@ -29,7 +29,7 @@ public class Config {
 	}
 
 	public int getQuakeInfoDelay() {
-		return this.quakeInfoDelay;
+		return this.quakeInfoDelay>=10 ? this.quakeInfoDelay : 10;
 	}
 
 	public void setQuakeInfoDelay(final int quakeInfoDelay) {
@@ -37,7 +37,7 @@ public class Config {
 	}
 
 	public int getTimeFixDelay() {
-		return this.timeFixDelay;
+		return this.timeFixDelay>=3600 ? this.timeFixDelay : 3600;
 	}
 
 	public void setTimeFixDelay(final int timeFixDelay) {
