@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 
 import org.apache.commons.lang3.StringUtils;
 
-import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.MessageCreateSpec;
 
 public class EEW implements Entity {
 	public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").withZone(ZoneId.of("Asia/Tokyo"));
@@ -196,14 +196,14 @@ public class EEW implements Entity {
 	}
 
 	@Override
-	public Consumer<? super EmbedCreateSpec> createEmbed() {
-		return spec -> spec.setTitle("緊急地震速報 ("+getAlertFlg()+") "+(isFinal() ? "最終報" : "第"+getReportNum()+"報"))
+	public Consumer<? super MessageCreateSpec> createMessage() {
+		return msg -> msg.setEmbed(embed -> embed.setTitle("緊急地震速報 ("+getAlertFlg()+") "+(isFinal() ? "最終報" : "第"+getReportNum()+"報"))
 				.setTimestamp(getReportTime())
 				.addField("震央", getRegionName(), true)
 				.addField("深さ", getDepth()+"km", true)
 				.addField("マグニチュード", String.valueOf(getMagnitude()), true)
 				.addField("予想震度", getIntensity().map(SeismicIntensity::getSimple).orElse("不明"), false)
 				.setColor(isAlert() ? new Color(255, 0, 0) : new Color(0, 0, 255))
-				.setFooter("新強震モニタ", null);
+				.setFooter("新強震モニタ", null));
 	}
 }
