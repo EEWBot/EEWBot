@@ -14,15 +14,17 @@ import net.teamfruit.eewbot.registry.Config;
 
 public class EEWExecutor {
 
-	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "EEWBot-communication-thread"));;
-	private final TimeProvider provider = new TimeProvider();
-
+	private final ScheduledExecutorService executor;
+	private final TimeProvider provider;
 	private final EEWService service;
 	private final Config config;
 
 	public EEWExecutor(final EEWService service, final Config config) {
 		this.service = service;
 		this.config = config;
+
+		this.executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "EEWBot-communication-thread"));
+		this.provider = new TimeProvider(this.executor);
 	}
 
 	public ScheduledExecutorService getExecutor() {
@@ -34,7 +36,7 @@ public class EEWExecutor {
 	}
 
 	public void init() {
-		this.executor.scheduleAtFixedRate(this.provider.getGateway(), 0, this.config.getTimeFixDelay(), TimeUnit.SECONDS);
+		this.provider.init(this.config.getTimeFixDelay());
 
 		this.executor.scheduleAtFixedRate(new EEWGateway() {
 

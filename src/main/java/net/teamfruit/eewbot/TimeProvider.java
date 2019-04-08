@@ -3,6 +3,8 @@ package net.teamfruit.eewbot;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.net.ntp.TimeInfo;
 
@@ -25,6 +27,19 @@ public class TimeProvider {
 
 		}
 	};
+	private final ScheduledExecutorService executor;
+
+	public TimeProvider(final ScheduledExecutorService executor) {
+		this.executor = executor;
+	}
+
+	public void init(final long period) {
+		this.executor.scheduleAtFixedRate(this.gateway, 0, period, TimeUnit.SECONDS);
+	}
+
+	public void fetch() {
+		this.executor.execute(this.gateway);
+	}
 
 	public long getOffset() {
 		return this.offset;
