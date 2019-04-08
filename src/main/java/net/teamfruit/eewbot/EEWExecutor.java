@@ -38,7 +38,7 @@ public class EEWExecutor {
 	public void init() {
 		this.provider.init(this.config.getTimeFixDelay());
 
-		this.executor.scheduleAtFixedRate(new EEWGateway() {
+		this.executor.scheduleAtFixedRate(new EEWGateway(this.provider) {
 
 			@Override
 			public void onNewData(final EEW eew) {
