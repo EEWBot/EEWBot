@@ -70,7 +70,7 @@
 		<dependency>
 			<groupId>com.discord4j</groupId>
 			<artifactId>discord4j-core</artifactId>
-			<version>3.0.0</version>
+			<version>3.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
