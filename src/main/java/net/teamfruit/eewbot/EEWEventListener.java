@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import net.teamfruit.eewbot.dispatcher.QuakeInfoDispather.UpdateType;
+import net.teamfruit.eewbot.entity.EEW;
 import net.teamfruit.eewbot.event.EEWEvent;
 import net.teamfruit.eewbot.event.QuakeInfoEvent;
-import net.teamfruit.eewbot.node.EEW;
+import net.teamfruit.eewbot.gateway.QuakeInfoGateway.UpdateType;
 import net.teamfruit.eewbot.registry.Channel;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
@@ -39,14 +39,14 @@ public class EEWEventListener {
 				return true;
 			return false;
 		};
-		action(isAlert.and(decimation), c -> c.sendMessage(e.getElement().buildEmbed()));
+		action(isAlert.and(decimation), c -> c.sendMessage(e.getElement().createMessage()));
 		e.getMonitor().ifPresent(m -> action(c -> c.getElement("monitor").get()&&(eew.isAlert()&&c.getElement("eewAlert").get()||!eew.isAlert()&&c.getElement("eewPrediction").get()), c -> c.sendFile("", new ByteArrayInputStream(m), "kyoshinmonitor.png")));
 	}
 
 	@EventSubscriber
 	public void onQuakeInfo(final QuakeInfoEvent e) {
 		if (e.getUpdateType()!=UpdateType.DETAIL) {
-			final EmbedObject info = e.getElement().buildEmbed();
+			final EmbedObject info = e.getElement().createMessage();
 			action(c -> c.getElement("quakeInfo").get(), c -> c.sendMessage(info));
 		}
 		final List<EmbedObject> details = e.getElement().getDetailsEmbed();
