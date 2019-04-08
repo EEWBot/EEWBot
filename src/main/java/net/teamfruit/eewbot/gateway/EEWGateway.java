@@ -2,10 +2,10 @@ package net.teamfruit.eewbot.gateway;
 
 import java.io.InputStreamReader;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -17,7 +17,7 @@ import net.teamfruit.eewbot.entity.EEW;
 public abstract class EEWGateway implements Gateway<EEW> {
 
 	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/webservice/hypo/eew/";
-	public static final FastDateFormat FORMAT = FastDateFormat.getInstance("yyyyMMddHHmmss");
+	public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
 	private final Map<Long, EEW> prev = new HashMap<>();
 	private final TimeProvider time;
