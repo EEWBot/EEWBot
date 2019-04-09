@@ -58,7 +58,7 @@ public class EEWExecutor {
 						return true;
 					return false;
 				};
-				EEWExecutor.this.service.sendMessage(isAlert.and(decimation), eew.createMessage());
+				EEWExecutor.this.service.sendMessage(isAlert.and(decimation), eew.createMessage()).subscribe();
 
 				if (eew.isInitial()||eew.isFinal())
 					EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider, eew) {
@@ -66,7 +66,7 @@ public class EEWExecutor {
 						@Override
 						public void onNewData(final Monitor data) {
 							EEWExecutor.this.service.sendMessage(c -> c.getElement("monitor").get()&&(eew.isAlert()&&c.getElement("eewAlert").get()||!eew.isAlert()&&c.getElement("eewPrediction").get()),
-									data.createMessage());
+									data.createMessage()).subscribe();
 						}
 					});
 			}
