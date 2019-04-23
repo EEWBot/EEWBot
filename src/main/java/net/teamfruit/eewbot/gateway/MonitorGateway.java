@@ -42,7 +42,7 @@ public abstract class MonitorGateway implements Gateway<Monitor> {
 	@Override
 	public void run() {
 		try {
-			final ZonedDateTime date = this.time.offset(1000);
+			final ZonedDateTime date = this.time.offset(-1000);
 			final List<BufferedImage> images = new ArrayList<>();
 
 			final String dateStr = FORMAT.format(date);
