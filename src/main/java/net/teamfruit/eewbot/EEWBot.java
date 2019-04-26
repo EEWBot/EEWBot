@@ -25,6 +25,7 @@ import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
+import net.teamfruit.eewbot.command.CommandHandler;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
@@ -64,6 +65,7 @@ public class EEWBot {
 	private DiscordClient client;
 	private EEWService service;
 	private EEWExecutor executor;
+	private CommandHandler command;
 
 	public void initialize() throws IOException {
 		this.config.init();
@@ -86,6 +88,7 @@ public class EEWBot {
 
 		this.service = new EEWService(this.client, getChannels());
 		this.executor = new EEWExecutor(this.service, getConfig());
+		this.command = new CommandHandler(this);
 
 		this.client.getEventDispatcher().on(ReadyEvent.class)
 				.map(event -> event.getGuilds().size())
@@ -140,6 +143,10 @@ public class EEWBot {
 
 	public EEWExecutor getExecutor() {
 		return this.executor;
+	}
+
+	public CommandHandler getCommandHandler() {
+		return this.command;
 	}
 
 	public static void main(final String[] args) throws Exception {
