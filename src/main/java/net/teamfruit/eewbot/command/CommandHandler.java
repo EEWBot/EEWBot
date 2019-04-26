@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.command;
 
+import java.awt.Color;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -34,6 +35,7 @@ public class CommandHandler {
 								.filter(b -> b)
 								.switchIfEmpty(event.getMessage().getChannel()
 										.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("コマンドが見つかりません")
+												.setColor(new Color(255, 64, 64))
 												.setDescription("`!eew help` でコマンド一覧を確認出来ます")))
 										.map(m -> false)))
 						.filterWhen(array -> Mono.just(!this.bot.getConfig().isEnablePermission())
@@ -42,6 +44,7 @@ public class CommandHandler {
 								.filter(b -> b)
 								.switchIfEmpty(event.getMessage().getChannel()
 										.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("権限がありません")
+												.setColor(new Color(255, 64, 64))
 												.setDescription("管理者にお問い合わせ下さい")))
 										.map(m -> false)))
 						.flatMap(array -> commands.get(array[1]).get().execute(bot, event, ArrayUtils.remove(array, 0))))
