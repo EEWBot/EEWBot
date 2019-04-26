@@ -1,17 +1,16 @@
 package net.teamfruit.eewbot.registry;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import net.teamfruit.eewbot.DiscordEventListener.Command;
+import net.teamfruit.eewbot.command.CommandHandler;
 
 public class Permission {
 
 	public static final Permission DEFAULT_EVERYONE = new Permission(Collections.emptyList(), Arrays.asList("details", "monitor", "help"));
-	public static final Permission ALL = new Permission(Collections.emptyList(), Stream.of(Command.values()).map(Command::name).collect(Collectors.toList()));
+	public static final Permission ALL = new Permission(Collections.emptyList(), new ArrayList<>(CommandHandler.commands.keySet()));
 
 	private List<Long> userid;
 	private List<String> command;
