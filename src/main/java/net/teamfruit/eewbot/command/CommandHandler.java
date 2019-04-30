@@ -21,6 +21,7 @@ public class CommandHandler {
 		commands.put("time", wrap(new TimeCommand()));
 		commands.put("timefix", wrap(new TimeFixCommand()));
 		commands.put("joinserver", wrap(new JoinServerCommand()));
+		commands.put("reload", wrap(new ReloadCommand()));
 		commands.put("help", wrap(new HelpCommand()));
 	}
 

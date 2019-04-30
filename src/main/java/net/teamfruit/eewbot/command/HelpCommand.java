@@ -17,6 +17,7 @@ public class HelpCommand implements ICommand {
 						.addField("time", "Botの時刻同期情報を表示します", true)
 						.addField("timefix", "Botの時刻を強制的に修正します", true)
 						.addField("joinserver", "Botの招待リンクを表示します", true)
+						.addField("reload", "ConfigとPermissionsをリロードします", true)
 						.addField("help", "ヘルプを表示します", true)))
 				.then();
 	}
