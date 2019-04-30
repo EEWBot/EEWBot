@@ -64,15 +64,11 @@ public abstract class MonitorGateway implements Gateway<Monitor> {
 						}
 					});
 
-			final BufferedImage base = ImageIO.read(MonitorGateway.class.getResource("/base_map_w.gif"));
-			images.stream().forEach(image -> {
-				final Graphics2D g = base.createGraphics();
-				g.drawImage(image, 0, 0, null);
-				g.dispose();
-			});
-			final Graphics2D g = base.createGraphics();
-			g.drawImage(ImageIO.read(MonitorGateway.class.getResource("/nied_acmap_s_w_scale.gif")), 305, 99, null);
-			g.dispose();
+			final BufferedImage base = ImageIO.read(MonitorGateway.class.getResource("/base_map_w.png"));
+			final Graphics2D graphics = base.createGraphics();
+			images.stream().forEach(image -> graphics.drawImage(image, 0, 0, null));
+			graphics.drawImage(ImageIO.read(MonitorGateway.class.getResource("/nied_acmap_s_w_scale.gif")), 305, 99, null);
+			graphics.dispose();
 			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 				ImageIO.write(base, "png", baos);
 				onNewData(new Monitor(baos.toByteArray(), this.relationEEW));
