@@ -16,6 +16,7 @@ public class HelpCommand implements ICommand {
 						.addField("monitor", "現在の強震モニタの画像を取得します", true)
 						.addField("time", "Botの時刻同期情報を表示します", true)
 						.addField("timefix", "Botの時刻を強制的に修正します", true)
+						.addField("joinserver", "Botの招待リンクを表示します", true)
 						.addField("help", "ヘルプを表示します", true)))
 				.then();
 	}

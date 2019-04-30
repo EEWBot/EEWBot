@@ -20,6 +20,7 @@ public class CommandHandler {
 		commands.put("monitor", wrap(new MonitorCommand()));
 		commands.put("time", wrap(new TimeCommand()));
 		commands.put("timefix", wrap(new TimeFixCommand()));
+		commands.put("joinserver", wrap(new JoinServerCommand()));
 		commands.put("help", wrap(new HelpCommand()));
 	}
 
