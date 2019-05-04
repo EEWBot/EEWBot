@@ -24,6 +24,10 @@ public class ConfigurationRegistry<E> {
 
 	}
 
+	public Path getPath() {
+		return this.path;
+	}
+
 	public E getElement() {
 		return this.element;
 	}

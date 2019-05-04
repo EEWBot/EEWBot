@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
@@ -8,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
@@ -19,6 +21,7 @@ import org.apache.http.message.BasicHeader;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import discord4j.core.DiscordClient;
@@ -29,20 +32,21 @@ import net.teamfruit.eewbot.command.CommandHandler;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
+import net.teamfruit.eewbot.registry.OldChannel;
 import net.teamfruit.eewbot.registry.Permission;
 
 public class EEWBot {
 	public static EEWBot instance;
 
 	public static final Gson GSON = new GsonBuilder()
-			.registerTypeAdapter(Channel.class, new Channel.ChannelTypeAdapter())
+			.registerTypeAdapter(OldChannel.class, new OldChannel.ChannelTypeAdapter())
 			.create();
 
 	public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
 	public static final String CONDIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
 	private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(CONDIG_DIRECTORY!=null ? Paths.get(CONDIG_DIRECTORY, "config.json") : Paths.get("config.json"), () -> new Config(), Config.class);
-	private final ConfigurationRegistry<Map<Long, List<Channel>>> channels = new ConfigurationRegistry<>(DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, List<Channel>>(), new TypeToken<Map<Long, Collection<Channel>>>() {
+	private final ConfigurationRegistry<Map<Long, Channel>> channels = new ConfigurationRegistry<>(DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, Channel>(), new TypeToken<Map<Long, Channel>>() {
 	}.getType());
 	private final ConfigurationRegistry<Map<String, Permission>> permissions = new ConfigurationRegistry<>(CONDIG_DIRECTORY!=null ? Paths.get(CONDIG_DIRECTORY, "permission.json") : Paths.get("permission.json"), () -> new HashMap<String, Permission>() {
 		{
@@ -69,7 +73,7 @@ public class EEWBot {
 
 	public void initialize() throws IOException {
 		this.config.init();
-		this.channels.init();
+		initChannels();
 		this.permissions.init();
 
 		final String token = System.getenv("TOKEN");
@@ -105,11 +109,32 @@ public class EEWBot {
 		this.client.login().block();
 	}
 
+	private boolean initChannels() throws IOException {
+		try {
+			this.channels.init();
+			return false;
+		} catch (final JsonSyntaxException e) {
+			Log.logger.info("Migrating channels.json");
+
+			final ConfigurationRegistry<Map<Long, List<OldChannel>>> oldChannels = new ConfigurationRegistry<>(DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, List<OldChannel>>(), new TypeToken<Map<Long, Collection<OldChannel>>>() {
+			}.getType());
+			Files.copy(oldChannels.getPath(), DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "oldchannels.json") : Paths.get("oldchannels.json"));
+			oldChannels.init();
+
+			final Map<Long, Channel> map = oldChannels.getElement().values().stream()
+					.flatMap(List::stream)
+					.collect(Collectors.toMap(old -> old.id, Channel::fromOldChannel));
+			this.channels.setElement(map);
+			this.channels.save();
+			return true;
+		}
+	}
+
 	public Config getConfig() {
 		return this.config.getElement();
 	}
 
-	public Map<Long, List<Channel>> getChannels() {
+	public Map<Long, Channel> getChannels() {
 		return this.channels.getElement();
 	}
 
@@ -121,7 +146,7 @@ public class EEWBot {
 		return this.config;
 	}
 
-	public ConfigurationRegistry<Map<Long, List<Channel>>> getChannelRegistry() {
+	public ConfigurationRegistry<Map<Long, Channel>> getChannelRegistry() {
 		return this.channels;
 	}
 

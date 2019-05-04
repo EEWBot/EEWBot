@@ -42,9 +42,9 @@ public class EEWExecutor {
 
 			@Override
 			public void onNewData(final EEW eew) {
-				final Predicate<Channel> isAlert = c -> c.getElement(eew.isAlert() ? "eewAlert" : "eewPrediction").get();
+				final Predicate<Channel> isAlert = c -> eew.isAlert() ? c.eewAlert : c.eewPrediction;
 				final Predicate<Channel> decimation = c -> {
-					if (!c.getElement("eewDecimation").get())
+					if (!c.eewDecimation)
 						return true;
 					if (eew.getPrev()==null)
 						return true;
@@ -65,7 +65,7 @@ public class EEWExecutor {
 
 						@Override
 						public void onNewData(final Monitor data) {
-							EEWExecutor.this.service.sendMessage(c -> c.getElement("monitor").get()&&(eew.isAlert()&&c.getElement("eewAlert").get()||!eew.isAlert()&&c.getElement("eewPrediction").get()),
+							EEWExecutor.this.service.sendMessage(c -> c.monitor&&(eew.isAlert()&&c.eewAlert||!eew.isAlert()&&c.eewPrediction),
 									data.createMessage()).subscribe();
 						}
 					});
