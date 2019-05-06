@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.time.ZonedDateTime;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.Message;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.TimeProvider;
 import reactor.core.publisher.Mono;
@@ -11,7 +12,7 @@ import reactor.core.publisher.Mono;
 public class TimeCommand implements ICommand {
 
 	@Override
-	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String[] args) {
+	public Mono<Message> execute(final EEWBot bot, final MessageCreateEvent event, final String[] args) {
 		return event.getMessage().getChannel()
 				.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("時刻同期")
 						.setColor(new Color(7506394))
@@ -23,8 +24,7 @@ public class TimeCommand implements ICommand {
 								.orElse("未同期"), false)
 						.addField("現在時刻(コンピューター)", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
 						.addField("現在時刻(オフセット)", bot.getExecutor().getProvider().now().toString(), false)
-						.addField("オフセット(ミリ秒)", String.valueOf(bot.getExecutor().getProvider().getOffset()), false)))
-				.then();
+						.addField("オフセット(ミリ秒)", String.valueOf(bot.getExecutor().getProvider().getOffset()), false)));
 	}
 
 }

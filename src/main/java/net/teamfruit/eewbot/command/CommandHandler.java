@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.ArrayUtils;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.event.domain.message.ReactionAddEvent;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.registry.Permission;
 import reactor.core.publisher.Mono;
@@ -52,6 +53,8 @@ public class CommandHandler {
 										.map(m -> false)))
 						.flatMap(array -> commands.get(array[1]).get().execute(bot, event, ArrayUtils.remove(array, 0))))
 				.subscribe();
+
+		this.bot.getClient().getEventDispatcher().on(ReactionAddEvent.class);
 	}
 
 	public static Supplier<ICommand> wrap(final ICommand command) {
