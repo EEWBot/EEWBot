@@ -197,6 +197,12 @@ public class EEW implements Entity {
 
 	@Override
 	public Consumer<? super MessageCreateSpec> createMessage() {
+		if (isCancel())
+			return msg -> msg.setEmbed(embed -> embed.setTitle("緊急地震速報")
+					.setTimestamp(getReportTime())
+					.setDescription("緊急地震速報はキャンセルされました")
+					.setColor(new Color(255, 255, 0))
+					.setFooter("新強震モニタ", null));
 		return msg -> msg.setEmbed(embed -> embed.setTitle("緊急地震速報 ("+getAlertFlg()+") "+(isFinal() ? "最終報" : "第"+getReportNum()+"報"))
 				.setTimestamp(getReportTime())
 				.addField("震央", getRegionName(), true)
