@@ -22,6 +22,8 @@ public class CommandHandler {
 		commands.put("joinserver", wrap(new JoinServerCommand()));
 		commands.put("reload", wrap(new ReloadCommand()));
 		commands.put("help", wrap(new HelpCommand()));
+
+		commands.put("register", () -> new RegisterCommand());
 	}
 
 	private final EEWBot bot;
@@ -52,15 +54,19 @@ public class CommandHandler {
 												.setDescription("管理者にお問い合わせ下さい")))
 										.map(m -> false)))
 						.map(array -> commands.get(array[1]).get())
-						.filterWhen(cmd -> Mono.just(true)
-								.filter(b -> !(cmd instanceof ReactionCommand))
+						.filterWhen(cmd -> Mono.just(!(cmd instanceof ReactionCommand))
+								.filter(b -> b)
 								.switchIfEmpty(Mono.just(cmd)
-										.map(c -> this.reactionWaitingList.add((ReactionCommand) c))
-										.map(m -> true)))
+										.cast(ReactionCommand.class)
+										.map(c -> {
+											this.reactionWaitingList.add(c);
+											return true;
+										})))
 						.flatMap(cmd -> cmd.execute(bot, event)))
 				.subscribe();
 
 		this.bot.getClient().getEventDispatcher().on(ReactionAddEvent.class)
+				.filter(event -> !event.getUserId().equals(bot.getClient().getSelfId().orElse(null)))
 				.flatMap(event -> Mono.justOrEmpty(this.reactionWaitingList.get(event.getMessageId()))
 						.flatMap(cmd -> cmd.onReaction(bot, event)))
 				.subscribe();

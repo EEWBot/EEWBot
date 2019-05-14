@@ -17,8 +17,8 @@ public class ReactionWaitingList implements Runnable {
 		executor.scheduleAtFixedRate(this, 1, 1, TimeUnit.MINUTES);
 	}
 
-	public long add(final ReactionCommand cmd) {
-		return this.map.put(cmd, System.currentTimeMillis());
+	public void add(final ReactionCommand cmd) {
+		this.map.put(cmd, System.currentTimeMillis());
 	}
 
 	public ReactionCommand get(final Snowflake id) {
