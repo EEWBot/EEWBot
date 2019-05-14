@@ -7,6 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import discord4j.core.object.util.Snowflake;
+
 public class ReactionWaitingList implements Runnable {
 
 	private final Map<ReactionCommand, Long> map = new ConcurrentHashMap<>();
@@ -17,6 +19,13 @@ public class ReactionWaitingList implements Runnable {
 
 	public long add(final ReactionCommand cmd) {
 		return this.map.put(cmd, System.currentTimeMillis());
+	}
+
+	public ReactionCommand get(final Snowflake id) {
+		return this.map.keySet().stream()
+				.filter(cmd -> cmd.getId().equals(id))
+				.findAny()
+				.orElse(null);
 	}
 
 	@Override

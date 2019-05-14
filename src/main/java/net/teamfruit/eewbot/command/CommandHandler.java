@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import net.teamfruit.eewbot.EEWBot;
@@ -27,9 +25,11 @@ public class CommandHandler {
 	}
 
 	private final EEWBot bot;
+	private final ReactionWaitingList reactionWaitingList;
 
 	public CommandHandler(final EEWBot bot) {
 		this.bot = bot;
+		this.reactionWaitingList = new ReactionWaitingList(bot.getExecutor().getExecutor());
 
 		this.bot.getClient().getEventDispatcher().on(MessageCreateEvent.class)
 				.flatMap(event -> Mono.justOrEmpty(event.getMessage().getContent())
@@ -51,10 +51,19 @@ public class CommandHandler {
 												.setColor(new Color(255, 64, 64))
 												.setDescription("管理者にお問い合わせ下さい")))
 										.map(m -> false)))
-						.flatMap(array -> commands.get(array[1]).get().execute(bot, event, ArrayUtils.remove(array, 0))))
+						.map(array -> commands.get(array[1]).get())
+						.filterWhen(cmd -> Mono.just(true)
+								.filter(b -> !(cmd instanceof ReactionCommand))
+								.switchIfEmpty(Mono.just(cmd)
+										.map(c -> this.reactionWaitingList.add((ReactionCommand) c))
+										.map(m -> true)))
+						.flatMap(cmd -> cmd.execute(bot, event)))
 				.subscribe();
 
-		this.bot.getClient().getEventDispatcher().on(ReactionAddEvent.class);
+		this.bot.getClient().getEventDispatcher().on(ReactionAddEvent.class)
+				.flatMap(event -> Mono.justOrEmpty(this.reactionWaitingList.get(event.getMessageId()))
+						.flatMap(cmd -> cmd.onReaction(bot, event)))
+				.subscribe();
 	}
 
 	public static Supplier<ICommand> wrap(final ICommand command) {
