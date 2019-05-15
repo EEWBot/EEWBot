@@ -9,7 +9,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
-import discord4j.core.object.entity.User;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.registry.Permission;
 import reactor.core.publisher.Mono;
@@ -78,12 +77,19 @@ public class CommandHandler {
 		this.bot.getClient().getEventDispatcher().on(ReactionAddEvent.class)
 				.filter(event -> !event.getUserId().equals(bot.getClient().getSelfId().orElse(null)))
 				.flatMap(event -> Mono.justOrEmpty(this.reactionWaitingList.get(event.getMessageId()))
-						.filter(cmd -> event.getUserId().equals(cmd.getAuthor().map(User::getId).orElse(null)))
+						.filter(cmd -> event.getUserId().equals(cmd.getAuthor()))
 						.filterWhen(cmd -> cmd.onReaction(bot, event))
 						.map(b -> {
 							this.reactionWaitingList.remove(event.getMessageId());
 							return true;
-						}))
+						})
+						.doOnError(err -> event.getChannel()
+								.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("エラーが発生しました")
+										.setColor(new Color(255, 64, 64))
+										.setFooter("ご迷惑をおかけし申し訳ありません。", null)
+										.setDescription(ExceptionUtils.getMessage(err))))
+								.subscribe())
+						.onErrorResume(e -> Mono.empty()))
 				.subscribe();
 	}
 

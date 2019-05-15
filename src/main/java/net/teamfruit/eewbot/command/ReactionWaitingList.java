@@ -27,7 +27,7 @@ public class ReactionWaitingList implements Runnable {
 
 	public ReactionCommand get(final Snowflake id) {
 		return this.map.keySet().stream()
-				.filter(cmd -> cmd.getMessageId().equals(id))
+				.filter(cmd -> id.equals(cmd.getMessageId()))
 				.findAny()
 				.orElse(null);
 	}

@@ -1,30 +1,38 @@
 package net.teamfruit.eewbot.command;
 
-import java.util.Optional;
-
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
+import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.core.object.util.Snowflake;
 import net.teamfruit.eewbot.EEWBot;
 import reactor.core.publisher.Mono;
 
 public abstract class ReactionCommand implements ICommand {
 
+	public static final ReactionEmoji EMOJI_Y = ReactionEmoji.unicode("🇾");
+	public static final ReactionEmoji EMOJI_N = ReactionEmoji.unicode("🇳");
+
 	private Snowflake messageId;
-	private Optional<User> user;
+	private Snowflake commandSenderId;
 
 	public Snowflake getMessageId() {
 		return this.messageId;
 	}
 
-	public Optional<User> getAuthor() {
-		return this.user;
+	public Snowflake getAuthor() {
+		return this.commandSenderId;
 	}
 
-	public Message set(final Message msg) {
+	protected Message setBotMessage(final Message msg) {
 		this.messageId = msg.getId();
-		this.user = msg.getAuthor();
+		return msg;
+	}
+
+	protected Message setAuthor(final Message msg) {
+		this.commandSenderId = msg.getAuthor()
+				.map(User::getId)
+				.orElse(null);
 		return msg;
 	}
 
