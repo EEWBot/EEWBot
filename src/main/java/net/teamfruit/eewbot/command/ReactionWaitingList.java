@@ -21,9 +21,13 @@ public class ReactionWaitingList implements Runnable {
 		this.map.put(cmd, System.currentTimeMillis());
 	}
 
+	public void remove(final Snowflake id) {
+		this.map.remove(get(id));
+	}
+
 	public ReactionCommand get(final Snowflake id) {
 		return this.map.keySet().stream()
-				.filter(cmd -> cmd.getId().equals(id))
+				.filter(cmd -> cmd.getMessageId().equals(id))
 				.findAny()
 				.orElse(null);
 	}
