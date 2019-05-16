@@ -1,7 +1,8 @@
-package net.teamfruit.eewbot.command;
+package net.teamfruit.eewbot.command.impl;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.command.ICommand;
 import net.teamfruit.eewbot.entity.Monitor;
 import net.teamfruit.eewbot.gateway.MonitorGateway;
 import reactor.core.publisher.Mono;

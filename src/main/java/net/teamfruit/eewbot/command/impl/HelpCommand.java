@@ -1,9 +1,10 @@
-package net.teamfruit.eewbot.command;
+package net.teamfruit.eewbot.command.impl;
 
 import java.awt.Color;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.command.ICommand;
 import reactor.core.publisher.Mono;
 
 public class HelpCommand implements ICommand {

@@ -10,6 +10,15 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.command.impl.DetailsCommand;
+import net.teamfruit.eewbot.command.impl.HelpCommand;
+import net.teamfruit.eewbot.command.impl.JoinServerCommand;
+import net.teamfruit.eewbot.command.impl.MonitorCommand;
+import net.teamfruit.eewbot.command.impl.RegisterCommand;
+import net.teamfruit.eewbot.command.impl.ReloadCommand;
+import net.teamfruit.eewbot.command.impl.TimeCommand;
+import net.teamfruit.eewbot.command.impl.TimeFixCommand;
+import net.teamfruit.eewbot.command.impl.UnRegisterCommand;
 import net.teamfruit.eewbot.registry.Permission;
 import reactor.core.publisher.Mono;
 
