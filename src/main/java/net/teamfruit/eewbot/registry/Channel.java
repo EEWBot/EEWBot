@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.registry;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class Channel {
 
@@ -45,6 +46,20 @@ public class Channel {
 					}
 				})
 				.findAny().orElseThrow(() -> new IllegalArgumentException());
+	}
+
+	@Override
+	public String toString() {
+		return Arrays.stream(getClass().getFields())
+				.filter(field -> field.isAnnotationPresent(CommandName.class))
+				.map(field -> {
+					try {
+						return String.format("`%s` %s", field.getAnnotation(CommandName.class).value(), field.getBoolean(this));
+					} catch (IllegalArgumentException|IllegalAccessException e) {
+						throw new RuntimeException(e);
+					}
+				})
+				.collect(Collectors.joining("\n"));
 	}
 
 	public static Channel fromOldChannel(final OldChannel old) {
