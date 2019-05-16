@@ -18,6 +18,8 @@ public class CommandHandler {
 	public static Map<String, Supplier<ICommand>> commands = new HashMap<>();
 
 	static {
+		commands.put("unregister", wrap(new UnRegisterCommand()));
+		commands.put("details", wrap(new DetailsCommand()));
 		commands.put("monitor", wrap(new MonitorCommand()));
 		commands.put("time", wrap(new TimeCommand()));
 		commands.put("timefix", wrap(new TimeFixCommand()));
