@@ -1,10 +1,9 @@
 package net.teamfruit.eewbot.command.impl;
 
-import java.awt.Color;
-
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.command.CommandUtils;
 import net.teamfruit.eewbot.command.ReactionCommand;
 import net.teamfruit.eewbot.registry.Channel;
 import reactor.core.publisher.Mono;
@@ -20,8 +19,8 @@ public class RegisterCommand extends ReactionCommand {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.justOrEmpty(!bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
-						.switchIfEmpty(channel.createEmbed(embed -> embed.setTitle("チャンネル登録")
-								.setColor(new Color(255, 64, 64))
+						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createBaseErrorEmbed(embed)
+								.setTitle("チャンネル登録")
 								.setDescription("このチャンネルはすでに登録されています。"))
 								.map(m -> false)))
 				.flatMap(channel -> Mono.fromCallable(() -> {
@@ -29,8 +28,8 @@ public class RegisterCommand extends ReactionCommand {
 					bot.getChannelRegistry().save();
 					return channel;
 				}))
-				.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("チャンネル登録")
-						.setColor(new Color(7506394))
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+						.setTitle("チャンネル登録")
 						.setDescription("チャンネルを登録しました。\nセットアップウィザードを開始しますか(Y/N)？\nキャンセルすると初期設定が適用されます。")))
 				.map(this::setBotMessage)
 				.flatMap(msg -> msg.addReaction(EMOJI_Y)
@@ -45,8 +44,8 @@ public class RegisterCommand extends ReactionCommand {
 
 		if (!this.setup&&reaction.getEmoji().equals(EMOJI_N))
 			return reaction.getChannel()
-					.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("チャンネル登録")
-							.setColor(new Color(7506394))
+					.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+							.setTitle("チャンネル登録")
 							.addField("初期設定を適用しました", bot.getChannels().get(channel.getId().asLong()).toString(), false)))
 					.map(m -> true);
 
@@ -79,8 +78,8 @@ public class RegisterCommand extends ReactionCommand {
 			case 6:
 				channel.quakeInfoDetail = isY;
 				return reaction.getChannel()
-						.flatMap(c -> c.createEmbed(embed -> embed.setTitle("チャンネル登録")
-								.setColor(new Color(7506394))
+						.flatMap(c -> c.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+								.setTitle("チャンネル登録")
 								.addField("設定が完了しました", bot.getChannels().get(c.getId().asLong()).toString(), false)))
 						.flatMap(c -> Mono.fromCallable(() -> {
 							bot.getChannelRegistry().save();
@@ -94,8 +93,8 @@ public class RegisterCommand extends ReactionCommand {
 
 	private Mono<Boolean> createSetupMessage(final ReactionAddEvent event, final String name, final String desc) {
 		return event.getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("チャンネル登録")
-						.setColor(new Color(7506394))
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+						.setTitle("チャンネル登録")
 						.addField(name, desc, false)))
 				.map(this::setBotMessage)
 				.flatMap(msg -> msg.addReaction(EMOJI_Y)

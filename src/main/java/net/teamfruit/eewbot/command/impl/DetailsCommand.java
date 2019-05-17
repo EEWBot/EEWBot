@@ -1,9 +1,8 @@
 package net.teamfruit.eewbot.command.impl;
 
-import java.awt.Color;
-
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.command.CommandUtils;
 import net.teamfruit.eewbot.command.ICommand;
 import reactor.core.publisher.Mono;
 
@@ -14,12 +13,12 @@ public class DetailsCommand implements ICommand {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.justOrEmpty(bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
-						.switchIfEmpty(channel.createEmbed(embed -> embed.setTitle("チャンネル設定")
-								.setColor(new Color(255, 64, 64))
+						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createBaseErrorEmbed(embed)
+								.setTitle("チャンネル設定")
 								.setDescription("このチャンネルは登録されていません。"))
 								.map(m -> false)))
-				.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("チャンネル設定")
-						.setColor(new Color(7506394))
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+						.setTitle("チャンネル設定")
 						.setDescription(bot.getChannels().get(channel.getId().asLong()).toString())))
 				.then();
 	}

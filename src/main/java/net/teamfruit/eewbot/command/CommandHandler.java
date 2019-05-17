@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot.command;
 
-import java.awt.Color;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -19,7 +18,6 @@ import net.teamfruit.eewbot.command.impl.ReloadCommand;
 import net.teamfruit.eewbot.command.impl.TimeCommand;
 import net.teamfruit.eewbot.command.impl.TimeFixCommand;
 import net.teamfruit.eewbot.command.impl.UnRegisterCommand;
-import net.teamfruit.eewbot.registry.Permission;
 import reactor.core.publisher.Mono;
 
 public class CommandHandler {
@@ -53,17 +51,17 @@ public class CommandHandler {
 						.filterWhen(array -> Mono.just(array.length>=2&&commands.containsKey(array[1]))
 								.filter(b -> b)
 								.switchIfEmpty(event.getMessage().getChannel()
-										.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("コマンドが見つかりません")
-												.setColor(new Color(255, 64, 64))
+										.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseErrorEmbed(embed)
+												.setTitle("コマンドが見つかりません")
 												.setDescription("`!eew help` でコマンド一覧を確認出来ます")))
 										.map(m -> false)))
 						.filterWhen(array -> Mono.just(!this.bot.getConfig().isEnablePermission())
 								.flatMap(b -> Mono.justOrEmpty(event.getMember())
-										.map(member -> b||userHasPermission(member.getId().asLong(), array[1])))
+										.map(member -> b||CommandUtils.userHasPermission(member.getId().asLong(), array[1])))
 								.filter(b -> b)
 								.switchIfEmpty(event.getMessage().getChannel()
-										.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("権限がありません")
-												.setColor(new Color(255, 64, 64))
+										.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseErrorEmbed(embed)
+												.setTitle("権限がありません")
 												.setDescription("管理者にお問い合わせ下さい")))
 										.map(m -> false)))
 						.map(array -> commands.get(array[1]).get())
@@ -77,9 +75,8 @@ public class CommandHandler {
 										})))
 						.flatMap(cmd -> cmd.execute(bot, event))
 						.doOnError(err -> event.getMessage().getChannel()
-								.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("エラーが発生しました")
-										.setColor(new Color(255, 64, 64))
-										.setFooter("ご迷惑をおかけし申し訳ありません。", null)
+								.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseErrorEmbed(embed)
+										.setTitle("エラーが発生しました")
 										.setDescription(ExceptionUtils.getMessage(err))))
 								.subscribe())
 						.onErrorResume(e -> Mono.empty()))
@@ -95,9 +92,8 @@ public class CommandHandler {
 							return true;
 						})
 						.doOnError(err -> event.getChannel()
-								.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("エラーが発生しました")
-										.setColor(new Color(255, 64, 64))
-										.setFooter("ご迷惑をおかけし申し訳ありません。", null)
+								.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseErrorEmbed(embed)
+										.setTitle("エラーが発生しました")
 										.setDescription(ExceptionUtils.getMessage(err))))
 								.subscribe())
 						.onErrorResume(e -> Mono.empty()))
@@ -108,10 +104,4 @@ public class CommandHandler {
 		return () -> command;
 	}
 
-	public static boolean userHasPermission(final long userid, final String command) {
-		return EEWBot.instance.getPermissions().values().stream()
-				.filter(permission -> permission.getUserid().contains(userid))
-				.findAny().orElse(EEWBot.instance.getPermissions().getOrDefault("everyone", Permission.DEFAULT_EVERYONE))
-				.getCommand().contains(command);
-	}
 }

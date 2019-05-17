@@ -1,9 +1,8 @@
 package net.teamfruit.eewbot.command.impl;
 
-import java.awt.Color;
-
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.command.CommandUtils;
 import net.teamfruit.eewbot.command.ICommand;
 import reactor.core.publisher.Mono;
 
@@ -12,8 +11,8 @@ public class HelpCommand implements ICommand {
 	@Override
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event) {
 		return event.getMessage().getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("Help")
-						.setColor(new Color(7506394))
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+						.setTitle("Help")
 						.addField("register", "通知するチャンネルを登録し、セットアップします", true)
 						.addField("unregister", "チャンネルの登録を解除します", true)
 						.addField("details", "登録されたチャンネルの設定を表示します", true)

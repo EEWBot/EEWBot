@@ -1,11 +1,11 @@
 package net.teamfruit.eewbot.command.impl;
 
-import java.awt.Color;
 import java.time.ZonedDateTime;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.TimeProvider;
+import net.teamfruit.eewbot.command.CommandUtils;
 import net.teamfruit.eewbot.command.ICommand;
 import reactor.core.publisher.Mono;
 
@@ -14,8 +14,8 @@ public class TimeCommand implements ICommand {
 	@Override
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event) {
 		return event.getMessage().getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> embed.setTitle("時刻同期")
-						.setColor(new Color(7506394))
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+						.setTitle("時刻同期")
 						.addField("最終同期(コンピューター)", bot.getExecutor().getProvider().getLastComputerTime()
 								.map(ZonedDateTime::toString)
 								.orElse("未同期"), false)

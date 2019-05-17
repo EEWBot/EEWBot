@@ -71,6 +71,9 @@ public class EEWBot {
 	private EEWExecutor executor;
 	private CommandHandler command;
 
+	private String userName;
+	private String avatarUrl;
+
 	public void initialize() throws IOException {
 		this.config.init();
 		initChannels();
@@ -100,8 +103,12 @@ public class EEWBot {
 						.on(GuildCreateEvent.class)
 						.take(size)
 						.collectList())
-				.subscribe(events -> {
+				.subscribe(evens -> {
 					this.executor.init();
+					this.client.getSelf().subscribe(user -> {
+						this.userName = user.getUsername();
+						this.avatarUrl = user.getAvatarUrl();
+					});
 
 					Log.logger.info("Connected!");
 				});
@@ -172,6 +179,14 @@ public class EEWBot {
 
 	public CommandHandler getCommandHandler() {
 		return this.command;
+	}
+
+	public String getUsername() {
+		return this.userName;
+	}
+
+	public String getAvatarUrl() {
+		return this.avatarUrl;
 	}
 
 	public static void main(final String[] args) throws Exception {
