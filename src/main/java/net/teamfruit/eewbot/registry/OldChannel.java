@@ -12,6 +12,7 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
+@Deprecated
 public class OldChannel {
 
 	public final long id;
@@ -53,6 +54,7 @@ public class OldChannel {
 		}).collect(Collectors.joining("\n"));
 	}
 
+	@Deprecated
 	public static class ChannelElement {
 
 		public final String name;
@@ -77,6 +79,7 @@ public class OldChannel {
 		}
 	}
 
+	@Deprecated
 	public static class ChannelTypeAdapter extends TypeAdapter<OldChannel> {
 
 		@Override

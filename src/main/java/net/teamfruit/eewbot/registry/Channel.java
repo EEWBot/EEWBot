@@ -62,6 +62,7 @@ public class Channel {
 				.collect(Collectors.joining("\n"));
 	}
 
+	@SuppressWarnings("deprecation")
 	public static Channel fromOldChannel(final OldChannel old) {
 		return new Channel(old.eewAlert.get(),
 				old.eewPrediction.get(),

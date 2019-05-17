@@ -32,14 +32,14 @@ import net.teamfruit.eewbot.command.CommandHandler;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
-import net.teamfruit.eewbot.registry.OldChannel;
 import net.teamfruit.eewbot.registry.Permission;
 
 public class EEWBot {
 	public static EEWBot instance;
 
+	@SuppressWarnings("deprecation")
 	public static final Gson GSON = new GsonBuilder()
-			.registerTypeAdapter(OldChannel.class, new OldChannel.ChannelTypeAdapter())
+			.registerTypeAdapter(net.teamfruit.eewbot.registry.OldChannel.class, new net.teamfruit.eewbot.registry.OldChannel.ChannelTypeAdapter())
 			.create();
 
 	public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
@@ -116,6 +116,7 @@ public class EEWBot {
 		this.client.login().block();
 	}
 
+	@SuppressWarnings("deprecation")
 	private boolean initChannels() throws IOException {
 		try {
 			this.channels.init();
@@ -123,8 +124,11 @@ public class EEWBot {
 		} catch (final JsonSyntaxException e) {
 			Log.logger.info("Migrating channels.json");
 
-			final ConfigurationRegistry<Map<Long, List<OldChannel>>> oldChannels = new ConfigurationRegistry<>(DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, List<OldChannel>>(), new TypeToken<Map<Long, Collection<OldChannel>>>() {
-			}.getType());
+			final ConfigurationRegistry<Map<Long, List<net.teamfruit.eewbot.registry.OldChannel>>> oldChannels = new ConfigurationRegistry<>(DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"),
+					() -> new ConcurrentHashMap<Long, List<net.teamfruit.eewbot.registry.OldChannel>>(),
+					new TypeToken<Map<Long, Collection<net.teamfruit.eewbot.registry.OldChannel>>>() {
+					}.getType());
+
 			Files.copy(oldChannels.getPath(), DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "oldchannels.json") : Paths.get("oldchannels.json"));
 			oldChannels.init();
 
