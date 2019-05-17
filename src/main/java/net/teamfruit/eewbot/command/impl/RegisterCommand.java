@@ -87,7 +87,7 @@ public class RegisterCommand extends ReactionCommand {
 						}))
 						.map(m -> true);
 			default:
-				return Mono.just(true);
+				return Mono.error(new IllegalStateException("不正なセットアップ進行状況です"));
 		}
 	}
 
