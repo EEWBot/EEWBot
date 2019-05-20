@@ -37,7 +37,7 @@ public class Channel {
 
 	public boolean value(final String name) {
 		return Arrays.stream(getClass().getFields())
-				.filter(field -> field.isAnnotationPresent(CommandName.class)&&field.getAnnotation(CommandName.class).value().equals(name))
+				.filter(field -> field.isAnnotationPresent(CommandName.class)&&(field.getAnnotation(CommandName.class).value().equals(name)||field.getName().equals(name)))
 				.map(field -> {
 					try {
 						return field.getBoolean(this);
@@ -46,6 +46,17 @@ public class Channel {
 					}
 				})
 				.findAny().orElseThrow(() -> new IllegalArgumentException());
+	}
+
+	public boolean exits(final String name) {
+		try {
+			getClass().getField(name);
+			return true;
+		} catch (final NoSuchFieldException e) {
+			return false;
+		} catch (final SecurityException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
