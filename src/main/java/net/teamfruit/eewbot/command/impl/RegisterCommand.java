@@ -17,7 +17,7 @@ public class RegisterCommand extends ReactionCommand {
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event) {
 		setAuthor(event.getMessage());
 		return event.getMessage().getChannel()
-				.filterWhen(channel -> Mono.justOrEmpty(!bot.getChannels().containsKey(channel.getId().asLong()))
+				.filterWhen(channel -> Mono.just(!bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
 						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createBaseErrorEmbed(embed)
 								.setTitle("チャンネル登録")
