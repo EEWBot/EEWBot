@@ -9,6 +9,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.command.impl.AddCommand;
 import net.teamfruit.eewbot.command.impl.DetailsCommand;
 import net.teamfruit.eewbot.command.impl.HelpCommand;
 import net.teamfruit.eewbot.command.impl.JoinServerCommand;
@@ -27,6 +28,7 @@ public class CommandHandler {
 	static {
 		commands.put("unregister", wrap(new UnRegisterCommand()));
 		commands.put("details", wrap(new DetailsCommand()));
+		commands.put("add", wrap(new AddCommand()));
 		commands.put("monitor", wrap(new MonitorCommand()));
 		commands.put("time", wrap(new TimeCommand()));
 		commands.put("timefix", wrap(new TimeFixCommand()));
