@@ -48,15 +48,23 @@ public class Channel {
 				.findAny().orElseThrow(() -> new IllegalArgumentException());
 	}
 
+	public void set(final String name, final boolean bool) {
+		Arrays.stream(getClass().getFields())
+				.filter(field -> field.isAnnotationPresent(CommandName.class)&&(field.getAnnotation(CommandName.class).value().equals(name)||field.getName().equals(name)))
+				.findAny().ifPresent(field -> {
+					try {
+						field.setBoolean(this, bool);
+					} catch (IllegalArgumentException|IllegalAccessException e) {
+						throw new RuntimeException(e);
+					}
+				});
+	}
+
 	public boolean exits(final String name) {
-		try {
-			getClass().getField(name);
-			return true;
-		} catch (final NoSuchFieldException e) {
-			return false;
-		} catch (final SecurityException e) {
-			throw new RuntimeException(e);
-		}
+		return Arrays.stream(getClass().getFields())
+				.filter(field -> field.isAnnotationPresent(CommandName.class)&&(field.getAnnotation(CommandName.class).value().equals(name)||field.getName().equals(name)))
+				.count()>0;
+
 	}
 
 	@Override
