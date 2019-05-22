@@ -35,8 +35,8 @@ public class TimeProvider {
 		return this.lastNTPTime;
 	}
 
-	public void init(final long period) {
-		this.executor.scheduleAtFixedRate(this.gateway, 0, period, TimeUnit.SECONDS);
+	public void init() {
+		this.executor.scheduleWithFixedDelay(this.gateway, 0, 1, TimeUnit.SECONDS);
 	}
 
 	public Mono<TimeProvider> fetch() {
