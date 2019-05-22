@@ -17,6 +17,7 @@ public class HelpCommand implements ICommand {
 						.addField("unregister", "チャンネルの登録を解除します", true)
 						.addField("details", "登録されたチャンネルの設定を表示します", true)
 						.addField("add", "チャンネルに通知される情報を追加します", true)
+						.addField("remove", "チャンネルに通知される情報を消去します", true)
 						.addField("monitor", "現在の強震モニタの画像を取得します", true)
 						.addField("time", "Botの時刻同期情報を表示します", true)
 						.addField("timefix", "Botの時刻を強制的に修正します", true)

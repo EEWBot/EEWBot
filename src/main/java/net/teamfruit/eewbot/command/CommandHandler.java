@@ -16,6 +16,7 @@ import net.teamfruit.eewbot.command.impl.JoinServerCommand;
 import net.teamfruit.eewbot.command.impl.MonitorCommand;
 import net.teamfruit.eewbot.command.impl.RegisterCommand;
 import net.teamfruit.eewbot.command.impl.ReloadCommand;
+import net.teamfruit.eewbot.command.impl.RemoveCommand;
 import net.teamfruit.eewbot.command.impl.TimeCommand;
 import net.teamfruit.eewbot.command.impl.TimeFixCommand;
 import net.teamfruit.eewbot.command.impl.UnRegisterCommand;
@@ -29,6 +30,7 @@ public class CommandHandler {
 		commands.put("unregister", wrap(new UnRegisterCommand()));
 		commands.put("details", wrap(new DetailsCommand()));
 		commands.put("add", wrap(new AddCommand()));
+		commands.put("remove", wrap(new RemoveCommand()));
 		commands.put("monitor", wrap(new MonitorCommand()));
 		commands.put("time", wrap(new TimeCommand()));
 		commands.put("timefix", wrap(new TimeFixCommand()));
