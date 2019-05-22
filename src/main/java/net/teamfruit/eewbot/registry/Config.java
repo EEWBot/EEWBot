@@ -4,7 +4,6 @@ public class Config {
 	private String token = "";
 	private int kyoshinDelay = 1;
 	private int quakeInfoDelay = 15;
-	private int timeFixDelay = 86400;
 	private String nptServer = "time.google.com";
 	private boolean enablePermission = true;
 	private boolean debug = false;
@@ -36,14 +35,6 @@ public class Config {
 		this.quakeInfoDelay = quakeInfoDelay;
 	}
 
-	public int getTimeFixDelay() {
-		return this.timeFixDelay>=3600 ? this.timeFixDelay : 3600;
-	}
-
-	public void setTimeFixDelay(final int timeFixDelay) {
-		this.timeFixDelay = timeFixDelay;
-	}
-
 	public String getNptServer() {
 		return this.nptServer;
 	}
@@ -70,7 +61,7 @@ public class Config {
 
 	@Override
 	public String toString() {
-		return "Config [token="+this.token+", kyoshinDelay="+this.kyoshinDelay+", quakeInfoDelay="+this.quakeInfoDelay+", timeFixDelay="+this.timeFixDelay+", nptServer="+this.nptServer+", enablePermission="+this.enablePermission+", debug="+this.debug+"]";
+		return "Config [token="+this.token+", kyoshinDelay="+this.kyoshinDelay+", quakeInfoDelay="+this.quakeInfoDelay+", nptServer="+this.nptServer+", enablePermission="+this.enablePermission+", debug="+this.debug+"]";
 	}
 
 }
