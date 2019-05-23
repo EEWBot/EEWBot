@@ -29,6 +29,7 @@ import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import net.teamfruit.eewbot.command.CommandHandler;
+import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
@@ -78,6 +79,7 @@ public class EEWBot {
 		this.config.init();
 		initChannels();
 		this.permissions.init();
+		I18n.INSTANCE.init();
 
 		final String token = System.getenv("TOKEN");
 		if (token!=null)
