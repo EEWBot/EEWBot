@@ -35,10 +35,16 @@ public class I18n {
 	}
 
 	public String get(final String lang, final String key) {
-		return this.langMap.get(lang).get(key);
+		final String text = this.langMap.get(lang).get(key);
+		if (text!=null)
+			return text;
+		return key;
 	}
 
 	public String format(final String lang, final String key, final Object... args) {
-		return String.format(this.langMap.get(lang).get(key), args);
+		final String text = this.langMap.get(lang).get(key);
+		if (text!=null)
+			return String.format(text, args);
+		return key;
 	}
 }
