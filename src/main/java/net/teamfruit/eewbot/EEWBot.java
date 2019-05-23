@@ -33,6 +33,7 @@ import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
+import net.teamfruit.eewbot.registry.Guild;
 import net.teamfruit.eewbot.registry.Permission;
 
 public class EEWBot {
@@ -55,6 +56,8 @@ public class EEWBot {
 			put("everyone", Permission.DEFAULT_EVERYONE);
 		}
 	}, new TypeToken<Map<String, Permission>>() {
+	}.getType());
+	private final ConfigurationRegistry<Map<Long, Guild>> guilds = new ConfigurationRegistry<>(DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "guilds.json") : Paths.get("guilds.json"), () -> new ConcurrentHashMap<Long, Guild>(), new TypeToken<Map<Long, Guild>>() {
 	}.getType());
 
 	private final RequestConfig reqest = RequestConfig.custom()
@@ -155,6 +158,10 @@ public class EEWBot {
 		return this.permissions.getElement();
 	}
 
+	public Map<Long, Guild> getGuilds() {
+		return this.guilds.getElement();
+	}
+
 	public ConfigurationRegistry<Config> getConfigRegistry() {
 		return this.config;
 	}
@@ -165,6 +172,10 @@ public class EEWBot {
 
 	public ConfigurationRegistry<Map<String, Permission>> getPermissionsRegistry() {
 		return this.permissions;
+	}
+
+	public ConfigurationRegistry<Map<Long, Guild>> getGuildsRegistry() {
+		return this.guilds;
 	}
 
 	public CloseableHttpClient getHttpClient() {
