@@ -5,6 +5,7 @@ public class Config {
 	private int kyoshinDelay = 1;
 	private int quakeInfoDelay = 15;
 	private String nptServer = "time.google.com";
+	private String defaultLanuage = "ja_jp";
 	private boolean enablePermission = true;
 	private boolean debug = false;
 
@@ -41,6 +42,14 @@ public class Config {
 
 	public void setNptServer(final String nptServer) {
 		this.nptServer = nptServer;
+	}
+
+	public String getDefaultLanuage() {
+		return this.defaultLanuage;
+	}
+
+	public void setDefaultLanuage(final String defaultLanuage) {
+		this.defaultLanuage = defaultLanuage;
 	}
 
 	public boolean isEnablePermission() {
