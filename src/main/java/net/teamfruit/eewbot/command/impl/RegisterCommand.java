@@ -19,7 +19,7 @@ public class RegisterCommand extends ReactionCommand {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.just(!bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
-						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createBaseErrorEmbed(embed)
+						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed)
 								.setTitle("チャンネル登録")
 								.setDescription("このチャンネルはすでに登録されています。"))
 								.map(m -> false)))
@@ -28,7 +28,7 @@ public class RegisterCommand extends ReactionCommand {
 					bot.getChannelRegistry().save();
 					return channel;
 				}))
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
 						.setTitle("チャンネル登録")
 						.setDescription("チャンネルを登録しました。\nセットアップウィザードを開始しますか(Y/N)？\nキャンセルすると初期設定が適用されます。")))
 				.map(this::setBotMessage)
@@ -44,7 +44,7 @@ public class RegisterCommand extends ReactionCommand {
 
 		if (!this.setup&&reaction.getEmoji().equals(EMOJI_N))
 			return reaction.getChannel()
-					.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+					.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
 							.setTitle("チャンネル登録")
 							.addField("初期設定を適用しました", bot.getChannels().get(channel.getId().asLong()).toString(), false)))
 					.map(m -> true);
@@ -78,7 +78,7 @@ public class RegisterCommand extends ReactionCommand {
 			case 6:
 				channel.quakeInfoDetail = isY;
 				return reaction.getChannel()
-						.flatMap(c -> c.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+						.flatMap(c -> c.createEmbed(embed -> CommandUtils.createEmbed(embed)
 								.setTitle("チャンネル登録")
 								.addField("設定が完了しました", bot.getChannels().get(c.getId().asLong()).toString(), false)))
 						.flatMap(c -> Mono.fromCallable(() -> {
@@ -93,7 +93,7 @@ public class RegisterCommand extends ReactionCommand {
 
 	private Mono<Boolean> createSetupMessage(final ReactionAddEvent event, final String name, final String desc) {
 		return event.getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
 						.setTitle("チャンネル登録")
 						.addField(name, desc, false)))
 				.map(this::setBotMessage)

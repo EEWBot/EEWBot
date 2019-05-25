@@ -13,7 +13,7 @@ public class UnRegisterCommand implements ICommand {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.just(bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
-						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createBaseErrorEmbed(embed)
+						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed)
 								.setTitle("チャンネル登録解除")
 								.setDescription("このチャンネルは登録されていません。"))
 								.map(m -> false)))
@@ -22,7 +22,7 @@ public class UnRegisterCommand implements ICommand {
 					bot.getChannelRegistry().save();
 					return channel;
 				}))
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
 						.setTitle("チャンネル登録解除")
 						.setDescription("登録を解除しました。")))
 				.then();

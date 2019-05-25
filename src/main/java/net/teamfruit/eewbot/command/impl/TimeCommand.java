@@ -14,7 +14,7 @@ public class TimeCommand implements ICommand {
 	@Override
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event) {
 		return event.getMessage().getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
 						.setTitle("時刻同期")
 						.addField("最終同期(コンピューター)", bot.getExecutor().getProvider().getLastComputerTime()
 								.map(ZonedDateTime::toString)

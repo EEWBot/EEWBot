@@ -15,13 +15,13 @@ public class CommandUtils {
 				.getCommand().contains(command);
 	}
 
-	public static EmbedCreateSpec createBaseEmbed(final EmbedCreateSpec embed) {
+	public static EmbedCreateSpec createEmbed(final EmbedCreateSpec embed) {
 		return embed.setColor(new Color(7506394))
 				.setAuthor(EEWBot.instance.getUsername(), "https://github.com/Team-Fruit/EEWBot", EEWBot.instance.getAvatarUrl())
 				.setFooter("Team-Fruit/EEWBot", "http://i.imgur.com/gFHBoZA.png");
 	}
 
-	public static EmbedCreateSpec createBaseErrorEmbed(final EmbedCreateSpec embed) {
+	public static EmbedCreateSpec createErrorEmbed(final EmbedCreateSpec embed) {
 		return embed.setColor(new Color(255, 64, 64))
 				.setAuthor(EEWBot.instance.getUsername(), "https://github.com/Team-Fruit/EEWBot", EEWBot.instance.getAvatarUrl())
 				.setFooter("Team-Fruit/EEWBot", "http://i.imgur.com/gFHBoZA.png");

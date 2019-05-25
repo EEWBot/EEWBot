@@ -11,7 +11,7 @@ public class ReloadCommand implements ICommand {
 	@Override
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event) {
 		return Mono.zip(event.getMessage().getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
 						.setTitle("設定リロード")
 						.setDescription("処理中"))),
 				Mono.fromCallable(() -> {
@@ -19,7 +19,7 @@ public class ReloadCommand implements ICommand {
 					bot.getPermissionsRegistry().load();
 					return true;
 				}))
-				.flatMap(tuple -> tuple.getT1().edit(spec -> spec.setEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+				.flatMap(tuple -> tuple.getT1().edit(spec -> spec.setEmbed(embed -> CommandUtils.createEmbed(embed)
 						.setTitle("設定リロード")
 						.setDescription("ConfigとPermissionsのリロードが完了しました"))))
 				.then();

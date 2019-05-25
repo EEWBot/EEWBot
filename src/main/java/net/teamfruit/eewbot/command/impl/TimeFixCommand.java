@@ -14,11 +14,11 @@ public class TimeFixCommand implements ICommand {
 	@Override
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event) {
 		return Mono.zip(event.getMessage().getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
 						.setTitle("時刻同期")
 						.setDescription("取得中"))),
 				bot.getExecutor().getProvider().fetch())
-				.flatMap(tuple -> tuple.getT1().edit(spec -> spec.setEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+				.flatMap(tuple -> tuple.getT1().edit(spec -> spec.setEmbed(embed -> CommandUtils.createEmbed(embed)
 						.setTitle("時刻同期")
 						.addField("現在時刻(コンピューター)", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
 						.addField("現在時刻(オフセット)", bot.getExecutor().getProvider().now().toString(), false)

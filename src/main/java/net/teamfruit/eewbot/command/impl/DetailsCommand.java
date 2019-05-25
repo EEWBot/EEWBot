@@ -13,11 +13,11 @@ public class DetailsCommand implements ICommand {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.just(bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
-						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createBaseErrorEmbed(embed)
+						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed)
 								.setTitle("チャンネル設定")
 								.setDescription("このチャンネルは登録されていません。"))
 								.map(m -> false)))
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createBaseEmbed(embed)
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
 						.setTitle("チャンネル設定")
 						.setDescription(bot.getChannels().get(channel.getId().asLong()).toString())))
 				.then();
