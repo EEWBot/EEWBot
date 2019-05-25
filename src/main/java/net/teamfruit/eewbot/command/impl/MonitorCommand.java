@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 public class MonitorCommand implements ICommand {
 
 	@Override
-	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event) {
+	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, String lang) {
 		bot.getExecutor().getExecutor().execute(new MonitorGateway(bot.getExecutor().getProvider()) {
 
 			@Override

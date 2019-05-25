@@ -36,5 +36,5 @@ public abstract class ReactionCommand implements ICommand {
 		return msg;
 	}
 
-	abstract public Mono<Boolean> onReaction(EEWBot bot, ReactionAddEvent reaction);
+	abstract public Mono<Boolean> onReaction(EEWBot bot, ReactionAddEvent reaction, String lang);
 }

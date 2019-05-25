@@ -14,7 +14,7 @@ public class RegisterCommand extends ReactionCommand {
 	private int setupProgress = -1;
 
 	@Override
-	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event) {
+	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, String lang) {
 		setAuthor(event.getMessage());
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.just(!bot.getChannels().containsKey(channel.getId().asLong()))
@@ -38,7 +38,7 @@ public class RegisterCommand extends ReactionCommand {
 	}
 
 	@Override
-	public Mono<Boolean> onReaction(final EEWBot bot, final ReactionAddEvent reaction) {
+	public Mono<Boolean> onReaction(final EEWBot bot, final ReactionAddEvent reaction, String lang) {
 		if (!(reaction.getEmoji().equals(EMOJI_Y)||reaction.getEmoji().equals(EMOJI_N)))
 			return Mono.just(false);
 

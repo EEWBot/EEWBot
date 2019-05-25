@@ -6,6 +6,6 @@ import reactor.core.publisher.Mono;
 
 public interface ICommand {
 
-	Mono<Void> execute(EEWBot bot, MessageCreateEvent event);
+	Mono<Void> execute(EEWBot bot, MessageCreateEvent event, String lang);
 
 }

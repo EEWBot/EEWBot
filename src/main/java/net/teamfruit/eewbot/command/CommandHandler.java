@@ -61,7 +61,7 @@ public class CommandHandler {
 										.map(m -> false)))
 						.filterWhen(array -> Mono.just(!this.bot.getConfig().isEnablePermission())
 								.flatMap(b -> Mono.justOrEmpty(event.getMember())
-										.map(member -> b||CommandUtils.userHasPermission(member.getId().asLong(), array[1])))
+										.map(member -> b||CommandUtils.userHasPermission(bot, member.getId().asLong(), array[1])))
 								.filter(b -> b)
 								.switchIfEmpty(event.getMessage().getChannel()
 										.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed)
@@ -77,7 +77,7 @@ public class CommandHandler {
 											this.reactionWaitingList.add(c);
 											return true;
 										})))
-						.flatMap(cmd -> cmd.execute(bot, event))
+						.flatMap(cmd -> cmd.execute(bot, event, CommandUtils.getLangage(bot, event)))
 						.doOnError(err -> event.getMessage().getChannel()
 								.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed)
 										.setTitle("エラーが発生しました")
@@ -90,7 +90,7 @@ public class CommandHandler {
 				.filter(event -> !event.getUserId().equals(bot.getClient().getSelfId().orElse(null)))
 				.flatMap(event -> Mono.justOrEmpty(this.reactionWaitingList.get(event.getMessageId()))
 						.filter(cmd -> event.getUserId().equals(cmd.getAuthor()))
-						.filterWhen(cmd -> cmd.onReaction(bot, event))
+						.filterWhen(cmd -> cmd.onReaction(bot, event, CommandUtils.getLangage(bot, event)))
 						.map(b -> {
 							this.reactionWaitingList.remove(event.getMessageId());
 							return true;

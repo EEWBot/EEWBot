@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 public class TimeCommand implements ICommand {
 
 	@Override
-	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event) {
+	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, String lang) {
 		return event.getMessage().getChannel()
 				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
 						.setTitle("時刻同期")

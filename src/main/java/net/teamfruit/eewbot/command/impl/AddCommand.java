@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 public class AddCommand implements ICommand {
 
 	@Override
-	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event) {
+	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, String lang) {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.just(bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
