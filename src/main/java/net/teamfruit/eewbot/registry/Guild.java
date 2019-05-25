@@ -8,8 +8,9 @@ public class Guild {
 		return this.lang;
 	}
 
-	public void setLang(final String lang) {
+	public Guild setLang(final String lang) {
 		this.lang = lang;
+		return this;
 	}
 
 }

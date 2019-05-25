@@ -35,6 +35,7 @@ import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
 import net.teamfruit.eewbot.registry.Guild;
 import net.teamfruit.eewbot.registry.Permission;
+import reactor.core.publisher.Mono;
 
 public class EEWBot {
 	public static EEWBot instance;
@@ -83,6 +84,7 @@ public class EEWBot {
 		initChannels();
 		this.permissions.init();
 		I18n.INSTANCE.init();
+		this.guilds.init();
 
 		final String token = System.getenv("TOKEN");
 		if (token!=null)
@@ -108,7 +110,7 @@ public class EEWBot {
 						.on(GuildCreateEvent.class)
 						.take(size)
 						.collectList())
-				.subscribe(evens -> {
+				.subscribe(events -> {
 					this.executor.init();
 					this.client.getSelf().subscribe(user -> {
 						this.userName = user.getUsername();
@@ -117,6 +119,17 @@ public class EEWBot {
 
 					Log.logger.info("Connected!");
 				});
+
+		this.client.getEventDispatcher().on(GuildCreateEvent.class)
+				.map(e -> e.getGuild().getId().asLong())
+				.filter(l -> !getGuilds().containsKey(l))
+				.flatMap(l -> Mono.fromCallable(() -> {
+					getGuilds().put(l, new Guild().setLang(getConfig().getDefaultLanuage()));
+					EEWBot.this.guilds.save();
+					return l;
+				}))
+				.doOnError(err -> Log.logger.error("guilds.jsonのセーブに失敗しました", err))
+				.subscribe();
 
 		this.client.login().block();
 	}
