@@ -9,11 +9,11 @@ import reactor.core.publisher.Mono;
 public class UnRegisterCommand implements ICommand {
 
 	@Override
-	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, String lang) {
+	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.just(bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
-						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed)
+						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)
 								.setTitle("チャンネル登録解除")
 								.setDescription("このチャンネルは登録されていません。"))
 								.map(m -> false)))
@@ -22,7 +22,7 @@ public class UnRegisterCommand implements ICommand {
 					bot.getChannelRegistry().save();
 					return channel;
 				}))
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
 						.setTitle("チャンネル登録解除")
 						.setDescription("登録を解除しました。")))
 				.then();

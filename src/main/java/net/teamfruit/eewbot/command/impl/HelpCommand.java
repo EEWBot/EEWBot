@@ -9,9 +9,9 @@ import reactor.core.publisher.Mono;
 public class HelpCommand implements ICommand {
 
 	@Override
-	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, String lang) {
+	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
 		return event.getMessage().getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
 						.setTitle("Help")
 						.addField("register", "通知するチャンネルを登録し、セットアップします", true)
 						.addField("unregister", "チャンネルの登録を解除します", true)

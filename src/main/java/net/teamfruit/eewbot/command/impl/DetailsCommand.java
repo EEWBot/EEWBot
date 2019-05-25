@@ -9,15 +9,15 @@ import reactor.core.publisher.Mono;
 public class DetailsCommand implements ICommand {
 
 	@Override
-	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, String lang) {
+	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.just(bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
-						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed)
+						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)
 								.setTitle("チャンネル設定")
 								.setDescription("このチャンネルは登録されていません。"))
 								.map(m -> false)))
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed)
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
 						.setTitle("チャンネル設定")
 						.setDescription(bot.getChannels().get(channel.getId().asLong()).toString())))
 				.then();

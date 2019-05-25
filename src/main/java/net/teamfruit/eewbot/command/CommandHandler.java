@@ -1,5 +1,7 @@
 package net.teamfruit.eewbot.command;
 
+import static net.teamfruit.eewbot.command.CommandUtils.*;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -55,16 +57,16 @@ public class CommandHandler {
 						.filterWhen(array -> Mono.just(array.length>=2&&commands.containsKey(array[1]))
 								.filter(b -> b)
 								.switchIfEmpty(event.getMessage().getChannel()
-										.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed)
+										.flatMap(channel -> channel.createEmbed(embed -> createErrorEmbed(embed, getLangage(bot, event))
 												.setTitle("コマンドが見つかりません")
 												.setDescription("`!eew help` でコマンド一覧を確認出来ます")))
 										.map(m -> false)))
 						.filterWhen(array -> Mono.just(!this.bot.getConfig().isEnablePermission())
 								.flatMap(b -> Mono.justOrEmpty(event.getMember())
-										.map(member -> b||CommandUtils.userHasPermission(bot, member.getId().asLong(), array[1])))
+										.map(member -> b||userHasPermission(bot, member.getId().asLong(), array[1])))
 								.filter(b -> b)
 								.switchIfEmpty(event.getMessage().getChannel()
-										.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed)
+										.flatMap(channel -> channel.createEmbed(embed -> createErrorEmbed(embed, getLangage(bot, event))
 												.setTitle("権限がありません")
 												.setDescription("管理者にお問い合わせ下さい")))
 										.map(m -> false)))
@@ -77,9 +79,9 @@ public class CommandHandler {
 											this.reactionWaitingList.add(c);
 											return true;
 										})))
-						.flatMap(cmd -> cmd.execute(bot, event, CommandUtils.getLangage(bot, event)))
+						.flatMap(cmd -> cmd.execute(bot, event, getLangage(bot, event)))
 						.doOnError(err -> event.getMessage().getChannel()
-								.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed)
+								.flatMap(channel -> channel.createEmbed(embed -> createErrorEmbed(embed, getLangage(bot, event))
 										.setTitle("エラーが発生しました")
 										.setDescription(ExceptionUtils.getMessage(err))))
 								.subscribe())
@@ -90,13 +92,13 @@ public class CommandHandler {
 				.filter(event -> !event.getUserId().equals(bot.getClient().getSelfId().orElse(null)))
 				.flatMap(event -> Mono.justOrEmpty(this.reactionWaitingList.get(event.getMessageId()))
 						.filter(cmd -> event.getUserId().equals(cmd.getAuthor()))
-						.filterWhen(cmd -> cmd.onReaction(bot, event, CommandUtils.getLangage(bot, event)))
+						.filterWhen(cmd -> cmd.onReaction(bot, event, getLangage(bot, event)))
 						.map(b -> {
 							this.reactionWaitingList.remove(event.getMessageId());
 							return true;
 						})
 						.doOnError(err -> event.getChannel()
-								.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed)
+								.flatMap(channel -> channel.createEmbed(embed -> createErrorEmbed(embed, getLangage(bot, event))
 										.setTitle("エラーが発生しました")
 										.setDescription(ExceptionUtils.getMessage(err))))
 								.subscribe())
