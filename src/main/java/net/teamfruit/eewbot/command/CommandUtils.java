@@ -20,18 +20,18 @@ public class CommandUtils {
 				.getCommand().contains(command);
 	}
 
-	public static String getLangage(final EEWBot bot, final Optional<Snowflake> guildId) {
+	public static String getLanguage(final EEWBot bot, final Optional<Snowflake> guildId) {
 		return guildId.map(id -> bot.getGuilds().get(id.asLong()))
 				.map(guild -> guild.getLang())
 				.orElse(bot.getConfig().getDefaultLanuage());
 	}
 
-	public static String getLangage(final EEWBot bot, final MessageCreateEvent event) {
-		return getLangage(bot, event.getGuildId());
+	public static String getLanguage(final EEWBot bot, final MessageCreateEvent event) {
+		return getLanguage(bot, event.getGuildId());
 	}
 
-	public static String getLangage(final EEWBot bot, final ReactionAddEvent event) {
-		return getLangage(bot, event.getGuildId());
+	public static String getLanguage(final EEWBot bot, final ReactionAddEvent event) {
+		return getLanguage(bot, event.getGuildId());
 	}
 
 	public static I18nEmbedCreateSpecWrapper createEmbed(final EmbedCreateSpec spec, final String lang) {
