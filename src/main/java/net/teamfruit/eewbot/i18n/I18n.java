@@ -12,6 +12,8 @@ public class I18n {
 
 	public static final I18n INSTANCE = new I18n();
 
+	public static final String DEFAULT_LANGUAGE = "ja_jp";
+
 	private Map<String, String> languages;
 	private Map<String, Map<String, String>> langMap = new HashMap<>();
 
@@ -35,14 +37,14 @@ public class I18n {
 	}
 
 	public String get(final String lang, final String key) {
-		final String text = this.langMap.get(lang).get(key);
+		final String text = this.langMap.get(lang).getOrDefault(key, this.langMap.get(DEFAULT_LANGUAGE).get(key));
 		if (text!=null)
 			return text;
 		return key;
 	}
 
 	public String format(final String lang, final String key, final Object... args) {
-		final String text = this.langMap.get(lang).get(key);
+		final String text = this.langMap.get(lang).getOrDefault(key, this.langMap.get(DEFAULT_LANGUAGE).get(key));
 		if (text!=null)
 			return String.format(text, args);
 		return key;
