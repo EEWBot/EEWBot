@@ -20,8 +20,8 @@ public class RegisterCommand extends ReactionCommand {
 				.filterWhen(channel -> Mono.just(!bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
 						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)
-								.setTitle("チャンネル登録")
-								.setDescription("このチャンネルはすでに登録されています。"))
+								.setTitle("eewbot.cmd.register.title")
+								.setDescription("eewbot.cmd.err.channelalreadyregistered.desc"))
 								.map(m -> false)))
 				.flatMap(channel -> Mono.fromCallable(() -> {
 					bot.getChannels().put(channel.getId().asLong(), new Channel());
@@ -29,8 +29,8 @@ public class RegisterCommand extends ReactionCommand {
 					return channel;
 				}))
 				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("チャンネル登録")
-						.setDescription("チャンネルを登録しました。\nセットアップウィザードを開始しますか(Y/N)？\nキャンセルすると初期設定が適用されます。")))
+						.setTitle("eewbot.cmd.register.title")
+						.setDescription("eewbot.cmd.register.desc")))
 				.map(this::setBotMessage)
 				.flatMap(msg -> msg.addReaction(EMOJI_Y)
 						.then(msg.addReaction(EMOJI_N)))
@@ -45,8 +45,8 @@ public class RegisterCommand extends ReactionCommand {
 		if (!this.setup&&reaction.getEmoji().equals(EMOJI_N))
 			return reaction.getChannel()
 					.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-							.setTitle("チャンネル登録")
-							.addField("初期設定を適用しました", bot.getChannels().get(channel.getId().asLong()).toString(), false)))
+							.setTitle("eewbot.cmd.register.title")
+							.addField("eewbot.cmd.register.field.initial.name", bot.getChannels().get(channel.getId().asLong()).toString(), false)))
 					.map(m -> true);
 
 		if (!this.setup&&reaction.getEmoji().equals(EMOJI_Y))
@@ -59,28 +59,28 @@ public class RegisterCommand extends ReactionCommand {
 
 		switch (this.setupProgress) {
 			case 0:
-				return createSetupMessage(reaction, lang, "緊急地震速報 (警報)", "最大震度5弱以上が予想される緊急地震速報を通知しますか(Y/N)？");
+				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.eewalert.name", "eewbot.cmd.register.field.eewalert.value");
 			case 1:
 				channel.eewAlert = isY;
-				return createSetupMessage(reaction, lang, "緊急地震速報 (予報)", "M3.5以上または最大震度3以上が予想される緊急地震速報を通知しますか(Y/N)？");
+				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.eewprediction.name", "eewbot.cmd.register.field.eewprediction.value");
 			case 2:
 				channel.eewPrediction = isY;
-				return createSetupMessage(reaction, lang, "緊急地震速報 間引きモード", "緊急地震速報更新時に前報と内容が変わらない場合、それを通知しないようにしますか(Y/N)？");
+				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.eewdecimation.name", "eewbot.cmd.register.field.eewdecimation.value");
 			case 3:
 				channel.eewDecimation = isY;
-				return createSetupMessage(reaction, lang, "強震モニタ", "緊急地震速報の第一報と最終報時に強震モニタの画像を通知しますか（Y/N)？");
+				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.monitor.name", "eewbot.cmd.register.field.monitor.value");
 			case 4:
 				channel.monitor = isY;
-				return createSetupMessage(reaction, lang, "地震情報", "地震情報（震源・震度に関する情報）を通知しますか(Y/N)？");
+				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.quakeinfo.name", "eewbot.cmd.register.field.quakeinfo.value");
 			case 5:
 				channel.quakeInfo = isY;
-				return createSetupMessage(reaction, lang, "詳細地震情報", "地震情報（各地の震度に関する情報）を通知しますか(Y/N)？");
+				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.quakeinfodetail.name", "eewbot.cmd.register.field.quakeinfodetail.value");
 			case 6:
 				channel.quakeInfoDetail = isY;
 				return reaction.getChannel()
 						.flatMap(c -> c.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-								.setTitle("チャンネル登録")
-								.addField("設定が完了しました", bot.getChannels().get(c.getId().asLong()).toString(), false)))
+								.setTitle("eewbot.cmd.register.title")
+								.addField("eewbot.cmd.register.field.done.name", bot.getChannels().get(c.getId().asLong()).toString(), false)))
 						.flatMap(c -> Mono.fromCallable(() -> {
 							bot.getChannelRegistry().save();
 							return channel;
@@ -91,11 +91,11 @@ public class RegisterCommand extends ReactionCommand {
 		}
 	}
 
-	private Mono<Boolean> createSetupMessage(final ReactionAddEvent event, final String lang, final String name, final String desc) {
+	private Mono<Boolean> createSetupMessage(final ReactionAddEvent event, final String lang, final String name, final String value) {
 		return event.getChannel()
 				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("チャンネル登録")
-						.addField(name, desc, false)))
+						.setTitle("eewbot.cmd.register.title")
+						.addField(name, value, false)))
 				.map(this::setBotMessage)
 				.flatMap(msg -> msg.addReaction(EMOJI_Y)
 						.then(msg.addReaction(EMOJI_N)))

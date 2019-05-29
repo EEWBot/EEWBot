@@ -14,8 +14,8 @@ public class UnRegisterCommand implements ICommand {
 				.filterWhen(channel -> Mono.just(bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
 						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)
-								.setTitle("チャンネル登録解除")
-								.setDescription("このチャンネルは登録されていません。"))
+								.setTitle("eewbot.cmd.unregister.title")
+								.setDescription("eewbot.cmd.err.channelnotregistered.desc"))
 								.map(m -> false)))
 				.flatMap(channel -> Mono.fromCallable(() -> {
 					bot.getChannels().remove(channel.getId().asLong());
@@ -23,8 +23,8 @@ public class UnRegisterCommand implements ICommand {
 					return channel;
 				}))
 				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("チャンネル登録解除")
-						.setDescription("登録を解除しました。")))
+						.setTitle("eewbot.cmd.unregister.title")
+						.setDescription("eewbot.cmd.unregister.desc")))
 				.then();
 	}
 

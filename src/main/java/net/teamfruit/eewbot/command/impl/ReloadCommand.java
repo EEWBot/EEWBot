@@ -12,16 +12,16 @@ public class ReloadCommand implements ICommand {
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
 		return Mono.zip(event.getMessage().getChannel()
 				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("設定リロード")
-						.setDescription("処理中"))),
+						.setTitle("eewbot.cmd.reload.title")
+						.setDescription("eewbot.cmd.reload.reloading.desc"))),
 				Mono.fromCallable(() -> {
 					bot.getConfigRegistry().load();
 					bot.getPermissionsRegistry().load();
 					return true;
 				}))
 				.flatMap(tuple -> tuple.getT1().edit(spec -> spec.setEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("設定リロード")
-						.setDescription("ConfigとPermissionsのリロードが完了しました"))))
+						.setTitle("eewbot.cmd.reload.title")
+						.setDescription("eewbot.cmd.reload.reloaded.desc"))))
 				.then();
 	}
 

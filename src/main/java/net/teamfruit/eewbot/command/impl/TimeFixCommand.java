@@ -15,14 +15,15 @@ public class TimeFixCommand implements ICommand {
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
 		return Mono.zip(event.getMessage().getChannel()
 				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("時刻同期")
-						.setDescription("取得中"))),
+						.setTitle("eewbot.cmd.timefix.title")
+						.setDescription("eewbot.cmd.timefix.desc"))),
 				bot.getExecutor().getProvider().fetch())
 				.flatMap(tuple -> tuple.getT1().edit(spec -> spec.setEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("時刻同期")
-						.addField("現在時刻(コンピューター)", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
-						.addField("現在時刻(オフセット)", bot.getExecutor().getProvider().now().toString(), false)
-						.addField("オフセット(ミリ秒)", String.valueOf(bot.getExecutor().getProvider().getOffset()), false))))
+						.setTitle("eewbot.cmd.timefix.title")
+						.addField("eewbot.cmd.timefix.field.nowpctime.name\"", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
+						.addField("eewbot.cmd.timefix.field.nowoffsettime.name", bot.getExecutor().getProvider().now().toString(), false)
+						.addField("eewbot.cmd.timefix.field.offset.name"
+								+"", String.valueOf(bot.getExecutor().getProvider().getOffset()), false))))
 				.then();
 	}
 
