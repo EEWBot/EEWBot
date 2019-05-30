@@ -18,6 +18,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.entity.EEW;
 import net.teamfruit.eewbot.entity.Monitor;
@@ -47,20 +48,22 @@ public abstract class MonitorGateway implements Gateway<Monitor> {
 
 			final String dateStr = FORMAT.format(date);
 			final String dayStr = StringUtils.substring(dateStr, 0, 8);
-			Stream.of(/*REMOTE+"EstShindoImg/eew/"+dayStr+"/"+dateStr+".eew.gif",*/
-					REMOTE+"RealTimeImg/acmap_s/"+dayStr+"/"+dateStr+".acmap_s.gif",
+			Stream.of(REMOTE+"RealTimeImg/acmap_s/"+dayStr+"/"+dateStr+".acmap_s.gif",
 					REMOTE+"PSWaveImg/eew/"+dayStr+"/"+dateStr+".eew.gif").forEach(str -> {
-						final HttpGet get = new HttpGet(str);
-						try {
-							try (CloseableHttpResponse response = EEWBot.instance.getHttpClient().execute(get)) {
-								final StatusLine statusLine = response.getStatusLine();
-								if (statusLine.getStatusCode()==HttpStatus.SC_OK)
-									images.add(ImageIO.read(response.getEntity().getContent()));
-								else if (statusLine.getStatusCode()==HttpStatus.SC_NOT_FOUND)
-									this.time.fetch();
+						for (int i = 0; i<3; i++) {
+							final HttpGet get = new HttpGet(str);
+							try {
+								try (CloseableHttpResponse response = EEWBot.instance.getHttpClient().execute(get)) {
+									final StatusLine statusLine = response.getStatusLine();
+									if (statusLine.getStatusCode()==HttpStatus.SC_OK) {
+										images.add(ImageIO.read(response.getEntity().getContent()));
+										break;
+									} else if (statusLine.getStatusCode()==HttpStatus.SC_NOT_FOUND)
+										Log.logger.info("強震モニタの取得に失敗しました");
+								}
+							} catch (final Exception e) {
+								onError(e);
 							}
-						} catch (final Exception e) {
-							onError(e);
 						}
 					});
 
