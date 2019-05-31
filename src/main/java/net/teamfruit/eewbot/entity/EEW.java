@@ -196,7 +196,7 @@ public class EEW implements Entity {
 	}
 
 	@Override
-	public Consumer<? super MessageCreateSpec> createMessage() {
+	public Consumer<? super MessageCreateSpec> createMessage(final String lang) {
 		if (isCancel())
 			return msg -> msg.setEmbed(embed -> embed.setTitle("緊急地震速報")
 					.setTimestamp(getReportTime())

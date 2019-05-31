@@ -28,7 +28,7 @@ public class Monitor implements Entity {
 	}
 
 	@Override
-	public Consumer<? super MessageCreateSpec> createMessage() {
+	public Consumer<? super MessageCreateSpec> createMessage(final String lang) {
 		return msg -> msg.addFile("kyoshinmonitor.png", new ByteArrayInputStream(getImage()));
 	}
 

@@ -2,6 +2,7 @@ package net.teamfruit.eewbot;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -22,17 +23,17 @@ public class EEWService {
 		this.channels = map;
 	}
 
-	public Mono<Void> sendMessage(final String key, final Consumer<? super MessageCreateSpec> spec) {
+	public Mono<Void> sendMessage(final String key, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
 		return sendMessage(channel -> channel.value(key), spec);
 	}
 
-	public Mono<Void> sendMessage(final Predicate<Channel> filter, final Consumer<? super MessageCreateSpec> spec) {
+	public Mono<Void> sendMessage(final Predicate<Channel> filter, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
 		return Mono.whenDelayError(this.channels.entrySet().stream()
 				.filter(entry -> filter.test(entry.getValue()))
 				.map(entry -> this.client.getChannelById(Snowflake.of(entry.getKey()))
 						.filter(c -> c.getType()==discord4j.core.object.entity.Channel.Type.GUILD_TEXT)
 						.cast(TextChannel.class)
-						.flatMap(tc -> tc.createMessage(spec)))
+						.flatMap(tc -> tc.createMessage(spec.apply(entry.getValue().lang))))
 				.collect(Collectors.toList()));
 	}
 

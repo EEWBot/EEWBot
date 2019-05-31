@@ -3,6 +3,8 @@ package net.teamfruit.eewbot.registry;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import net.teamfruit.eewbot.i18n.I18n;
+
 public class Channel {
 
 	@CommandName("EEW警報")
@@ -22,6 +24,8 @@ public class Channel {
 
 	@CommandName("強震モニタ")
 	public boolean monitor = true;
+
+	public String lang = I18n.DEFAULT_LANGUAGE;
 
 	public Channel() {
 	}
