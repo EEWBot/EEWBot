@@ -12,7 +12,7 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.command.impl.AddCommand;
-import net.teamfruit.eewbot.command.impl.DetailsCommand;
+import net.teamfruit.eewbot.command.impl.DetailCommand;
 import net.teamfruit.eewbot.command.impl.HelpCommand;
 import net.teamfruit.eewbot.command.impl.JoinServerCommand;
 import net.teamfruit.eewbot.command.impl.MonitorCommand;
@@ -30,7 +30,7 @@ public class CommandHandler {
 
 	static {
 		commands.put("unregister", wrap(new UnRegisterCommand()));
-		commands.put("details", wrap(new DetailsCommand()));
+		commands.put("detail", wrap(new DetailCommand()));
 		commands.put("add", wrap(new AddCommand()));
 		commands.put("remove", wrap(new RemoveCommand()));
 		commands.put("monitor", wrap(new MonitorCommand()));

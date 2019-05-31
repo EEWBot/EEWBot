@@ -6,7 +6,7 @@ import net.teamfruit.eewbot.command.CommandUtils;
 import net.teamfruit.eewbot.command.ICommand;
 import reactor.core.publisher.Mono;
 
-public class DetailsCommand implements ICommand {
+public class DetailCommand implements ICommand {
 
 	@Override
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {

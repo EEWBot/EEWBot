@@ -15,7 +15,7 @@ public class HelpCommand implements ICommand {
 						.setTitle("eewbot.cmd.help.title")
 						.addField("register", "eewbot.cmd.help.field.register.value", true)
 						.addField("unregister", "eewbot.cmd.help.field.unregister.value", true)
-						.addField("details", "eewbot.cmd.help.field.detail.value", true)
+						.addField("detail", "eewbot.cmd.help.field.detail.value", true)
 						.addField("add", "eewbot.cmd.help.field.add.value", true)
 						.addField("remove", "eewbot.cmd.help.field.remove.value", true)
 						.addField("monitor", "eewbot.cmd.help.field.monitor.value", true)
