@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
 
 import discord4j.core.spec.MessageCreateSpec;
+import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpecWrapper;
 
 public class EEW implements Entity {
 	public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").withZone(ZoneId.of("Asia/Tokyo"));
@@ -198,18 +199,21 @@ public class EEW implements Entity {
 	@Override
 	public Consumer<? super MessageCreateSpec> createMessage(final String lang) {
 		if (isCancel())
-			return msg -> msg.setEmbed(embed -> embed.setTitle("緊急地震速報")
+			return msg -> msg.setEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
+					.setTitle("eewbot.eew.eewcancel")
 					.setTimestamp(getReportTime())
-					.setDescription("緊急地震速報はキャンセルされました")
+					.setDescription("eewbot.eew.cancel")
 					.setColor(new Color(255, 255, 0))
-					.setFooter("新強震モニタ", null));
-		return msg -> msg.setEmbed(embed -> embed.setTitle("緊急地震速報 ("+getAlertFlg()+") "+(isFinal() ? "最終報" : "第"+getReportNum()+"報"))
+					.setFooter("eewbot.eew.newkyoshinmonitor"
+							+"", null));
+		return msg -> msg.setEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
+				.setTitle(isAlert() ? isFinal() ? "eewbot.eew.eewalert.final" : "eewbot.eew.eewalert.num" : isFinal() ? "eewbot.eew.eewprediction.final" : "eewbot.eew.eewprediction.num", getReportNum())
 				.setTimestamp(getReportTime())
-				.addField("震央", getRegionName(), true)
-				.addField("深さ", getDepth()+"km", true)
-				.addField("マグニチュード", String.valueOf(getMagnitude()), true)
-				.addField("予想震度", getIntensity().map(SeismicIntensity::getSimple).orElse("不明"), false)
+				.addField("eewbot.eew.hypocenter", getRegionName(), true)
+				.addField("eewbot.eew.depth", "eewbot.eew.km", true, getDepth())
+				.addField("eewbot.eew.magnitude", String.valueOf(getMagnitude()), true)
+				.addField("eewbot.eew.seismicintensity", getIntensity().map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"), false)
 				.setColor(isAlert() ? new Color(255, 0, 0) : new Color(0, 0, 255))
-				.setFooter("新強震モニタ", null));
+				.setFooter("eewbot.eew.newkyoshinmonitor", null));
 	}
 }
