@@ -23,6 +23,7 @@ public class HelpCommand implements ICommand {
 						.addField("timefix", "eewbot.cmd.help.field.timefix.value", true)
 						.addField("joinserver", "eewbot.cmd.help.field.joinserver.value", true)
 						.addField("reload", "eewbot.cmd.help.field.reload.value", true)
+						.addField("setlang", "eewbot.cmd.help.field.setlang.value", true)
 						.addField("help", "eewbot.cmd.help.field.help.value", true)))
 				.then();
 	}

@@ -19,6 +19,7 @@ import net.teamfruit.eewbot.command.impl.MonitorCommand;
 import net.teamfruit.eewbot.command.impl.RegisterCommand;
 import net.teamfruit.eewbot.command.impl.ReloadCommand;
 import net.teamfruit.eewbot.command.impl.RemoveCommand;
+import net.teamfruit.eewbot.command.impl.SetLangCommand;
 import net.teamfruit.eewbot.command.impl.TimeCommand;
 import net.teamfruit.eewbot.command.impl.TimeFixCommand;
 import net.teamfruit.eewbot.command.impl.UnRegisterCommand;
@@ -41,6 +42,7 @@ public class CommandHandler {
 		commands.put("help", wrap(new HelpCommand()));
 
 		commands.put("register", () -> new RegisterCommand());
+		commands.put("setlang", () -> new SetLangCommand());
 	}
 
 	private final EEWBot bot;
