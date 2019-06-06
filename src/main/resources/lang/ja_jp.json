@@ -73,7 +73,7 @@
   "eewbot.eew.eewprediction.last": "緊急地震速報 (予報) 最終報",
   "eewbot.eew.eewcancel": "緊急地震速報 (キャンセル報)",
   "eewbot.eew.cancel": "緊急地震速報はキャンセルされました",
-  "eewbot.eew.hypocenter": "震央",
+  "eewbot.eew.epicenter": "震央",
   "eewbot.eew.depth": "深さ",
   "eewbot.eew.km": "%skm",
   "eewbot.eew.magnitude": "マグニチュード",

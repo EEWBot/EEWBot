@@ -209,7 +209,7 @@ public class EEW implements Entity {
 		return msg -> msg.setEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
 				.setTitle(isAlert() ? isFinal() ? "eewbot.eew.eewalert.final" : "eewbot.eew.eewalert.num" : isFinal() ? "eewbot.eew.eewprediction.final" : "eewbot.eew.eewprediction.num", getReportNum())
 				.setTimestamp(getReportTime())
-				.addField("eewbot.eew.hypocenter", getRegionName(), true)
+				.addField("eewbot.eew.epicenter", getRegionName(), true)
 				.addField("eewbot.eew.depth", "eewbot.eew.km", true, getDepth())
 				.addField("eewbot.eew.magnitude", String.valueOf(getMagnitude()), true)
 				.addField("eewbot.eew.seismicintensity", getIntensity().map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"), false)
