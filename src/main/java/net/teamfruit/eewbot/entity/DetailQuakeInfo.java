@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.entity;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.function.Consumer;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
@@ -10,8 +11,13 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
+import discord4j.core.spec.MessageCreateSpec;
+import net.teamfruit.eewbot.TimeProvider;
+import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
+import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpecWrapper;
+
 @XmlRootElement(name = "Root")
-public class DetailQuakeInfo {
+public class DetailQuakeInfo implements Entity {
 
 	private LocalDateTime timestamp;
 	private Earthquake earthQuake;
@@ -39,7 +45,7 @@ public class DetailQuakeInfo {
 
 		private String id;
 		private LocalDateTime time;
-		private String intensity;
+		private SeismicIntensity intensity;
 		private String epicenter;
 		private String lat;
 		private String lon;
@@ -72,11 +78,12 @@ public class DetailQuakeInfo {
 		}
 
 		@XmlAttribute(name = "Intensity")
-		public String getIntensity() {
+		@XmlJavaTypeAdapter(SeismicIntensityAdapter.class)
+		public SeismicIntensity getIntensity() {
 			return this.intensity;
 		}
 
-		public void setIntensity(final String intensity) {
+		public void setIntensity(final SeismicIntensity intensity) {
 			this.intensity = intensity;
 		}
 
@@ -229,5 +236,32 @@ public class DetailQuakeInfo {
 			return v.format(this.formatter);
 		}
 
+	}
+
+	public static class SeismicIntensityAdapter extends XmlAdapter<String, SeismicIntensity> {
+
+		@Override
+		public SeismicIntensity unmarshal(final String v) throws Exception {
+			return SeismicIntensity.get(v).orElse(null);
+		}
+
+		@Override
+		public String marshal(final SeismicIntensity v) throws Exception {
+			return v.toString();
+		}
+
+	}
+
+	@Override
+	public Consumer<? super MessageCreateSpec> createMessage(final String lang) {
+		return msg -> msg.setEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
+				.setTitle("eewbot.quakeinfo.title")
+				.addField("eewbot.quakeinfo.epicenter", getEarthquake().getEpicenter(), true)
+				.addField("eewbot.quakeinfo.depth", getEarthquake().getDepth(), true)
+				.addField("eewbot.quakeinfo.magnitude", getEarthquake().getMagnitude(), true)
+				.addField("eewbot.quakeinfo.seismicintensity", getEarthquake().getIntensity().toString(), false)
+				.setImage(QuakeInfoGateway.REMOTE_ROOT+getEarthquake().getDetail())
+				.setColor(getEarthquake().getIntensity().getColor())
+				.setTimestamp(getEarthquake().getTime().atZone(TimeProvider.ZONE_ID).toInstant()));
 	}
 }

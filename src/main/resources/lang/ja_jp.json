@@ -79,5 +79,10 @@
   "eewbot.eew.magnitude": "マグニチュード",
   "eewbot.eew.seismicintensity": "予想震度",
   "eewbot.eew.unknown": "不明",
-  "eewbot.eew.newkyoshinmonitor": "新強震モニタ"
+  "eewbot.eew.newkyoshinmonitor": "新強震モニタ",
+  "eewbot.quakeinfo.title": "地震情報",
+  "eewbot.quakeinfo.epicenter": "震央",
+  "eewbot.quakeinfo.depth": "深さ",
+  "eewbot.quakeinfo.magnitude": "マグニチュード",
+  "eewbot.quakeinfo.seismicintensity": "最大震度"
 }
