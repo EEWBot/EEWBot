@@ -8,12 +8,12 @@ import java.util.Optional;
 
 import javax.xml.bind.JAXB;
 
-import net.teamfruit.eewbot.entity.DetailQuakeInfo;
+import net.teamfruit.eewbot.entity.DetailQuakeXml;
 import net.teamfruit.eewbot.entity.QuakeInfo;
 import net.teamfruit.eewbot.entity.QuakeInfo.Record;
 import net.teamfruit.eewbot.entity.QuakeInfo.Record.Item;
 
-public abstract class QuakeInfoGateway implements Gateway<DetailQuakeInfo> {
+public abstract class QuakeInfoGateway implements Gateway<DetailQuakeXml> {
 
 	public static final String REMOTE_ROOT = "https://www3.nhk.or.jp/sokuho/jishin/";
 	public static final String REMOTE = "data/JishinReport.xml";
@@ -39,7 +39,7 @@ public abstract class QuakeInfoGateway implements Gateway<DetailQuakeInfo> {
 
 				for (final ListIterator<String> it = list.listIterator(); it.hasPrevious();) {
 					final String url = it.previous();
-					final DetailQuakeInfo detailQuakeInfo = JAXB.unmarshal(new URL(url), DetailQuakeInfo.class);
+					final DetailQuakeXml detailQuakeInfo = JAXB.unmarshal(new URL(url), DetailQuakeXml.class);
 					onNewData(detailQuakeInfo);
 				}
 			} else

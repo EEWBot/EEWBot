@@ -5,10 +5,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
+import net.teamfruit.eewbot.entity.DetailQuakeXml;
 import net.teamfruit.eewbot.entity.EEW;
 import net.teamfruit.eewbot.entity.Monitor;
 import net.teamfruit.eewbot.gateway.EEWGateway;
 import net.teamfruit.eewbot.gateway.MonitorGateway;
+import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 
@@ -71,6 +73,14 @@ public class EEWExecutor {
 					});
 			}
 		}, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
+
+		this.executor.scheduleAtFixedRate(new QuakeInfoGateway() {
+
+			@Override
+			public void onNewData(final DetailQuakeXml data) {
+
+			}
+		}, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
 	}
 
 }
