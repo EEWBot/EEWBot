@@ -19,9 +19,6 @@ public class Channel {
 	@CommandName("地震情報")
 	public boolean quakeInfo = true;
 
-	@CommandName("詳細地震情報")
-	public boolean quakeInfoDetail = false;
-
 	@CommandName("強震モニタ")
 	public boolean monitor = true;
 
@@ -35,7 +32,6 @@ public class Channel {
 		this.eewPrediction = eewPrediction;
 		this.eewDecimation = eewDecimation;
 		this.quakeInfo = quakeInfo;
-		this.quakeInfoDetail = quakeInfoDetail;
 		this.monitor = monitor;
 	}
 

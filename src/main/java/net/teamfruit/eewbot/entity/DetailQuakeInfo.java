@@ -17,7 +17,7 @@ import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpecWrapper;
 
 @XmlRootElement(name = "Root")
-public class DetailQuakeXml implements Entity {
+public class DetailQuakeInfo implements Entity {
 
 	private LocalDateTime timestamp;
 	private Earthquake earthQuake;

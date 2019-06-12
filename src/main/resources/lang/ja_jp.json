@@ -40,8 +40,6 @@
   "eewbot.cmd.register.field.monitor.value": "緊急地震速報の第一報と最終報時に強震モニタの画像を通知しますか（Y/N)？",
   "eewbot.cmd.register.field.quakeinfo.name": "地震情報",
   "eewbot.cmd.register.field.quakeinfo.value": "地震情報（震源・震度に関する情報）を通知しますか(Y/N)？",
-  "eewbot.cmd.register.field.quakeinfodetail.name": "詳細地震情報",
-  "eewbot.cmd.register.field.quakeinfodetail.value": "地震情報（各地の震度に関する情報）を通知しますか(Y/N)？",
   "eewbot.cmd.register.field.done.name": "設定が完了しました",
   "eewbot.cmd.reload.title": "設定リロード",
   "eewbot.cmd.reload.reloading.desc": "処理中",

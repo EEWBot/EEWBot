@@ -74,9 +74,6 @@ public class RegisterCommand extends ReactionCommand {
 				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.quakeinfo.name", "eewbot.cmd.register.field.quakeinfo.value");
 			case 5:
 				channel.quakeInfo = isY;
-				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.quakeinfodetail.name", "eewbot.cmd.register.field.quakeinfodetail.value");
-			case 6:
-				channel.quakeInfoDetail = isY;
 				return reaction.getChannel()
 						.flatMap(c -> c.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
 								.setTitle("eewbot.cmd.register.title")

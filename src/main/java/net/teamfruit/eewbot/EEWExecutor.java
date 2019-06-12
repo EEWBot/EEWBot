@@ -5,7 +5,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-import net.teamfruit.eewbot.entity.DetailQuakeXml;
+import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.EEW;
 import net.teamfruit.eewbot.entity.Monitor;
 import net.teamfruit.eewbot.gateway.EEWGateway;
@@ -77,7 +77,7 @@ public class EEWExecutor {
 		this.executor.scheduleAtFixedRate(new QuakeInfoGateway() {
 
 			@Override
-			public void onNewData(final DetailQuakeXml data) {
+			public void onNewData(final DetailQuakeInfo data) {
 
 			}
 		}, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
