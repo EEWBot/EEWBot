@@ -78,7 +78,7 @@ public class EEWExecutor {
 
 			@Override
 			public void onNewData(final DetailQuakeInfo data) {
-
+				EEWExecutor.this.service.sendMessage("quakeInfo", lang -> data.createMessage(lang));
 			}
 		}, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
 	}
