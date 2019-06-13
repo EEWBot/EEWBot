@@ -16,6 +16,7 @@ import net.teamfruit.eewbot.command.impl.DetailCommand;
 import net.teamfruit.eewbot.command.impl.HelpCommand;
 import net.teamfruit.eewbot.command.impl.JoinServerCommand;
 import net.teamfruit.eewbot.command.impl.MonitorCommand;
+import net.teamfruit.eewbot.command.impl.QuakeInfoCommand;
 import net.teamfruit.eewbot.command.impl.RegisterCommand;
 import net.teamfruit.eewbot.command.impl.ReloadCommand;
 import net.teamfruit.eewbot.command.impl.RemoveCommand;
@@ -39,6 +40,7 @@ public class CommandHandler {
 		commands.put("timefix", wrap(new TimeFixCommand()));
 		commands.put("joinserver", wrap(new JoinServerCommand()));
 		commands.put("reload", wrap(new ReloadCommand()));
+		commands.put("quakeinfo", wrap(new QuakeInfoCommand()));
 		commands.put("help", wrap(new HelpCommand()));
 
 		commands.put("register", () -> new RegisterCommand());
