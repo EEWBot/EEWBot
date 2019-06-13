@@ -9,7 +9,7 @@ import net.teamfruit.eewbot.command.CommandHandler;
 
 public class Permission {
 
-	public static final Permission DEFAULT_EVERYONE = new Permission(Collections.emptyList(), Arrays.asList("details", "monitor", "help"));
+	public static final Permission DEFAULT_EVERYONE = new Permission(Collections.emptyList(), Arrays.asList("detail", "monitor", "quakeinfo", "time", "joinserver", "help"));
 	public static final Permission ALL = new Permission(Collections.emptyList(), new ArrayList<>(CommandHandler.commands.keySet()));
 
 	private List<Long> userid;
