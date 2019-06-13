@@ -259,7 +259,7 @@ public class DetailQuakeInfo implements Entity {
 				.addField("eewbot.quakeinfo.epicenter", getEarthquake().getEpicenter(), true)
 				.addField("eewbot.quakeinfo.depth", getEarthquake().getDepth(), true)
 				.addField("eewbot.quakeinfo.magnitude", getEarthquake().getMagnitude(), true)
-				.addField("eewbot.quakeinfo.seismicintensity", getEarthquake().getIntensity().toString(), false)
+				.addField("eewbot.quakeinfo.seismicintensity", getEarthquake().getIntensity().getSimple(), false)
 				.setImage(QuakeInfoGateway.REMOTE_ROOT+getEarthquake().getDetail())
 				.setColor(getEarthquake().getIntensity().getColor())
 				.setTimestamp(getEarthquake().getTime().atZone(TimeProvider.ZONE_ID).toInstant()));
