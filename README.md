@@ -29,14 +29,7 @@ $ docker run -e TOKEN=<Your bot token> \
              --name eewbot \
              -t -d teamfruit/eewbot
 ```
-`channels.json`がすでにある場合 (別の環境からの移行)
-```sh
-$ docker run -e TOKEN=<Your bot token> \
-             -v ${PWD}:/etc/eewbot \
-             -v ${PWD}:/var/lib/eewbot \
-             --name eewbot \
-             -t -d teamfruit/eewbot
-```
+
 
 ## コマンド
 |コマンド|説明|
