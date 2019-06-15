@@ -38,7 +38,7 @@ public abstract class QuakeInfoGateway implements Gateway<DetailQuakeInfo> {
 				if (!list.isEmpty())
 					this.lastUrl = list.stream().findFirst();
 
-				for (final ListIterator<String> it = list.listIterator(); it.hasPrevious();) {
+				for (final ListIterator<String> it = list.listIterator(list.size()); it.hasPrevious();) {
 					final String url = it.previous();
 					final DetailQuakeInfo detailQuakeInfo = JAXB.unmarshal(new URL(url), DetailQuakeInfo.class);
 					onNewData(detailQuakeInfo);
