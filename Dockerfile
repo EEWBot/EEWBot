@@ -1,7 +1,7 @@
 FROM openjdk:8-jre-alpine
 
 RUN apk --no-cache add curl \
- && curl -L https://github.com/Team-Fruit/EEWBot/releases/download/2.0.0/eewbot-2.0.0.jar -o eewbot.jar \
+ && curl -L https://github.com/Team-Fruit/EEWBot/releases/download/2.0.1/eewbot-2.0.1.jar -o eewbot.jar \
  && apk del --purge curl
 
 ENV CONFIG_DIRECTORY=/etc/eewbot \
