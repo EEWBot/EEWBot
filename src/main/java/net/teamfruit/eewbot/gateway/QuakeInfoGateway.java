@@ -35,7 +35,8 @@ public abstract class QuakeInfoGateway implements Gateway<DetailQuakeInfo> {
 						list.add(item.getUrl());
 					}
 
-				this.lastUrl = list.stream().findFirst();
+				if (!list.isEmpty())
+					this.lastUrl = list.stream().findFirst();
 
 				for (final ListIterator<String> it = list.listIterator(); it.hasPrevious();) {
 					final String url = it.previous();
