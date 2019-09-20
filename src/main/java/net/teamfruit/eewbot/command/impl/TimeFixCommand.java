@@ -20,7 +20,7 @@ public class TimeFixCommand implements ICommand {
 				bot.getExecutor().getProvider().fetch())
 				.flatMap(tuple -> tuple.getT1().edit(spec -> spec.setEmbed(embed -> CommandUtils.createEmbed(embed, lang)
 						.setTitle("eewbot.cmd.timefix.title")
-						.addField("eewbot.cmd.timefix.field.nowpctime.name\"", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
+						.addField("eewbot.cmd.timefix.field.nowpctime.name", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
 						.addField("eewbot.cmd.timefix.field.nowoffsettime.name", bot.getExecutor().getProvider().now().toString(), false)
 						.addField("eewbot.cmd.timefix.field.offset.name"
 								+"", String.valueOf(bot.getExecutor().getProvider().getOffset()), false))))
