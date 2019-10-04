@@ -16,7 +16,7 @@ import net.teamfruit.eewbot.entity.EEW;
 
 public abstract class EEWGateway implements Gateway<EEW> {
 
-	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/webservice/hypo/eew/";
+	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/webservice/hypo/eew/";
 	public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
 	private final Map<Long, EEW> prev = new HashMap<>();
