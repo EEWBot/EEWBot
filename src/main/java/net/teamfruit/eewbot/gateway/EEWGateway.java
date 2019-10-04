@@ -6,6 +6,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.xml.ws.http.HTTPException;
+
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -16,7 +18,7 @@ import net.teamfruit.eewbot.entity.EEW;
 
 public abstract class EEWGateway implements Gateway<EEW> {
 
-	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/webservice/hypo/eew/";
+	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/webservice/hypo/eew/";
 	public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
 	private final Map<Long, EEW> prev = new HashMap<>();
@@ -49,6 +51,8 @@ public abstract class EEWGateway implements Gateway<EEW> {
 							this.prev.clear();
 
 					}
+				else
+					throw new HTTPException(response.getStatusLine().getStatusCode());
 			}
 		} catch (final Exception e) {
 			onError(e);

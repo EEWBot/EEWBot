@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
+import javax.xml.ws.http.HTTPException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
@@ -18,7 +19,6 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.entity.EEW;
 import net.teamfruit.eewbot.entity.Monitor;
@@ -58,8 +58,8 @@ public abstract class MonitorGateway implements Gateway<Monitor> {
 									if (statusLine.getStatusCode()==HttpStatus.SC_OK) {
 										images.add(ImageIO.read(response.getEntity().getContent()));
 										break;
-									} else if (statusLine.getStatusCode()==HttpStatus.SC_NOT_FOUND)
-										Log.logger.info("強震モニタの取得に失敗しました");
+									} else
+										throw new HTTPException(response.getStatusLine().getStatusCode());
 								}
 							} catch (final Exception e) {
 								onError(e);

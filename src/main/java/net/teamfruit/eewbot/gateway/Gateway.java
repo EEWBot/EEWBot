@@ -1,5 +1,7 @@
 package net.teamfruit.eewbot.gateway;
 
+import javax.xml.ws.http.HTTPException;
+
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import net.teamfruit.eewbot.Log;
@@ -12,7 +14,10 @@ public interface Gateway<T> extends Runnable {
 	}
 
 	default void onError(final Exception exception) {
-		Log.logger.error(ExceptionUtils.getStackTrace(exception));
+		if (exception instanceof HTTPException)
+			Log.logger.error("{} {}", ((HTTPException) exception).getStatusCode(), ExceptionUtils.getStackTrace(exception));
+		else
+			Log.logger.error(ExceptionUtils.getStackTrace(exception));
 	}
 
 }
