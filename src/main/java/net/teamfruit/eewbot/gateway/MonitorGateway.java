@@ -25,7 +25,7 @@ import net.teamfruit.eewbot.entity.Monitor;
 
 public abstract class MonitorGateway implements Gateway<Monitor> {
 
-	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/new/data/map_img/";
+	public static final String REMOTE = "http://www.kmoni.bosai.go.jp/data/map_img/";
 	public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
 	private final TimeProvider time;
