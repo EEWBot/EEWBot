@@ -204,8 +204,7 @@ public class EEW implements Entity {
 					.setTimestamp(getReportTime())
 					.setDescription("eewbot.eew.cancel")
 					.setColor(new Color(255, 255, 0))
-					.setFooter("eewbot.eew.newkyoshinmonitor"
-							+"", null));
+					.setFooter("eewbot.eew.newkyoshinmonitor", null));
 		return msg -> msg.setEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
 				.setTitle(isAlert() ? isFinal() ? "eewbot.eew.eewalert.final" : "eewbot.eew.eewalert.num" : isFinal() ? "eewbot.eew.eewprediction.final" : "eewbot.eew.eewprediction.num", getReportNum())
 				.setTimestamp(getReportTime())

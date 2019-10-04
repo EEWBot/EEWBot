@@ -22,8 +22,7 @@ public class TimeFixCommand implements ICommand {
 						.setTitle("eewbot.cmd.timefix.title")
 						.addField("eewbot.cmd.timefix.field.nowpctime.name", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
 						.addField("eewbot.cmd.timefix.field.nowoffsettime.name", bot.getExecutor().getProvider().now().toString(), false)
-						.addField("eewbot.cmd.timefix.field.offset.name"
-								+"", String.valueOf(bot.getExecutor().getProvider().getOffset()), false))))
+						.addField("eewbot.cmd.timefix.field.offset.name", String.valueOf(bot.getExecutor().getProvider().getOffset()), false))))
 				.then();
 	}
 
