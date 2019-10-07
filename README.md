@@ -9,7 +9,7 @@ Earthquake Early Warning(EEW) Discord Bot for Japan
 **速やかなバージョンアップをお願い致します。ご迷惑をおかけして申し訳ございません。**
 
 ## 公式インスタンス
-自宅サーバー稼働の為、可用性を保証する事が出来ません。
+自宅サーバー稼働の為、可用性を保証しません。
 [招待リンク](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot&permissions=523344)
 
 ## セットアップ (jar)
