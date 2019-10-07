@@ -3,11 +3,11 @@ package net.teamfruit.eewbot.gateway;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
 import javax.xml.ws.http.HTTPException;
@@ -43,29 +43,25 @@ public abstract class MonitorGateway implements Gateway<Monitor> {
 	@Override
 	public void run() {
 		try {
-			final ZonedDateTime date = this.time.offset(-1000);
+			int tryCount = 0;
+
 			final List<BufferedImage> images = new ArrayList<>();
 
-			final String dateStr = FORMAT.format(date);
-			final String dayStr = StringUtils.substring(dateStr, 0, 8);
-			Stream.of(REMOTE+"RealTimeImg/acmap_s/"+dayStr+"/"+dateStr+".acmap_s.gif",
-					REMOTE+"PSWaveImg/eew/"+dayStr+"/"+dateStr+".eew.gif").forEach(str -> {
-						for (int i = 0; i<3; i++) {
-							final HttpGet get = new HttpGet(str);
-							try {
-								try (CloseableHttpResponse response = EEWBot.instance.getHttpClient().execute(get)) {
-									final StatusLine statusLine = response.getStatusLine();
-									if (statusLine.getStatusCode()==HttpStatus.SC_OK) {
-										images.add(ImageIO.read(response.getEntity().getContent()));
-										break;
-									} else
-										throw new HTTPException(response.getStatusLine().getStatusCode());
-								}
-							} catch (final Exception e) {
-								onError(e);
-							}
-						}
-					});
+			while (images.isEmpty()&&tryCount<=3) {
+				final ZonedDateTime date = this.time.offset(tryCount*-1000-1000);
+
+				final String dateStr = FORMAT.format(date);
+				final String dayStr = StringUtils.substring(dateStr, 0, 8);
+
+				final BufferedImage acmap = getImage(REMOTE+"RealTimeImg/acmap_s/"+dayStr+"/"+dateStr+".acmap_s.gif");
+				final BufferedImage eew = getImage(REMOTE+"PSWaveImg/eew/"+dayStr+"/"+dateStr+".eew.gif");
+				if (acmap!=null&&eew!=null) {
+					images.add(acmap);
+					images.add(eew);
+				}
+
+				tryCount++;
+			}
 
 			final BufferedImage base = ImageIO.read(MonitorGateway.class.getResource("/base_map_w.png"));
 			final Graphics2D graphics = base.createGraphics();
@@ -78,6 +74,19 @@ public abstract class MonitorGateway implements Gateway<Monitor> {
 			}
 		} catch (final Exception e) {
 			onError(e);
+		}
+	}
+
+	private BufferedImage getImage(final String uri) throws IOException, HTTPException {
+		final HttpGet get = new HttpGet(uri);
+		try (CloseableHttpResponse response = EEWBot.instance.getHttpClient().execute(get)) {
+			final StatusLine statusLine = response.getStatusLine();
+			if (statusLine.getStatusCode()==HttpStatus.SC_OK)
+				return ImageIO.read(response.getEntity().getContent());
+			else if (statusLine.getStatusCode()==HttpStatus.SC_NOT_FOUND)
+				return null;
+			else
+				throw new HTTPException(response.getStatusLine().getStatusCode());
 		}
 	}
 }
