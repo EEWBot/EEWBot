@@ -31,6 +31,8 @@ public abstract class EEWGateway implements Gateway<EEW> {
 	@Override
 	public void run() {
 		try {
+			Thread.currentThread().setName("eewbot-eew-thread");
+
 			final ZonedDateTime date = this.time.offset(1000);
 			final String url = REMOTE+FORMAT.format(date)+".json";
 

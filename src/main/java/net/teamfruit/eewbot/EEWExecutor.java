@@ -25,7 +25,7 @@ public class EEWExecutor {
 		this.service = service;
 		this.config = config;
 
-		this.executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "EEWBot-communication-thread"));
+		this.executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-communication-thread"));
 		this.provider = new TimeProvider(this.executor);
 	}
 
@@ -61,6 +61,7 @@ public class EEWExecutor {
 					return false;
 				};
 				EEWExecutor.this.service.sendMessage(isAlert.and(decimation), lang -> eew.createMessage(lang)).subscribe();
+				Log.logger.info("s");
 
 				if (eew.isInitial()||eew.isFinal())
 					EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider, eew) {

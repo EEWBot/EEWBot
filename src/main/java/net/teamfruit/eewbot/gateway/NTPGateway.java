@@ -15,6 +15,8 @@ public abstract class NTPGateway implements Gateway<TimeInfo> {
 	@Override
 	public void run() {
 		try {
+			Thread.currentThread().setName("eewbot-ntp-thread");
+
 			final long diff = System.currentTimeMillis()-this.lastTime;
 			if (this.lastTime>0&&diff<1500&&diff>-1500)
 				return;

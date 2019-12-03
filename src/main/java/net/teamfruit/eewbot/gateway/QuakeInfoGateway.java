@@ -22,6 +22,8 @@ public abstract class QuakeInfoGateway implements Gateway<DetailQuakeInfo> {
 	@Override
 	public void run() {
 		try {
+			Thread.currentThread().setName("eewbot-quakeinfo-thread");
+
 			final QuakeInfo quakeInfo = JAXB.unmarshal(new URL(REMOTE_ROOT+REMOTE), QuakeInfo.class);
 
 			if (this.prev!=null) {

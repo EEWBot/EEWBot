@@ -43,6 +43,8 @@ public abstract class MonitorGateway implements Gateway<Monitor> {
 	@Override
 	public void run() {
 		try {
+			Thread.currentThread().setName("eewbot-monitor-thread");
+
 			int tryCount = 0;
 
 			final List<BufferedImage> images = new ArrayList<>();
