@@ -61,7 +61,6 @@ public class EEWExecutor {
 					return false;
 				};
 				EEWExecutor.this.service.sendMessage(isAlert.and(decimation), lang -> eew.createMessage(lang)).subscribe();
-				Log.logger.info("s");
 
 				if (eew.isInitial()||eew.isFinal())
 					EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider, eew) {

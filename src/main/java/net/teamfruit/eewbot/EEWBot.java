@@ -104,6 +104,8 @@ public class EEWBot {
 		this.executor = new EEWExecutor(this.service, getConfig());
 		this.command = new CommandHandler(this);
 
+		this.executor.init();
+
 		this.client.getEventDispatcher().on(ReadyEvent.class)
 				.map(event -> event.getGuilds().size())
 				.flatMap(size -> this.client.getEventDispatcher()
@@ -111,7 +113,6 @@ public class EEWBot {
 						.take(size)
 						.collectList())
 				.subscribe(events -> {
-					this.executor.init();
 					this.client.getSelf().subscribe(user -> {
 						this.userName = user.getUsername();
 						this.avatarUrl = user.getAvatarUrl();
