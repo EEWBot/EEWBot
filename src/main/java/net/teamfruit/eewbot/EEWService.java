@@ -12,6 +12,7 @@ import discord4j.core.object.util.Snowflake;
 import discord4j.core.spec.MessageCreateSpec;
 import net.teamfruit.eewbot.registry.Channel;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 public class EEWService {
 
@@ -34,7 +35,7 @@ public class EEWService {
 						.filter(c -> c.getType()==discord4j.core.object.entity.Channel.Type.GUILD_TEXT)
 						.cast(TextChannel.class)
 						.flatMap(tc -> tc.createMessage(spec.apply(entry.getValue().lang))))
-				.collect(Collectors.toList()));
+				.collect(Collectors.toList())).subscribeOn(Schedulers.parallel());
 	}
 
 }
