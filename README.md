@@ -8,9 +8,12 @@ Earthquake Early Warning(EEW) Discord Bot for Japan
 2.0.3以前のバージョンは、緊急地震速報のエンドポイントが変更され利用出来なくなったため、緊急地震速報が提供されません。
 速やかなバージョンアップをお願い致します。ご迷惑をおかけして申し訳ございません。
 
-## 公式インスタンス
+## リンク
+#### 公式インスタンス
 自宅サーバーで稼働しているため、可用性が保証されません。
-[招待リンク](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
+[Bot招待リンク](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
+#### 公式サポートサーバー
+[招待リンク](https://discord.gg/wATGHHY)
 
 ## セットアップ
 ### Token生成
