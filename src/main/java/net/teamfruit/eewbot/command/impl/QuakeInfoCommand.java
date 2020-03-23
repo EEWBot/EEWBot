@@ -19,16 +19,17 @@ public class QuakeInfoCommand implements ICommand {
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
 		return Mono.zip(event.getMessage().getChannel(),
 				Mono.fromCallable(() -> {
-					Optional<String> url = event.getMessage().getContent()
-							.map(str -> str.split(" "))
-							.filter(array -> array.length>=3)
-							.map(array -> array[2]);
-					if (!url.isPresent()) {
-						final QuakeInfo info = JAXB.unmarshal(new URL(QuakeInfoGateway.REMOTE_ROOT+QuakeInfoGateway.REMOTE), QuakeInfo.class);
-						url = info.getRecords().stream().findFirst()
-								.flatMap(record -> record.getItems().stream().findFirst())
-								.map(item -> item.getUrl());
-					}
+					//					Optional<String> url = event.getMessage().getContent()
+					//							.map(str -> str.split(" "))
+					//							.filter(array -> array.length>=3)
+					//							.map(array -> array[2]);
+					//					if (!url.isPresent()) {
+					final QuakeInfo info = JAXB.unmarshal(new URL(QuakeInfoGateway.REMOTE_ROOT+QuakeInfoGateway.REMOTE), QuakeInfo.class);
+					final Optional<String> url = info.getRecords().stream().findFirst()
+							//					 url = info.getRecords().stream().findFirst()
+							.flatMap(record -> record.getItems().stream().findFirst())
+							.map(item -> item.getUrl());
+					//					}
 
 					final DetailQuakeInfo detail = JAXB.unmarshal(new URL(url.get()), DetailQuakeInfo.class);
 					return detail;
