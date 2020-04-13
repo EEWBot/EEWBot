@@ -95,7 +95,7 @@ public class EEWBot {
 			return;
 		}
 
-		this.client = new DiscordClientBuilder(getConfig().getToken()).build();
+		this.client = DiscordClientBuilder.create(getConfig().getToken()).build();
 
 		this.client.getEventDispatcher().on(ReadyEvent.class)
 				.subscribe(event -> Log.logger.info("Connecting {} guilds...", event.getGuilds().size()));
