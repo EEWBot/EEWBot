@@ -9,6 +9,8 @@ import reactor.core.publisher.Mono;
 
 public class SensitivityCommand implements ICommand {
 
+	private SeismicIntensity target;
+
 	@Override
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
 		return event.getMessage().getChannel()
@@ -19,7 +21,7 @@ public class SensitivityCommand implements ICommand {
 								.setDescription("eewbot.cmd.err.channelnotregistered.desc"))
 								.map(m -> false)))
 				.filterWhen(channel -> Mono.justOrEmpty(event.getMessage().getContent().map(msg -> msg.split(" ")))
-						.filterWhen(array -> Mono.just(array.length>=2)
+						.filterWhen(array -> Mono.just(array.length>=3)
 								.filter(b -> b)
 								.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)
 										.setTitle("eewbot.cmd.add.title")
@@ -32,11 +34,14 @@ public class SensitivityCommand implements ICommand {
 										.setDescription("eewbot.cmd.err.fieldnotexits"))
 										.map(m -> false)))
 						.flatMap(array -> Mono.fromCallable(() -> {
-							final SeismicIntensity intensity = SeismicIntensity.get(array[2]).get();
-							bot.getChannels().get(channel.getId().asLong()).minIntensity = intensity;
+							this.target = SeismicIntensity.get(array[2]).get();
+							bot.getChannels().get(channel.getId().asLong()).minIntensity = this.target;
 							bot.getChannelRegistry().save();
 							return true;
 						})))
+				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
+						.setTitle("eewbot.cmd.sensitivity.title")
+						.setDescription("eewbot.cmd.sensitivity.desc", this.target.getSimple())))
 				.then();
 	}
 
