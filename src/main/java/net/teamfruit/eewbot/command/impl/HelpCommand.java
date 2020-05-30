@@ -20,6 +20,7 @@ public class HelpCommand implements ICommand {
 						.addField("remove", "eewbot.cmd.help.field.remove.value", true)
 						.addField("monitor", "eewbot.cmd.help.field.monitor.value", true)
 						.addField("quakeinfo", "eewbot.cmd.help.field.quakeinfo", true)
+						.addField("sensitivity", "eewbot.cmd.help.field.sensitivity", true)
 						.addField("time", "eewbot.cmd.help.field.time.value", true)
 						.addField("timefix", "eewbot.cmd.help.field.timefix.value", true)
 						.addField("joinserver", "eewbot.cmd.help.field.joinserver.value", true)

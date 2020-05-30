@@ -21,6 +21,7 @@
   "eewbot.cmd.help.field.remove.value": "チャンネルに通知される情報を消去します",
   "eewbot.cmd.help.field.monitor.value": "現在の強震モニタの画像を取得します",
   "eewbot.cmd.help.field.quakeinfo": "最新の地震情報を取得します",
+  "eewbot.cmd.help.field.sensitivity": "通知する最小の予想震度を設定します",
   "eewbot.cmd.help.field.time.value": "Botの時刻同期情報を表示します",
   "eewbot.cmd.help.field.timefix.value": "Botの時刻を強制的に修正します",
   "eewbot.cmd.help.field.joinserver.value": "Botの招待リンクを表示します",
