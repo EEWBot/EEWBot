@@ -85,7 +85,8 @@ public class Channel {
 						throw new RuntimeException(e);
 					}
 				})
-				.collect(Collectors.joining("\n"));
+				// TODO
+				.collect(Collectors.joining("\n"))+"\n`最小通知震度` "+this.minIntensity.getSimple();
 	}
 
 	@SuppressWarnings("deprecation")
