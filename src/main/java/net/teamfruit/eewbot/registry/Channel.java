@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.registry;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18n;
 
 public class Channel {
@@ -22,19 +23,25 @@ public class Channel {
 	@CommandName("強震モニタ")
 	public boolean monitor = true;
 
+	public SeismicIntensity minIntensity = SeismicIntensity.ONE;
+
 	public String lang = I18n.DEFAULT_LANGUAGE;
 
 	public Channel() {
 	}
 
-	public Channel(final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final boolean quakeInfoDetail, final boolean monitor) {
+	public Channel(final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final boolean quakeInfoDetail, final boolean monitor, final SeismicIntensity minIntensity) {
 		this.eewAlert = eewAlert;
 		this.eewPrediction = eewPrediction;
 		this.eewDecimation = eewDecimation;
 		this.quakeInfo = quakeInfo;
 		this.monitor = monitor;
+		this.minIntensity = minIntensity;
 	}
 
+	/*
+	 * TODO: minIntensity
+	 */
 	public boolean value(final String name) {
 		return Arrays.stream(getClass().getFields())
 				.filter(field -> field.isAnnotationPresent(CommandName.class)&&(field.getAnnotation(CommandName.class).value().equals(name)||field.getName().equals(name)))
@@ -88,6 +95,7 @@ public class Channel {
 				old.eewDecimation.get(),
 				old.quakeInfo.get(),
 				old.quakeInfoDetail.get(),
-				old.monitor.get());
+				old.monitor.get(),
+				SeismicIntensity.ONE);
 	}
 }
