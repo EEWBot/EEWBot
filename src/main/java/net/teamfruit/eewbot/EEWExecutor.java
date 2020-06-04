@@ -60,7 +60,14 @@ public class EEWExecutor {
 						return true;
 					return false;
 				};
-				EEWExecutor.this.service.sendMessage(isAlert.and(decimation), lang -> eew.createMessage(lang)).subscribe();
+				final Predicate<Channel> sensitivity = c -> {
+					if (!eew.getIntensity().isPresent())
+						return true;
+					if (c.minIntensity.compareTo(eew.getIntensity().get())<=0)
+						return true;
+					return false;
+				};
+				EEWExecutor.this.service.sendMessage(isAlert.and(decimation).and(sensitivity), lang -> eew.createMessage(lang)).subscribe();
 
 				if (eew.isInitial()||eew.isFinal())
 					EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider, eew) {
