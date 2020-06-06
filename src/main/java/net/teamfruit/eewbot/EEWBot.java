@@ -28,6 +28,8 @@ import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
+import discord4j.core.object.presence.Activity;
+import discord4j.core.object.presence.Presence;
 import net.teamfruit.eewbot.command.CommandHandler;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
@@ -117,6 +119,8 @@ public class EEWBot {
 						this.userName = user.getUsername();
 						this.avatarUrl = user.getAvatarUrl();
 					});
+
+					this.client.updatePresence(Presence.online(Activity.playing("!eew help"))).subscribe();
 
 					Log.logger.info("Connected!");
 				});
