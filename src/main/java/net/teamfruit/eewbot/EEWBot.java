@@ -99,7 +99,7 @@ public class EEWBot {
 			return;
 		}
 
-		this.service = new EEWService(this.client, getChannels());
+		this.service = new EEWService(this.gateway, getChannels());
 		this.executor = new EEWExecutor(this.service, getConfig());
 		this.command = new CommandHandler(this);
 

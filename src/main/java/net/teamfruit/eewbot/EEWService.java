@@ -6,9 +6,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import discord4j.core.DiscordClient;
-import discord4j.core.object.entity.TextChannel;
-import discord4j.core.object.util.Snowflake;
+import discord4j.common.util.Snowflake;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.MessageCreateSpec;
 import net.teamfruit.eewbot.registry.Channel;
 import reactor.core.publisher.Mono;
@@ -16,11 +16,11 @@ import reactor.core.scheduler.Schedulers;
 
 public class EEWService {
 
-	private final DiscordClient client;
+	private final GatewayDiscordClient gateway;
 	private final Map<Long, Channel> channels;
 
-	public EEWService(final DiscordClient client, final Map<Long, Channel> map) {
-		this.client = client;
+	public EEWService(final GatewayDiscordClient gateway, final Map<Long, Channel> map) {
+		this.gateway = gateway;
 		this.channels = map;
 	}
 
@@ -31,8 +31,8 @@ public class EEWService {
 	public Mono<Void> sendMessage(final Predicate<Channel> filter, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
 		return Mono.whenDelayError(this.channels.entrySet().stream()
 				.filter(entry -> filter.test(entry.getValue()))
-				.map(entry -> this.client.getChannelById(Snowflake.of(entry.getKey()))
-						.filter(c -> c.getType()==discord4j.core.object.entity.Channel.Type.GUILD_TEXT)
+				.map(entry -> this.gateway.getChannelById(Snowflake.of(entry.getKey()))
+						.filter(c -> c.getType()==discord4j.core.object.entity.channel.Channel.Type.GUILD_TEXT)
 						.cast(TextChannel.class)
 						.flatMap(tc -> tc.createMessage(spec.apply(entry.getValue().lang))))
 				.collect(Collectors.toList())).subscribeOn(Schedulers.parallel());
