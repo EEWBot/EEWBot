@@ -17,7 +17,7 @@ public class SetLangCommand extends ReactionCommand {
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
 		setAuthor(event.getMessage());
 		return event.getMessage().getChannel()
-				.filterWhen(channel -> Mono.justOrEmpty(event.getMessage().getContent().map(msg -> msg.split(" ")))
+				.filterWhen(channel -> Mono.justOrEmpty(event.getMessage().getContent().split(" "))
 						.filterWhen(array -> Mono.just(array.length>=3)
 								.filter(b -> b)
 								.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)

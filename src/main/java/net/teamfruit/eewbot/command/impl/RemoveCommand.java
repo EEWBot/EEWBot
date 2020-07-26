@@ -17,7 +17,7 @@ public class RemoveCommand implements ICommand {
 								.setTitle("eewbot.cmd.remove.title")
 								.setDescription("eewbot.cmd.err.channelnotregistered.desc"))
 								.map(m -> false)))
-				.filterWhen(channel -> Mono.justOrEmpty(event.getMessage().getContent().map(msg -> msg.split(" ")))
+				.filterWhen(channel -> Mono.justOrEmpty(event.getMessage().getContent().split(" "))
 						.filterWhen(array -> Mono.just(array.length>=3)
 								.filter(b -> b)
 								.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)
