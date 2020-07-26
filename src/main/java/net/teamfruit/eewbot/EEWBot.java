@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -74,14 +73,13 @@ public class EEWBot {
 			.setConnectionManager(this.manager)
 			.build();
 
-	private DiscordClient client;
 	private GatewayDiscordClient gateway;
 	private EEWService service;
 	private EEWExecutor executor;
 	private CommandHandler command;
 
 	private String userName;
-	private Optional<String> avatarUrl;
+	private String avatarUrl;
 
 	public void initialize() throws IOException {
 		this.config.init();
@@ -105,8 +103,7 @@ public class EEWBot {
 
 		this.executor.init();
 
-		this.client = DiscordClient.create(getConfig().getToken());
-		this.gateway = this.client.login().block();
+		this.gateway = DiscordClient.create(getConfig().getToken()).login().block();
 
 		this.gateway.on(ReadyEvent.class)
 				.subscribe(event -> Log.logger.info("Connecting {} guilds...", event.getGuilds().size()));
@@ -118,9 +115,9 @@ public class EEWBot {
 						.take(size)
 						.collectList())
 				.subscribe(events -> {
-					this.client.getSelf().subscribe(user -> {
-						this.userName = user.username();
-						this.avatarUrl = user.avatar();
+					this.gateway.getSelf().subscribe(user -> {
+						this.userName = user.getUsername();
+						this.avatarUrl = user.getAvatarUrl();
 					});
 
 					this.gateway.updatePresence(Presence.online(Activity.playing("!eew help"))).subscribe();
@@ -203,11 +200,7 @@ public class EEWBot {
 		return this.http;
 	}
 
-	public DiscordClient getClient() {
-		return this.client;
-	}
-
-	public GatewayDiscordClient getGateway() {
+	public GatewayDiscordClient getClient() {
 		return this.gateway;
 	}
 
@@ -227,7 +220,7 @@ public class EEWBot {
 		return this.userName;
 	}
 
-	public Optional<String> getAvatarUrl() {
+	public String getAvatarUrl() {
 		return this.avatarUrl;
 	}
 
