@@ -37,14 +37,14 @@ public class CommandUtils {
 	public static I18nEmbedCreateSpecWrapper createEmbed(final EmbedCreateSpec spec, final String lang) {
 		return new I18nEmbedCreateSpecWrapper(lang, spec)
 				.setColor(Color.of(7506394))
-				.setAuthor(EEWBot.instance.getUsername(), "https://github.com/Team-Fruit/EEWBot", EEWBot.instance.getAvatarUrl())
+				.setAuthor(EEWBot.instance.getUsername(), "https://github.com/Team-Fruit/EEWBot", EEWBot.instance.getAvatarUrl().orElse(null))
 				.setFooter("Team-Fruit/EEWBot", "http://i.imgur.com/gFHBoZA.png");
 	}
 
 	public static I18nEmbedCreateSpecWrapper createErrorEmbed(final EmbedCreateSpec spec, final String lang) {
 		return new I18nEmbedCreateSpecWrapper(lang, spec)
 				.setColor(Color.of(255, 64, 64))
-				.setAuthor(EEWBot.instance.getUsername(), "https://github.com/Team-Fruit/EEWBot", EEWBot.instance.getAvatarUrl())
+				.setAuthor(EEWBot.instance.getUsername(), "https://github.com/Team-Fruit/EEWBot", EEWBot.instance.getAvatarUrl().orElse(null))
 				.setFooter("Team-Fruit/EEWBot", "http://i.imgur.com/gFHBoZA.png");
 	}
 }
