@@ -97,12 +97,6 @@ public class EEWBot {
 			return;
 		}
 
-		this.service = new EEWService(this.gateway, getChannels());
-		this.executor = new EEWExecutor(this.service, getConfig());
-		this.command = new CommandHandler(this);
-
-		this.executor.init();
-
 		this.gateway = DiscordClient.create(getConfig().getToken()).login().block();
 
 		this.gateway.on(ReadyEvent.class)
@@ -135,6 +129,12 @@ public class EEWBot {
 				}))
 				.doOnError(err -> Log.logger.error("guilds.jsonのセーブに失敗しました", err))
 				.subscribe();
+
+		this.service = new EEWService(this.gateway, getChannels());
+		this.executor = new EEWExecutor(this.service, getConfig());
+		this.command = new CommandHandler(this);
+
+		this.executor.init();
 
 		this.gateway.onDisconnect().block();
 	}
