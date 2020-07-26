@@ -56,7 +56,7 @@ public class CommandHandler {
 		this.bot = bot;
 		this.reactionWaitingList = new ReactionWaitingList(bot.getExecutor().getExecutor());
 
-		this.bot.getClient().getEventDispatcher().on(MessageCreateEvent.class)
+		this.bot.getGateway().on(MessageCreateEvent.class)
 				.flatMap(event -> Mono.justOrEmpty(event.getMessage().getContent())
 						.filter(str -> str.startsWith("!eew"))
 						.map(str -> str.split(" "))
@@ -94,8 +94,8 @@ public class CommandHandler {
 						.onErrorResume(e -> Mono.empty()))
 				.subscribe();
 
-		this.bot.getClient().getEventDispatcher().on(ReactionAddEvent.class)
-				.filter(event -> !event.getUserId().equals(bot.getClient().getSelfId().orElse(null)))
+		this.bot.getGateway().on(ReactionAddEvent.class)
+				.filter(event -> !event.getUserId().equals(bot.getGateway().getSelfId()))
 				.flatMap(event -> Mono.justOrEmpty(this.reactionWaitingList.get(event.getMessageId()))
 						.filter(cmd -> event.getUserId().equals(cmd.getAuthor()))
 						.filterWhen(cmd -> cmd.onReaction(bot, event, getLanguage(bot, event)))
