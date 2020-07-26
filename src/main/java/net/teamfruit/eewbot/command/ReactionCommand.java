@@ -1,10 +1,10 @@
 package net.teamfruit.eewbot.command;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.reaction.ReactionEmoji;
-import discord4j.core.object.util.Snowflake;
 import net.teamfruit.eewbot.EEWBot;
 import reactor.core.publisher.Mono;
 

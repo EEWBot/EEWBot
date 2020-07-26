@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import discord4j.core.object.util.Snowflake;
+import discord4j.common.util.Snowflake;
 
 public class ReactionWaitingList implements Runnable {
 
