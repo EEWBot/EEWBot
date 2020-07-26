@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -25,7 +26,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import discord4j.core.DiscordClient;
-import discord4j.core.DiscordClientBuilder;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.object.presence.Activity;
@@ -74,12 +75,13 @@ public class EEWBot {
 			.build();
 
 	private DiscordClient client;
+	private GatewayDiscordClient gateway;
 	private EEWService service;
 	private EEWExecutor executor;
 	private CommandHandler command;
 
 	private String userName;
-	private String avatarUrl;
+	private Optional<String> avatarUrl;
 
 	public void initialize() throws IOException {
 		this.config.init();
@@ -97,35 +99,36 @@ public class EEWBot {
 			return;
 		}
 
-		this.client = DiscordClientBuilder.create(getConfig().getToken()).build();
-
-		this.client.getEventDispatcher().on(ReadyEvent.class)
-				.subscribe(event -> Log.logger.info("Connecting {} guilds...", event.getGuilds().size()));
-
 		this.service = new EEWService(this.client, getChannels());
 		this.executor = new EEWExecutor(this.service, getConfig());
 		this.command = new CommandHandler(this);
 
 		this.executor.init();
 
-		this.client.getEventDispatcher().on(ReadyEvent.class)
+		this.client = DiscordClient.create(getConfig().getToken());
+		this.gateway = this.client.login().block();
+
+		this.gateway.on(ReadyEvent.class)
+				.subscribe(event -> Log.logger.info("Connecting {} guilds...", event.getGuilds().size()));
+
+		this.gateway.on(ReadyEvent.class)
 				.map(event -> event.getGuilds().size())
-				.flatMap(size -> this.client.getEventDispatcher()
+				.flatMap(size -> this.gateway
 						.on(GuildCreateEvent.class)
 						.take(size)
 						.collectList())
 				.subscribe(events -> {
 					this.client.getSelf().subscribe(user -> {
-						this.userName = user.getUsername();
-						this.avatarUrl = user.getAvatarUrl();
+						this.userName = user.username();
+						this.avatarUrl = user.avatar();
 					});
 
-					this.client.updatePresence(Presence.online(Activity.playing("!eew help"))).subscribe();
+					this.gateway.updatePresence(Presence.online(Activity.playing("!eew help"))).subscribe();
 
 					Log.logger.info("Connected!");
 				});
 
-		this.client.getEventDispatcher().on(GuildCreateEvent.class)
+		this.gateway.on(GuildCreateEvent.class)
 				.map(e -> e.getGuild().getId().asLong())
 				.filter(l -> !getGuilds().containsKey(l))
 				.flatMap(l -> Mono.fromCallable(() -> {
@@ -136,7 +139,7 @@ public class EEWBot {
 				.doOnError(err -> Log.logger.error("guilds.jsonのセーブに失敗しました", err))
 				.subscribe();
 
-		this.client.login().block();
+		this.gateway.onDisconnect().block();
 	}
 
 	@SuppressWarnings("deprecation")
@@ -204,6 +207,10 @@ public class EEWBot {
 		return this.client;
 	}
 
+	public GatewayDiscordClient getGateway() {
+		return this.gateway;
+	}
+
 	public EEWService getService() {
 		return this.service;
 	}
@@ -220,7 +227,7 @@ public class EEWBot {
 		return this.userName;
 	}
 
-	public String getAvatarUrl() {
+	public Optional<String> getAvatarUrl() {
 		return this.avatarUrl;
 	}
 
