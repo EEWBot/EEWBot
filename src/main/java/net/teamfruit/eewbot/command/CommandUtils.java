@@ -1,12 +1,12 @@
 package net.teamfruit.eewbot.command;
 
-import java.awt.Color;
 import java.util.Optional;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
-import discord4j.core.object.util.Snowflake;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpecWrapper;
 import net.teamfruit.eewbot.registry.Permission;
@@ -36,14 +36,14 @@ public class CommandUtils {
 
 	public static I18nEmbedCreateSpecWrapper createEmbed(final EmbedCreateSpec spec, final String lang) {
 		return new I18nEmbedCreateSpecWrapper(lang, spec)
-				.setColor(new Color(7506394))
+				.setColor(Color.of(7506394))
 				.setAuthor(EEWBot.instance.getUsername(), "https://github.com/Team-Fruit/EEWBot", EEWBot.instance.getAvatarUrl())
 				.setFooter("Team-Fruit/EEWBot", "http://i.imgur.com/gFHBoZA.png");
 	}
 
 	public static I18nEmbedCreateSpecWrapper createErrorEmbed(final EmbedCreateSpec spec, final String lang) {
 		return new I18nEmbedCreateSpecWrapper(lang, spec)
-				.setColor(new Color(255, 64, 64))
+				.setColor(Color.of(255, 64, 64))
 				.setAuthor(EEWBot.instance.getUsername(), "https://github.com/Team-Fruit/EEWBot", EEWBot.instance.getAvatarUrl())
 				.setFooter("Team-Fruit/EEWBot", "http://i.imgur.com/gFHBoZA.png");
 	}

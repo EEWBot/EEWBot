@@ -1,9 +1,9 @@
 package net.teamfruit.eewbot.i18n;
 
-import java.awt.Color;
 import java.time.Instant;
 
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.rest.util.Color;
 
 public class I18nEmbedCreateSpecWrapper {
 

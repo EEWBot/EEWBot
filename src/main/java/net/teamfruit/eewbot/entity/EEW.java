@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot.entity;
 
-import java.awt.Color;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -10,6 +9,7 @@ import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
 
 import discord4j.core.spec.MessageCreateSpec;
+import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpecWrapper;
 
 public class EEW implements Entity {
@@ -203,7 +203,7 @@ public class EEW implements Entity {
 					.setTitle("eewbot.eew.eewcancel")
 					.setTimestamp(getReportTime())
 					.setDescription("eewbot.eew.cancel")
-					.setColor(new Color(255, 255, 0))
+					.setColor(discord4j.rest.util.Color.YELLOW)
 					.setFooter("eewbot.eew.newkyoshinmonitor", null));
 		return msg -> msg.setEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
 				.setTitle(isAlert() ? isFinal() ? "eewbot.eew.eewalert.final" : "eewbot.eew.eewalert.num" : isFinal() ? "eewbot.eew.eewprediction.final" : "eewbot.eew.eewprediction.num", getReportNum())
@@ -212,7 +212,7 @@ public class EEW implements Entity {
 				.addField("eewbot.eew.depth", "eewbot.eew.km", true, getDepth())
 				.addField("eewbot.eew.magnitude", String.valueOf(getMagnitude()), true)
 				.addField("eewbot.eew.seismicintensity", getIntensity().map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"), false)
-				.setColor(isAlert() ? new Color(255, 0, 0) : new Color(0, 0, 255))
+				.setColor(isAlert() ? Color.RED : Color.BLUE)
 				.setFooter("eewbot.eew.newkyoshinmonitor", null));
 	}
 }
