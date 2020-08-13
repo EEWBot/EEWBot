@@ -15,5 +15,5 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: docker.pkg.github.com
-          repository: Team-Fruit/EEWBot/eewbot
+          repository: team-fruit/eewbot/eewbot
           tag_with_ref: true
