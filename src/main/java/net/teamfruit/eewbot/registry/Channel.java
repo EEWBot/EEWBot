@@ -15,7 +15,7 @@ public class Channel {
 	public boolean eewPrediction = true;
 
 	@CommandName("EEW間引き")
-	public boolean eewDecimation = false;
+	public boolean eewDecimation = true;
 
 	@CommandName("地震情報")
 	public boolean quakeInfo = true;
