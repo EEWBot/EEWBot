@@ -85,7 +85,9 @@ public class EEWExecutor {
 
 			@Override
 			public void onNewData(final DetailQuakeInfo data) {
-				EEWExecutor.this.service.sendMessage(c -> c.quakeInfo, lang -> data.createMessage(lang)).subscribe();
+				final Predicate<Channel> quakeInfo = c -> c.quakeInfo;
+				final Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(data.getEarthquake().getIntensity())<=0;
+				EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), lang -> data.createMessage(lang)).subscribe();
 			}
 		}, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
 	}
