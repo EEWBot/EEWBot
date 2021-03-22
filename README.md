@@ -18,6 +18,7 @@ Earthquake Early Warning(EEW) Discord Bot for Japan
 [招待リンク](https://discord.gg/wATGHHY)
 
 ## セットアップ
+とりあえず導入したいよ！という方は[こちらから招待](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
 ### Token生成
 すでに存在している場合は必要ありません。
 1. [Discord Developers](https://discordapp.com/developers/applications/me) にアクセス
