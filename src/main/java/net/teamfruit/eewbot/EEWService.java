@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -19,10 +20,12 @@ public class EEWService {
 
 	private final GatewayDiscordClient gateway;
 	private final Map<Long, Channel> channels;
+	private final Optional<TextChannel> systemChannel;
 
-	public EEWService(final GatewayDiscordClient gateway, final Map<Long, Channel> map) {
+	public EEWService(final GatewayDiscordClient gateway, final Map<Long, Channel> map, final Optional<TextChannel> systemChannel) {
 		this.gateway = gateway;
 		this.channels = map;
+		this.systemChannel = systemChannel;
 	}
 
 	public Mono<Void> sendMessage(final String key, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
@@ -49,4 +52,15 @@ public class EEWService {
 				.collect(Collectors.toList())).subscribeOn(Schedulers.parallel());
 	}
 
+	public Mono<Void> sendAttachment(final String key, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
+		return sendAttachment(channel -> channel.value(key), spec);
+	}
+
+	public Mono<Void> sendAttachment(final Predicate<Channel> filter, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
+		if (!this.systemChannel.isPresent())
+			return sendMessage(filter, spec);
+		return this.systemChannel.get().createMessage(spec.apply(null))
+				.map(msg -> msg.getAttachments().iterator().next().getUrl())
+				.flatMap(url -> sendMessage(filter, lang -> msg -> msg.setContent(url)));
+	}
 }

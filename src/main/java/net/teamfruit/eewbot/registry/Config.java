@@ -7,6 +7,7 @@ public class Config {
 	private String nptServer = "time.google.com";
 	private String defaultLanuage = "ja_jp";
 	private boolean enablePermission = true;
+	private String systemChannel = "";
 	private boolean debug = false;
 
 	public Config() {
@@ -58,6 +59,14 @@ public class Config {
 
 	public void setEnablePermission(final boolean enablePermission) {
 		this.enablePermission = enablePermission;
+	}
+
+	public String getSystemChannel() {
+		return this.systemChannel;
+	}
+
+	public void setSystemChannel(final String systemChannel) {
+		this.systemChannel = systemChannel;
 	}
 
 	public boolean isDebug() {

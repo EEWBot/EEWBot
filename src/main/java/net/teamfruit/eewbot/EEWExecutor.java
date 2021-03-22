@@ -74,7 +74,7 @@ public class EEWExecutor {
 
 						@Override
 						public void onNewData(final Monitor data) {
-							EEWExecutor.this.service.sendMessage(c -> c.monitor&&(eew.isAlert()&&c.eewAlert||!eew.isAlert()&&c.eewPrediction),
+							EEWExecutor.this.service.sendAttachment(c -> c.monitor&&(eew.isAlert()&&c.eewAlert||!eew.isAlert()&&c.eewPrediction),
 									lang -> data.createMessage(lang)).subscribe();
 						}
 					});
