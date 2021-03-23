@@ -90,16 +90,6 @@ public class EEWExecutor {
 				EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), lang -> data.createMessage(lang));
 			}
 		}, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
-
-		EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider) {
-
-			@Override
-			public void onNewData(final Monitor data) {
-				EEWExecutor.this.service.sendAttachment(c -> c.monitor,
-						lang -> data.createMessage(lang));
-			}
-		});
-
 	}
 
 }
