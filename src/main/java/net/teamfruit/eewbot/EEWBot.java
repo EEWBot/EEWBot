@@ -31,6 +31,7 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.object.Region;
+import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
@@ -105,57 +106,6 @@ public class EEWBot {
 
 		this.gateway = DiscordClient.create(getConfig().getToken()).login().block();
 
-		this.gateway.on(ReadyEvent.class)
-				.subscribe(event -> Log.logger.info("Connecting {} guilds...", event.getGuilds().size()));
-
-		this.gateway.on(ReadyEvent.class)
-				.map(event -> event.getGuilds().size())
-				.flatMap(size -> this.gateway
-						.on(GuildCreateEvent.class)
-						.take(size)
-						.collectList())
-				.subscribe(events -> {
-					this.gateway.getSelf().subscribe(user -> {
-						this.userName = user.getUsername();
-						this.avatarUrl = user.getAvatarUrl();
-
-						final Optional<discord4j.core.object.entity.Guild> guild = events.stream().map(GuildCreateEvent::getGuild)
-								.filter(g -> g.getOwnerId().equals(user.getId()))
-								.findFirst();
-						if (!guild.isPresent()) {
-							if (StringUtils.isNotEmpty(getConfig().getSystemChannel()))
-								this.gateway.getChannelById(Snowflake.of(getConfig().getSystemChannel()))
-										.cast(TextChannel.class)
-										.doOnError(err -> {
-											Log.logger.error("SystemChannelを正常に取得出来ませんでした: "+getConfig().getSystemChannel());
-											this.systemChannel = Optional.empty();
-										})
-										.subscribe(c -> this.systemChannel = Optional.of(c));
-							else if (events.size()<10) {
-								final Region region = new Region(this.gateway, RegionData.builder().id("japan").name("Japan").vip(false).optimal(true).deprecated(false).custom(false).build());
-								this.gateway.createGuild(spec -> spec.setName("EEWBot System").setRegion(region).addChannel("monitor", discord4j.core.object.entity.channel.Channel.Type.GUILD_TEXT))
-										.flatMap(g -> g.getChannels()
-												.filter(c -> c.getName().equals("monitor"))
-												.last()
-												.cast(TextChannel.class))
-										.subscribe(c -> this.systemChannel = Optional.of(c));
-							} else
-								this.systemChannel = Optional.empty();
-						} else
-							guild.get().getChannels()
-									.filter(c -> c.getName().equals("monitor"))
-									.last()
-									.cast(TextChannel.class)
-									.subscribe(c -> this.systemChannel = Optional.of(c));
-
-						this.systemChannel.ifPresent(channel -> Log.logger.info("System Channel: "+channel.getId().asString()));
-					});
-
-					this.gateway.updatePresence(Presence.online(Activity.playing("!eew help"))).subscribe();
-
-					Log.logger.info("Connected!");
-				});
-
 		this.gateway.on(GuildCreateEvent.class)
 				.map(e -> e.getGuild().getId().asLong())
 				.filter(l -> !getGuilds().containsKey(l))
@@ -166,6 +116,58 @@ public class EEWBot {
 				}))
 				.doOnError(err -> Log.logger.error("guilds.jsonのセーブに失敗しました", err))
 				.subscribe();
+
+		final List<GuildCreateEvent> events = this.gateway.on(ReadyEvent.class)
+				.map(event -> {
+					Log.logger.info("Connecting {} guilds...", event.getGuilds().size());
+					return event.getGuilds().size();
+				})
+				.flatMap(size -> this.gateway
+						.on(GuildCreateEvent.class)
+						.take(size)
+						.collectList())
+				.blockFirst();
+
+		Log.logger.info("Connected to {} guilds!", events.size());
+
+		final User self = this.gateway.getSelf().block();
+		this.userName = self.getUsername();
+		this.avatarUrl = self.getAvatarUrl();
+
+		Log.logger.info("BotUser: {}", this.userName);
+
+		final Optional<discord4j.core.object.entity.Guild> guild = events.stream().map(GuildCreateEvent::getGuild)
+				.filter(g -> g.getOwnerId().equals(self.getId()))
+				.findFirst();
+		if (!guild.isPresent()) {
+			if (StringUtils.isNotEmpty(getConfig().getSystemChannel()))
+				this.systemChannel = Optional.of(this.gateway.getChannelById(Snowflake.of(getConfig().getSystemChannel()))
+						.cast(TextChannel.class)
+						.doOnError(err -> {
+							Log.logger.error("SystemChannelを正常に取得出来ませんでした: "+getConfig().getSystemChannel());
+							this.systemChannel = Optional.empty();
+						})
+						.block());
+			else if (events.size()<10) {
+				final Region region = new Region(this.gateway, RegionData.builder().id("japan").name("Japan").vip(false).optimal(true).deprecated(false).custom(false).build());
+				this.systemChannel = Optional.of(this.gateway.createGuild(spec -> spec.setName("EEWBot System").setRegion(region).addChannel("monitor", discord4j.core.object.entity.channel.Channel.Type.GUILD_TEXT))
+						.flatMap(g -> g.getChannels()
+								.filter(c -> c.getName().equals("monitor"))
+								.last()
+								.cast(TextChannel.class))
+						.block());
+			} else
+				this.systemChannel = Optional.empty();
+		} else
+			this.systemChannel = Optional.of(guild.get().getChannels()
+					.filter(c -> c.getName().equals("monitor"))
+					.last()
+					.cast(TextChannel.class)
+					.block());
+
+		this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: "+channel.getGuildId().asString()+" System Channel: "+channel.getId().asString()));
+
+		this.gateway.updatePresence(Presence.online(Activity.playing("!eew help"))).subscribe();
 
 		this.service = new EEWService(this.gateway, getChannels(), this.systemChannel);
 		this.executor = new EEWExecutor(this.service, getConfig());
