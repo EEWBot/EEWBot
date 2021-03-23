@@ -7,12 +7,13 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import net.teamfruit.eewbot.registry.Channel;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -28,39 +29,45 @@ public class EEWService {
 		this.systemChannel = systemChannel;
 	}
 
-	public Mono<Void> sendMessage(final String key, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
-		return sendMessage(channel -> channel.value(key), spec);
+	public void sendMessage(final String key, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
+		sendMessage(channel -> channel.value(key), spec);
 	}
 
-	public Mono<Void> sendMessage(final Predicate<Channel> filter, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
-		return Mono.whenDelayError(this.channels.entrySet().stream()
+	public void sendMessage(final Predicate<Channel> filter, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
+		Flux.merge(this.channels.entrySet().stream()
 				.filter(entry -> filter.test(entry.getValue()))
-				.map(entry -> this.gateway.getChannelById(Snowflake.of(entry.getKey()))
-						.filter(c -> c.getType()==discord4j.core.object.entity.channel.Channel.Type.GUILD_TEXT)
-						.cast(TextChannel.class)
-						.flatMap(tc -> tc.createMessage(spec.apply(entry.getValue().lang)).onErrorResume(t -> {
-							if (t instanceof ClientException) {
-								final ClientException ce = (ClientException) t;
-								Log.logger.info(String.format("ClientException: GuildID=%s ChannelID=%s ChannelName=%s Message=%s",
-										tc.getGuildId().asString(),
-										tc.getId().asString(),
-										tc.getName(),
-										ce.getErrorResponse().map(r -> r.getFields().getOrDefault("message", "")).orElse("")));
-							}
-							return Mono.empty();
-						})))
-				.collect(Collectors.toList())).subscribeOn(Schedulers.parallel());
+				.map(entry -> directSendMessage(entry.getKey(), spec.apply(entry.getValue().lang)))
+				.collect(Collectors.toList()))
+				.parallel()
+				.runOn(Schedulers.parallel())
+				.groups()
+				.subscribe(g -> g.subscribe(msg -> Log.logger.info(msg.getId().asString())));
 	}
 
-	public Mono<Void> sendAttachment(final String key, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
-		return sendAttachment(channel -> channel.value(key), spec);
+	public void sendAttachment(final String key, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
+		sendAttachment(channel -> channel.value(key), spec);
 	}
 
-	public Mono<Void> sendAttachment(final Predicate<Channel> filter, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
+	public void sendAttachment(final Predicate<Channel> filter, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
 		if (!this.systemChannel.isPresent())
-			return sendMessage(filter, spec);
-		return this.systemChannel.get().createMessage(spec.apply(null))
+			sendMessage(filter, spec);
+		directSendMessage(this.systemChannel.get().getId().asLong(), spec.apply(null))
 				.map(msg -> msg.getAttachments().iterator().next().getUrl())
-				.flatMap(url -> sendMessage(filter, lang -> msg -> msg.setContent(url)));
+				.subscribe(url -> sendMessage(filter, lang -> msg -> msg.setContent(url)));
+	}
+
+	private Mono<Message> directSendMessage(final long channelId, final Consumer<? super MessageCreateSpec> spec) {
+		return Mono.defer(() -> {
+			final MessageCreateSpec mutatedSpec = new MessageCreateSpec();
+			this.gateway.getRestClient().getRestResources()
+					.getAllowedMentions()
+					.ifPresent(mutatedSpec::setAllowedMentions);
+			spec.accept(mutatedSpec);
+			return this.gateway.getRestClient().getChannelService()
+					.createMessage(channelId, mutatedSpec.asRequest());
+		})
+				.map(data -> new Message(this.gateway, data))
+				.doOnError(ClientException.class, err -> Log.logger.error("Failed to send message: ChannelID={} Message={}", channelId, err.getMessage()))
+				.onErrorResume(e -> Mono.empty());
 	}
 }

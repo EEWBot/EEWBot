@@ -67,7 +67,7 @@ public class EEWExecutor {
 						return true;
 					return false;
 				};
-				EEWExecutor.this.service.sendMessage(isAlert.and(decimation).and(sensitivity), lang -> eew.createMessage(lang)).subscribe();
+				EEWExecutor.this.service.sendMessage(isAlert.and(decimation).and(sensitivity), lang -> eew.createMessage(lang));
 
 				if (eew.isInitial()||eew.isFinal())
 					EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider, eew) {
@@ -75,7 +75,7 @@ public class EEWExecutor {
 						@Override
 						public void onNewData(final Monitor data) {
 							EEWExecutor.this.service.sendAttachment(c -> c.monitor&&(eew.isAlert()&&c.eewAlert||!eew.isAlert()&&c.eewPrediction),
-									lang -> data.createMessage(lang)).subscribe();
+									lang -> data.createMessage(lang));
 						}
 					});
 			}
@@ -87,9 +87,19 @@ public class EEWExecutor {
 			public void onNewData(final DetailQuakeInfo data) {
 				final Predicate<Channel> quakeInfo = c -> c.quakeInfo;
 				final Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(data.getEarthquake().getIntensity())<=0;
-				EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), lang -> data.createMessage(lang)).subscribe();
+				EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), lang -> data.createMessage(lang));
 			}
 		}, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
+
+		EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider) {
+
+			@Override
+			public void onNewData(final Monitor data) {
+				EEWExecutor.this.service.sendAttachment(c -> c.monitor,
+						lang -> data.createMessage(lang));
+			}
+		});
+
 	}
 
 }
