@@ -94,11 +94,6 @@ public class EEWExecutor {
 				EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), lang -> data.createMessage(lang));
 			}
 		}, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
-
-		this.executor.scheduleAtFixedRate(() -> {
-			// TODO 自動生成されたメソッド・スタブ
-
-		}, 180, 180, TimeUnit.SECONDS);
 	}
 
 }
