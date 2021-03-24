@@ -181,9 +181,7 @@ public class EEWBot {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			Log.logger.info("Shutdown");
 			try {
-				getChannelsLock().writeLock().lock();
 				getChannelRegistry().save();
-				getChannelsLock().writeLock().unlock();
 			} catch (final IOException e) {
 				Log.logger.error("Save failed", e);
 			}

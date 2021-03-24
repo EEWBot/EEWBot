@@ -24,7 +24,9 @@ public class RegisterCommand extends ReactionCommand {
 								.setDescription("eewbot.cmd.err.channelalreadyregistered.desc"))
 								.map(m -> false)))
 				.flatMap(channel -> Mono.fromCallable(() -> {
+					bot.getChannelsLock().writeLock().lock();
 					bot.getChannels().put(channel.getId().asLong(), new Channel());
+					bot.getChannelsLock().writeLock().unlock();
 					bot.getChannelRegistry().save();
 					return channel;
 				}))
