@@ -41,7 +41,7 @@ public class EEWService {
 				.parallel()
 				.runOn(Schedulers.parallel())
 				.groups()
-				.subscribe(g -> g.subscribe(msg -> Log.logger.info(msg.getId().asString())));
+				.subscribe(g -> g.subscribe());
 	}
 
 	public void sendAttachment(final String key, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
