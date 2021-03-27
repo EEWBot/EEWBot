@@ -78,7 +78,7 @@ public class EEWService {
 					if (err.getStatus()==HttpResponseStatus.NOT_FOUND) {
 						this.lock.writeLock().lock();
 						if (this.channels.remove(channelId)!=null)
-							Log.logger.info("Channel {} has been deleted, unregister");
+							Log.logger.info("Channel {} has been deleted, unregister", channelId);
 						this.lock.writeLock().unlock();
 					}
 				})
