@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot;
 
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +14,7 @@ import net.teamfruit.eewbot.gateway.MonitorGateway;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
+import net.teamfruit.eewbot.registry.ConfigurationRegistry;
 
 public class EEWExecutor {
 
@@ -20,10 +22,12 @@ public class EEWExecutor {
 	private final TimeProvider provider;
 	private final EEWService service;
 	private final Config config;
+	private final ConfigurationRegistry<Map<Long, Channel>> channelRegistry;
 
-	public EEWExecutor(final EEWService service, final Config config) {
+	public EEWExecutor(final EEWService service, final Config config, final ConfigurationRegistry<Map<Long, Channel>> configurationRegistry) {
 		this.service = service;
 		this.config = config;
+		this.channelRegistry = configurationRegistry;
 
 		this.executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-communication-thread"));
 		this.provider = new TimeProvider(this.executor);

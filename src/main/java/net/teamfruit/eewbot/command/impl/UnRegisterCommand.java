@@ -18,7 +18,9 @@ public class UnRegisterCommand implements ICommand {
 								.setDescription("eewbot.cmd.err.channelnotregistered.desc"))
 								.map(m -> false)))
 				.flatMap(channel -> Mono.fromCallable(() -> {
+					bot.getChannelsLock().writeLock().lock();
 					bot.getChannels().remove(channel.getId().asLong());
+					bot.getChannelsLock().writeLock().unlock();
 					bot.getChannelRegistry().save();
 					return channel;
 				}))

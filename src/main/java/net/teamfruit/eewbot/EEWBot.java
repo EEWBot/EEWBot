@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -68,6 +69,8 @@ public class EEWBot {
 	}.getType());
 	private final ConfigurationRegistry<Map<Long, Guild>> guilds = new ConfigurationRegistry<>(DATA_DIRECTORY!=null ? Paths.get(DATA_DIRECTORY, "guilds.json") : Paths.get("guilds.json"), () -> new ConcurrentHashMap<Long, Guild>(), new TypeToken<Map<Long, Guild>>() {
 	}.getType());
+
+	private final ReentrantReadWriteLock channelsLock = new ReentrantReadWriteLock();
 
 	private final RequestConfig reqest = RequestConfig.custom()
 			.setConnectTimeout(1000*10)
@@ -169,11 +172,20 @@ public class EEWBot {
 
 		this.gateway.updatePresence(Presence.online(Activity.playing("!eew help"))).subscribe();
 
-		this.service = new EEWService(this.gateway, getChannels(), this.systemChannel);
-		this.executor = new EEWExecutor(this.service, getConfig());
+		this.service = new EEWService(getClient(), getChannels(), getChannelsLock(), getSystemChannel());
+		this.executor = new EEWExecutor(getService(), getConfig(), getChannelRegistry());
 		this.command = new CommandHandler(this);
 
 		this.executor.init();
+
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			Log.logger.info("Shutdown");
+			try {
+				getChannelRegistry().save();
+			} catch (final IOException e) {
+				Log.logger.error("Save failed", e);
+			}
+		}));
 
 		this.gateway.onDisconnect().block();
 	}
@@ -209,6 +221,10 @@ public class EEWBot {
 
 	public Map<Long, Channel> getChannels() {
 		return this.channels.getElement();
+	}
+
+	public ReentrantReadWriteLock getChannelsLock() {
+		return this.channelsLock;
 	}
 
 	public Map<String, Permission> getPermissions() {
