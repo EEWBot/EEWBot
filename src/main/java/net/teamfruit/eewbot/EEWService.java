@@ -75,10 +75,10 @@ public class EEWService {
 				.map(data -> new Message(this.gateway, data))
 				.doOnError(ClientException.class, err -> {
 					Log.logger.error("Failed to send message: ChannelID={} Message={}", channelId, err.getMessage());
-					if (err.getStatus()==HttpResponseStatus.NOT_FOUND) {
+					if (err.getStatus()==HttpResponseStatus.NOT_FOUND||err.getStatus()==HttpResponseStatus.FORBIDDEN) {
 						this.lock.writeLock().lock();
 						if (this.channels.remove(channelId)!=null)
-							Log.logger.info("Channel {} has been deleted, unregister", channelId);
+							Log.logger.info(err.getStatus()==HttpResponseStatus.NOT_FOUND ? "Channel {} has been deleted, unregister" : "Missing permissions {}", channelId);
 						this.lock.writeLock().unlock();
 					}
 				})
