@@ -30,7 +30,7 @@ public class Channel {
 	public Channel() {
 	}
 
-	public Channel(final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final boolean quakeInfoDetail, final boolean monitor, final SeismicIntensity minIntensity) {
+	public Channel(final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final boolean monitor, final SeismicIntensity minIntensity) {
 		this.eewAlert = eewAlert;
 		this.eewPrediction = eewPrediction;
 		this.eewDecimation = eewDecimation;
@@ -95,7 +95,6 @@ public class Channel {
 				old.eewPrediction.get(),
 				old.eewDecimation.get(),
 				old.quakeInfo.get(),
-				old.quakeInfoDetail.get(),
 				old.monitor.get(),
 				SeismicIntensity.ONE);
 	}
