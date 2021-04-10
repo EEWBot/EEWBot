@@ -76,9 +76,11 @@ public class EEWExecutor {
 				if (eew.isInitial()||eew.isFinal())
 					EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider, eew) {
 
+						Predicate<Channel> monitor = c -> c.monitor&&(eew.isAlert()&&c.eewAlert||!eew.isAlert()&&c.eewPrediction);
+
 						@Override
 						public void onNewData(final Monitor data) {
-							EEWExecutor.this.service.sendAttachment(c -> c.monitor&&(eew.isAlert()&&c.eewAlert||!eew.isAlert()&&c.eewPrediction),
+							EEWExecutor.this.service.sendAttachment(this.monitor.and(sensitivity),
 									lang -> data.createMessage(lang));
 						}
 					});
