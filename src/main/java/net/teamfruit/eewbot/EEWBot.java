@@ -44,6 +44,7 @@ import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
 import net.teamfruit.eewbot.registry.Guild;
 import net.teamfruit.eewbot.registry.Permission;
+import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import reactor.core.publisher.Mono;
 
 public class EEWBot {
@@ -86,6 +87,7 @@ public class EEWBot {
 	private EEWService service;
 	private EEWExecutor executor;
 	private CommandHandler command;
+	private SlashCommandHandler slashCommand;
 
 	private String userName;
 	private String avatarUrl;
@@ -175,6 +177,7 @@ public class EEWBot {
 		this.service = new EEWService(getClient(), getChannels(), getChannelsLock(), getSystemChannel());
 		this.executor = new EEWExecutor(getService(), getConfig(), getChannelRegistry());
 		this.command = new CommandHandler(this);
+		this.slashCommand = new SlashCommandHandler(this);
 
 		this.executor.init();
 
@@ -269,6 +272,10 @@ public class EEWBot {
 
 	public CommandHandler getCommandHandler() {
 		return this.command;
+	}
+
+	public SlashCommandHandler getSlashCommandHandler() {
+		return this.slashCommand;
 	}
 
 	public String getUsername() {
