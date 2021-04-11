@@ -11,6 +11,7 @@ import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.slashcommand.impl.AddSlashCommand;
 import net.teamfruit.eewbot.slashcommand.impl.InviteSlashCommand;
 import net.teamfruit.eewbot.slashcommand.impl.RemoveSlashCommand;
+import reactor.core.publisher.Mono;
 
 public class SlashCommandHandler {
 
@@ -36,12 +37,18 @@ public class SlashCommandHandler {
 
 		bot.getClient().on(InteractionCreateEvent.class)
 				.filter(event -> this.commands.containsKey(event.getCommandName()))
-				.flatMap(event -> event.acknowledge()
-						.then(this.commands.get(event.getCommandName()).execute(bot, event))
-						.doOnError(t -> {
-							Log.logger.error("Error in slashcommands", t);
-							event.getInteractionResponse().createFollowupMessage("Error").subscribe();
-						}))
+				.flatMap(event -> {
+					try {
+						return event.acknowledge()
+								.then(this.commands.get(event.getCommandName()).execute(bot, event))
+								.doOnError(t -> {
+									Log.logger.error("Error in slashcommands", t);
+									event.getInteractionResponse().createFollowupMessage("Error").subscribe();
+								});
+					} catch (final Exception e) {
+						return Mono.error(e);
+					}
+				})
 				.subscribe();
 
 	}

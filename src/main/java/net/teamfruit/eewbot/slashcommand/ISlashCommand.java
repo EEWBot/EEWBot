@@ -9,5 +9,5 @@ public interface ISlashCommand {
 
 	ApplicationCommandRequest command();
 
-	Mono<?> execute(EEWBot bot, InteractionCreateEvent event);
+	Mono<?> execute(EEWBot bot, InteractionCreateEvent event) throws Exception;
 }

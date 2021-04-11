@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.slashcommand.impl;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -45,36 +46,32 @@ public class RemoveSlashCommand implements ISlashCommand {
 	}
 
 	@Override
-	public Mono<?> execute(final EEWBot bot, final InteractionCreateEvent event) {
-		try {
-			if (!event.getInteraction().getGuildId().isPresent())
-				return event.getInteractionResponse().createFollowupMessage("DMチャンネルは利用できません (開発中)");
+	public Mono<?> execute(final EEWBot bot, final InteractionCreateEvent event) throws IOException {
+		if (!event.getInteraction().getGuildId().isPresent())
+			return event.getInteractionResponse().createFollowupMessage("DMチャンネルは利用できません (開発中)");
 
-			final long channelID = event.getInteraction().getChannelId().asLong();
-			final Channel channel = bot.getChannels().get(channelID);
-			if (channel==null)
-				return event.getInteractionResponse().createFollowupMessage("このチャンネルはなにも設定されていません");
+		final long channelID = event.getInteraction().getChannelId().asLong();
+		final Channel channel = bot.getChannels().get(channelID);
+		if (channel==null)
+			return event.getInteractionResponse().createFollowupMessage("このチャンネルはなにも設定されていません");
 
-			final ApplicationCommandInteractionOption option = event.getInteraction().getCommandInteraction().getOptions().get(0);
-			if (option.getValue().get().asString().equals("all")) {
-				bot.getChannelsLock().writeLock().lock();
-				bot.getChannels().remove(channelID);
-				bot.getChannelsLock().writeLock().unlock();
+		final ApplicationCommandInteractionOption option = event.getInteraction().getCommandInteraction().getOptions().get(0);
+		if (option.getValue().get().asString().equals("all")) {
+			bot.getChannelsLock().writeLock().lock();
+			bot.getChannels().remove(channelID);
+			bot.getChannelsLock().writeLock().unlock();
 
-				bot.getChannelRegistry().save();
-				return event.getInteractionResponse().createFollowupMessage("全ての種類の情報を登録解除しました！");
+			bot.getChannelRegistry().save();
+			return event.getInteractionResponse().createFollowupMessage("全ての種類の情報を登録解除しました！");
 
-			} else {
-				if (!channel.value(option.getValue().get().asString()))
-					return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" は登録されていません");
+		} else {
+			if (!channel.value(option.getValue().get().asString()))
+				return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" は登録されていません");
 
-				channel.set(option.getValue().get().asString(), false);
+			channel.set(option.getValue().get().asString(), false);
 
-				bot.getChannelRegistry().save();
-				return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" をこのチャンネルから登録解除しました！");
-			}
-		} catch (final Exception e) {
-			return Mono.error(e);
+			bot.getChannelRegistry().save();
+			return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" をこのチャンネルから登録解除しました！");
 		}
 	}
 }
