@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.slashcommand.impl;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import discord4j.core.event.domain.InteractionCreateEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
@@ -11,25 +12,30 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.ImmutableApplicationCommandOptionData.Builder;
 import discord4j.rest.util.ApplicationCommandOptionType;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import reactor.core.publisher.Mono;
 
-public class RemoveSlashCommand implements ISlashCommand {
+public class SensSlashCommand implements ISlashCommand {
 
 	final Map<String, String> choices = new LinkedHashMap<>();
 
 	@Override
 	public ApplicationCommandRequest command() {
-		this.choices.put("all", "全て");
-		this.choices.put("eewAlert", "緊急地震速報(警報)");
-		this.choices.put("eewPrediction", "緊急地震速報(予報)");
-		this.choices.put("quakeInfo", "地震情報");
-		this.choices.put("monitor", "強震モニタ");
+		this.choices.put("1", "震度1以上");
+		this.choices.put("2", "震度2以上");
+		this.choices.put("3", "震度3以上");
+		this.choices.put("4", "震度4以上");
+		this.choices.put("5弱", "震度5弱以上");
+		this.choices.put("5強", "震度5強以上");
+		this.choices.put("6弱", "震度6弱以上");
+		this.choices.put("6強", "震度6強以上");
+		this.choices.put("7", "震度7");
 
 		final Builder builder = ApplicationCommandOptionData.builder()
-				.name("情報の種類")
-				.description("通知する情報の種類")
+				.name("震度")
+				.description("震度制限")
 				.type(ApplicationCommandOptionType.STRING.getValue())
 				.required(true);
 		this.choices.forEach((value, name) -> builder.addChoice(ApplicationCommandOptionChoiceData.builder()
@@ -38,10 +44,11 @@ public class RemoveSlashCommand implements ISlashCommand {
 				.build()));
 
 		return ApplicationCommandRequest.builder()
-				.name("remove")
-				.description("Botが現在のチャンネルに投稿する情報を解除")
+				.name("sens")
+				.description("Botが投稿する情報を震度で制限")
 				.addOption(builder.build())
 				.build();
+
 	}
 
 	@Override
@@ -55,22 +62,11 @@ public class RemoveSlashCommand implements ISlashCommand {
 			return event.getInteractionResponse().createFollowupMessage("このチャンネルはなにも設定されていません");
 
 		final ApplicationCommandInteractionOption option = event.getInteraction().getCommandInteraction().getOptions().get(0);
-		if (option.getValue().get().asString().equals("all")) {
-			bot.getChannelsLock().writeLock().lock();
-			bot.getChannels().remove(channelID);
-			bot.getChannelsLock().writeLock().unlock();
+		final Optional<SeismicIntensity> intensity = SeismicIntensity.get(option.getValue().get().asString());
+		channel.minIntensity = intensity.get();
+		bot.getChannelRegistry().save();
 
-			bot.getChannelRegistry().save();
-			return event.getInteractionResponse().createFollowupMessage("全ての種類の情報を登録解除しました！");
-
-		} else {
-			if (!channel.value(option.getValue().get().asString()))
-				return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" は登録されていません");
-
-			channel.set(option.getValue().get().asString(), false);
-
-			bot.getChannelRegistry().save();
-			return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" をこのチャンネルから登録解除しました！");
-		}
+		return event.getInteractionResponse().createFollowupMessage("Botが情報を投稿する震度を "+this.choices.get(option.getValue().get().asString())+" に設定しました！");
 	}
+
 }

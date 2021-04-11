@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot.slashcommand.impl;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -49,7 +48,7 @@ public class AddSlashCommand implements ISlashCommand {
 	}
 
 	@Override
-	public Mono<?> execute(final EEWBot bot, final InteractionCreateEvent event) throws IOException {
+	public Mono<?> execute(final EEWBot bot, final InteractionCreateEvent event) throws Exception {
 		if (!event.getInteraction().getGuildId().isPresent())
 			return event.getInteractionResponse().createFollowupMessage("DMチャンネルは利用できません (開発中)");
 

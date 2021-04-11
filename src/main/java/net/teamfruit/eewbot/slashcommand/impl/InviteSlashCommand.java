@@ -14,7 +14,7 @@ public class InviteSlashCommand implements ISlashCommand {
 	}
 
 	@Override
-	public Mono<?> execute(final EEWBot bot, final InteractionCreateEvent event) {
+	public Mono<?> execute(final EEWBot bot, final InteractionCreateEvent event) throws Exception {
 		return event.getInteractionResponse().createFollowupMessage("https://discordapp.com/oauth2/authorize?client_id="+event.getClient().getSelfId().asString()+"&scope=bot");
 	}
 
