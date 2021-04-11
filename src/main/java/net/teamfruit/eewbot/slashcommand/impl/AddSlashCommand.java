@@ -24,6 +24,7 @@ public class AddSlashCommand implements ISlashCommand {
 
 	@Override
 	public ApplicationCommandRequest command() {
+		this.choices.put("all", "全て");
 		this.choices.put("eewAlert", "緊急地震速報(警報)");
 		this.choices.put("eewPrediction", "緊急地震速報(予報)");
 		this.choices.put("quakeInfo", "地震情報");
@@ -41,7 +42,7 @@ public class AddSlashCommand implements ISlashCommand {
 
 		return ApplicationCommandRequest.builder()
 				.name("add")
-				.description("現在のチャンネルに設定を追加します")
+				.description("現在のチャンネルに通知する情報の種類を追加")
 				.addOption(builder.build())
 				.build();
 	}
@@ -68,10 +69,21 @@ public class AddSlashCommand implements ISlashCommand {
 			}
 
 			final ApplicationCommandInteractionOption option = event.getInteraction().getCommandInteraction().getOptions().get(0);
-			channel.set(option.getValue().get().asString(), true);
-			bot.getChannelRegistry().save();
+			if (option.getValue().get().asString().equals("all")) {
+				channel.eewAlert = true;
+				channel.eewPrediction = true;
+				channel.quakeInfo = true;
+				channel.monitor = true;
 
-			return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" を追加しました！");
+				bot.getChannelRegistry().save();
+				return event.getInteractionResponse().createFollowupMessage("全ての種類の情報をこのチャンネルに投稿します！");
+
+			} else {
+				channel.set(option.getValue().get().asString(), true);
+
+				bot.getChannelRegistry().save();
+				return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" をこのチャンネルに投稿します！");
+			}
 		} catch (final Exception e) {
 			return Mono.error(e);
 		}

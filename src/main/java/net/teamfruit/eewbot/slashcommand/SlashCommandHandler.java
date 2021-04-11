@@ -21,6 +21,7 @@ public class SlashCommandHandler {
 
 		final long applicationId = restClient.getApplicationId().block();
 
+		// (アップデート等により)消去したコマンドをDiscordから消去
 		restClient.getApplicationService().getGlobalApplicationCommands(applicationId)
 				.filter(data -> !this.commands.containsKey(data.name()))
 				.flatMap(data -> restClient.getApplicationService().deleteGlobalApplicationCommand(applicationId, Long.parseLong(data.id())))
