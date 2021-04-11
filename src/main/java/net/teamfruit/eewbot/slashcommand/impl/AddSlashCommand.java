@@ -10,6 +10,8 @@ import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.ImmutableApplicationCommandOptionData.Builder;
 import discord4j.rest.util.ApplicationCommandOptionType;
+import discord4j.rest.util.Permission;
+import discord4j.rest.util.PermissionSet;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.Channel;
@@ -49,6 +51,12 @@ public class AddSlashCommand implements ISlashCommand {
 		try {
 			if (!event.getInteraction().getGuildId().isPresent())
 				return event.getInteractionResponse().createFollowupMessage("DMチャンネルには登録出来ません (開発中)");
+
+			final PermissionSet permission = event.getInteraction().getChannel().flatMap(c -> c.getEffectivePermissions(bot.getClient().getSelfId())).block();
+			if (!permission.contains(Permission.VIEW_CHANNEL))
+				return event.getInteractionResponse().createFollowupMessage("Botはこのチャンネルを閲覧出来ません");
+			if (!permission.contains(Permission.SEND_MESSAGES))
+				return event.getInteractionResponse().createFollowupMessage("Botはチャンネルにメッセージを投稿する権限がありません");
 
 			final long channelID = event.getInteraction().getChannelId().asLong();
 			Channel channel = bot.getChannels().get(channelID);
