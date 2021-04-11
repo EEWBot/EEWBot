@@ -10,6 +10,7 @@ import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.slashcommand.impl.AddSlashCommand;
 import net.teamfruit.eewbot.slashcommand.impl.InviteSlashCommand;
+import net.teamfruit.eewbot.slashcommand.impl.RemoveSlashCommand;
 
 public class SlashCommandHandler {
 
@@ -29,6 +30,7 @@ public class SlashCommandHandler {
 
 		this.commands.put("invite", new InviteSlashCommand());
 		this.commands.put("add", new AddSlashCommand());
+		this.commands.put("remove", new RemoveSlashCommand());
 
 		this.commands.forEach((k, v) -> restClient.getApplicationService().createGlobalApplicationCommand(applicationId, v.command()).subscribe());
 

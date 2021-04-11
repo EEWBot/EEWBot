@@ -10,15 +10,12 @@ import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.ImmutableApplicationCommandOptionData.Builder;
 import discord4j.rest.util.ApplicationCommandOptionType;
-import discord4j.rest.util.Permission;
-import discord4j.rest.util.PermissionSet;
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import reactor.core.publisher.Mono;
 
-public class AddSlashCommand implements ISlashCommand {
+public class RemoveSlashCommand implements ISlashCommand {
 
 	final Map<String, String> choices = new LinkedHashMap<>();
 
@@ -41,8 +38,8 @@ public class AddSlashCommand implements ISlashCommand {
 				.build()));
 
 		return ApplicationCommandRequest.builder()
-				.name("add")
-				.description("Botが現在のチャンネルに投稿する情報を設定")
+				.name("remove")
+				.description("Botが現在のチャンネルに投稿する情報を解除")
 				.addOption(builder.build())
 				.build();
 	}
@@ -53,43 +50,31 @@ public class AddSlashCommand implements ISlashCommand {
 			if (!event.getInteraction().getGuildId().isPresent())
 				return event.getInteractionResponse().createFollowupMessage("DMチャンネルは利用できません (開発中)");
 
-			final PermissionSet permission = event.getInteraction().getChannel().flatMap(c -> c.getEffectivePermissions(bot.getClient().getSelfId())).block();
-			if (!permission.contains(Permission.VIEW_CHANNEL))
-				return event.getInteractionResponse().createFollowupMessage("Botはこのチャンネルを閲覧出来ません");
-			if (!permission.contains(Permission.SEND_MESSAGES))
-				return event.getInteractionResponse().createFollowupMessage("Botはチャンネルにメッセージを投稿する権限がありません");
-
 			final long channelID = event.getInteraction().getChannelId().asLong();
-			Channel channel = bot.getChannels().get(channelID);
-			if (channel==null) {
-				channel = new Channel(false, false, true, false, false, SeismicIntensity.ONE);
-				bot.getChannelsLock().writeLock().lock();
-				bot.getChannels().put(channelID, channel);
-				bot.getChannelsLock().writeLock().unlock();
-			}
+			final Channel channel = bot.getChannels().get(channelID);
+			if (channel==null)
+				return event.getInteractionResponse().createFollowupMessage("このチャンネルはなにも設定されていません");
 
 			final ApplicationCommandInteractionOption option = event.getInteraction().getCommandInteraction().getOptions().get(0);
 			if (option.getValue().get().asString().equals("all")) {
-				channel.eewAlert = true;
-				channel.eewPrediction = true;
-				channel.quakeInfo = true;
-				channel.monitor = true;
+				bot.getChannelsLock().writeLock().lock();
+				bot.getChannels().remove(channelID);
+				bot.getChannelsLock().writeLock().unlock();
 
 				bot.getChannelRegistry().save();
-				return event.getInteractionResponse().createFollowupMessage("全ての種類の情報をこのチャンネルに投稿します！");
+				return event.getInteractionResponse().createFollowupMessage("全ての種類の情報を登録解除しました！");
 
 			} else {
-				if (channel.value(option.getValue().get().asString()))
-					return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" は既に登録されています");
+				if (!channel.value(option.getValue().get().asString()))
+					return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" は登録されていません");
 
-				channel.set(option.getValue().get().asString(), true);
+				channel.set(option.getValue().get().asString(), false);
 
 				bot.getChannelRegistry().save();
-				return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" をこのチャンネルに投稿します！");
+				return event.getInteractionResponse().createFollowupMessage(this.choices.get(option.getValue().get().asString())+" をこのチャンネルから登録解除しました！");
 			}
 		} catch (final Exception e) {
 			return Mono.error(e);
 		}
 	}
-
 }
