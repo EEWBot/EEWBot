@@ -3,8 +3,9 @@ package net.teamfruit.eewbot.slashcommand.impl;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import discord4j.core.event.domain.InteractionCreateEvent;
+import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
+import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
@@ -52,11 +53,13 @@ public class AddSlashCommand implements ISlashCommand {
 		if (!event.getInteraction().getGuildId().isPresent())
 			return event.getInteractionResponse().createFollowupMessage("DMチャンネルは利用できません (開発中)");
 
-		final PermissionSet permission = event.getInteraction().getChannel().flatMap(c -> c.getEffectivePermissions(bot.getClient().getSelfId())).block();
-		if (!permission.contains(Permission.VIEW_CHANNEL))
-			return event.getInteractionResponse().createFollowupMessage("Botはこのチャンネルを閲覧出来ません");
-		if (!permission.contains(Permission.SEND_MESSAGES))
-			return event.getInteractionResponse().createFollowupMessage("Botはチャンネルにメッセージを投稿する権限がありません");
+		if (event.getInteraction().getChannel() instanceof GuildChannel) {
+			final PermissionSet permission = event.getInteraction().getChannel().cast(GuildChannel.class).flatMap(c -> c.getEffectivePermissions(bot.getClient().getSelfId())).block();
+			if (!permission.contains(Permission.VIEW_CHANNEL))
+				return event.getInteractionResponse().createFollowupMessage("Botはこのチャンネルを閲覧出来ません");
+			if (!permission.contains(Permission.SEND_MESSAGES))
+				return event.getInteractionResponse().createFollowupMessage("Botはチャンネルにメッセージを投稿する権限がありません");
+		}
 
 		final long channelID = event.getInteraction().getChannelId().asLong();
 		Channel channel = bot.getChannels().get(channelID);
@@ -67,7 +70,7 @@ public class AddSlashCommand implements ISlashCommand {
 			bot.getChannelsLock().writeLock().unlock();
 		}
 
-		final ApplicationCommandInteractionOption option = event.getInteraction().getCommandInteraction().getOptions().get(0);
+		final ApplicationCommandInteractionOption option = event.getInteraction().getCommandInteraction().get().getOptions().get(0);
 		if (option.getValue().get().asString().equals("all")) {
 			channel.eewAlert = true;
 			channel.eewPrediction = true;

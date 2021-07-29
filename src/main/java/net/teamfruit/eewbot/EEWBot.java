@@ -36,7 +36,6 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
-import discord4j.discordjson.json.RegionData;
 import net.teamfruit.eewbot.command.CommandHandler;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
@@ -153,15 +152,14 @@ public class EEWBot {
 							this.systemChannel = Optional.empty();
 						})
 						.block());
-			else if (events.size()<10) {
-				final Region region = new Region(this.gateway, RegionData.builder().id("japan").name("Japan").vip(false).optimal(true).deprecated(false).custom(false).build());
-				this.systemChannel = Optional.of(this.gateway.createGuild(spec -> spec.setName("EEWBot System").setRegion(region).addChannel("monitor", discord4j.core.object.entity.channel.Channel.Type.GUILD_TEXT))
+			else if (events.size()<10)
+				this.systemChannel = Optional.of(this.gateway.createGuild(spec -> spec.setName("EEWBot System").setRegion(Region.Id.JAPAN).addChannel("monitor", discord4j.core.object.entity.channel.Channel.Type.GUILD_TEXT))
 						.flatMap(g -> g.getChannels()
 								.filter(c -> c.getName().equals("monitor"))
 								.last()
 								.cast(TextChannel.class))
 						.block());
-			} else
+			else
 				this.systemChannel = Optional.empty();
 		} else
 			this.systemChannel = Optional.of(guild.get().getChannels()

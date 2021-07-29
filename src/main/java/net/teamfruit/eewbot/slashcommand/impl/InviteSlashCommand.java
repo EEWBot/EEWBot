@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.slashcommand.impl;
 
-import discord4j.core.event.domain.InteractionCreateEvent;
+import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;

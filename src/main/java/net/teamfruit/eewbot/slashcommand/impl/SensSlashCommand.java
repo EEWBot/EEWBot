@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import discord4j.core.event.domain.InteractionCreateEvent;
+import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
@@ -61,7 +61,7 @@ public class SensSlashCommand implements ISlashCommand {
 		if (channel==null)
 			return event.getInteractionResponse().createFollowupMessage("このチャンネルはなにも設定されていません");
 
-		final ApplicationCommandInteractionOption option = event.getInteraction().getCommandInteraction().getOptions().get(0);
+		final ApplicationCommandInteractionOption option = event.getInteraction().getCommandInteraction().get().getOptions().get(0);
 		final Optional<SeismicIntensity> intensity = SeismicIntensity.get(option.getValue().get().asString());
 		channel.minIntensity = intensity.get();
 		bot.getChannelRegistry().save();

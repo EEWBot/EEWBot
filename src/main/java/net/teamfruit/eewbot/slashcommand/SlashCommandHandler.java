@@ -4,7 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.domain.InteractionCreateEvent;
+import discord4j.core.event.domain.interaction.InteractionCreateEvent;
+import discord4j.core.object.command.ApplicationCommandInteraction;
 import discord4j.rest.RestClient;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
@@ -37,12 +38,13 @@ public class SlashCommandHandler {
 
 		this.commands.forEach((k, v) -> restClient.getApplicationService().createGlobalApplicationCommand(applicationId, v.command()).subscribe());
 
+		// 要リファクタリング
 		bot.getClient().on(InteractionCreateEvent.class)
-				.filter(event -> this.commands.containsKey(event.getCommandName()))
+				.filter(event -> this.commands.containsKey(event.getInteraction().getCommandInteraction().flatMap(ApplicationCommandInteraction::getName).orElse(null)))
 				.flatMap(event -> {
 					try {
 						return event.acknowledge()
-								.then(this.commands.get(event.getCommandName()).execute(bot, event))
+								.then(this.commands.get(event.getInteraction().getCommandInteraction().get().getName().get()).execute(bot, event))
 								.doOnError(t -> {
 									Log.logger.error("Error in slashcommands", t);
 									event.getInteractionResponse().createFollowupMessage("Error").subscribe();
