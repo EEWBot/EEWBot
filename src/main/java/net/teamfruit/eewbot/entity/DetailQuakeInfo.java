@@ -254,7 +254,7 @@ public class DetailQuakeInfo implements Entity {
 
 	@Override
 	public Consumer<? super MessageCreateSpec> createMessage(final String lang) {
-		return msg -> msg.setEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
+		return msg -> msg.addEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
 				.setTitle("eewbot.quakeinfo.title")
 				.addField("eewbot.quakeinfo.epicenter", getEarthquake().getEpicenter(), true)
 				.addField("eewbot.quakeinfo.depth", getEarthquake().getDepth(), true)
