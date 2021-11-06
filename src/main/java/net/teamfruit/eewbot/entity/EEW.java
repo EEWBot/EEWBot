@@ -199,13 +199,13 @@ public class EEW implements Entity {
 	@Override
 	public Consumer<? super MessageCreateSpec> createMessage(final String lang) {
 		if (isCancel())
-			return msg -> msg.setEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
+			return msg -> msg.addEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
 					.setTitle("eewbot.eew.eewcancel")
 					.setTimestamp(getReportTime())
 					.setDescription("eewbot.eew.cancel")
 					.setColor(discord4j.rest.util.Color.YELLOW)
 					.setFooter("eewbot.eew.newkyoshinmonitor", null));
-		return msg -> msg.setEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
+		return msg -> msg.addEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
 				.setTitle(isAlert() ? isFinal() ? "eewbot.eew.eewalert.final" : "eewbot.eew.eewalert.num" : isFinal() ? "eewbot.eew.eewprediction.final" : "eewbot.eew.eewprediction.num", getReportNum())
 				.setTimestamp(getReportTime())
 				.addField("eewbot.eew.epicenter", getRegionName(), true)

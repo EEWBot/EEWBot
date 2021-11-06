@@ -19,7 +19,7 @@ public class ReloadCommand implements ICommand {
 					bot.getPermissionsRegistry().load();
 					return true;
 				}))
-				.flatMap(tuple -> tuple.getT1().edit(spec -> spec.setEmbed(embed -> CommandUtils.createEmbed(embed, lang)
+				.flatMap(tuple -> tuple.getT1().edit(spec -> spec.addEmbed(embed -> CommandUtils.createEmbed(embed, lang)
 						.setTitle("eewbot.cmd.reload.title")
 						.setDescription("eewbot.cmd.reload.reloaded.desc"))))
 				.then();
