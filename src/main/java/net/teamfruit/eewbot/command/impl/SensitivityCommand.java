@@ -16,22 +16,22 @@ public class SensitivityCommand implements ICommand {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.just(bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
-						.switchIfEmpty(channel.createMessage(embed -> CommandUtils.createErrorEmbed(lang)
+						.switchIfEmpty(channel.createMessage(CommandUtils.createErrorEmbed(lang)
 								.title("eewbot.cmd.add.title")
-								.description("eewbot.cmd.err.channelnotregistered.desc"))
+								.description("eewbot.cmd.err.channelnotregistered.desc").build())
 								.map(m -> false)))
 				.filterWhen(channel -> Mono.justOrEmpty(event.getMessage().getContent().split(" "))
 						.filterWhen(array -> Mono.just(array.length>=3)
 								.filter(b -> b)
-								.switchIfEmpty(channel.createMessage(embed -> CommandUtils.createErrorEmbed(lang)
+								.switchIfEmpty(channel.createMessage(CommandUtils.createErrorEmbed(lang)
 										.title("eewbot.cmd.add.title")
-										.description("eewbot.cmd.err.arg.desc"))
+										.description("eewbot.cmd.err.arg.desc").build())
 										.map(m -> false)))
 						.filterWhen(array -> Mono.just(SeismicIntensity.get(array[2]).isPresent())
 								.filter(b -> b)
-								.switchIfEmpty(channel.createMessage(embed -> CommandUtils.createErrorEmbed(lang)
+								.switchIfEmpty(channel.createMessage(CommandUtils.createErrorEmbed(lang)
 										.title("eewbot.cmd.setlang.title")
-										.description("eewbot.cmd.err.fieldnotexits"))
+										.description("eewbot.cmd.err.fieldnotexits").build())
 										.map(m -> false)))
 						.flatMap(array -> Mono.fromCallable(() -> {
 							this.target = SeismicIntensity.get(array[2]).get();
@@ -39,9 +39,10 @@ public class SensitivityCommand implements ICommand {
 							bot.getChannelRegistry().save();
 							return true;
 						})))
-				.flatMap(channel -> channel.createMessage(embed -> CommandUtils.createEmbed(lang)
+				.flatMap(channel -> channel.createMessage(CommandUtils.createEmbed(lang)
 						.title("eewbot.cmd.sensitivity.title")
-						.description("eewbot.cmd.sensitivity.desc", this.target.getSimple())))
+						.description("eewbot.cmd.sensitivity.desc", this.target.getSimple())
+						.build()))
 				.then();
 	}
 
