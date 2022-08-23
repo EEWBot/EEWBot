@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
+import discord4j.core.object.presence.ClientActivity;
+import discord4j.core.object.presence.ClientPresence;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.config.RequestConfig;
@@ -34,8 +36,6 @@ import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.object.Region;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.TextChannel;
-import discord4j.core.object.presence.Activity;
-import discord4j.core.object.presence.Presence;
 import net.teamfruit.eewbot.command.CommandHandler;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
@@ -168,7 +168,7 @@ public class EEWBot {
 
 		this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: "+channel.getGuildId().asString()+" System Channel: "+channel.getId().asString()));
 
-		this.gateway.updatePresence(Presence.online(Activity.playing("!eew help"))).subscribe();
+		this.gateway.updatePresence(ClientPresence.online(ClientActivity.playing("!eew help"))).subscribe();
 
 		this.service = new EEWService(getClient(), getChannels(), getChannelsLock(), getSystemChannel());
 		this.executor = new EEWExecutor(getService(), getConfig(), getChannelRegistry());
