@@ -3,7 +3,6 @@ package net.teamfruit.eewbot;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -33,11 +32,11 @@ public class EEWService {
 		this.systemChannel = systemChannel;
 	}
 
-	public void sendMessage(final String key, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
+	public void sendMessage(final String key, final Function<String, MessageCreateSpec> spec) {
 		sendMessage(channel -> channel.value(key), spec);
 	}
 
-	public void sendMessage(final Predicate<Channel> filter, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
+	public void sendMessage(final Predicate<Channel> filter, final Function<String, MessageCreateSpec> spec) {
 		this.lock.readLock().lock();
 		Flux.merge(this.channels.entrySet().stream()
 				.filter(entry -> filter.test(entry.getValue()))
@@ -50,27 +49,27 @@ public class EEWService {
 		this.lock.readLock().unlock();
 	}
 
-	public void sendAttachment(final String key, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
+	public void sendAttachment(final String key, final Function<String, MessageCreateSpec> spec) {
 		sendAttachment(channel -> channel.value(key), spec);
 	}
 
-	public void sendAttachment(final Predicate<Channel> filter, final Function<String, Consumer<? super MessageCreateSpec>> spec) {
+	public void sendAttachment(final Predicate<Channel> filter, final Function<String, MessageCreateSpec> spec) {
 		if (!this.systemChannel.isPresent())
 			sendMessage(filter, spec);
 		directSendMessage(this.systemChannel.get().getId().asLong(), spec.apply(null))
 				.map(msg -> msg.getAttachments().iterator().next().getUrl())
-				.subscribe(url -> sendMessage(filter, lang -> msg -> msg.setContent(url)));
+				.subscribe(url -> sendMessage(filter, lang -> MessageCreateSpec.builder().content(url).build()));
 	}
 
-	private Mono<Message> directSendMessage(final long channelId, final Consumer<? super MessageCreateSpec> spec) {
+	private Mono<Message> directSendMessage(final long channelId, final MessageCreateSpec spec) {
 		return Mono.defer(() -> {
-			final MessageCreateSpec mutatedSpec = new MessageCreateSpec();
-			this.gateway.getRestClient().getRestResources()
-					.getAllowedMentions()
-					.ifPresent(mutatedSpec::setAllowedMentions);
-			spec.accept(mutatedSpec);
+//			final MessageCreateSpec mutatedSpec = new MessageCreateSpec();
+//			this.gateway.getRestClient().getRestResources()
+//					.getAllowedMentions()
+//					.ifPresent(mutatedSpec::setAllowedMentions);
+//			spec.accept(mutatedSpec);
 			return this.gateway.getRestClient().getChannelService()
-					.createMessage(channelId, mutatedSpec.asRequest());
+					.createMessage(channelId, spec.asRequest());
 		})
 				.map(data -> new Message(this.gateway, data))
 				.doOnError(ClientException.class, err -> {
