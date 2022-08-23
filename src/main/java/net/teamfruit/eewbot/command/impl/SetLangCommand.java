@@ -20,15 +20,15 @@ public class SetLangCommand extends ReactionCommand {
 				.filterWhen(channel -> Mono.justOrEmpty(event.getMessage().getContent().split(" "))
 						.filterWhen(array -> Mono.just(array.length>=3)
 								.filter(b -> b)
-								.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)
-										.setTitle("eewbot.cmd.setlang.title")
-										.setDescription("eewbot.cmd.err.arg.desc"))
+								.switchIfEmpty(channel.createMessage(embed -> CommandUtils.createErrorEmbed(lang)
+										.title("eewbot.cmd.setlang.title")
+										.description("eewbot.cmd.err.arg.desc"))
 										.map(m -> false)))
 						.filterWhen(array -> Mono.just(I18n.INSTANCE.getLanguages().containsKey(array[2]))
 								.filter(b -> b)
-								.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)
-										.setTitle("eewbot.cmd.setlang.title")
-										.setDescription("eewbot.cmd.err.fieldnotexits"))
+								.switchIfEmpty(channel.createMessage(embed -> CommandUtils.createErrorEmbed(lang)
+										.title("eewbot.cmd.setlang.title")
+										.description("eewbot.cmd.err.fieldnotexits"))
 										.map(m -> false)))
 						.filter(array -> bot.getChannels().containsKey(channel.getId().asLong()))
 						.flatMap(array -> Mono.fromCallable(() -> {
@@ -37,9 +37,9 @@ public class SetLangCommand extends ReactionCommand {
 							bot.getChannelRegistry().save();
 							return true;
 						})))
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("eewbot.cmd.setlang.title")
-						.setDescription("eewbot.cmd.setlang.desc.server")))
+				.flatMap(channel -> channel.createMessage(embed -> CommandUtils.createEmbed(lang)
+						.title("eewbot.cmd.setlang.title")
+						.description("eewbot.cmd.setlang.desc.server")))
 				.map(this::setBotMessage)
 				.flatMap(msg -> msg.addReaction(EMOJI_Y)
 						.then(msg.addReaction(EMOJI_N)))
@@ -55,9 +55,9 @@ public class SetLangCommand extends ReactionCommand {
 			this.stage = Stage.ALL_CHNNEL;
 
 			return reaction.getChannel()
-					.flatMap(c -> c.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-							.setTitle("eewbot.cmd.setlang.title")
-							.setDescription("eewbot.cmd.setlang.desc.allchannel")))
+					.flatMap(c -> c.createMessage(embed -> CommandUtils.createEmbed(lang)
+							.title("eewbot.cmd.setlang.title")
+							.description("eewbot.cmd.setlang.desc.allchannel")))
 					.map(this::setBotMessage)
 					.flatMap(msg -> msg.addReaction(EMOJI_Y)
 							.then(msg.addReaction(EMOJI_N)))
@@ -71,9 +71,9 @@ public class SetLangCommand extends ReactionCommand {
 			this.stage = reaction.getEmoji().equals(EMOJI_N)&&bot.getChannels().containsKey(reaction.getChannelId().asLong()) ? Stage.CHANNEL : null;
 
 			return reaction.getChannel()
-					.flatMap(c -> c.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-							.setTitle("eewbot.cmd.setlang.title")
-							.setDescription(this.stage==Stage.CHANNEL ? "eewbot.cmd.setlang.desc.channel" : "eewbot.cmd.setlang.desc.done")))
+					.flatMap(c -> c.createMessage(embed -> CommandUtils.createEmbed(lang)
+							.title("eewbot.cmd.setlang.title")
+							.description(this.stage==Stage.CHANNEL ? "eewbot.cmd.setlang.desc.channel" : "eewbot.cmd.setlang.desc.done")))
 					.map(this::setBotMessage)
 					.flatMap(msg -> Mono.just(msg)
 							.filter(m -> this.stage==Stage.CHANNEL)
@@ -95,9 +95,9 @@ public class SetLangCommand extends ReactionCommand {
 					}));
 		} else if (this.stage==Stage.CHANNEL)
 			return reaction.getChannel()
-					.flatMap(c -> c.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-							.setTitle("eewbot.cmd.setlang.title")
-							.setDescription("eewbot.cmd.setlang.desc.done")))
+					.flatMap(c -> c.createMessage(embed -> CommandUtils.createEmbed(lang)
+							.title("eewbot.cmd.setlang.title")
+							.description("eewbot.cmd.setlang.desc.done")))
 					.flatMap(m -> Mono.fromCallable(() -> {
 						if (reaction.getEmoji().equals(EMOJI_Y)) {
 							bot.getChannels().get(reaction.getChannelId().asLong()).lang = this.lang;

@@ -19,9 +19,9 @@ public class RegisterCommand extends ReactionCommand {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.just(!bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
-						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)
-								.setTitle("eewbot.cmd.register.title")
-								.setDescription("eewbot.cmd.err.channelalreadyregistered.desc"))
+						.switchIfEmpty(channel.createMessage(embed -> CommandUtils.createErrorEmbed(lang)
+								.title("eewbot.cmd.register.title")
+								.description("eewbot.cmd.err.channelalreadyregistered.desc"))
 								.map(m -> false)))
 				.flatMap(channel -> Mono.fromCallable(() -> {
 					bot.getChannelsLock().writeLock().lock();
@@ -30,9 +30,9 @@ public class RegisterCommand extends ReactionCommand {
 					bot.getChannelRegistry().save();
 					return channel;
 				}))
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("eewbot.cmd.register.title")
-						.setDescription("eewbot.cmd.register.desc")))
+				.flatMap(channel -> channel.createMessage(embed -> CommandUtils.createEmbed(lang)
+						.title("eewbot.cmd.register.title")
+						.description("eewbot.cmd.register.desc")))
 				.map(this::setBotMessage)
 				.flatMap(msg -> msg.addReaction(EMOJI_Y)
 						.then(msg.addReaction(EMOJI_N)))
@@ -46,8 +46,8 @@ public class RegisterCommand extends ReactionCommand {
 
 		if (!this.setup&&reaction.getEmoji().equals(EMOJI_N))
 			return reaction.getChannel()
-					.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-							.setTitle("eewbot.cmd.register.title")
+					.flatMap(channel -> channel.createMessage(embed -> CommandUtils.createEmbed(lang)
+							.title("eewbot.cmd.register.title")
 							.addField("eewbot.cmd.register.field.initial.name", bot.getChannels().get(channel.getId().asLong()).toString(), false)))
 					.map(m -> true);
 
@@ -77,8 +77,8 @@ public class RegisterCommand extends ReactionCommand {
 			case 5:
 				channel.quakeInfo = isY;
 				return reaction.getChannel()
-						.flatMap(c -> c.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-								.setTitle("eewbot.cmd.register.title")
+						.flatMap(c -> c.createMessage(embed -> CommandUtils.createEmbed(lang)
+								.title("eewbot.cmd.register.title")
 								.addField("eewbot.cmd.register.field.done.name", bot.getChannels().get(c.getId().asLong()).toString(), false)))
 						.flatMap(c -> Mono.fromCallable(() -> {
 							bot.getChannelRegistry().save();
@@ -92,8 +92,8 @@ public class RegisterCommand extends ReactionCommand {
 
 	private Mono<Boolean> createSetupMessage(final ReactionAddEvent event, final String lang, final String name, final String value) {
 		return event.getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("eewbot.cmd.register.title")
+				.flatMap(channel -> channel.createMessage(embed -> CommandUtils.createEmbed(lang)
+						.title("eewbot.cmd.register.title")
 						.addField(name, value, false)))
 				.map(this::setBotMessage)
 				.flatMap(msg -> msg.addReaction(EMOJI_Y)

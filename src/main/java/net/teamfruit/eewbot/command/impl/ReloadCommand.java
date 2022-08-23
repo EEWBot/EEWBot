@@ -11,17 +11,17 @@ public class ReloadCommand implements ICommand {
 	@Override
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
 		return Mono.zip(event.getMessage().getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("eewbot.cmd.reload.title")
-						.setDescription("eewbot.cmd.reload.reloading.desc"))),
+				.flatMap(channel -> channel.createMessage(embed -> CommandUtils.createEmbed(lang)
+						.title("eewbot.cmd.reload.title")
+						.description("eewbot.cmd.reload.reloading.desc"))),
 				Mono.fromCallable(() -> {
 					bot.getConfigRegistry().load();
 					bot.getPermissionsRegistry().load();
 					return true;
 				}))
-				.flatMap(tuple -> tuple.getT1().edit(spec -> spec.addEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("eewbot.cmd.reload.title")
-						.setDescription("eewbot.cmd.reload.reloaded.desc"))))
+				.flatMap(tuple -> tuple.getT1().edit(spec -> spec.addEmbed(embed -> CommandUtils.createEmbed(lang)
+						.title("eewbot.cmd.reload.title")
+						.description("eewbot.cmd.reload.reloaded.desc"))))
 				.then();
 	}
 

@@ -11,8 +11,8 @@ public class HelpCommand implements ICommand {
 	@Override
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
 		return event.getMessage().getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("eewbot.cmd.help.title")
+				.flatMap(channel -> channel.createMessage(embed -> CommandUtils.createEmbed(lang)
+						.title("eewbot.cmd.help.title")
 						.addField("register", "eewbot.cmd.help.field.register.value", true)
 						.addField("unregister", "eewbot.cmd.help.field.unregister.value", true)
 						.addField("detail", "eewbot.cmd.help.field.detail.value", true)

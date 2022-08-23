@@ -13,9 +13,9 @@ public class UnRegisterCommand implements ICommand {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.just(bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
-						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)
-								.setTitle("eewbot.cmd.unregister.title")
-								.setDescription("eewbot.cmd.err.channelnotregistered.desc"))
+						.switchIfEmpty(channel.createMessage(embed -> CommandUtils.createErrorEmbed(lang)
+								.title("eewbot.cmd.unregister.title")
+								.description("eewbot.cmd.err.channelnotregistered.desc"))
 								.map(m -> false)))
 				.flatMap(channel -> Mono.fromCallable(() -> {
 					bot.getChannelsLock().writeLock().lock();
@@ -24,9 +24,9 @@ public class UnRegisterCommand implements ICommand {
 					bot.getChannelRegistry().save();
 					return channel;
 				}))
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("eewbot.cmd.unregister.title")
-						.setDescription("eewbot.cmd.unregister.desc")))
+				.flatMap(channel -> channel.createMessage(embed -> CommandUtils.createEmbed(lang)
+						.title("eewbot.cmd.unregister.title")
+						.description("eewbot.cmd.unregister.desc")))
 				.then();
 	}
 

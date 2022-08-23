@@ -14,8 +14,8 @@ public class TimeCommand implements ICommand {
 	@Override
 	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
 		return event.getMessage().getChannel()
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("eewbot.cmd.time.title")
+				.flatMap(channel -> channel.createMessage(embed -> CommandUtils.createEmbed(lang)
+						.title("eewbot.cmd.time.title")
 						.addField("eewbot.cmd.time.field.lastpctime.name", bot.getExecutor().getProvider().getLastComputerTime()
 								.map(ZonedDateTime::toString)
 								.orElse("eewbot.cmd.time.field.nonsync.value"), false)
