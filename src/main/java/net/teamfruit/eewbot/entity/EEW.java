@@ -1,16 +1,14 @@
 package net.teamfruit.eewbot.entity;
 
+import discord4j.core.spec.MessageCreateSpec;
+import discord4j.rest.util.Color;
+import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
+import org.apache.commons.lang3.StringUtils;
+
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
-import java.util.function.Consumer;
-
-import org.apache.commons.lang3.StringUtils;
-
-import discord4j.core.spec.MessageCreateSpec;
-import discord4j.rest.util.Color;
-import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpecWrapper;
 
 public class EEW implements Entity {
 	public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").withZone(ZoneId.of("Asia/Tokyo"));
@@ -197,22 +195,24 @@ public class EEW implements Entity {
 	}
 
 	@Override
-	public Consumer<? super MessageCreateSpec> createMessage(final String lang) {
+	public MessageCreateSpec createMessage(final String lang) {
 		if (isCancel())
-			return msg -> msg.addEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
-					.setTitle("eewbot.eew.eewcancel")
-					.setTimestamp(getReportTime())
-					.setDescription("eewbot.eew.cancel")
-					.setColor(discord4j.rest.util.Color.YELLOW)
-					.setFooter("eewbot.eew.newkyoshinmonitor", null));
-		return msg -> msg.addEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
-				.setTitle(isAlert() ? isFinal() ? "eewbot.eew.eewalert.final" : "eewbot.eew.eewalert.num" : isFinal() ? "eewbot.eew.eewprediction.final" : "eewbot.eew.eewprediction.num", getReportNum())
-				.setTimestamp(getReportTime())
+			return MessageCreateSpec.builder().addEmbed(I18nEmbedCreateSpec.builder(lang)
+					.title("eewbot.eew.eewcancel")
+					.timestamp(getReportTime())
+					.description("eewbot.eew.cancel")
+					.color(discord4j.rest.util.Color.YELLOW)
+					.footer("eewbot.eew.newkyoshinmonitor", null)
+					.build()).build();
+		return MessageCreateSpec.builder().addEmbed(I18nEmbedCreateSpec.builder(lang)
+				.title(isAlert() ? isFinal() ? "eewbot.eew.eewalert.final" : "eewbot.eew.eewalert.num" : isFinal() ? "eewbot.eew.eewprediction.final" : "eewbot.eew.eewprediction.num", getReportNum())
+				.timestamp(getReportTime())
 				.addField("eewbot.eew.epicenter", getRegionName(), true)
 				.addField("eewbot.eew.depth", "eewbot.eew.km", true, getDepth())
 				.addField("eewbot.eew.magnitude", String.valueOf(getMagnitude()), true)
 				.addField("eewbot.eew.seismicintensity", getIntensity().map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"), false)
-				.setColor(isAlert() ? Color.RED : Color.BLUE)
-				.setFooter("eewbot.eew.newkyoshinmonitor", null));
+				.color(isAlert() ? Color.RED : Color.BLUE)
+				.footer("eewbot.eew.newkyoshinmonitor", null)
+				.build()).build();
 	}
 }

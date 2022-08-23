@@ -1,20 +1,18 @@
 package net.teamfruit.eewbot.entity;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.function.Consumer;
+import discord4j.core.spec.MessageCreateSpec;
+import net.teamfruit.eewbot.TimeProvider;
+import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
+import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-
-import discord4j.core.spec.MessageCreateSpec;
-import net.teamfruit.eewbot.TimeProvider;
-import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
-import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpecWrapper;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @XmlRootElement(name = "Root")
 public class DetailQuakeInfo implements Entity {
@@ -253,15 +251,17 @@ public class DetailQuakeInfo implements Entity {
 	}
 
 	@Override
-	public Consumer<? super MessageCreateSpec> createMessage(final String lang) {
-		return msg -> msg.setEmbed(embed -> new I18nEmbedCreateSpecWrapper(lang, embed)
-				.setTitle("eewbot.quakeinfo.title")
-				.addField("eewbot.quakeinfo.epicenter", getEarthquake().getEpicenter(), true)
-				.addField("eewbot.quakeinfo.depth", getEarthquake().getDepth(), true)
-				.addField("eewbot.quakeinfo.magnitude", getEarthquake().getMagnitude(), true)
-				.addField("eewbot.quakeinfo.seismicintensity", getEarthquake().getIntensity().getSimple(), false)
-				.setImage(QuakeInfoGateway.REMOTE_ROOT+getEarthquake().getDetail())
-				.setColor(getEarthquake().getIntensity().getColor())
-				.setTimestamp(getEarthquake().getTime().atZone(TimeProvider.ZONE_ID).toInstant()));
+	public MessageCreateSpec createMessage(final String lang) {
+		return MessageCreateSpec.builder()
+				.addEmbed(I18nEmbedCreateSpec.builder(lang)
+						.title("eewbot.quakeinfo.title")
+						.addField("eewbot.quakeinfo.epicenter", getEarthquake().getEpicenter(), true)
+						.addField("eewbot.quakeinfo.depth", getEarthquake().getDepth(), true)
+						.addField("eewbot.quakeinfo.magnitude", getEarthquake().getMagnitude(), true)
+						.addField("eewbot.quakeinfo.seismicintensity", getEarthquake().getIntensity().getSimple(), false)
+						.image(QuakeInfoGateway.REMOTE_ROOT+getEarthquake().getDetail())
+						.color(getEarthquake().getIntensity().getColor())
+						.timestamp(getEarthquake().getTime().atZone(TimeProvider.ZONE_ID).toInstant())
+						.build()).build();
 	}
 }

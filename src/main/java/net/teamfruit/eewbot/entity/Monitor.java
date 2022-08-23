@@ -1,9 +1,8 @@
 package net.teamfruit.eewbot.entity;
 
-import java.io.ByteArrayInputStream;
-import java.util.function.Consumer;
-
 import discord4j.core.spec.MessageCreateSpec;
+
+import java.io.ByteArrayInputStream;
 
 public class Monitor implements Entity {
 
@@ -28,8 +27,8 @@ public class Monitor implements Entity {
 	}
 
 	@Override
-	public Consumer<? super MessageCreateSpec> createMessage(final String lang) {
-		return msg -> msg.addFile("kyoshinmonitor.png", new ByteArrayInputStream(getImage()));
+	public MessageCreateSpec createMessage(final String lang) {
+		return MessageCreateSpec.builder().addFile("kyoshinmonitor.png", new ByteArrayInputStream(getImage())).build();
 	}
 
 }
