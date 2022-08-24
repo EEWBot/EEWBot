@@ -1,33 +1,9 @@
 package net.teamfruit.eewbot;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
-
-import discord4j.core.object.presence.ClientActivity;
-import discord4j.core.object.presence.ClientPresence;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHeaders;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.message.BasicHeader;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-
 import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
@@ -36,14 +12,26 @@ import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.object.Region;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.TextChannel;
+import discord4j.core.object.presence.ClientActivity;
+import discord4j.core.object.presence.ClientPresence;
 import net.teamfruit.eewbot.command.CommandHandler;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.Channel;
-import net.teamfruit.eewbot.registry.Config;
-import net.teamfruit.eewbot.registry.ConfigurationRegistry;
-import net.teamfruit.eewbot.registry.Guild;
-import net.teamfruit.eewbot.registry.Permission;
-import reactor.core.publisher.Mono;
+import net.teamfruit.eewbot.registry.*;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHeaders;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicHeader;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 public class EEWBot {
 	public static EEWBot instance;
@@ -106,18 +94,11 @@ public class EEWBot {
 			return;
 		}
 
-		this.gateway = DiscordClient.create(getConfig().getToken()).login().block();
-
-		this.gateway.on(GuildCreateEvent.class)
-				.map(e -> e.getGuild().getId().asLong())
-				.filter(l -> !getGuilds().containsKey(l))
-				.flatMap(l -> Mono.fromCallable(() -> {
-					getGuilds().put(l, new Guild().setLang(getConfig().getDefaultLanuage()));
-					EEWBot.this.guilds.save();
-					return l;
-				}))
-				.doOnError(err -> Log.logger.error("guilds.jsonのセーブに失敗しました", err))
-				.subscribe();
+		this.gateway = DiscordClient.create(getConfig().getToken())
+				.gateway()
+				.setInitialPresence(s -> ClientPresence.online(ClientActivity.playing("!eew help")))
+				.login()
+				.block();
 
 		final List<GuildCreateEvent> events = this.gateway.on(ReadyEvent.class)
 				.map(event -> {
@@ -129,6 +110,11 @@ public class EEWBot {
 						.take(size)
 						.collectList())
 				.blockFirst();
+
+		events.stream().map(e -> e.getGuild().getId().asLong())
+				.filter(l -> !getGuilds().containsKey(l))
+						.forEach(l -> getGuilds().put(l, new Guild().setLang(getConfig().getDefaultLanuage())));
+		EEWBot.this.guilds.save();
 
 		Log.logger.info("Connected to {} guilds!", events.size());
 
@@ -167,8 +153,6 @@ public class EEWBot {
 					.block());
 
 		this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: "+channel.getGuildId().asString()+" System Channel: "+channel.getId().asString()));
-
-		this.gateway.updatePresence(ClientPresence.online(ClientActivity.playing("!eew help"))).subscribe();
 
 		this.service = new EEWService(getClient(), getChannels(), getChannelsLock(), getSystemChannel());
 		this.executor = new EEWExecutor(getService(), getConfig(), getChannelRegistry());
