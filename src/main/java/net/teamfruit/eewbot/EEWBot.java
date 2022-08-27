@@ -17,6 +17,7 @@ import discord4j.core.object.presence.ClientPresence;
 import net.teamfruit.eewbot.command.CommandHandler;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.*;
+import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.config.RequestConfig;
@@ -74,6 +75,9 @@ public class EEWBot {
 	private EEWExecutor executor;
 	private CommandHandler command;
 
+	private SlashCommandHandler slashCommand;
+
+	private long applicationId;
 	private String userName;
 	private String avatarUrl;
 	private Optional<TextChannel> systemChannel;
@@ -118,6 +122,8 @@ public class EEWBot {
 
 		Log.logger.info("Connected to {} guilds!", events.size());
 
+		this.applicationId = this.gateway.getRestClient().getApplicationId().block();
+
 		final User self = this.gateway.getSelf().block();
 		this.userName = self.getUsername();
 		this.avatarUrl = self.getAvatarUrl();
@@ -157,6 +163,7 @@ public class EEWBot {
 		this.service = new EEWService(getClient(), getChannels(), getChannelsLock(), getSystemChannel());
 		this.executor = new EEWExecutor(getService(), getConfig(), getChannelRegistry());
 		this.command = new CommandHandler(this);
+		this.slashCommand = new SlashCommandHandler(this);
 
 		this.executor.init();
 
@@ -251,6 +258,14 @@ public class EEWBot {
 
 	public CommandHandler getCommandHandler() {
 		return this.command;
+	}
+
+	public SlashCommandHandler getSlashCommandHandler() {
+		return this.slashCommand;
+	}
+
+	public long getApplicationId() {
+		return this.applicationId;
 	}
 
 	public String getUsername() {
