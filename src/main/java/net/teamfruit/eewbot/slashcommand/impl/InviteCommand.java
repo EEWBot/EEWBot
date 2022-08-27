@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.slashcommand.impl;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import reactor.core.publisher.Mono;
 
@@ -24,7 +25,8 @@ public class InviteCommand implements ISlashCommand {
     }
 
     @Override
-    public Mono on(ApplicationCommandInteractionEvent event) {
-        return event.reply("https://discordapp.com/oauth2/authorize?client_id="+event.getClient().getSelfId().asString()+"&scope=bot&permissions=523344");
+    public Mono on(EEWBot bot, ApplicationCommandInteractionEvent event) {
+        return event.reply("https://discordapp.com/oauth2/authorize?client_id="+event.getClient().getSelfId().asString()+"&scope=bot&permissions=523344")
+                .withEphemeral(true);
     }
 }

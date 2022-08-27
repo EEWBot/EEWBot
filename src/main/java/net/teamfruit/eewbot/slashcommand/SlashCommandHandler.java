@@ -20,7 +20,7 @@ public class SlashCommandHandler {
 
         bot.getClient().on(ApplicationCommandInteractionEvent.class)
                 .filter(event -> commands.containsKey(event.getCommandName()))
-                .flatMap(event -> commands.get(event.getCommandName()).on(event))
+                .flatMap(event -> commands.get(event.getCommandName()).on(bot, event))
                 .subscribe();
     }
 }
