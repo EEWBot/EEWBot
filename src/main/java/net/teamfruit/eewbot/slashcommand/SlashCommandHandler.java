@@ -16,7 +16,12 @@ public class SlashCommandHandler {
     }
 
     public SlashCommandHandler(EEWBot bot) {
-        commands.values().forEach(command -> bot.getClient().getRestClient().getApplicationService().createGuildApplicationCommand(bot.getApplicationId(), 564550533973540885L, command.buildCommand()).subscribe());
+        if (bot.getConfig().isDebug()) {
+            long guildId = 564550533973540885L;
+            commands.values().forEach(command -> bot.getClient().getRestClient().getApplicationService().createGuildApplicationCommand(bot.getApplicationId(), guildId, command.buildCommand()).subscribe());
+        } else {
+            // Global
+        }
 
         bot.getClient().on(ApplicationCommandInteractionEvent.class)
                 .filter(event -> commands.containsKey(event.getCommandName()))

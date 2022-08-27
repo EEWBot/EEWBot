@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot.slashcommand.impl;
 
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
@@ -20,7 +19,6 @@ public class InviteSlashCommand implements ISlashCommand {
         return ApplicationCommandRequest.builder()
                 .name(getCommandName())
                 .description("招待URLを取得します。")
-                .type(ApplicationCommandOption.Type.STRING.getValue())
                 .build();
     }
 
