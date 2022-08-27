@@ -11,5 +11,5 @@ public interface ISlashCommand {
 
     ApplicationCommandRequest buildCommand();
 
-    Mono on(EEWBot bot, ApplicationCommandInteractionEvent event);
+    Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event);
 }
