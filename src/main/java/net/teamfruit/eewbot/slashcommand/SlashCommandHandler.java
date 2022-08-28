@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.slashcommand;
 
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
+import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.slashcommand.impl.InviteSlashCommand;
 import net.teamfruit.eewbot.slashcommand.impl.SetupSlashCommand;
@@ -22,11 +23,22 @@ public class SlashCommandHandler {
     }
 
     public SlashCommandHandler(EEWBot bot) {
+        ApplicationService service = bot.getClient().getRestClient().getApplicationService();
         if (bot.getConfig().isDebug()) {
             long guildId = 564550533973540885L;
-            commands.values().forEach(command -> bot.getClient().getRestClient().getApplicationService().createGuildApplicationCommand(bot.getApplicationId(), guildId, command.buildCommand()).subscribe());
+            service.getGuildApplicationCommands(bot.getApplicationId(), guildId)
+                    .filter(data -> !commands.containsKey(data.name()))
+                    .flatMap(data -> service.deleteGuildApplicationCommand(bot.getApplicationId(), guildId, data.id().asLong()))
+                    .subscribe();
+
+            commands.values().forEach(command -> service.createGuildApplicationCommand(bot.getApplicationId(), guildId, command.buildCommand()).subscribe());
         } else {
-            // Global
+            service.getGlobalApplicationCommands(bot.getApplicationId())
+                    .filter(data -> !commands.containsKey(data.name()))
+                    .flatMap(data -> service.deleteGlobalApplicationCommand(bot.getApplicationId(), data.id().asLong()))
+                    .subscribe();
+
+            commands.values().forEach(command -> service.createGlobalApplicationCommand(bot.getApplicationId(), command.buildCommand()).subscribe());
         }
 
         bot.getClient().on(ApplicationCommandInteractionEvent.class)
