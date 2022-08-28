@@ -3,8 +3,8 @@ package net.teamfruit.eewbot.slashcommand;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.slashcommand.impl.ChannelSlashCommand;
 import net.teamfruit.eewbot.slashcommand.impl.InviteSlashCommand;
+import net.teamfruit.eewbot.slashcommand.impl.SetlSlashCommand;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
@@ -17,8 +17,8 @@ public class SlashCommandHandler {
         InviteSlashCommand invite = new InviteSlashCommand();
         commands.put(invite.getCommandName(), invite);
 
-        ChannelSlashCommand channel = new ChannelSlashCommand();
-        commands.put(channel.getCommandName(), channel);
+        SetlSlashCommand set = new SetlSlashCommand();
+        commands.put(set.getCommandName(), set);
     }
 
     public SlashCommandHandler(EEWBot bot) {

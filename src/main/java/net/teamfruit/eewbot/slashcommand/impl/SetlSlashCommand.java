@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ChannelSlashCommand implements ISelectMenuSlashCommand {
+public class SetlSlashCommand implements ISelectMenuSlashCommand {
     @Override
     public String getCommandName() {
         return "channel";
