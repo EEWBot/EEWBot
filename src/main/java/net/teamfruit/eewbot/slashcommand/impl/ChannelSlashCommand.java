@@ -47,7 +47,7 @@ public class ChannelSlashCommand implements ISelectMenuSlashCommand {
             bot.getChannelsLock().writeLock().unlock();
         }
 
-        return event.reply("このチャンネルの設定を選択してください。（複数選択可）").withComponents(ActionRow.of(buildSelectMenu(bot, channelId)));
+        return event.reply("このチャンネルのBotの動作を設定します。").withComponents(ActionRow.of(buildSelectMenu(bot, channelId)));
     }
 
     private SelectMenu buildSelectMenu(EEWBot bot, long channelId) {
@@ -58,6 +58,7 @@ public class ChannelSlashCommand implements ISelectMenuSlashCommand {
                     else
                         return SelectMenu.Option.of(entry.getKey(), entry.getKey());
                 }).collect(Collectors.toList()))
+                .withPlaceholder("メイン設定（複数選択可）")
                 .withMinValues(0)
                 .withMaxValues(fields.size());
     }
@@ -75,6 +76,8 @@ public class ChannelSlashCommand implements ISelectMenuSlashCommand {
         } catch (IOException e) {
             return Mono.error(e);
         }
-        return event.createFollowup("設定しました！:" + event.getValues());
+        if (event.getValues().isEmpty())
+            return event.createFollowup("すべての設定が解除されました！今後このチャンネルには何も送信されません。");
+        return event.createFollowup("設定しました！今後このチャンネルに以下の情報が送信されます。\r" + String.join(", ", event.getValues()));
     }
 }
