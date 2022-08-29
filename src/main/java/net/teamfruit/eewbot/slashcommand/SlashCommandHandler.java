@@ -1,9 +1,11 @@
 package net.teamfruit.eewbot.slashcommand;
 
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
+import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.InviteSlashCommand;
 import net.teamfruit.eewbot.slashcommand.impl.SetupSlashCommand;
 import reactor.core.publisher.Mono;
@@ -43,7 +45,7 @@ public class SlashCommandHandler {
 
         bot.getClient().on(ApplicationCommandInteractionEvent.class)
                 .filter(event -> commands.containsKey(event.getCommandName()))
-                .flatMap(event -> commands.get(event.getCommandName()).on(bot, event)
+                .flatMap(event -> commands.get(event.getCommandName()).on(bot, event, getLanguage(bot, event))
                         .onErrorResume(err -> event.createFollowup("エラーが発生しました！").then()))
                 .subscribe();
 
@@ -53,8 +55,15 @@ public class SlashCommandHandler {
                                 .map(ISelectMenuSlashCommand.class::cast)
                                 .filter(command -> command.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
-                        .flatMap(command -> command.onSelect(bot, event)
+                        .flatMap(command -> command.onSelect(bot, event, getLanguage(bot, event))
                                 .onErrorResume(err -> event.createFollowup("エラーが発生しました！").then())))
                 .subscribe();
+    }
+
+    public static String getLanguage(EEWBot bot, InteractionCreateEvent event) {
+        Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
+        if (channel == null)
+            return bot.getConfig().getDefaultLanuage();
+        return channel.lang;
     }
 }

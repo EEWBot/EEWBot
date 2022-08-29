@@ -10,5 +10,5 @@ public interface ISelectMenuSlashCommand extends ISlashCommand {
 
     List<String> getCustomIds();
 
-    Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event);
+    Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event, String lang);
 }

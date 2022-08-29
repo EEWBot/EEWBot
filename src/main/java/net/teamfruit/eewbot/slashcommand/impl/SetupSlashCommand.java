@@ -8,6 +8,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
 import reactor.core.publisher.Mono;
@@ -39,7 +40,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     @Override
-    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event) {
+    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
         if (!bot.getChannels().containsKey(channelId)) {
             bot.getChannelsLock().writeLock().lock();
@@ -47,45 +48,45 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
             bot.getChannelsLock().writeLock().unlock();
         }
 
-        return event.reply("このチャンネルのBotの動作を設定します。")
-                .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId)))
+        return event.reply(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply"))
+                .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)))
                 .withEphemeral(true);
     }
 
-    private SelectMenu buildMainSelectMenu(EEWBot bot, long channelId) {
+    private SelectMenu buildMainSelectMenu(EEWBot bot, long channelId, String lang) {
         Map<String, Boolean> fields = bot.getChannels().get(channelId).getCommandFields();
         return SelectMenu.of("channel", fields.entrySet().stream().map(entry -> {
                     if (entry.getValue())
                         return SelectMenu.Option.ofDefault(entry.getKey(), entry.getKey());
                     return SelectMenu.Option.of(entry.getKey(), entry.getKey());
                 }).collect(Collectors.toList()))
-                .withPlaceholder("メイン設定（複数選択可）")
+                .withPlaceholder(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.channel.placeholder"))
                 .withMinValues(0)
                 .withMaxValues(fields.size());
     }
 
-    private SelectMenu buildSensitivitySelectMenu(EEWBot bot, long channelId) {
+    private SelectMenu buildSensitivitySelectMenu(EEWBot bot, long channelId, String lang) {
         Channel channel = bot.getChannels().get(channelId);
         return SelectMenu.of("sensitivity", Arrays.stream(SeismicIntensity.values()).map(intensity -> {
                     if (channel.minIntensity == intensity)
-                        return SelectMenu.Option.ofDefault("最小通知震度 " + intensity.getSimple(), intensity.getSimple());
-                    return SelectMenu.Option.of("最小通知震度 " + intensity.getSimple(), intensity.getSimple());
+                        return SelectMenu.Option.ofDefault(I18n.INSTANCE.format(lang, "eewbot.scmd.setup.sensitivity.option", intensity), intensity.getSimple());
+                    return SelectMenu.Option.of(I18n.INSTANCE.format(lang, "eewbot.scmd.setup.sensitivity.option", intensity), intensity.getSimple());
                 }).collect(Collectors.toList()))
-                .withPlaceholder("最小通知震度")
+                .withPlaceholder(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.sensitivity.placeholder"))
                 .withMinValues(1)
                 .withMaxValues(1);
     }
 
     @Override
-    public Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event) {
+    public Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         if (event.getCustomId().equals("channel"))
-            return event.deferReply().then(applyChannel(bot, event)).then();
+            return event.deferReply().then(applyChannel(bot, event, lang)).then();
         else if (event.getCustomId().equals("sensitivity"))
-            return event.deferReply().then(applySensitivity(bot, event)).then();
+            return event.deferReply().then(applySensitivity(bot, event, lang)).then();
         return Mono.empty();
     }
 
-    private Mono<Message> applyChannel(EEWBot bot, SelectMenuInteractionEvent event) {
+    private Mono<Message> applyChannel(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
         channel.getCommandFields().keySet().forEach(name -> channel.set(name, event.getValues().contains(name)));
         try {
@@ -94,12 +95,12 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
             return Mono.error(e);
         }
         if (event.getValues().isEmpty())
-            return event.createFollowup("すべての設定が解除されました！今後このチャンネルには何も送信されません。");
-        return event.createFollowup("設定しました！今後このチャンネルに以下の情報が送信されます。\r" + String.join(", ", event.getValues()))
+            return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.channel.followup.none"));
+        return event.createFollowup(I18n.INSTANCE.format(lang, "eewbot.scmd.setup.channel.followup.any", String.join(", ", event.getValues())))
                 .withEphemeral(true);
     }
 
-    private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event) {
+    private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
         Optional<SeismicIntensity> intensity = SeismicIntensity.get(event.getValues().get(0));
         if (!intensity.isPresent())
@@ -110,7 +111,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         } catch (IOException e) {
             return Mono.error(e);
         }
-        return event.createFollowup("最小通知震度を設定しました！今後このチャンネルに**震度" + channel.minIntensity.getSimple() + "**以上の情報が送信されます。")
+        return event.createFollowup(I18n.INSTANCE.format(lang, "eewbot.scmd.setup.sensitivity.followup", channel.minIntensity.getSimple()))
                 .withEphemeral(true);
     }
 }
