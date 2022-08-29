@@ -23,6 +23,7 @@ public class SlashCommandHandler {
         registerCommand(new MonitorSlashCommand());
         registerCommand(new TimeSlashCommand());
         registerCommand(new InviteSlashCommand());
+        registerCommand(new HelpSlashCommand());
     }
 
     public SlashCommandHandler(EEWBot bot) {

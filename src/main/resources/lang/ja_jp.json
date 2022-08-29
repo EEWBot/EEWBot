@@ -95,5 +95,14 @@
   "eewbot.scmd.setup.sensitivity.option": "最小通知震度 %s",
   "eewbot.scmd.setup.sensitivity.placeholder": "最小通知震度",
   "eewbot.scmd.setup.sensitivity.followup": "最小通知震度を設定しました！今後このチャンネルに**震度%s**以上の情報が送信されます。",
-  "eewbot.scmd.time.rsync": "強制再同期"
+  "eewbot.scmd.time.rsync": "強制再同期",
+  "eewbot.scmd.help.title": "Help",
+  "eewbot.scmd.help.field.set.value": "コマンドを実行しているチャンネルの設定ができます。Botが通知する情報の種類、最小震度が設定できます。",
+  "eewbot.scmd.help.field.quakeinfo.value": "最新の地震情報が取得できます。",
+  "eewbot.scmd.help.field.monitor.value": "現在の強震モニタが取得できます。",
+  "eewbot.scmd.help.field.time.value": "Botの時刻同期情報の確認と、強制再同期ができます。",
+  "eewbot.scmd.help.field.invite.value": "Botの招待URLを取得します。",
+  "eewbot.scmd.help.field.help.value": "Helpを表示します。",
+  "eewbot.scmd.help.field.links.name": "リンク",
+  "eewbot.scmd.help.field.links.value": "[GitHub](https://github.com/Team-Fruit/EEWBot)\n[サポートサーバー](https://discord.gg/wATGHHY)"
 }
