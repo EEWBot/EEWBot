@@ -8,6 +8,7 @@ import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.InviteSlashCommand;
+import net.teamfruit.eewbot.slashcommand.impl.QuakeInfoSlashCommand;
 import net.teamfruit.eewbot.slashcommand.impl.SetupSlashCommand;
 import reactor.core.publisher.Mono;
 
@@ -18,11 +19,9 @@ public class SlashCommandHandler {
     public static HashMap<String, ISlashCommand> commands = new HashMap<>();
 
     static {
-        InviteSlashCommand invite = new InviteSlashCommand();
-        commands.put(invite.getCommandName(), invite);
-
-        SetupSlashCommand setup = new SetupSlashCommand();
-        commands.put(setup.getCommandName(), setup);
+        registerCommand(new SetupSlashCommand());
+        registerCommand(new QuakeInfoSlashCommand());
+        registerCommand(new InviteSlashCommand());
     }
 
     public SlashCommandHandler(EEWBot bot) {
@@ -59,6 +58,10 @@ public class SlashCommandHandler {
                         .flatMap(command -> command.onSelect(bot, event, getLanguage(bot, event))
                                 .onErrorResume(err -> event.createFollowup(I18n.INSTANCE.get(getLanguage(bot, event), "eewbot.scmd.error")).then())))
                 .subscribe();
+    }
+
+    public static void registerCommand(ISlashCommand command) {
+        commands.put(command.getCommandName(), command);
     }
 
     public static String getLanguage(EEWBot bot, InteractionCreateEvent event) {

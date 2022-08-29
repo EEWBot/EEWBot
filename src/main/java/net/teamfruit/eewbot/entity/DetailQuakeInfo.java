@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.entity;
 
+import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
@@ -253,15 +254,19 @@ public class DetailQuakeInfo implements Entity {
 	@Override
 	public MessageCreateSpec createMessage(final String lang) {
 		return MessageCreateSpec.builder()
-				.addEmbed(I18nEmbedCreateSpec.builder(lang)
-						.title("eewbot.quakeinfo.title")
-						.addField("eewbot.quakeinfo.epicenter", getEarthquake().getEpicenter(), true)
-						.addField("eewbot.quakeinfo.depth", getEarthquake().getDepth(), true)
-						.addField("eewbot.quakeinfo.magnitude", getEarthquake().getMagnitude(), true)
-						.addField("eewbot.quakeinfo.seismicintensity", getEarthquake().getIntensity().getSimple(), false)
-						.image(QuakeInfoGateway.REMOTE_ROOT+getEarthquake().getDetail())
-						.color(getEarthquake().getIntensity().getColor())
-						.timestamp(getEarthquake().getTime().atZone(TimeProvider.ZONE_ID).toInstant())
-						.build()).build();
+				.addEmbed(createEmbed(lang)).build();
+	}
+
+	public EmbedCreateSpec createEmbed(String lang) {
+		return I18nEmbedCreateSpec.builder(lang)
+				.title("eewbot.quakeinfo.title")
+				.addField("eewbot.quakeinfo.epicenter", getEarthquake().getEpicenter(), true)
+				.addField("eewbot.quakeinfo.depth", getEarthquake().getDepth(), true)
+				.addField("eewbot.quakeinfo.magnitude", getEarthquake().getMagnitude(), true)
+				.addField("eewbot.quakeinfo.seismicintensity", getEarthquake().getIntensity().getSimple(), false)
+				.image(QuakeInfoGateway.REMOTE_ROOT + getEarthquake().getDetail())
+				.color(getEarthquake().getIntensity().getColor())
+				.timestamp(getEarthquake().getTime().atZone(TimeProvider.ZONE_ID).toInstant())
+				.build();
 	}
 }
