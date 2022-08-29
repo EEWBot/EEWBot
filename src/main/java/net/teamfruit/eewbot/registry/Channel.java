@@ -5,6 +5,7 @@ import net.teamfruit.eewbot.i18n.I18n;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Channel {
@@ -78,7 +79,7 @@ public class Channel {
     public Map<String, Boolean> getCommandFields() {
         return Arrays.stream(getClass().getFields())
                 .filter(field -> field.isAnnotationPresent(CommandName.class))
-                .collect(Collectors.toMap(field -> field.getAnnotation(CommandName.class).value(), field -> {
+                .collect(Collectors.toMap(field -> field.getName(), field -> {
                     try {
                         return field.getBoolean(this);
                     } catch (IllegalAccessException e) {
@@ -86,7 +87,7 @@ public class Channel {
                     }
                 }));
     }
-    
+
     @Override
     public String toString() {
         return Arrays.stream(getClass().getFields())
@@ -100,6 +101,13 @@ public class Channel {
                 })
                 // TODO
                 .collect(Collectors.joining("\n")) + "\n`最小通知震度` " + this.minIntensity.getSimple();
+    }
+
+    public static Optional<String> toCommandName(String fieldName) {
+        return Arrays.stream(Channel.class.getFields())
+                .filter(field -> field.getName().equals(fieldName) && field.isAnnotationPresent(CommandName.class))
+                .map(field -> field.getAnnotation(CommandName.class).value())
+                .findAny();
     }
 
     @SuppressWarnings("deprecation")

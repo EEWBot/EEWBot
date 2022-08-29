@@ -56,9 +56,10 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     private SelectMenu buildMainSelectMenu(EEWBot bot, long channelId, String lang) {
         Map<String, Boolean> fields = bot.getChannels().get(channelId).getCommandFields();
         return SelectMenu.of("channel", fields.entrySet().stream().map(entry -> {
-                    if (entry.getValue())
-                        return SelectMenu.Option.ofDefault(entry.getKey(), entry.getKey());
-                    return SelectMenu.Option.of(entry.getKey(), entry.getKey());
+                    String label = I18n.INSTANCE.get(lang, "eewbot.scmd.setup.channel." + entry.getKey().toLowerCase() + ".label");
+                    SelectMenu.Option option = entry.getValue() ? SelectMenu.Option.ofDefault(label, entry.getKey()) : SelectMenu.Option.of(label, entry.getKey());
+                    option = option.withDescription(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.channel." + entry.getKey().toLowerCase() + ".desc"));
+                    return option;
                 }).collect(Collectors.toList()))
                 .withPlaceholder(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.channel.placeholder"))
                 .withMinValues(0)
@@ -96,7 +97,9 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         }
         if (event.getValues().isEmpty())
             return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.channel.followup.none"));
-        return event.createFollowup(I18n.INSTANCE.format(lang, "eewbot.scmd.setup.channel.followup.any", String.join(", ", event.getValues())))
+        return event.createFollowup(I18n.INSTANCE.format(lang, "eewbot.scmd.setup.channel.followup.any",
+                        event.getValues().stream()
+                                .map(value -> Channel.toCommandName(value).orElse("")).collect(Collectors.joining(", "))))
                 .withEphemeral(true);
     }
 
