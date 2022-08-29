@@ -39,8 +39,8 @@ public class TimeSlashCommand implements IButtonSlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
-        return event.reply().withEmbeds(buildTimeEmbed(bot, lang))
-                .withComponents(ActionRow.of(Button.primary("timesync", I18n.INSTANCE.get(lang, "eewbot.scmd.time.rsync"))));
+        return event.reply().withEmbeds(buildTimeEmbed(bot.getExecutor().getProvider(), lang))
+                .withComponents(ActionRow.of(Button.primary("timesync", I18n.INSTANCE.get(lang, "eewbot.scmd.time.resync"))));
     }
 
 
@@ -50,23 +50,24 @@ public class TimeSlashCommand implements IButtonSlashCommand {
     }
 
     private Mono<Message> resync(EEWBot bot, ButtonInteractionEvent event, String lang) {
-        return bot.getExecutor().getProvider().fetch().then(event.editReply()
-                .withEmbeds(buildTimeEmbed(bot, lang))
-                .withComponents(ActionRow.of(Button.primary("timesync", I18n.INSTANCE.get(lang, "eewbot.scmd.time.rsync")).disabled())));
+        return bot.getExecutor().getProvider().fetch()
+                .flatMap(time -> event.editReply()
+                        .withEmbeds(buildTimeEmbed(time, lang))
+                        .withComponents(ActionRow.of(Button.primary("timesync", I18n.INSTANCE.get(lang, "eewbot.scmd.time.resync")).disabled())));
     }
 
-    private EmbedCreateSpec buildTimeEmbed(EEWBot bot, String lang) {
+    private EmbedCreateSpec buildTimeEmbed(TimeProvider time, String lang) {
         return CommandUtils.createEmbed(lang)
                 .title("eewbot.cmd.time.title")
-                .addField("eewbot.cmd.time.field.lastpctime.name", bot.getExecutor().getProvider().getLastComputerTime()
+                .addField("eewbot.cmd.time.field.lastpctime.name", time.getLastComputerTime()
                         .map(ZonedDateTime::toString)
                         .orElse("eewbot.cmd.time.field.nonsync.value"), false)
-                .addField("eewbot.cmd.time.field.lastntptime.name", bot.getExecutor().getProvider().getLastNTPTime()
+                .addField("eewbot.cmd.time.field.lastntptime.name", time.getLastNTPTime()
                         .map(ZonedDateTime::toString)
                         .orElse("eewbot.cmd.time.field.nonsync.value"), false)
                 .addField("eewbot.cmd.time.field.nowpctime.name", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
-                .addField("eewbot.cmd.time.field.nowoffsettime.name", bot.getExecutor().getProvider().now().toString(), false)
-                .addField("eewbot.cmd.time.field.offset.name", String.valueOf(bot.getExecutor().getProvider().getOffset()), false)
+                .addField("eewbot.cmd.time.field.nowoffsettime.name", time.now().toString(), false)
+                .addField("eewbot.cmd.time.field.offset.name", String.valueOf(time.getOffset()), false)
                 .build();
     }
 }
