@@ -8,6 +8,7 @@ import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.InviteSlashCommand;
+import net.teamfruit.eewbot.slashcommand.impl.MonitorSlashCommand;
 import net.teamfruit.eewbot.slashcommand.impl.QuakeInfoSlashCommand;
 import net.teamfruit.eewbot.slashcommand.impl.SetupSlashCommand;
 import reactor.core.publisher.Mono;
@@ -21,6 +22,7 @@ public class SlashCommandHandler {
     static {
         registerCommand(new SetupSlashCommand());
         registerCommand(new QuakeInfoSlashCommand());
+        registerCommand(new MonitorSlashCommand());
         registerCommand(new InviteSlashCommand());
     }
 
