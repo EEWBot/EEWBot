@@ -94,5 +94,6 @@
   "eewbot.scmd.setup.channel.followup.any": "設定しました！今後このチャンネルに以下の情報が送信されます。\n%s",
   "eewbot.scmd.setup.sensitivity.option": "最小通知震度 %s",
   "eewbot.scmd.setup.sensitivity.placeholder": "最小通知震度",
-  "eewbot.scmd.setup.sensitivity.followup": "最小通知震度を設定しました！今後このチャンネルに**震度%s**以上の情報が送信されます。"
+  "eewbot.scmd.setup.sensitivity.followup": "最小通知震度を設定しました！今後このチャンネルに**震度%s**以上の情報が送信されます。",
+  "eewbot.scmd.time.rsync": "強制再同期"
 }

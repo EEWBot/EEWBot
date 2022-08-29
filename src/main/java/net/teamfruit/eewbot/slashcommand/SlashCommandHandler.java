@@ -1,16 +1,14 @@
 package net.teamfruit.eewbot.slashcommand;
 
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
-import net.teamfruit.eewbot.slashcommand.impl.InviteSlashCommand;
-import net.teamfruit.eewbot.slashcommand.impl.MonitorSlashCommand;
-import net.teamfruit.eewbot.slashcommand.impl.QuakeInfoSlashCommand;
-import net.teamfruit.eewbot.slashcommand.impl.SetupSlashCommand;
+import net.teamfruit.eewbot.slashcommand.impl.*;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
@@ -23,6 +21,7 @@ public class SlashCommandHandler {
         registerCommand(new SetupSlashCommand());
         registerCommand(new QuakeInfoSlashCommand());
         registerCommand(new MonitorSlashCommand());
+        registerCommand(new TimeSlashCommand());
         registerCommand(new InviteSlashCommand());
     }
 
@@ -58,6 +57,16 @@ public class SlashCommandHandler {
                                 .filter(command -> command.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
                         .flatMap(command -> command.onSelect(bot, event, getLanguage(bot, event))
+                                .onErrorResume(err -> event.createFollowup(I18n.INSTANCE.get(getLanguage(bot, event), "eewbot.scmd.error")).then())))
+                .subscribe();
+
+        bot.getClient().on(ButtonInteractionEvent.class)
+                .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
+                                .filter(IButtonSlashCommand.class::isInstance)
+                                .map(IButtonSlashCommand.class::cast)
+                                .filter(command -> command.getCustomIds().contains(event.getCustomId()))
+                                .findAny())
+                        .flatMap(command -> command.onClick(bot, event, getLanguage(bot, event))
                                 .onErrorResume(err -> event.createFollowup(I18n.INSTANCE.get(getLanguage(bot, event), "eewbot.scmd.error")).then())))
                 .subscribe();
     }
