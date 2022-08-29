@@ -5,6 +5,7 @@ import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.InviteSlashCommand;
 import net.teamfruit.eewbot.slashcommand.impl.SetupSlashCommand;
@@ -46,7 +47,7 @@ public class SlashCommandHandler {
         bot.getClient().on(ApplicationCommandInteractionEvent.class)
                 .filter(event -> commands.containsKey(event.getCommandName()))
                 .flatMap(event -> commands.get(event.getCommandName()).on(bot, event, getLanguage(bot, event))
-                        .onErrorResume(err -> event.createFollowup("エラーが発生しました！").then()))
+                        .onErrorResume(err -> event.createFollowup(I18n.INSTANCE.get(getLanguage(bot, event), "eewbot.scmd.error")).then()))
                 .subscribe();
 
         bot.getClient().on(SelectMenuInteractionEvent.class)
@@ -56,7 +57,7 @@ public class SlashCommandHandler {
                                 .filter(command -> command.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
                         .flatMap(command -> command.onSelect(bot, event, getLanguage(bot, event))
-                                .onErrorResume(err -> event.createFollowup("エラーが発生しました！").then())))
+                                .onErrorResume(err -> event.createFollowup(I18n.INSTANCE.get(getLanguage(bot, event), "eewbot.scmd.error")).then())))
                 .subscribe();
     }
 

@@ -87,6 +87,7 @@
   "eewbot.quakeinfo.depth": "深さ",
   "eewbot.quakeinfo.magnitude": "マグニチュード",
   "eewbot.quakeinfo.seismicintensity": "最大震度",
+  "eewbot.scmd.error": "エラーが発生しました！",
   "eewbot.scmd.setup.reply": "このチャンネルのBotの動作を設定します。",
   "eewbot.scmd.setup.channel.placeholder": "メイン設定（複数選択可）",
   "eewbot.scmd.setup.channel.followup.none": "すべての設定が解除されました！今後このチャンネルには何も送信されません。",
