@@ -26,6 +26,7 @@ public class HelpSlashCommand implements ISlashCommand {
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
         return event.reply().withEmbeds(CommandUtils.createEmbed(lang)
                 .title("eewbot.scmd.help.title")
+                .description("eewbot.scmd.help.desc")
                 .addField("/setup", "eewbot.scmd.help.field.set.value", false)
                 .addField("/quakeinfo", "eewbot.scmd.help.field.quakeinfo.value", false)
                 .addField("/monitor", "eewbot.scmd.help.field.monitor.value", false)
