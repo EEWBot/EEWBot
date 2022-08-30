@@ -1,31 +1,17 @@
 package net.teamfruit.eewbot.command;
 
-import static net.teamfruit.eewbot.command.CommandUtils.*;
+import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.event.domain.message.ReactionAddEvent;
+import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.command.impl.*;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
-
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.event.domain.message.ReactionAddEvent;
-import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.command.impl.AddCommand;
-import net.teamfruit.eewbot.command.impl.DetailCommand;
-import net.teamfruit.eewbot.command.impl.HelpCommand;
-import net.teamfruit.eewbot.command.impl.JoinServerCommand;
-import net.teamfruit.eewbot.command.impl.MonitorCommand;
-import net.teamfruit.eewbot.command.impl.QuakeInfoCommand;
-import net.teamfruit.eewbot.command.impl.RegisterCommand;
-import net.teamfruit.eewbot.command.impl.ReloadCommand;
-import net.teamfruit.eewbot.command.impl.RemoveCommand;
-import net.teamfruit.eewbot.command.impl.SensitivityCommand;
-import net.teamfruit.eewbot.command.impl.SetLangCommand;
-import net.teamfruit.eewbot.command.impl.TimeCommand;
-import net.teamfruit.eewbot.command.impl.TimeFixCommand;
-import net.teamfruit.eewbot.command.impl.UnRegisterCommand;
-import reactor.core.publisher.Mono;
+import static net.teamfruit.eewbot.command.CommandUtils.*;
 
 public class CommandHandler {
 
@@ -45,8 +31,8 @@ public class CommandHandler {
 		commands.put("sensitivity", wrap(new SensitivityCommand()));
 		commands.put("help", wrap(new HelpCommand()));
 
-		commands.put("register", () -> new RegisterCommand());
-		commands.put("setlang", () -> new SetLangCommand());
+		commands.put("register", RegisterCommand::new);
+		commands.put("setlang", SetLangCommand::new);
 	}
 
 	private final EEWBot bot;
@@ -63,18 +49,20 @@ public class CommandHandler {
 						.filterWhen(array -> Mono.just(array.length>=2&&commands.containsKey(array[1]))
 								.filter(b -> b)
 								.switchIfEmpty(event.getMessage().getChannel()
-										.flatMap(channel -> channel.createEmbed(embed -> createErrorEmbed(embed, getLanguage(bot, event))
-												.setTitle("eewbot.cmd.err.unknown.title")
-												.setDescription("eewbot.cmd.err.unknown.desc")))
+										.flatMap(channel -> channel.createMessage(createErrorEmbed(getLanguage(bot, event))
+												.title("eewbot.cmd.err.unknown.title")
+												.description("eewbot.cmd.err.unknown.desc")
+												.build()))
 										.map(m -> false)))
 						.filterWhen(array -> Mono.just(!this.bot.getConfig().isEnablePermission())
 								.flatMap(b -> Mono.justOrEmpty(event.getMember())
 										.map(member -> b||userHasPermission(bot, member.getId().asLong(), array[1])))
 								.filter(b -> b)
 								.switchIfEmpty(event.getMessage().getChannel()
-										.flatMap(channel -> channel.createEmbed(embed -> createErrorEmbed(embed, getLanguage(bot, event))
-												.setTitle("eewbot.cmd.err.permission.title")
-												.setDescription("eewbot.cmd.err.permission.desc")))
+										.flatMap(channel -> channel.createMessage(createErrorEmbed(getLanguage(bot, event))
+												.title("eewbot.cmd.err.permission.title")
+												.description("eewbot.cmd.err.permission.desc")
+												.build()))
 										.map(m -> false)))
 						.map(array -> commands.get(array[1]).get())
 						.filterWhen(cmd -> Mono.just(!(cmd instanceof ReactionCommand))
@@ -87,9 +75,10 @@ public class CommandHandler {
 										})))
 						.flatMap(cmd -> cmd.execute(bot, event, getLanguage(bot, event)))
 						.doOnError(err -> event.getMessage().getChannel()
-								.flatMap(channel -> channel.createEmbed(embed -> createErrorEmbed(embed, getLanguage(bot, event))
-										.setTitle("eewbot.cmd.err.error.title")
-										.setDescription(ExceptionUtils.getMessage(err))))
+								.flatMap(channel -> channel.createMessage(createErrorEmbed(getLanguage(bot, event))
+										.title("eewbot.cmd.err.error.title")
+										.description(ExceptionUtils.getMessage(err))
+										.build()))
 								.subscribe())
 						.onErrorResume(e -> Mono.empty()))
 				.subscribe();
@@ -104,9 +93,10 @@ public class CommandHandler {
 							return true;
 						})
 						.doOnError(err -> event.getChannel()
-								.flatMap(channel -> channel.createEmbed(embed -> createErrorEmbed(embed, getLanguage(bot, event))
-										.setTitle("eewbot.cmd.err.error.title")
-										.setDescription(ExceptionUtils.getMessage(err))))
+								.flatMap(channel -> channel.createMessage(createErrorEmbed(getLanguage(bot, event))
+										.title("eewbot.cmd.err.error.title")
+										.description(ExceptionUtils.getMessage(err))
+										.build()))
 								.subscribe())
 						.onErrorResume(e -> Mono.empty()))
 				.subscribe();

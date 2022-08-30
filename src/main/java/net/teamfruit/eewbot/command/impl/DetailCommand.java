@@ -13,13 +13,14 @@ public class DetailCommand implements ICommand {
 		return event.getMessage().getChannel()
 				.filterWhen(channel -> Mono.just(bot.getChannels().containsKey(channel.getId().asLong()))
 						.filter(b -> b)
-						.switchIfEmpty(channel.createEmbed(embed -> CommandUtils.createErrorEmbed(embed, lang)
-								.setTitle("eewbot.cmd.detail.title")
-								.setDescription("eewbot.cmd.err.channelnotregistered.desc"))
+						.switchIfEmpty(channel.createMessage(CommandUtils.createErrorEmbed(lang)
+								.title("eewbot.cmd.detail.title")
+								.description("eewbot.cmd.err.channelnotregistered.desc").build())
 								.map(m -> false)))
-				.flatMap(channel -> channel.createEmbed(embed -> CommandUtils.createEmbed(embed, lang)
-						.setTitle("eewbot.cmd.detail.title")
-						.setDescription(bot.getChannels().get(channel.getId().asLong()).toString())))
+				.flatMap(channel -> channel.createMessage(CommandUtils.createEmbed(lang)
+						.title("eewbot.cmd.detail.title")
+						.description(bot.getChannels().get(channel.getId().asLong()).toString())
+						.build()))
 				.then();
 	}
 
