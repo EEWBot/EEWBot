@@ -89,6 +89,8 @@
   "eewbot.quakeinfo.seismicintensity": "最大震度",
   "eewbot.scmd.error": "エラーが発生しました！",
   "eewbot.scmd.setup.reply": "このチャンネルのBotの動作を設定します。",
+  "eewbot.scmd.setup.permserror.viewchannel": "Botがこのチャンネルを閲覧する権限がありません！",
+  "eewbot.scmd.setup.permserror.sendmessages": "Botがこのチャンネルにメッセージを送信する権限がありません！",
   "eewbot.scmd.setup.channel.placeholder": "メイン設定（複数選択可）",
   "eewbot.scmd.setup.channel.eewalert.label": "EEW警報",
   "eewbot.scmd.setup.channel.eewalert.desc": "最大震度5弱以上と予想される緊急地震速報",
