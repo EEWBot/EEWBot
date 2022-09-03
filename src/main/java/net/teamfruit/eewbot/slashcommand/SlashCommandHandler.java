@@ -6,9 +6,11 @@ import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.i18n.I18n;
+import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.command.CommandUtils;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.*;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
@@ -46,9 +48,17 @@ public class SlashCommandHandler {
         }
 
         bot.getClient().on(ApplicationCommandInteractionEvent.class)
-                .filter(event -> commands.containsKey(event.getCommandName()))
-                .flatMap(event -> commands.get(event.getCommandName()).on(bot, event, getLanguage(bot, event))
-                        .onErrorResume(err -> event.createFollowup(I18n.INSTANCE.get(getLanguage(bot, event), "eewbot.scmd.error")).then()))
+                .flatMap(event -> Mono.just(event.getCommandName())
+                        .filter(name -> commands.containsKey(name))
+                        .map(commands::get)
+                        .flatMap(cmd -> cmd.on(bot, event, getLanguage(bot, event)))
+                        .doOnError(err -> Log.logger.error("Error in {} command", event.getCommandName(), err))
+                        .onErrorResume(err -> event.reply()
+                                .withEmbeds(CommandUtils.createErrorEmbed(getLanguage(bot, event))
+                                        .title("eewbot.scmd.error")
+                                        .description(ExceptionUtils.getMessage(err))
+                                        .build())
+                                .withEphemeral(true)))
                 .subscribe();
 
         bot.getClient().on(SelectMenuInteractionEvent.class)
@@ -57,8 +67,9 @@ public class SlashCommandHandler {
                                 .map(ISelectMenuSlashCommand.class::cast)
                                 .filter(command -> command.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
-                        .flatMap(command -> command.onSelect(bot, event, getLanguage(bot, event))
-                                .onErrorResume(err -> event.createFollowup(I18n.INSTANCE.get(getLanguage(bot, event), "eewbot.scmd.error")).then())))
+                        .flatMap(command -> command.onSelect(bot, event, getLanguage(bot, event)))
+                        .doOnError(err -> Log.logger.error("Error in {} action", event.getCustomId(), err))
+                        .onErrorResume(err -> Mono.empty()))
                 .subscribe();
 
         bot.getClient().on(ButtonInteractionEvent.class)
@@ -67,8 +78,9 @@ public class SlashCommandHandler {
                                 .map(IButtonSlashCommand.class::cast)
                                 .filter(command -> command.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
-                        .flatMap(command -> command.onClick(bot, event, getLanguage(bot, event))
-                                .onErrorResume(err -> event.createFollowup(I18n.INSTANCE.get(getLanguage(bot, event), "eewbot.scmd.error")).then())))
+                        .flatMap(command -> command.onClick(bot, event, getLanguage(bot, event)))
+                        .doOnError(err -> Log.logger.error("Error in {} action", event.getCustomId(), err))
+                        .onErrorResume(err -> Mono.empty()))
                 .subscribe();
     }
 
