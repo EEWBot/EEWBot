@@ -46,7 +46,10 @@ public class ConfigurationRegistry<E> {
     }
 
     private static void writeConfig(final Path path, final Object obj, final Type type) throws IOException {
-        Files.createDirectories(path.getParent());
+        Path parent = path.getParent();
+        if (parent != null)
+            Files.createDirectories(parent);
+        
         try (Writer w = Files.newBufferedWriter(path)) {
             if (type != null)
                 EEWBot.GSON.toJson(obj, type, w);
