@@ -52,13 +52,14 @@ public class SlashCommandHandler {
                         .filter(name -> commands.containsKey(name))
                         .map(commands::get)
                         .flatMap(cmd -> cmd.on(bot, event, getLanguage(bot, event)))
-                        .doOnError(err -> Log.logger.error("Error in {} command", event.getCommandName(), err))
+                        .doOnError(err -> Log.logger.error("Error during {} command", event.getCommandName(), err))
                         .onErrorResume(err -> event.reply()
                                 .withEmbeds(CommandUtils.createErrorEmbed(getLanguage(bot, event))
                                         .title("eewbot.scmd.error")
                                         .description(ExceptionUtils.getMessage(err))
                                         .build())
                                 .withEphemeral(true)))
+                .onErrorResume(e -> Mono.empty())
                 .subscribe();
 
         bot.getClient().on(SelectMenuInteractionEvent.class)
@@ -68,8 +69,9 @@ public class SlashCommandHandler {
                                 .filter(command -> command.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
                         .flatMap(command -> command.onSelect(bot, event, getLanguage(bot, event)))
-                        .doOnError(err -> Log.logger.error("Error in {} action", event.getCustomId(), err))
+                        .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
+                .onErrorResume(e -> Mono.empty())
                 .subscribe();
 
         bot.getClient().on(ButtonInteractionEvent.class)
@@ -79,8 +81,9 @@ public class SlashCommandHandler {
                                 .filter(command -> command.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
                         .flatMap(command -> command.onClick(bot, event, getLanguage(bot, event)))
-                        .doOnError(err -> Log.logger.error("Error in {} action", event.getCustomId(), err))
+                        .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
+                .onErrorResume(e -> Mono.empty())
                 .subscribe();
     }
 
