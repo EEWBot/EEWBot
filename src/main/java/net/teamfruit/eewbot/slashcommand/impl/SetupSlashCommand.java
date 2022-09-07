@@ -38,6 +38,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         return ApplicationCommandRequest.builder()
                 .name(getCommandName())
                 .description("現在のチャンネルにBotが通知する情報を設定します。")
+                .defaultPermission(false)
+                .defaultMemberPermissions(String.valueOf(Permission.MANAGE_GUILD.getValue()))
                 .build();
     }
 
