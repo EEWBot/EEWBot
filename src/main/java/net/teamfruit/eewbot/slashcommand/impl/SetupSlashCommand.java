@@ -5,7 +5,9 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18n;
@@ -48,9 +50,21 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
             bot.getChannelsLock().writeLock().unlock();
         }
 
-        return event.reply(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply"))
-                .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)))
-                .withEphemeral(true);
+        return event.deferReply().withEphemeral(true).then(event.getInteraction().getChannel()
+                .flatMap(channel -> Mono.just(channel)
+                        .filter(GuildChannel.class::isInstance)
+                        .cast(GuildChannel.class)
+                        .flatMap(guildChannel -> guildChannel.getEffectivePermissions(bot.getClient().getSelfId()))
+                        .filter(perms -> !perms.contains(Permission.VIEW_CHANNEL) || !perms.contains(Permission.SEND_MESSAGES))
+                        .flatMap(perms -> {
+                            if (!perms.contains(Permission.VIEW_CHANNEL))
+                                return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel")).withEphemeral(true);
+                            return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.sendmessages")).withEphemeral(true);
+                        }))
+                .switchIfEmpty(event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply"))
+                        .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)))
+                        .withEphemeral(true)
+                )).then();
     }
 
     private SelectMenu buildMainSelectMenu(EEWBot bot, long channelId, String lang) {
