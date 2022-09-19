@@ -24,7 +24,7 @@ public class InviteSlashCommand implements ISlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
-        return event.reply("https://discordapp.com/oauth2/authorize?client_id=" + event.getClient().getSelfId().asString() + "&scope=bot&permissions=523344")
+        return event.reply("https://discord.com/api/oauth2/authorize?client_id=" + event.getClient().getSelfId().asString() + "&permissions=275414829120&scope=bot%20applications.commands")
                 .withEphemeral(true);
     }
 }
