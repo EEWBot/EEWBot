@@ -58,9 +58,10 @@ public class SlashCommandHandler {
                                         .title("eewbot.scmd.error")
                                         .description(ExceptionUtils.getMessage(err))
                                         .build())
-                                .withEphemeral(true)))
+                                .withEphemeral(true)
+                                .onErrorResume(e -> Mono.empty())))
                 .onErrorResume(e -> Mono.empty())
-                .subscribe();
+                .subscribe(null, err -> Log.logger.error("Unhandled exception during ApplicationCommandInteractionEvent handling", err));
 
         bot.getClient().on(SelectMenuInteractionEvent.class)
                 .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
@@ -72,7 +73,7 @@ public class SlashCommandHandler {
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
                 .onErrorResume(e -> Mono.empty())
-                .subscribe();
+                .subscribe(null, err -> Log.logger.error("Unhandled exception during SelectMenuInteractionEvent handling", err));
 
         bot.getClient().on(ButtonInteractionEvent.class)
                 .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
@@ -84,7 +85,7 @@ public class SlashCommandHandler {
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
                 .onErrorResume(e -> Mono.empty())
-                .subscribe();
+                .subscribe(null, err -> Log.logger.error("Unhandled exception during ButtonInteractionEvent handling", err));
     }
 
     public static void registerCommand(ISlashCommand command) {
