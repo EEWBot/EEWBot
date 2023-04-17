@@ -11,8 +11,7 @@ import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import reactor.core.publisher.Mono;
 
-import javax.xml.bind.JAXB;
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.net.URL;
 import java.util.Optional;
 
@@ -37,7 +36,7 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
 
     private Mono<Message> get(ApplicationCommandInteractionEvent event, String lang) {
         try {
-            QuakeInfo info = JAXB.unmarshal(new URL(QuakeInfoGateway.REMOTE_ROOT + QuakeInfoGateway.REMOTE), QuakeInfo.class);
+            QuakeInfo info = QuakeInfo.QUAKE_INFO_MAPPER.readValue(new URL(QuakeInfoGateway.REMOTE_ROOT + QuakeInfoGateway.REMOTE), QuakeInfo.class);
             Optional<String> url = info.getRecords().stream().findFirst()
                     .flatMap(record -> record.getItems().stream().findFirst())
                     .map(QuakeInfo.Record.Item::getUrl);
@@ -45,9 +44,9 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
             if (!url.isPresent())
                 return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.error"));
 
-            DetailQuakeInfo detail = JAXB.unmarshal(new URL(url.get()), DetailQuakeInfo.class);
+            DetailQuakeInfo detail = DetailQuakeInfo.DETAIL_QUAKE_INFO_MAPPER.readValue(new URL(url.get()), DetailQuakeInfo.class);
             return event.createFollowup().withEmbeds(detail.createEmbed(lang));
-        } catch (MalformedURLException e) {
+        } catch (IOException e) {
             return Mono.error(e);
         }
 

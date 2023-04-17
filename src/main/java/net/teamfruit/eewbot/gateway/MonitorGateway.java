@@ -11,7 +11,6 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 
 import javax.imageio.ImageIO;
-import javax.xml.ws.http.HTTPException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -73,11 +72,11 @@ public abstract class MonitorGateway implements Gateway<Monitor> {
             }
             graphics.dispose();
         } catch (final Exception e) {
-            onError(e);
+            onError(new EEWGatewayException("Failed to fetch monitor", e));
         }
     }
 
-    private BufferedImage getImage(final String uri) throws IOException, HTTPException {
+    private BufferedImage getImage(final String uri) throws IOException {
         final HttpGet get = new HttpGet(uri);
         try (CloseableHttpResponse response = EEWBot.instance.getHttpClient().execute(get)) {
             final StatusLine statusLine = response.getStatusLine();
@@ -86,7 +85,7 @@ public abstract class MonitorGateway implements Gateway<Monitor> {
             else if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND)
                 return null;
             else
-                throw new HTTPException(response.getStatusLine().getStatusCode());
+                throw new EEWGatewayException("Failed to fetch monitor: HTTP " + response.getStatusLine().getStatusCode());
         }
     }
 }

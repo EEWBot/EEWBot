@@ -1,113 +1,130 @@
 package net.teamfruit.eewbot.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonRootName;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlValue;
-import javax.xml.bind.annotation.adapters.XmlAdapter;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-
-@XmlRootElement(name = "jishinReport")
+@JsonRootName("jishinReport")
 public class QuakeInfo {
 
-	private List<Record> records;
+    public static final ObjectMapper QUAKE_INFO_MAPPER = XmlMapper.builder().addModule(new JavaTimeModule()).build();
 
-	@XmlElement(name = "record")
-	public List<Record> getRecords() {
-		return this.records;
-	}
+    @JacksonXmlProperty(localName = "record")
+    @JacksonXmlElementWrapper(useWrapping = false)
+    private List<Record> records;
 
-	public void setRecords(final List<Record> records) {
-		this.records = records;
-	}
+    public List<Record> getRecords() {
+        return records;
+    }
 
-	public static class Record {
+    public void setRecords(List<Record> records) {
+        this.records = records;
+    }
 
-		private List<Item> items;
-		private LocalDate localDate;
+    @Override
+    public String toString() {
+        return "QuakeInfo{" +
+                "records=" + records +
+                '}';
+    }
 
-		@XmlElement(name = "item")
-		public List<Item> getItems() {
-			return this.items;
-		}
+    public static class Record {
 
-		public void setItems(final List<Item> items) {
-			this.items = items;
-		}
+        @JacksonXmlProperty(localName = "date", isAttribute = true)
+        @JsonFormat(pattern = "yyyy年MM月dd日")
+        private LocalDate localDate;
 
-		@XmlAttribute(name = "date")
-		@XmlJavaTypeAdapter(DateAdapter.class)
-		public LocalDate getLocalDate() {
-			return this.localDate;
-		}
+        @JacksonXmlProperty(localName = "item")
+        @JacksonXmlElementWrapper(useWrapping = false)
+        private List<Item> items;
 
-		public void setLocalDate(final LocalDate localDate) {
-			this.localDate = localDate;
-		}
+        public LocalDate getLocalDate() {
+            return localDate;
+        }
 
-		public static class Item {
+        public void setLocalDate(LocalDate localDate) {
+            this.localDate = localDate;
+        }
 
-			private String time;
-			private String intensity;
-			private String url;
-			private String epicenter;
+        public List<Item> getItems() {
+            return items;
+        }
 
-			@XmlAttribute
-			public String getTime() {
-				return this.time;
-			}
+        public void setItems(List<Item> items) {
+            this.items = items;
+        }
 
-			public void setTime(final String time) {
-				this.time = time;
-			}
+        @Override
+        public String toString() {
+            return "Record{" +
+                    "localDate=" + localDate +
+                    ", items=" + items +
+                    '}';
+        }
 
-			@XmlAttribute(name = "shindo")
-			public String getIntensity() {
-				return this.intensity;
-			}
+        public static class Item {
 
-			public void setIntensity(final String intensity) {
-				this.intensity = intensity;
-			}
+            @JacksonXmlProperty(localName = "time", isAttribute = true)
+            private String time;
 
-			@XmlAttribute
-			public String getUrl() {
-				return this.url;
-			}
+            @JacksonXmlProperty(localName = "shindo", isAttribute = true)
+            private String intensity;
 
-			public void setUrl(final String url) {
-				this.url = url;
-			}
+            @JacksonXmlProperty(localName = "url", isAttribute = true)
+            private String url;
 
-			@XmlValue
-			public String getEpicenter() {
-				return this.epicenter;
-			}
+            @JacksonXmlText
+            private String epicenter;
 
-			public void setEpicenter(final String epicenter) {
-				this.epicenter = epicenter;
-			}
+            public String getTime() {
+                return time;
+            }
 
-		}
+            public void setTime(String time) {
+                this.time = time;
+            }
 
-		public static class DateAdapter extends XmlAdapter<String, LocalDate> {
+            public String getIntensity() {
+                return intensity;
+            }
 
-			private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日");
+            public void setIntensity(String intensity) {
+                this.intensity = intensity;
+            }
 
-			@Override
-			public LocalDate unmarshal(final String v) throws Exception {
-				return LocalDate.parse(v, this.formatter);
-			}
+            public String getUrl() {
+                return url;
+            }
 
-			@Override
-			public String marshal(final LocalDate v) throws Exception {
-				return v.format(this.formatter);
-			}
+            public void setUrl(String url) {
+                this.url = url;
+            }
 
-		}
-	}
+            public String getEpicenter() {
+                return epicenter;
+            }
+
+            public void setEpicenter(String value) {
+                this.epicenter = value;
+            }
+
+            @Override
+            public String toString() {
+                return "Item{" +
+                        "time='" + time + '\'' +
+                        ", intensity='" + intensity + '\'' +
+                        ", url='" + url + '\'' +
+                        ", epicenter='" + epicenter + '\'' +
+                        '}';
+            }
+        }
+    }
 }
