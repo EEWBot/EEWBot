@@ -1,5 +1,8 @@
 package net.teamfruit.eewbot.gateway;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.QuakeInfo;
 import net.teamfruit.eewbot.entity.QuakeInfo.Record.Item;
@@ -23,7 +26,7 @@ public abstract class QuakeInfoGateway implements Gateway<DetailQuakeInfo> {
         try {
             Thread.currentThread().setName("eewbot-quakeinfo-thread");
 
-            final QuakeInfo quakeInfo = JAXB.unmarshal(new URL(REMOTE_ROOT + REMOTE), QuakeInfo.class);
+            QuakeInfo quakeInfo = QuakeInfo.QUAKE_INFO_MAPPER.readValue(new URL(REMOTE_ROOT + REMOTE), QuakeInfo.class);
 
             if (this.prev != null) {
                 final List<String> list = quakeInfo.getRecords().stream()
@@ -36,7 +39,7 @@ public abstract class QuakeInfoGateway implements Gateway<DetailQuakeInfo> {
 
                 for (final ListIterator<String> it = newer.listIterator(newer.size()); it.hasPrevious(); ) {
                     final String url = it.previous();
-                    final DetailQuakeInfo detailQuakeInfo = JAXB.unmarshal(new URL(url), DetailQuakeInfo.class);
+                    final DetailQuakeInfo detailQuakeInfo = DetailQuakeInfo.DETAIL_QUAKE_INFO_MAPPER.readValue(new URL(url), DetailQuakeInfo.class);
                     onNewData(detailQuakeInfo);
                 }
             } else

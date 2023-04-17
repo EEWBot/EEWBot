@@ -1,272 +1,290 @@
 package net.teamfruit.eewbot.entity;
 
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.adapters.XmlAdapter;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-@XmlRootElement(name = "Root")
+@JacksonXmlRootElement(localName = "Root")
 public class DetailQuakeInfo implements Entity {
 
-	private LocalDateTime timestamp;
-	private Earthquake earthQuake;
+    public static final ObjectMapper DETAIL_QUAKE_INFO_MAPPER = XmlMapper.builder()
+            .addModule(new JavaTimeModule())
+            .addModule(new SimpleModule().addDeserializer(LocalDateTime.class, new DateDeserializer())
+                    .addDeserializer(SeismicIntensity.class, new SeismicIntensityDeserializer()))
+            .build();
 
-	@XmlElement(name = "Timestamp")
-	@XmlJavaTypeAdapter(DateAdapter.class)
-	public LocalDateTime getTimestamp() {
-		return this.timestamp;
-	}
+    private LocalDateTime timestamp;
+    private Earthquake earthQuake;
 
-	public void setTimestamp(final LocalDateTime timestamp) {
-		this.timestamp = timestamp;
-	}
+    @JacksonXmlProperty(localName = "Timestamp")
+    public LocalDateTime getTimestamp() {
+        return this.timestamp;
+    }
 
-	@XmlElement(name = "Earthquake")
-	public Earthquake getEarthquake() {
-		return this.earthQuake;
-	}
+    public void setTimestamp(final LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
 
-	public void setEarthquake(final Earthquake earthQuake) {
-		this.earthQuake = earthQuake;
-	}
+    @JacksonXmlProperty(localName = "Earthquake")
+    public Earthquake getEarthquake() {
+        return this.earthQuake;
+    }
 
-	public static class Earthquake {
+    public void setEarthquake(final Earthquake earthQuake) {
+        this.earthQuake = earthQuake;
+    }
 
-		private String id;
-		private LocalDateTime time;
-		private SeismicIntensity intensity;
-		private String epicenter;
-		private String lat;
-		private String lon;
-		private String magnitude;
-		private String depth;
+    public static class Earthquake {
 
-		private String detail;
-		private String local;
-		private String global;
+        private String id;
+        private LocalDateTime time;
+        private SeismicIntensity intensity;
+        private String epicenter;
+        private String lat;
+        private String lon;
+        private String magnitude;
+        private String depth;
 
-		private Relative relative;
+        private String detail;
+        private String local;
+        private String global;
 
-		@XmlAttribute(name = "Id")
-		public String getId() {
-			return this.id;
-		}
+        private Relative relative;
 
-		public void setId(final String id) {
-			this.id = id;
-		}
+        @JacksonXmlProperty(localName = "Id", isAttribute = true)
+        public String getId() {
+            return this.id;
+        }
 
-		@XmlAttribute(name = "Time")
-		@XmlJavaTypeAdapter(DateAdapter.class)
-		public LocalDateTime getTime() {
-			return this.time;
-		}
+        public void setId(final String id) {
+            this.id = id;
+        }
 
-		public void setTime(final LocalDateTime time) {
-			this.time = time;
-		}
+        @JacksonXmlProperty(localName = "Time", isAttribute = true)
+        public LocalDateTime getTime() {
+            return this.time;
+        }
 
-		@XmlAttribute(name = "Intensity")
-		@XmlJavaTypeAdapter(SeismicIntensityAdapter.class)
-		public SeismicIntensity getIntensity() {
-			return this.intensity;
-		}
+        public void setTime(final LocalDateTime time) {
+            this.time = time;
+        }
 
-		public void setIntensity(final SeismicIntensity intensity) {
-			this.intensity = intensity;
-		}
+        @JacksonXmlProperty(localName = "Intensity", isAttribute = true)
+        public SeismicIntensity getIntensity() {
+            return this.intensity;
+        }
 
-		@XmlAttribute(name = "Epicenter")
-		public String getEpicenter() {
-			return this.epicenter;
-		}
+        public void setIntensity(final SeismicIntensity intensity) {
+            this.intensity = intensity;
+        }
 
-		public void setEpicenter(final String epicenter) {
-			this.epicenter = epicenter;
-		}
+        @JacksonXmlProperty(localName = "Epicenter", isAttribute = true)
+        public String getEpicenter() {
+            return this.epicenter;
+        }
 
-		@XmlAttribute(name = "Latitude")
-		public String getLat() {
-			return this.lat;
-		}
+        public void setEpicenter(final String epicenter) {
+            this.epicenter = epicenter;
+        }
 
-		public void setLat(final String lat) {
-			this.lat = lat;
-		}
+        @JacksonXmlProperty(localName = "Latitude", isAttribute = true)
+        public String getLat() {
+            return this.lat;
+        }
 
-		@XmlAttribute(name = "Longitude")
-		public String getLon() {
-			return this.lon;
-		}
+        public void setLat(final String lat) {
+            this.lat = lat;
+        }
 
-		public void setLon(final String lon) {
-			this.lon = lon;
-		}
+        @JacksonXmlProperty(localName = "Longitude", isAttribute = true)
+        public String getLon() {
+            return this.lon;
+        }
 
-		@XmlAttribute(name = "Magnitude")
-		public String getMagnitude() {
-			return this.magnitude;
-		}
+        public void setLon(final String lon) {
+            this.lon = lon;
+        }
 
-		public void setMagnitude(final String magnitude) {
-			this.magnitude = magnitude;
-		}
+        @JacksonXmlProperty(localName = "Magnitude", isAttribute = true)
+        public String getMagnitude() {
+            return this.magnitude;
+        }
 
-		@XmlAttribute(name = "Depth")
-		public String getDepth() {
-			return this.depth;
-		}
+        public void setMagnitude(final String magnitude) {
+            this.magnitude = magnitude;
+        }
 
-		public void setDepth(final String depth) {
-			this.depth = depth;
-		}
+        @JacksonXmlProperty(localName = "Depth", isAttribute = true)
+        public String getDepth() {
+            return this.depth;
+        }
 
-		@XmlElement(name = "Detail")
-		public String getDetail() {
-			return this.detail;
-		}
+        public void setDepth(final String depth) {
+            this.depth = depth;
+        }
 
-		public void setDetail(final String detail) {
-			this.detail = detail;
-		}
+        @JacksonXmlProperty(localName = "Detail")
+        public String getDetail() {
+            return this.detail;
+        }
 
-		@XmlElement(name = "Local")
-		public String getLocal() {
-			return this.local;
-		}
+        public void setDetail(final String detail) {
+            this.detail = detail;
+        }
 
-		public void setLocal(final String local) {
-			this.local = local;
-		}
+        @JacksonXmlProperty(localName = "Local")
+        public String getLocal() {
+            return this.local;
+        }
 
-		@XmlElement(name = "Global")
-		public String getGlobal() {
-			return this.global;
-		}
+        public void setLocal(final String local) {
+            this.local = local;
+        }
 
-		public void setGlobal(final String global) {
-			this.global = global;
-		}
+        @JacksonXmlProperty(localName = "Global")
+        public String getGlobal() {
+            return this.global;
+        }
 
-		@XmlElement(name = "Relative")
-		public Relative getRelative() {
-			return this.relative;
-		}
+        public void setGlobal(final String global) {
+            this.global = global;
+        }
 
-		public void setRelative(final Relative relative) {
-			this.relative = relative;
-		}
+        @JacksonXmlProperty(localName = "Relative")
+        public Relative getRelative() {
+            return this.relative;
+        }
 
-		public static class Relative {
+        public void setRelative(final Relative relative) {
+            this.relative = relative;
+        }
 
-			private List<Group> groups;
+        public static class Relative {
 
-			@XmlElement(name = "Group")
-			public List<Group> getGroups() {
-				return this.groups;
-			}
+            private List<Group> groups;
 
-			public void setGroups(final List<Group> groups) {
-				this.groups = groups;
-			}
+            @JacksonXmlProperty(localName = "Group")
+            @JacksonXmlElementWrapper(useWrapping = false)
+            public List<Group> getGroups() {
+                return this.groups;
+            }
 
-			public static class Group {
+            public void setGroups(final List<Group> groups) {
+                this.groups = groups;
+            }
 
-				private String intensity;
-				private List<Area> areas;
+            public static class Group {
 
-				@XmlAttribute(name = "Intensity")
-				public String getIntensity() {
-					return this.intensity;
-				}
+                private String intensity;
+                private List<Area> areas;
 
-				public void setIntensity(final String intensity) {
-					this.intensity = intensity;
-				}
+                @JacksonXmlProperty(localName = "Intensity", isAttribute = true)
+                public String getIntensity() {
+                    return this.intensity;
+                }
 
-				@XmlElement(name = "Area")
-				public List<Area> getAreas() {
-					return this.areas;
-				}
+                public void setIntensity(final String intensity) {
+                    this.intensity = intensity;
+                }
 
-				public void setAreas(final List<Area> areas) {
-					this.areas = areas;
-				}
+                @JacksonXmlProperty(localName = "Area")
+                @JacksonXmlElementWrapper(useWrapping = false)
+                public List<Area> getAreas() {
+                    return this.areas;
+                }
 
-				public static class Area {
+                public void setAreas(final List<Area> areas) {
+                    this.areas = areas;
+                }
 
-					private String name;
+                public static class Area {
 
-					@XmlAttribute(name = "Name")
-					public String getName() {
-						return this.name;
-					}
+                    private String name;
 
-					public void setName(final String name) {
-						this.name = name;
-					}
+                    @JacksonXmlProperty(localName = "Name", isAttribute = true)
+                    public String getName() {
+                        return this.name;
+                    }
 
-				}
-			}
-		}
-	}
+                    public void setName(final String name) {
+                        this.name = name;
+                    }
 
-	public static class DateAdapter extends XmlAdapter<String, LocalDateTime> {
+                }
+            }
+        }
+    }
 
-		private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+    public static class DateDeserializer extends StdDeserializer<LocalDateTime> {
 
-		@Override
-		public LocalDateTime unmarshal(final String v) throws Exception {
-			return LocalDateTime.parse(v, this.formatter);
-		}
+        private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
 
-		@Override
-		public String marshal(final LocalDateTime v) throws Exception {
-			return v.format(this.formatter);
-		}
+        public DateDeserializer() {
+            this(null);
+        }
 
-	}
+        protected DateDeserializer(Class<?> vc) {
+            super(vc);
+        }
 
-	public static class SeismicIntensityAdapter extends XmlAdapter<String, SeismicIntensity> {
+        @Override
+        public LocalDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JacksonException {
+            String date = jsonParser.getText();
+            return LocalDateTime.parse(date, formatter);
+        }
+    }
 
-		@Override
-		public SeismicIntensity unmarshal(final String v) throws Exception {
-			return SeismicIntensity.get(v).orElse(null);
-		}
+    public static class SeismicIntensityDeserializer extends StdDeserializer<SeismicIntensity> {
 
-		@Override
-		public String marshal(final SeismicIntensity v) throws Exception {
-			return v.toString();
-		}
+        public SeismicIntensityDeserializer() {
+            this(null);
+        }
 
-	}
+        protected SeismicIntensityDeserializer(Class<?> vc) {
+            super(vc);
+        }
 
-	@Override
-	public MessageCreateSpec createMessage(final String lang) {
-		return MessageCreateSpec.builder()
-				.addEmbed(createEmbed(lang)).build();
-	}
+        @Override
+        public SeismicIntensity deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JacksonException {
+            String intensity = jsonParser.getText();
+            return SeismicIntensity.get(intensity).orElse(null);
+        }
+    }
 
-	public EmbedCreateSpec createEmbed(String lang) {
-		return I18nEmbedCreateSpec.builder(lang)
-				.title("eewbot.quakeinfo.title")
-				.addField("eewbot.quakeinfo.epicenter", getEarthquake().getEpicenter(), true)
-				.addField("eewbot.quakeinfo.depth", getEarthquake().getDepth(), true)
-				.addField("eewbot.quakeinfo.magnitude", getEarthquake().getMagnitude(), true)
-				.addField("eewbot.quakeinfo.seismicintensity", getEarthquake().getIntensity().getSimple(), false)
-				.image(QuakeInfoGateway.REMOTE_ROOT + getEarthquake().getDetail())
-				.color(getEarthquake().getIntensity().getColor())
-				.timestamp(getEarthquake().getTime().atZone(TimeProvider.ZONE_ID).toInstant())
-				.build();
-	}
+    @Override
+    public MessageCreateSpec createMessage(final String lang) {
+        return MessageCreateSpec.builder()
+                .addEmbed(createEmbed(lang)).build();
+    }
+
+    public EmbedCreateSpec createEmbed(String lang) {
+        return I18nEmbedCreateSpec.builder(lang)
+                .title("eewbot.quakeinfo.title")
+                .addField("eewbot.quakeinfo.epicenter", getEarthquake().getEpicenter(), true)
+                .addField("eewbot.quakeinfo.depth", getEarthquake().getDepth(), true)
+                .addField("eewbot.quakeinfo.magnitude", getEarthquake().getMagnitude(), true)
+                .addField("eewbot.quakeinfo.seismicintensity", getEarthquake().getIntensity().getSimple(), false)
+                .image(QuakeInfoGateway.REMOTE_ROOT + getEarthquake().getDetail())
+                .color(getEarthquake().getIntensity().getColor())
+                .timestamp(getEarthquake().getTime().atZone(TimeProvider.ZONE_ID).toInstant())
+                .build();
+    }
 }

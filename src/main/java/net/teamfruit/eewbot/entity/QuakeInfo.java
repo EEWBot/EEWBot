@@ -1,113 +1,104 @@
 package net.teamfruit.eewbot.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRootName;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlValue;
-import javax.xml.bind.annotation.adapters.XmlAdapter;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-
-@XmlRootElement(name = "jishinReport")
+@JsonRootName("jishinReport")
 public class QuakeInfo {
 
+	public static final ObjectMapper QUAKE_INFO_MAPPER = XmlMapper.builder().addModule(new JavaTimeModule()).build();
+
+	@JsonProperty("record")
+	@JacksonXmlElementWrapper(useWrapping = false)
 	private List<Record> records;
 
-	@XmlElement(name = "record")
 	public List<Record> getRecords() {
-		return this.records;
+		return records;
 	}
 
-	public void setRecords(final List<Record> records) {
+	public void setRecords(List<Record> records) {
 		this.records = records;
 	}
 
 	public static class Record {
 
-		private List<Item> items;
+		@JsonProperty("date")
+		@JsonFormat(pattern = "yyyy年MM月dd日")
 		private LocalDate localDate;
 
-		@XmlElement(name = "item")
-		public List<Item> getItems() {
-			return this.items;
-		}
+		@JsonProperty("item")
+		@JacksonXmlElementWrapper(useWrapping = false)
+		private List<Item> items;
 
-		public void setItems(final List<Item> items) {
-			this.items = items;
-		}
-
-		@XmlAttribute(name = "date")
-		@XmlJavaTypeAdapter(DateAdapter.class)
 		public LocalDate getLocalDate() {
-			return this.localDate;
+			return localDate;
 		}
 
-		public void setLocalDate(final LocalDate localDate) {
+		public void setLocalDate(LocalDate localDate) {
 			this.localDate = localDate;
+		}
+
+		public List<Item> getItems() {
+			return items;
+		}
+
+		public void setItems(List<Item> items) {
+			this.items = items;
 		}
 
 		public static class Item {
 
+			@JacksonXmlProperty(localName = "time")
 			private String time;
+			@JacksonXmlProperty(localName = "shindo")
 			private String intensity;
+			@JacksonXmlProperty(localName = "url")
 			private String url;
-			private String epicenter;
 
-			@XmlAttribute
+			@JacksonXmlText
+			private String value;
+
 			public String getTime() {
-				return this.time;
+				return time;
 			}
 
-			public void setTime(final String time) {
+			public void setTime(String time) {
 				this.time = time;
 			}
 
-			@XmlAttribute(name = "shindo")
 			public String getIntensity() {
-				return this.intensity;
+				return intensity;
 			}
 
-			public void setIntensity(final String intensity) {
+			public void setIntensity(String intensity) {
 				this.intensity = intensity;
 			}
 
-			@XmlAttribute
 			public String getUrl() {
-				return this.url;
+				return url;
 			}
 
-			public void setUrl(final String url) {
+			public void setUrl(String url) {
 				this.url = url;
 			}
 
-			@XmlValue
 			public String getEpicenter() {
-				return this.epicenter;
+				return value;
 			}
 
-			public void setEpicenter(final String epicenter) {
-				this.epicenter = epicenter;
+			public void setEpicenter(String value) {
+				this.value = value;
 			}
-
-		}
-
-		public static class DateAdapter extends XmlAdapter<String, LocalDate> {
-
-			private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日");
-
-			@Override
-			public LocalDate unmarshal(final String v) throws Exception {
-				return LocalDate.parse(v, this.formatter);
-			}
-
-			@Override
-			public String marshal(final LocalDate v) throws Exception {
-				return v.format(this.formatter);
-			}
-
 		}
 	}
 }
