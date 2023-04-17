@@ -14,7 +14,10 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.TextChannel;
 import net.teamfruit.eewbot.command.CommandHandler;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.*;
+import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.Config;
+import net.teamfruit.eewbot.registry.ConfigurationRegistry;
+import net.teamfruit.eewbot.registry.Permission;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
@@ -53,8 +56,8 @@ public class EEWBot {
         }
     }, new TypeToken<Map<String, Permission>>() {
     }.getType());
-    private final ConfigurationRegistry<Map<Long, Guild>> guilds = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "guilds.json") : Paths.get("guilds.json"), () -> new ConcurrentHashMap<Long, Guild>(), new TypeToken<Map<Long, Guild>>() {
-    }.getType());
+//    private final ConfigurationRegistry<Map<Long, Guild>> guilds = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "guilds.json") : Paths.get("guilds.json"), () -> new ConcurrentHashMap<Long, Guild>(), new TypeToken<Map<Long, Guild>>() {
+//    }.getType());
 
     private final ReentrantReadWriteLock channelsLock = new ReentrantReadWriteLock();
 
@@ -85,7 +88,7 @@ public class EEWBot {
         initChannels();
         this.permissions.init();
         I18n.INSTANCE.init();
-        this.guilds.init();
+//        this.guilds.init();
 
         final String token = System.getenv("TOKEN");
         if (token != null)
@@ -113,10 +116,10 @@ public class EEWBot {
                         .collectList())
                 .blockFirst();
 
-        events.stream().map(e -> e.getGuild().getId().asLong())
-                .filter(l -> !getGuilds().containsKey(l))
-                .forEach(l -> getGuilds().put(l, new Guild().setLang(getConfig().getDefaultLanuage())));
-        EEWBot.this.guilds.save();
+//        events.stream().map(e -> e.getGuild().getId().asLong())
+//                .filter(l -> !getGuilds().containsKey(l))
+//                .forEach(l -> getGuilds().put(l, new Guild().setLang(getConfig().getDefaultLanuage())));
+//        EEWBot.this.guilds.save();
 
         Log.logger.info("Connected to {} guilds!", events.size());
 
@@ -218,9 +221,9 @@ public class EEWBot {
         return this.permissions.getElement();
     }
 
-    public Map<Long, Guild> getGuilds() {
-        return this.guilds.getElement();
-    }
+//    public Map<Long, Guild> getGuilds() {
+//        return this.guilds.getElement();
+//    }
 
     public ConfigurationRegistry<Config> getConfigRegistry() {
         return this.config;
@@ -234,9 +237,9 @@ public class EEWBot {
         return this.permissions;
     }
 
-    public ConfigurationRegistry<Map<Long, Guild>> getGuildsRegistry() {
-        return this.guilds;
-    }
+//    public ConfigurationRegistry<Map<Long, Guild>> getGuildsRegistry() {
+//        return this.guilds;
+//    }
 
     public CloseableHttpClient getHttpClient() {
         return this.http;
