@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -16,89 +15,116 @@ import java.util.List;
 @JsonRootName("jishinReport")
 public class QuakeInfo {
 
-	public static final ObjectMapper QUAKE_INFO_MAPPER = XmlMapper.builder().addModule(new JavaTimeModule()).build();
+    public static final ObjectMapper QUAKE_INFO_MAPPER = XmlMapper.builder().addModule(new JavaTimeModule()).build();
 
-	@JsonProperty("record")
-	@JacksonXmlElementWrapper(useWrapping = false)
-	private List<Record> records;
+    @JacksonXmlProperty(localName = "record")
+    @JacksonXmlElementWrapper(useWrapping = false)
+    private List<Record> records;
 
-	public List<Record> getRecords() {
-		return records;
-	}
+    public List<Record> getRecords() {
+        return records;
+    }
 
-	public void setRecords(List<Record> records) {
-		this.records = records;
-	}
+    public void setRecords(List<Record> records) {
+        this.records = records;
+    }
 
-	public static class Record {
+    @Override
+    public String toString() {
+        return "QuakeInfo{" +
+                "records=" + records +
+                '}';
+    }
 
-		@JsonProperty("date")
-		@JsonFormat(pattern = "yyyy年MM月dd日")
-		private LocalDate localDate;
+    public static class Record {
 
-		@JsonProperty("item")
-		@JacksonXmlElementWrapper(useWrapping = false)
-		private List<Item> items;
+        @JacksonXmlProperty(localName = "date", isAttribute = true)
+        @JsonFormat(pattern = "yyyy年MM月dd日")
+        private LocalDate localDate;
 
-		public LocalDate getLocalDate() {
-			return localDate;
-		}
+        @JacksonXmlProperty(localName = "item")
+        @JacksonXmlElementWrapper(useWrapping = false)
+        private List<Item> items;
 
-		public void setLocalDate(LocalDate localDate) {
-			this.localDate = localDate;
-		}
+        public LocalDate getLocalDate() {
+            return localDate;
+        }
 
-		public List<Item> getItems() {
-			return items;
-		}
+        public void setLocalDate(LocalDate localDate) {
+            this.localDate = localDate;
+        }
 
-		public void setItems(List<Item> items) {
-			this.items = items;
-		}
+        public List<Item> getItems() {
+            return items;
+        }
 
-		public static class Item {
+        public void setItems(List<Item> items) {
+            this.items = items;
+        }
 
-			@JacksonXmlProperty(localName = "time")
-			private String time;
-			@JacksonXmlProperty(localName = "shindo")
-			private String intensity;
-			@JacksonXmlProperty(localName = "url")
-			private String url;
+        @Override
+        public String toString() {
+            return "Record{" +
+                    "localDate=" + localDate +
+                    ", items=" + items +
+                    '}';
+        }
 
-			@JacksonXmlText
-			private String value;
+        public static class Item {
 
-			public String getTime() {
-				return time;
-			}
+            @JacksonXmlProperty(localName = "time", isAttribute = true)
+            private String time;
 
-			public void setTime(String time) {
-				this.time = time;
-			}
+            @JacksonXmlProperty(localName = "shindo", isAttribute = true)
+            private String intensity;
 
-			public String getIntensity() {
-				return intensity;
-			}
+            @JacksonXmlProperty(localName = "url", isAttribute = true)
+            private String url;
 
-			public void setIntensity(String intensity) {
-				this.intensity = intensity;
-			}
+            @JacksonXmlText
+            private String epicenter;
 
-			public String getUrl() {
-				return url;
-			}
+            public String getTime() {
+                return time;
+            }
 
-			public void setUrl(String url) {
-				this.url = url;
-			}
+            public void setTime(String time) {
+                this.time = time;
+            }
 
-			public String getEpicenter() {
-				return value;
-			}
+            public String getIntensity() {
+                return intensity;
+            }
 
-			public void setEpicenter(String value) {
-				this.value = value;
-			}
-		}
-	}
+            public void setIntensity(String intensity) {
+                this.intensity = intensity;
+            }
+
+            public String getUrl() {
+                return url;
+            }
+
+            public void setUrl(String url) {
+                this.url = url;
+            }
+
+            public String getEpicenter() {
+                return epicenter;
+            }
+
+            public void setEpicenter(String value) {
+                this.epicenter = value;
+            }
+
+            @Override
+            public String toString() {
+                return "Item{" +
+                        "time='" + time + '\'' +
+                        ", intensity='" + intensity + '\'' +
+                        ", url='" + url + '\'' +
+                        ", epicenter='" + epicenter + '\'' +
+                        '}';
+            }
+        }
+    }
 }

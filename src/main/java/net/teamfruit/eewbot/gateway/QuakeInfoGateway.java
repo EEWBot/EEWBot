@@ -1,13 +1,9 @@
 package net.teamfruit.eewbot.gateway;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.QuakeInfo;
 import net.teamfruit.eewbot.entity.QuakeInfo.Record.Item;
 
-import javax.xml.bind.JAXB;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;

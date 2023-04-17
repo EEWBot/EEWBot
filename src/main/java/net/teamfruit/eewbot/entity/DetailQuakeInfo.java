@@ -27,14 +27,16 @@ public class DetailQuakeInfo implements Entity {
 
     public static final ObjectMapper DETAIL_QUAKE_INFO_MAPPER = XmlMapper.builder()
             .addModule(new JavaTimeModule())
-            .addModule(new SimpleModule().addDeserializer(LocalDateTime.class, new DateDeserializer())
+            .addModule(new SimpleModule()
+                    .addDeserializer(LocalDateTime.class, new DateDeserializer())
                     .addDeserializer(SeismicIntensity.class, new SeismicIntensityDeserializer()))
             .build();
 
+    @JacksonXmlProperty(localName = "Timestamp")
     private LocalDateTime timestamp;
+    @JacksonXmlProperty(localName = "Earthquake")
     private Earthquake earthQuake;
 
-    @JacksonXmlProperty(localName = "Timestamp")
     public LocalDateTime getTimestamp() {
         return this.timestamp;
     }
@@ -43,7 +45,6 @@ public class DetailQuakeInfo implements Entity {
         this.timestamp = timestamp;
     }
 
-    @JacksonXmlProperty(localName = "Earthquake")
     public Earthquake getEarthquake() {
         return this.earthQuake;
     }
@@ -52,24 +53,52 @@ public class DetailQuakeInfo implements Entity {
         this.earthQuake = earthQuake;
     }
 
+    @Override
+    public String toString() {
+        return "DetailQuakeInfo{" +
+                "timestamp=" + timestamp +
+                ", earthQuake=" + earthQuake +
+                '}';
+    }
+
     public static class Earthquake {
 
+        @JacksonXmlProperty(localName = "Id", isAttribute = true)
         private String id;
+
+        @JacksonXmlProperty(localName = "Time", isAttribute = true)
         private LocalDateTime time;
+
+        @JacksonXmlProperty(localName = "Intensity", isAttribute = true)
         private SeismicIntensity intensity;
+
+        @JacksonXmlProperty(localName = "Epicenter", isAttribute = true)
         private String epicenter;
+
+        @JacksonXmlProperty(localName = "Latitude", isAttribute = true)
         private String lat;
+
+        @JacksonXmlProperty(localName = "Longitude", isAttribute = true)
         private String lon;
+
+        @JacksonXmlProperty(localName = "Magnitude", isAttribute = true)
         private String magnitude;
+
+        @JacksonXmlProperty(localName = "Depth", isAttribute = true)
         private String depth;
 
+        @JacksonXmlProperty(localName = "Detail")
         private String detail;
+
+        @JacksonXmlProperty(localName = "Local")
         private String local;
+
+        @JacksonXmlProperty(localName = "Global")
         private String global;
 
+        @JacksonXmlProperty(localName = "Relative")
         private Relative relative;
 
-        @JacksonXmlProperty(localName = "Id", isAttribute = true)
         public String getId() {
             return this.id;
         }
@@ -78,7 +107,6 @@ public class DetailQuakeInfo implements Entity {
             this.id = id;
         }
 
-        @JacksonXmlProperty(localName = "Time", isAttribute = true)
         public LocalDateTime getTime() {
             return this.time;
         }
@@ -87,7 +115,6 @@ public class DetailQuakeInfo implements Entity {
             this.time = time;
         }
 
-        @JacksonXmlProperty(localName = "Intensity", isAttribute = true)
         public SeismicIntensity getIntensity() {
             return this.intensity;
         }
@@ -96,7 +123,6 @@ public class DetailQuakeInfo implements Entity {
             this.intensity = intensity;
         }
 
-        @JacksonXmlProperty(localName = "Epicenter", isAttribute = true)
         public String getEpicenter() {
             return this.epicenter;
         }
@@ -105,7 +131,6 @@ public class DetailQuakeInfo implements Entity {
             this.epicenter = epicenter;
         }
 
-        @JacksonXmlProperty(localName = "Latitude", isAttribute = true)
         public String getLat() {
             return this.lat;
         }
@@ -114,7 +139,6 @@ public class DetailQuakeInfo implements Entity {
             this.lat = lat;
         }
 
-        @JacksonXmlProperty(localName = "Longitude", isAttribute = true)
         public String getLon() {
             return this.lon;
         }
@@ -123,7 +147,6 @@ public class DetailQuakeInfo implements Entity {
             this.lon = lon;
         }
 
-        @JacksonXmlProperty(localName = "Magnitude", isAttribute = true)
         public String getMagnitude() {
             return this.magnitude;
         }
@@ -132,7 +155,6 @@ public class DetailQuakeInfo implements Entity {
             this.magnitude = magnitude;
         }
 
-        @JacksonXmlProperty(localName = "Depth", isAttribute = true)
         public String getDepth() {
             return this.depth;
         }
@@ -141,7 +163,6 @@ public class DetailQuakeInfo implements Entity {
             this.depth = depth;
         }
 
-        @JacksonXmlProperty(localName = "Detail")
         public String getDetail() {
             return this.detail;
         }
@@ -150,7 +171,6 @@ public class DetailQuakeInfo implements Entity {
             this.detail = detail;
         }
 
-        @JacksonXmlProperty(localName = "Local")
         public String getLocal() {
             return this.local;
         }
@@ -159,7 +179,6 @@ public class DetailQuakeInfo implements Entity {
             this.local = local;
         }
 
-        @JacksonXmlProperty(localName = "Global")
         public String getGlobal() {
             return this.global;
         }
@@ -168,7 +187,6 @@ public class DetailQuakeInfo implements Entity {
             this.global = global;
         }
 
-        @JacksonXmlProperty(localName = "Relative")
         public Relative getRelative() {
             return this.relative;
         }
@@ -177,12 +195,30 @@ public class DetailQuakeInfo implements Entity {
             this.relative = relative;
         }
 
-        public static class Relative {
+        @Override
+        public String toString() {
+            return "Earthquake{" +
+                    "id='" + id + '\'' +
+                    ", time=" + time +
+                    ", intensity=" + intensity +
+                    ", epicenter='" + epicenter + '\'' +
+                    ", lat='" + lat + '\'' +
+                    ", lon='" + lon + '\'' +
+                    ", magnitude='" + magnitude + '\'' +
+                    ", depth='" + depth + '\'' +
+                    ", detail='" + detail + '\'' +
+                    ", local='" + local + '\'' +
+                    ", global='" + global + '\'' +
+                    ", relative=" + relative +
+                    '}';
+        }
 
-            private List<Group> groups;
+        public static class Relative {
 
             @JacksonXmlProperty(localName = "Group")
             @JacksonXmlElementWrapper(useWrapping = false)
+            private List<Group> groups;
+
             public List<Group> getGroups() {
                 return this.groups;
             }
@@ -191,12 +227,22 @@ public class DetailQuakeInfo implements Entity {
                 this.groups = groups;
             }
 
+            @Override
+            public String toString() {
+                return "Relative{" +
+                        "groups=" + groups +
+                        '}';
+            }
+
             public static class Group {
 
+                @JacksonXmlProperty(localName = "Intensity", isAttribute = true)
                 private String intensity;
+
+                @JacksonXmlProperty(localName = "Area")
+                @JacksonXmlElementWrapper(useWrapping = false)
                 private List<Area> areas;
 
-                @JacksonXmlProperty(localName = "Intensity", isAttribute = true)
                 public String getIntensity() {
                     return this.intensity;
                 }
@@ -205,8 +251,6 @@ public class DetailQuakeInfo implements Entity {
                     this.intensity = intensity;
                 }
 
-                @JacksonXmlProperty(localName = "Area")
-                @JacksonXmlElementWrapper(useWrapping = false)
                 public List<Area> getAreas() {
                     return this.areas;
                 }
@@ -215,11 +259,19 @@ public class DetailQuakeInfo implements Entity {
                     this.areas = areas;
                 }
 
+                @Override
+                public String toString() {
+                    return "Group{" +
+                            "intensity='" + intensity + '\'' +
+                            ", areas=" + areas +
+                            '}';
+                }
+
                 public static class Area {
 
+                    @JacksonXmlProperty(localName = "Name", isAttribute = true)
                     private String name;
 
-                    @JacksonXmlProperty(localName = "Name", isAttribute = true)
                     public String getName() {
                         return this.name;
                     }
@@ -228,6 +280,12 @@ public class DetailQuakeInfo implements Entity {
                         this.name = name;
                     }
 
+                    @Override
+                    public String toString() {
+                        return "Area{" +
+                                "name='" + name + '\'' +
+                                '}';
+                    }
                 }
             }
         }
@@ -271,8 +329,7 @@ public class DetailQuakeInfo implements Entity {
 
     @Override
     public MessageCreateSpec createMessage(final String lang) {
-        return MessageCreateSpec.builder()
-                .addEmbed(createEmbed(lang)).build();
+        return MessageCreateSpec.builder().addEmbed(createEmbed(lang)).build();
     }
 
     public EmbedCreateSpec createEmbed(String lang) {
