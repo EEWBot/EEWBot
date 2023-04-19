@@ -7,11 +7,12 @@ import com.google.gson.reflect.TypeToken;
 import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.object.Region;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.TextChannel;
+import discord4j.core.shard.ShardingStrategy;
+import discord4j.gateway.intent.IntentSet;
 import net.teamfruit.eewbot.command.CommandHandler;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
@@ -56,8 +57,6 @@ public class EEWBot {
         }
     }, new TypeToken<Map<String, Permission>>() {
     }.getType());
-//    private final ConfigurationRegistry<Map<Long, Guild>> guilds = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "guilds.json") : Paths.get("guilds.json"), () -> new ConcurrentHashMap<Long, Guild>(), new TypeToken<Map<Long, Guild>>() {
-//    }.getType());
 
     private final ReentrantReadWriteLock channelsLock = new ReentrantReadWriteLock();
 
@@ -88,7 +87,6 @@ public class EEWBot {
         initChannels();
         this.permissions.init();
         I18n.INSTANCE.init();
-//        this.guilds.init();
 
         final String token = System.getenv("TOKEN");
         if (token != null)
@@ -101,27 +99,28 @@ public class EEWBot {
 
         this.gateway = DiscordClient.create(getConfig().getToken())
                 .gateway()
+                .setSharding(ShardingStrategy.recommended())
+                .setEnabledIntents(IntentSet.none())
 //				.setInitialPresence(s -> ClientPresence.online(ClientActivity.playing("!eew help")))
                 .login()
                 .block();
 
-        final List<GuildCreateEvent> events = this.gateway.on(ReadyEvent.class)
+        if (this.gateway == null)
+            throw new RuntimeException("Discordへの接続に失敗しました。");
+
+        int shardCount = this.gateway.getGatewayClientGroup().getShardCount();
+
+        int guildCount = this.gateway.on(ReadyEvent.class)
                 .map(event -> {
-                    Log.logger.info("Connecting {} guilds...", event.getGuilds().size());
-                    return event.getGuilds().size();
+                    int count = event.getGuilds().size();
+                    Log.logger.info("Connecting {} guilds...", count);
+                    return count;
                 })
-                .flatMap(size -> this.gateway
-                        .on(GuildCreateEvent.class)
-                        .take(size)
-                        .collectList())
-                .blockFirst();
+                .take(shardCount)
+                .reduce(0, Integer::sum)
+                .block();
 
-//        events.stream().map(e -> e.getGuild().getId().asLong())
-//                .filter(l -> !getGuilds().containsKey(l))
-//                .forEach(l -> getGuilds().put(l, new Guild().setLang(getConfig().getDefaultLanuage())));
-//        EEWBot.this.guilds.save();
-
-        Log.logger.info("Connected to {} guilds!", events.size());
+        Log.logger.info("Connected to {} shard(s), {} guild(s)!", shardCount, guildCount);
 
         this.applicationId = this.gateway.getRestClient().getApplicationId().block();
 
@@ -131,33 +130,33 @@ public class EEWBot {
 
         Log.logger.info("BotUser: {}", this.userName);
 
-        final Optional<discord4j.core.object.entity.Guild> guild = events.stream().map(GuildCreateEvent::getGuild)
-                .filter(g -> g.getOwnerId().equals(self.getId()))
-                .findFirst();
-        if (!guild.isPresent()) {
-            if (StringUtils.isNotEmpty(getConfig().getSystemChannel()))
-                this.systemChannel = Optional.of(this.gateway.getChannelById(Snowflake.of(getConfig().getSystemChannel()))
-                        .cast(TextChannel.class)
-                        .doOnError(err -> {
-                            Log.logger.error("SystemChannelを正常に取得出来ませんでした: " + getConfig().getSystemChannel());
-                            this.systemChannel = Optional.empty();
-                        })
-                        .block());
-            else if (events.size() < 10) {
-                this.systemChannel = Optional.of(this.gateway.createGuild(spec -> spec.setName("EEWBot System").setRegion(Region.Id.JAPAN).addChannel("monitor", discord4j.core.object.entity.channel.Channel.Type.GUILD_TEXT))
-                        .flatMap(g -> g.getChannels()
-                                .filter(c -> c.getName().equals("monitor"))
-                                .last()
-                                .cast(TextChannel.class))
-                        .block());
-            } else
-                this.systemChannel = Optional.empty();
-        } else
-            this.systemChannel = Optional.of(guild.get().getChannels()
-                    .filter(c -> c.getName().equals("monitor"))
-                    .last()
+        if (StringUtils.isEmpty(getConfig().getSystemChannel())) {
+            this.systemChannel = Optional.ofNullable(this.gateway.getGuilds()
+                    .filter(guild -> self.getId().equals(guild.getId()))
+                    .next()
+                    .flatMap(guild -> guild.getChannels()
+                            .filter(c -> c.getName().equals("monitor"))
+                            .next())
                     .cast(TextChannel.class)
+                    .switchIfEmpty(this.gateway.getGuilds()
+                            .count()
+                            .filter(count -> count < 10)
+                            .flatMap(count -> this.gateway.createGuild(spec -> spec.setName("EEWBot System")
+                                            .setRegion(Region.Id.JAPAN)
+                                            .addChannel("monitor", discord4j.core.object.entity.channel.Channel.Type.GUILD_TEXT))
+                                    .flatMap(g -> g.getChannels()
+                                            .filter(c -> c.getName().equals("monitor"))
+                                            .next()
+                                            .cast(TextChannel.class))))
                     .block());
+        } else {
+            this.systemChannel = Optional.ofNullable(this.gateway.getChannelById(Snowflake.of(getConfig().getSystemChannel()))
+                    .cast(TextChannel.class)
+                    .doOnError(err -> {
+                        Log.logger.error("SystemChannelを正常に取得出来ませんでした: " + getConfig().getSystemChannel());
+                    })
+                    .block());
+        }
 
         this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: " + channel.getGuildId().asString() + " System Channel: " + channel.getId().asString()));
 
@@ -221,10 +220,6 @@ public class EEWBot {
         return this.permissions.getElement();
     }
 
-//    public Map<Long, Guild> getGuilds() {
-//        return this.guilds.getElement();
-//    }
-
     public ConfigurationRegistry<Config> getConfigRegistry() {
         return this.config;
     }
@@ -236,10 +231,6 @@ public class EEWBot {
     public ConfigurationRegistry<Map<String, Permission>> getPermissionsRegistry() {
         return this.permissions;
     }
-
-//    public ConfigurationRegistry<Map<Long, Guild>> getGuildsRegistry() {
-//        return this.guilds;
-//    }
 
     public CloseableHttpClient getHttpClient() {
         return this.http;
