@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @JacksonXmlRootElement(localName = "Root")
 public class DetailQuakeInfo implements Entity {
@@ -329,9 +330,9 @@ public class DetailQuakeInfo implements Entity {
     }
 
     public enum Type {
-        INTENSITY("eewbot.quakeinfo.title.intensity"),
-        EPICENTER("eewbot.quakeinfo.title.epicenter"),
-        DETAIL("eewbot.quakeinfo.title.detail");
+        INTENSITY("eewbot.quakeinfo.intensity.title"),
+        EPICENTER("eewbot.quakeinfo.epicenter.title"),
+        DETAIL("eewbot.quakeinfo.detail.title");
 
         private final String i18nKey;
 
@@ -359,15 +360,28 @@ public class DetailQuakeInfo implements Entity {
     }
 
     public EmbedCreateSpec createEmbed(String lang) {
-        return I18nEmbedCreateSpec.builder(lang)
-                .title(getType().getI18nKey())
-                .addField("eewbot.quakeinfo.epicenter", getEarthquake().getEpicenter(), true)
-                .addField("eewbot.quakeinfo.depth", getEarthquake().getDepth(), true)
-                .addField("eewbot.quakeinfo.magnitude", getEarthquake().getMagnitude(), true)
-                .addField("eewbot.quakeinfo.seismicintensity", getEarthquake().getIntensity().getSimple(), false)
-                .image(QuakeInfoGateway.REMOTE_ROOT + getEarthquake().getDetail())
-                .color(getEarthquake().getIntensity().getColor())
-                .timestamp(getEarthquake().getTime().atZone(TimeProvider.ZONE_ID).toInstant())
+        Earthquake eq = getEarthquake();
+        Type type = getType();
+        I18nEmbedCreateSpec.Builder builder = I18nEmbedCreateSpec.builder(lang).title(type.getI18nKey());
+
+        switch (type) {
+            case INTENSITY:
+                eq.getRelative().getGroups().forEach(group -> builder.addField("eewbot.quakeinfo.field.intensity",
+                        group.getAreas().stream().map(Earthquake.Relative.Group.Area::getName).collect(Collectors.joining(" ")),
+                        false, group.getIntensity()));
+                break;
+            case EPICENTER:
+            case DETAIL:
+            default:
+                builder.addField("eewbot.quakeinfo.field.epicenter", eq.getEpicenter(), true)
+                        .addField("eewbot.quakeinfo.field.depth", eq.getDepth(), true)
+                        .addField("eewbot.quakeinfo.field.magnitude", eq.getMagnitude(), true)
+                        .addField("eewbot.quakeinfo.field.maxintensity", eq.getIntensity().getSimple(), false);
+        }
+        
+        return builder.image(QuakeInfoGateway.REMOTE_ROOT + eq.getDetail())
+                .color(eq.getIntensity().getColor())
+                .timestamp(eq.getTime().atZone(TimeProvider.ZONE_ID).toInstant())
                 .build();
     }
 }
