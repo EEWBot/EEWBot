@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot.entity;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -306,7 +305,7 @@ public class DetailQuakeInfo implements Entity {
         }
 
         @Override
-        public LocalDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JacksonException {
+        public LocalDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
             String date = jsonParser.getText();
             return LocalDateTime.parse(date, formatter);
         }
@@ -323,26 +322,16 @@ public class DetailQuakeInfo implements Entity {
         }
 
         @Override
-        public SeismicIntensity deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JacksonException {
+        public SeismicIntensity deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
             String intensity = jsonParser.getText();
             return SeismicIntensity.get(intensity).orElse(null);
         }
     }
 
     public enum Type {
-        INTENSITY("eewbot.quakeinfo.intensity.title"),
-        EPICENTER("eewbot.quakeinfo.epicenter.title"),
-        DETAIL("eewbot.quakeinfo.detail.title");
-
-        private final String i18nKey;
-
-        Type(String i18nKey) {
-            this.i18nKey = i18nKey;
-        }
-
-        public String getI18nKey() {
-            return i18nKey;
-        }
+        INTENSITY,
+        EPICENTER,
+        DETAIL;
     }
 
     public Type getType() {
@@ -366,22 +355,31 @@ public class DetailQuakeInfo implements Entity {
 
         switch (type) {
             case INTENSITY:
-                eq.getRelative().getGroups().forEach(group -> builder.addField("eewbot.quakeinfo.field.intensity",
-                        group.getAreas().stream().map(Earthquake.Relative.Group.Area::getName).collect(Collectors.joining(" ")),
-                        false, group.getIntensity()));
+                builder.title("eewbot.quakeinfo.intensity.title");
+                addIntensityGroupFields(builder, eq);
                 break;
             case EPICENTER:
+                builder.title("eewbot.quakeinfo.epicenter.title");
+                addIntensityGroupFields(builder, eq);
+                break;
             case DETAIL:
             default:
-                builder.addField("eewbot.quakeinfo.field.epicenter", eq.getEpicenter(), true)
+                builder.title("eewbot.quakeinfo.detail.title")
+                        .addField("eewbot.quakeinfo.field.epicenter", eq.getEpicenter(), true)
                         .addField("eewbot.quakeinfo.field.depth", eq.getDepth(), true)
                         .addField("eewbot.quakeinfo.field.magnitude", eq.getMagnitude(), true)
                         .addField("eewbot.quakeinfo.field.maxintensity", eq.getIntensity().getSimple(), false);
         }
-        
+
         return builder.image(QuakeInfoGateway.REMOTE_ROOT + eq.getDetail())
                 .color(eq.getIntensity().getColor())
                 .timestamp(eq.getTime().atZone(TimeProvider.ZONE_ID).toInstant())
                 .build();
+    }
+
+    private void addIntensityGroupFields(I18nEmbedCreateSpec.Builder builder, Earthquake eq) {
+        eq.getRelative().getGroups().forEach(group -> builder.addField("eewbot.quakeinfo.field.intensity",
+                group.getAreas().stream().map(Earthquake.Relative.Group.Area::getName).collect(Collectors.joining(" ")),
+                false, group.getIntensity()));
     }
 }
