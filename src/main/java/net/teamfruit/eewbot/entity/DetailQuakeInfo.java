@@ -331,7 +331,7 @@ public class DetailQuakeInfo implements Entity {
     public enum Type {
         INTENSITY,
         EPICENTER,
-        DETAIL;
+        DETAIL
     }
 
     public Type getType() {
@@ -351,7 +351,7 @@ public class DetailQuakeInfo implements Entity {
     public EmbedCreateSpec createEmbed(String lang) {
         Earthquake eq = getEarthquake();
         Type type = getType();
-        I18nEmbedCreateSpec.Builder builder = I18nEmbedCreateSpec.builder(lang).title(type.getI18nKey());
+        I18nEmbedCreateSpec.Builder builder = I18nEmbedCreateSpec.builder(lang);
 
         switch (type) {
             case INTENSITY:
