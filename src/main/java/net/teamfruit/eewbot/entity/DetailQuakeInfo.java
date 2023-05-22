@@ -16,6 +16,7 @@ import discord4j.core.spec.MessageCreateSpec;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -327,6 +328,31 @@ public class DetailQuakeInfo implements Entity {
         }
     }
 
+    public enum Type {
+        INTENSITY("eewbot.quakeinfo.title.intensity"),
+        EPICENTER("eewbot.quakeinfo.title.epicenter"),
+        DETAIL("eewbot.quakeinfo.title.detail");
+
+        private final String i18nKey;
+
+        Type(String i18nKey) {
+            this.i18nKey = i18nKey;
+        }
+
+        public String getI18nKey() {
+            return i18nKey;
+        }
+    }
+
+    public Type getType() {
+        Earthquake eq = getEarthquake();
+        if (StringUtils.isAllEmpty(eq.getEpicenter(), eq.getLat(), eq.getLon(), eq.getMagnitude(), eq.getDepth()))
+            return Type.INTENSITY;
+        if (StringUtils.isAllEmpty(eq.getLocal(), eq.getGlobal()))
+            return Type.EPICENTER;
+        return Type.DETAIL;
+    }
+
     @Override
     public MessageCreateSpec createMessage(final String lang) {
         return MessageCreateSpec.builder().addEmbed(createEmbed(lang)).build();
@@ -334,7 +360,7 @@ public class DetailQuakeInfo implements Entity {
 
     public EmbedCreateSpec createEmbed(String lang) {
         return I18nEmbedCreateSpec.builder(lang)
-                .title("eewbot.quakeinfo.title")
+                .title(getType().getI18nKey())
                 .addField("eewbot.quakeinfo.epicenter", getEarthquake().getEpicenter(), true)
                 .addField("eewbot.quakeinfo.depth", getEarthquake().getDepth(), true)
                 .addField("eewbot.quakeinfo.magnitude", getEarthquake().getMagnitude(), true)
