@@ -359,7 +359,10 @@ public class DetailQuakeInfo implements Entity {
                 addIntensityGroupFields(builder, eq);
                 break;
             case EPICENTER:
-                builder.title("eewbot.quakeinfo.epicenter.title");
+                builder.title("eewbot.quakeinfo.epicenter.title")
+                        .addField("eewbot.quakeinfo.field.epicenter", eq.getEpicenter(), true)
+                        .addField("eewbot.quakeinfo.field.depth", eq.getDepth(), true)
+                        .addField("eewbot.quakeinfo.field.magnitude", eq.getMagnitude(), true);
                 addIntensityGroupFields(builder, eq);
                 break;
             case DETAIL:
