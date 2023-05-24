@@ -1,4 +1,4 @@
-FROM amazoncorretto:17-alpine
+FROM amazoncorretto:17.0.7-alpine
 
 COPY target/eewbot-*.jar eewbot.jar
 
