@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17.0.7_7-jre-alpine
+FROM amazoncorretto:17-alpine
 
 COPY target/eewbot-*.jar eewbot.jar
 
