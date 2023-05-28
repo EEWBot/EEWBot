@@ -6,16 +6,15 @@ Earthquake Early Warning(EEW) Discord Bot for Japan
 緊急地震速報(EEW)を、強震モニタから取得し、Discordに通知するBotです。  
 標準設定では、高度利用者向け緊急地震速報(予報)も通知されます。
 
-## お知らせ
-2.0.3以前のバージョンは、緊急地震速報のエンドポイントが変更され利用出来なくなったため、緊急地震速報が提供されません。
-速やかなバージョンアップをお願い致します。ご迷惑をおかけして申し訳ございません。
-
 ## リンク
 #### 公式インスタンス
 自宅サーバーで稼働しているため、可用性が保証されません。
 [Bot招待リンク](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
 #### 公式サポートサーバー
 [招待リンク](https://discord.gg/wATGHHY)
+
+## お知らせ
+2.0.3以前のバージョンでは緊急地震速報が提供されないため、利用しないで下さい。
 
 ## セットアップ
 とりあえず導入したいよ！という方は[こちらから招待](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
@@ -81,7 +80,6 @@ Prefix `!eew`
 |joinserver|Botの招待リンクを表示します|
 |time|Botの時刻同期情報を表示します|
 |timefix|Botの時刻を強制的に修正します|
-|setlang|サーバー標準言語や登録チャンネルの言語設定をします|
 |help|helpを表示します|
 
 ## ライセンス
