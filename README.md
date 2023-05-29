@@ -1,14 +1,13 @@
 # EEWBot
 <img align="right" src="https://cdn.discordapp.com/avatars/329257498668302346/7582f611d95b33514b7acdf08b5a5e35.png?size=256" width=27%>
 
-Earthquake Early Warning(EEW) Discord Bot for Japan
+A Discord bot for Earthquake Early Warning (EEW) system in Japan
 
 緊急地震速報(EEW)を、強震モニタから取得し、Discordに通知するBotです。  
-標準設定では、高度利用者向け緊急地震速報(予報)も通知されます。
 
 ## リンク
 #### 公式インスタンス
-自宅サーバーで稼働しているため、可用性が保証されません。
+自宅サーバーで稼働しているため、可用性を保証しません。  
 [Bot招待リンク](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
 #### 公式サポートサーバー
 [招待リンク](https://discord.gg/wATGHHY)
@@ -16,14 +15,10 @@ Earthquake Early Warning(EEW) Discord Bot for Japan
 ## お知らせ
 2.0.3以前のバージョンでは緊急地震速報が提供されないため、利用しないで下さい。
 
-## セットアップ
-とりあえず導入したいよ！という方は[こちらから招待](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
-### Token生成
-すでに存在している場合は必要ありません。
-1. [Discord Developers](https://discordapp.com/developers/applications/me) にアクセス
-1. New Application から任意の名前をつけてApplicationを作成
-1. Settings > Bot > Add Bot
-1. TokenをCopy
+## ダウンロード
+- [Release (jar)](https://github.com/Team-Fruit/EEWBot/releases/latest)  
+- [Docker Hub](https://hub.docker.com/r/teamfruit/eewbot)  
+- [GitHub Packages](https://github.com/Team-Fruit/EEWBot/pkgs/container/eewbot)
 
 ## Windows
 1. Java8がインストールされていない場合はインストールする
