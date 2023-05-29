@@ -64,23 +64,8 @@ $ docker run -e TOKEN=<Your bot token> \
              -t -d teamfruit/eewbot	
 ```
 
-## コマンド
-Prefix `!eew`
-
-|コマンド|説明|
-|---|---|
-|register|通知するチャンネルを登録し、セットアップします|
-|unregister|チャンネルの登録を解除します|
-|add|チャンネルに通知される情報を追加します|
-|remove|チャンネルに通知される情報を消去します|
-|detail|登録されたチャンネルの設定を表示します|
-|quakeinfo|最新の地震情報を取得します|
-|monitor|現在の強震モニタの画像を取得します|
-|reload|設定ファイルをリロードします|
-|joinserver|Botの招待リンクを表示します|
-|time|Botの時刻同期情報を表示します|
-|timefix|Botの時刻を強制的に修正します|
-|help|helpを表示します|
+## 利用方法・コマンド
+[Wikiをご覧ください。](https://github.com/Team-Fruit/EEWBot/wiki)
 
 ## ライセンス
 - EEWBot
