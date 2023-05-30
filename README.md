@@ -5,38 +5,39 @@ A Discord bot for Earthquake Early Warning (EEW) system in Japan
 
 緊急地震速報(EEW)を、強震モニタから取得し、Discordに通知するBotです。  
 
-## リンク
-#### 公式インスタンス
-自宅サーバーで稼働しているため、可用性を保証しません。  
-[Bot招待リンク](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
-#### 公式サポートサーバー
-[招待リンク](https://discord.gg/wATGHHY)
+<p>
+  <img src="https://img.shields.io/badge/Java->=8-orange?style=for-the-badge" alt="Java Version">
+  <a href="https://github.com/Team-Fruit/EEWBot/blob/master/LICENSE.md"><img src="https://img.shields.io/github/license/Team-Fruit/EEWbot?style=for-the-badge" alt="License"></a> 
+  <a href="https://discord.gg/upt9n86ctG"><img src="https://img.shields.io/discord/564550533973540885?color=5464ec&label=Discord&style=for-the-badge" alt="Discord"></a>
+</p>
 
-## お知らせ
-2.0.3以前のバージョンでは緊急地震速報が提供されないため、利用しないで下さい。
+## Botを招待
+[Bot利用における免責事項](https://github.com/Team-Fruit/EEWBot/wiki/Bot%E3%81%AE%E5%88%A9%E7%94%A8%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8B%E5%85%8D%E8%B2%AC%E4%BA%8B%E9%A0%85)をお読み下さい。   
+開発者による公式インスタンスですが、可用性を保証していません。   
+[Botを招待](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
 
-## ダウンロード
+## Botの利用方法・コマンド
+[Wikiをご覧ください。](https://github.com/Team-Fruit/EEWBot/wiki)
+
+## Botをホスト
+
+### ダウンロード
 - [Release (jar)](https://github.com/Team-Fruit/EEWBot/releases/latest)  
+
+### 実行
+```sh
+java -Dfile.encoding=UTF-8 -jar eewbot.jar
+```
+初回起動時は、設定ファイル`config.json`を生成し、終了します。  
+設定項目`token`にあなたのBotのトークンを入力し、再度実行して下さい。
+
+### Docker
 - [Docker Hub](https://hub.docker.com/r/teamfruit/eewbot)  
 - [GitHub Packages](https://github.com/Team-Fruit/EEWBot/pkgs/container/eewbot)
 
-## Windows
-1. Java8がインストールされていない場合はインストールする
-1. [Releases](https://github.com/Team-Fruit/EEWBot/releases/latest) より、jarをダウンロード
-1. 設定ファイルなどが生成されるため、フォルダを作成し、その中にダウンロードしたjarを配置
-1. コマンドプロンプトまたはPowerShellを開き、以下のコマンドをファイル名を正しいものに変更し、実行する
-```
-java -Dfile.encoding=UTF-8 -jar eewbot.jar
-```
-5. 生成されたconfig.jsonにのtokenにDiscord BotのTokenを入力
-5. 生成されたpermission.jsonのownerに自身のDiscordアカウントのIDを入力 (Discordクライアントの開発者モード時にIDをコピーで得られるもの)
-5. 先程のコマンドを再実行し、Botが起動することを確認する
+Botは設定ファイルなど永続化する必要のあるファイルを生成します。  
+以下はいくつかの例です。
 
-## Docker
-[Docker Hub](https://hub.docker.com/r/teamfruit/eewbot)よりimageをpull
-```sh
-$ docker pull teamfruit/eewbot
-```
 設定ファイル置き場のホストのディレクトリを作成、移動
 ```sh
 $ mkdir eewbot && cd $_
@@ -58,9 +59,6 @@ $ docker run -e TOKEN=<Your bot token> \
              --name eewbot \	
              -t -d teamfruit/eewbot	
 ```
-
-## 利用方法・コマンド
-[Wikiをご覧ください。](https://github.com/Team-Fruit/EEWBot/wiki)
 
 ## ライセンス
 - EEWBot
