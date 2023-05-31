@@ -11,15 +11,15 @@ A Discord bot for Earthquake Early Warning (EEW) system in Japan
   <a href="https://discord.gg/upt9n86ctG"><img src="https://img.shields.io/discord/564550533973540885?color=5464ec&label=Discord&style=for-the-badge" alt="Discord"></a>
 </p>
 
-## Botを招待
+## Botを招待する
 [Bot利用における免責事項](https://github.com/Team-Fruit/EEWBot/wiki/Bot%E3%81%AE%E5%88%A9%E7%94%A8%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8B%E5%85%8D%E8%B2%AC%E4%BA%8B%E9%A0%85)をお読み下さい。   
 開発者による公式インスタンスですが、可用性を保証していません。   
-[Botを招待](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
+[Botを招待](https://discord.com/api/oauth2/authorize?client_id=329257498668302346&permissions=275414829120&scope=bot%20applications.commands)
 
 ## Botの利用方法・コマンド
 [Wikiをご覧ください。](https://github.com/Team-Fruit/EEWBot/wiki)
 
-## Botをホスト
+## Botをホストする
 
 ### ダウンロード
 - [Release (jar)](https://github.com/Team-Fruit/EEWBot/releases/latest)  
