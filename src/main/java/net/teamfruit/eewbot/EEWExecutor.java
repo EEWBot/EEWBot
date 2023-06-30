@@ -2,9 +2,7 @@ package net.teamfruit.eewbot;
 
 import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.EEW;
-import net.teamfruit.eewbot.entity.Monitor;
 import net.teamfruit.eewbot.gateway.EEWGateway;
-import net.teamfruit.eewbot.gateway.MonitorGateway;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
@@ -75,17 +73,17 @@ public class EEWExecutor {
                 };
                 EEWExecutor.this.service.sendMessage(isAlert.and(decimation).and(sensitivity), lang -> eew.createMessage(lang));
 
-                if (eew.isInitial() || eew.isFinal())
-                    EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider, eew) {
-
-                        Predicate<Channel> monitor = c -> c.monitor && (eew.isAlert() && c.eewAlert || !eew.isAlert() && c.eewPrediction);
-
-                        @Override
-                        public void onNewData(final Monitor data) {
-                            EEWExecutor.this.service.sendAttachment(this.monitor.and(sensitivity),
-                                    lang -> data.createMessage(lang));
-                        }
-                    });
+//                if (eew.isInitial() || eew.isFinal())
+//                    EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider, eew) {
+//
+//                        Predicate<Channel> monitor = c -> c.monitor && (eew.isAlert() && c.eewAlert || !eew.isAlert() && c.eewPrediction);
+//
+//                        @Override
+//                        public void onNewData(final Monitor data) {
+//                            EEWExecutor.this.service.sendAttachment(this.monitor.and(sensitivity),
+//                                    lang -> data.createMessage(lang));
+//                        }
+//                    });
             }
         }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
 
