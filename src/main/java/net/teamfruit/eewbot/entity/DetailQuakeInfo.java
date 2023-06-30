@@ -238,17 +238,17 @@ public class DetailQuakeInfo implements Entity {
             public static class Group {
 
                 @JacksonXmlProperty(localName = "Intensity", isAttribute = true)
-                private String intensity;
+                private SeismicIntensity intensity;
 
                 @JacksonXmlProperty(localName = "Area")
                 @JacksonXmlElementWrapper(useWrapping = false)
                 private List<Area> areas;
 
-                public String getIntensity() {
+                public SeismicIntensity getIntensity() {
                     return this.intensity;
                 }
 
-                public void setIntensity(final String intensity) {
+                public void setIntensity(final SeismicIntensity intensity) {
                     this.intensity = intensity;
                 }
 
@@ -383,6 +383,6 @@ public class DetailQuakeInfo implements Entity {
     private void addIntensityGroupFields(I18nEmbedCreateSpec.Builder builder, Earthquake eq) {
         eq.getRelative().getGroups().forEach(group -> builder.addField("eewbot.quakeinfo.field.intensity",
                 group.getAreas().stream().map(Earthquake.Relative.Group.Area::getName).collect(Collectors.joining(" ")),
-                false, group.getIntensity()));
+                false, group.getIntensity().getSimple()));
     }
 }

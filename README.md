@@ -1,48 +1,43 @@
 # EEWBot
 <img align="right" src="https://cdn.discordapp.com/avatars/329257498668302346/7582f611d95b33514b7acdf08b5a5e35.png?size=256" width=27%>
 
-Earthquake Early Warning(EEW) Discord Bot for Japan
+A Discord bot for Earthquake Early Warning (EEW) system in Japan
 
 緊急地震速報(EEW)を、強震モニタから取得し、Discordに通知するBotです。  
-標準設定では、高度利用者向け緊急地震速報(予報)も通知されます。
 
-## お知らせ
-2.0.3以前のバージョンは、緊急地震速報のエンドポイントが変更され利用出来なくなったため、緊急地震速報が提供されません。
-速やかなバージョンアップをお願い致します。ご迷惑をおかけして申し訳ございません。
+<p>
+  <img src="https://img.shields.io/badge/Java->=8-orange?style=for-the-badge" alt="Java Version">
+  <a href="https://github.com/Team-Fruit/EEWBot/blob/master/LICENSE.md"><img src="https://img.shields.io/github/license/Team-Fruit/EEWbot?style=for-the-badge" alt="License"></a> 
+  <a href="https://discord.gg/upt9n86ctG"><img src="https://img.shields.io/discord/564550533973540885?color=5464ec&label=Discord&style=for-the-badge" alt="Discord"></a>
+</p>
 
-## リンク
-#### 公式インスタンス
-自宅サーバーで稼働しているため、可用性が保証されません。
-[Bot招待リンク](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
-#### 公式サポートサーバー
-[招待リンク](https://discord.gg/wATGHHY)
+## Botを招待する
+[Bot利用における免責事項](https://github.com/Team-Fruit/EEWBot/wiki/Bot%E3%81%AE%E5%88%A9%E7%94%A8%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8B%E5%85%8D%E8%B2%AC%E4%BA%8B%E9%A0%85)をお読み下さい。   
+開発者による公式インスタンスですが、可用性を保証していません。   
+[Botを招待](https://discord.com/api/oauth2/authorize?client_id=329257498668302346&permissions=275414829120&scope=bot%20applications.commands)
 
-## セットアップ
-とりあえず導入したいよ！という方は[こちらから招待](https://discordapp.com/oauth2/authorize?client_id=329257498668302346&scope=bot)
-### Token生成
-すでに存在している場合は必要ありません。
-1. [Discord Developers](https://discordapp.com/developers/applications/me) にアクセス
-1. New Application から任意の名前をつけてApplicationを作成
-1. Settings > Bot > Add Bot
-1. TokenをCopy
+## Botの利用方法・コマンド
+[Wikiをご覧ください。](https://github.com/Team-Fruit/EEWBot/wiki)
 
-## Windows
-1. Java8がインストールされていない場合はインストールする
-1. [Releases](https://github.com/Team-Fruit/EEWBot/releases/latest) より、jarをダウンロード
-1. 設定ファイルなどが生成されるため、フォルダを作成し、その中にダウンロードしたjarを配置
-1. コマンドプロンプトまたはPowerShellを開き、以下のコマンドをファイル名を正しいものに変更し、実行する
-```
+## Botをホストする
+
+### ダウンロード
+- [Release (jar)](https://github.com/Team-Fruit/EEWBot/releases/latest)  
+
+### 実行
+```sh
 java -Dfile.encoding=UTF-8 -jar eewbot.jar
 ```
-5. 生成されたconfig.jsonにのtokenにDiscord BotのTokenを入力
-5. 生成されたpermission.jsonのownerに自身のDiscordアカウントのIDを入力 (Discordクライアントの開発者モード時にIDをコピーで得られるもの)
-5. 先程のコマンドを再実行し、Botが起動することを確認する
+初回起動時は、設定ファイル`config.json`を生成し、終了します。  
+設定項目`token`にあなたのBotのトークンを入力し、再度実行して下さい。
 
-## Docker
-[Docker Hub](https://hub.docker.com/r/teamfruit/eewbot)よりimageをpull
-```sh
-$ docker pull teamfruit/eewbot
-```
+### Docker
+- [Docker Hub](https://hub.docker.com/r/teamfruit/eewbot)  
+- [GitHub Packages](https://github.com/Team-Fruit/EEWBot/pkgs/container/eewbot)
+
+Botは設定ファイルなど永続化する必要のあるファイルを生成します。  
+以下はいくつかの例です。
+
 設定ファイル置き場のホストのディレクトリを作成、移動
 ```sh
 $ mkdir eewbot && cd $_
@@ -64,25 +59,6 @@ $ docker run -e TOKEN=<Your bot token> \
              --name eewbot \	
              -t -d teamfruit/eewbot	
 ```
-
-## コマンド
-Prefix `!eew`
-
-|コマンド|説明|
-|---|---|
-|register|通知するチャンネルを登録し、セットアップします|
-|unregister|チャンネルの登録を解除します|
-|add|チャンネルに通知される情報を追加します|
-|remove|チャンネルに通知される情報を消去します|
-|detail|登録されたチャンネルの設定を表示します|
-|quakeinfo|最新の地震情報を取得します|
-|monitor|現在の強震モニタの画像を取得します|
-|reload|設定ファイルをリロードします|
-|joinserver|Botの招待リンクを表示します|
-|time|Botの時刻同期情報を表示します|
-|timefix|Botの時刻を強制的に修正します|
-|setlang|サーバー標準言語や登録チャンネルの言語設定をします|
-|help|helpを表示します|
 
 ## ライセンス
 - EEWBot

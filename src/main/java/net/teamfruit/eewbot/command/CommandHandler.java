@@ -22,7 +22,7 @@ public class CommandHandler {
         commands.put("detail", wrap(new DetailCommand()));
         commands.put("add", wrap(new AddCommand()));
         commands.put("remove", wrap(new RemoveCommand()));
-        commands.put("monitor", wrap(new MonitorCommand()));
+//        commands.put("monitor", wrap(new MonitorCommand()));
         commands.put("time", wrap(new TimeCommand()));
         commands.put("timefix", wrap(new TimeFixCommand()));
         commands.put("joinserver", wrap(new JoinServerCommand()));

@@ -22,7 +22,7 @@ public class Channel {
     @CommandName("地震情報")
     public boolean quakeInfo = true;
 
-    @CommandName("強震モニタ")
+    //    @CommandName("強震モニタ")
     public boolean monitor = true;
 
     public SeismicIntensity minIntensity = SeismicIntensity.ONE;
