@@ -10,98 +10,98 @@ import reactor.core.publisher.Mono;
 
 public class RegisterCommand extends ReactionCommand {
 
-	private boolean setup;
-	private int setupProgress = -1;
+    private boolean setup;
+    private int setupProgress = -1;
 
-	@Override
-	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
-		setAuthor(event.getMessage());
-		return event.getMessage().getChannel()
-				.filterWhen(channel -> Mono.just(!bot.getChannels().containsKey(channel.getId().asLong()))
-						.filter(b -> b)
-						.switchIfEmpty(channel.createMessage(CommandUtils.createErrorEmbed(lang)
-								.title("eewbot.cmd.register.title")
-								.description("eewbot.cmd.err.channelalreadyregistered.desc").build())
-								.map(m -> false)))
-				.flatMap(channel -> Mono.fromCallable(() -> {
-					bot.getChannelsLock().writeLock().lock();
-					bot.getChannels().put(channel.getId().asLong(), new Channel());
-					bot.getChannelsLock().writeLock().unlock();
-					bot.getChannelRegistry().save();
-					return channel;
-				}))
-				.flatMap(channel -> channel.createMessage(CommandUtils.createEmbed(lang)
-						.title("eewbot.cmd.register.title")
-						.description("eewbot.cmd.register.desc").build()))
-				.map(this::setBotMessage)
-				.flatMap(msg -> msg.addReaction(EMOJI_Y)
-						.then(msg.addReaction(EMOJI_N)))
-				.then();
-	}
+    @Override
+    public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
+        setAuthor(event.getMessage());
+        return event.getMessage().getChannel()
+                .filterWhen(channel -> Mono.just(!bot.getChannels().containsKey(channel.getId().asLong()))
+                        .filter(b -> b)
+                        .switchIfEmpty(channel.createMessage(CommandUtils.createErrorEmbed(lang)
+                                        .title("eewbot.cmd.register.title")
+                                        .description("eewbot.cmd.err.channelalreadyregistered.desc").build())
+                                .map(m -> false)))
+                .flatMap(channel -> Mono.fromCallable(() -> {
+                    bot.getChannelsLock().writeLock().lock();
+                    bot.getChannels().put(channel.getId().asLong(), new Channel());
+                    bot.getChannelsLock().writeLock().unlock();
+                    bot.getChannelRegistry().save();
+                    return channel;
+                }))
+                .flatMap(channel -> channel.createMessage(CommandUtils.createEmbed(lang)
+                        .title("eewbot.cmd.register.title")
+                        .description("eewbot.cmd.register.desc").build()))
+                .map(this::setBotMessage)
+                .flatMap(msg -> msg.addReaction(EMOJI_Y)
+                        .then(msg.addReaction(EMOJI_N)))
+                .then();
+    }
 
-	@Override
-	public Mono<Boolean> onReaction(final EEWBot bot, final ReactionAddEvent reaction, final String lang) {
-		if (!(reaction.getEmoji().equals(EMOJI_Y)||reaction.getEmoji().equals(EMOJI_N)))
-			return Mono.just(false);
+    @Override
+    public Mono<Boolean> onReaction(final EEWBot bot, final ReactionAddEvent reaction, final String lang) {
+        if (!(reaction.getEmoji().equals(EMOJI_Y) || reaction.getEmoji().equals(EMOJI_N)))
+            return Mono.just(false);
 
-		if (!this.setup&&reaction.getEmoji().equals(EMOJI_N))
-			return reaction.getChannel()
-					.flatMap(channel -> channel.createMessage(CommandUtils.createEmbed(lang)
-							.title("eewbot.cmd.register.title")
-							.addField("eewbot.cmd.register.field.initial.name", bot.getChannels().get(channel.getId().asLong()).toString(), false)
-							.build()))
-					.map(m -> true);
+        if (!this.setup && reaction.getEmoji().equals(EMOJI_N))
+            return reaction.getChannel()
+                    .flatMap(channel -> channel.createMessage(CommandUtils.createEmbed(lang)
+                            .title("eewbot.cmd.register.title")
+                            .addField("eewbot.cmd.register.field.initial.name", bot.getChannels().get(channel.getId().asLong()).toString(), false)
+                            .build()))
+                    .map(m -> true);
 
-		if (!this.setup&&reaction.getEmoji().equals(EMOJI_Y))
-			this.setup = true;
+        if (!this.setup && reaction.getEmoji().equals(EMOJI_Y))
+            this.setup = true;
 
-		this.setupProgress++;
+        this.setupProgress++;
 
-		final Channel channel = bot.getChannels().get(reaction.getChannelId().asLong());
-		final boolean isY = reaction.getEmoji().equals(EMOJI_Y);
+        final Channel channel = bot.getChannels().get(reaction.getChannelId().asLong());
+        final boolean isY = reaction.getEmoji().equals(EMOJI_Y);
 
-		switch (this.setupProgress) {
-			case 0:
-				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.eewalert.name", "eewbot.cmd.register.field.eewalert.value");
-			case 1:
-				channel.eewAlert = isY;
-				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.eewprediction.name", "eewbot.cmd.register.field.eewprediction.value");
-			case 2:
-				channel.eewPrediction = isY;
-				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.eewdecimation.name", "eewbot.cmd.register.field.eewdecimation.value");
-			case 3:
-				channel.eewDecimation = isY;
-				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.monitor.name", "eewbot.cmd.register.field.monitor.value");
-			case 4:
-				channel.monitor = isY;
-				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.quakeinfo.name", "eewbot.cmd.register.field.quakeinfo.value");
-			case 5:
-				channel.quakeInfo = isY;
-				return reaction.getChannel()
-						.flatMap(c -> c.createMessage(CommandUtils.createEmbed(lang)
-								.title("eewbot.cmd.register.title")
-								.addField("eewbot.cmd.register.field.done.name", bot.getChannels().get(c.getId().asLong()).toString(), false)
-								.build()))
-						.flatMap(c -> Mono.fromCallable(() -> {
-							bot.getChannelRegistry().save();
-							return channel;
-						}))
-						.map(m -> true);
-			default:
-				return Mono.error(new IllegalStateException("不正なセットアップ進行状況です"));
-		}
-	}
+        switch (this.setupProgress) {
+            case 0:
+                return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.eewalert.name", "eewbot.cmd.register.field.eewalert.value");
+            case 1:
+                channel.eewAlert = isY;
+                return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.eewprediction.name", "eewbot.cmd.register.field.eewprediction.value");
+            case 2:
+                channel.eewPrediction = isY;
+                return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.eewdecimation.name", "eewbot.cmd.register.field.eewdecimation.value");
+            case 3:
+                channel.eewDecimation = isY;
+                return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.monitor.name", "eewbot.cmd.register.field.monitor.value");
+            case 4:
+//				channel.monitor = isY;
+//				return createSetupMessage(reaction, lang, "eewbot.cmd.register.field.quakeinfo.name", "eewbot.cmd.register.field.quakeinfo.value");
+//			case 5:
+                channel.quakeInfo = isY;
+                return reaction.getChannel()
+                        .flatMap(c -> c.createMessage(CommandUtils.createEmbed(lang)
+                                .title("eewbot.cmd.register.title")
+                                .addField("eewbot.cmd.register.field.done.name", bot.getChannels().get(c.getId().asLong()).toString(), false)
+                                .build()))
+                        .flatMap(c -> Mono.fromCallable(() -> {
+                            bot.getChannelRegistry().save();
+                            return channel;
+                        }))
+                        .map(m -> true);
+            default:
+                return Mono.error(new IllegalStateException("不正なセットアップ進行状況です"));
+        }
+    }
 
-	private Mono<Boolean> createSetupMessage(final ReactionAddEvent event, final String lang, final String name, final String value) {
-		return event.getChannel()
-				.flatMap(channel -> channel.createMessage(CommandUtils.createEmbed(lang)
-						.title("eewbot.cmd.register.title")
-						.addField(name, value, false)
-						.build()))
-				.map(this::setBotMessage)
-				.flatMap(msg -> msg.addReaction(EMOJI_Y)
-						.then(msg.addReaction(EMOJI_N)))
-				.map(m -> false);
-	}
+    private Mono<Boolean> createSetupMessage(final ReactionAddEvent event, final String lang, final String name, final String value) {
+        return event.getChannel()
+                .flatMap(channel -> channel.createMessage(CommandUtils.createEmbed(lang)
+                        .title("eewbot.cmd.register.title")
+                        .addField(name, value, false)
+                        .build()))
+                .map(this::setBotMessage)
+                .flatMap(msg -> msg.addReaction(EMOJI_Y)
+                        .then(msg.addReaction(EMOJI_N)))
+                .map(m -> false);
+    }
 
 }
