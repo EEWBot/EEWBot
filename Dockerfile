@@ -1,4 +1,4 @@
-FROM amazoncorretto:17.0.7-alpine as build
+FROM amazoncorretto:17.0.8-alpine as build
 
 RUN apk add --no-cache binutils
 
