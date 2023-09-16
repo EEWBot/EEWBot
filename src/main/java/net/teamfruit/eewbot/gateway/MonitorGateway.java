@@ -2,7 +2,7 @@ package net.teamfruit.eewbot.gateway;
 
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.TimeProvider;
-import net.teamfruit.eewbot.entity.EEW;
+import net.teamfruit.eewbot.entity.KmoniEEW;
 import net.teamfruit.eewbot.entity.Monitor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
@@ -26,9 +26,9 @@ public abstract class MonitorGateway implements Gateway<Monitor> {
     public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private final TimeProvider time;
-    private final EEW relationEEW;
+    private final KmoniEEW relationEEW;
 
-    public MonitorGateway(final TimeProvider time, final EEW eew) {
+    public MonitorGateway(final TimeProvider time, final KmoniEEW eew) {
         this.time = time;
         this.relationEEW = eew;
     }
