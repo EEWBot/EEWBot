@@ -24,7 +24,7 @@ public class Config {
     }
 
     public int getKyoshinDelay() {
-        return this.kyoshinDelay >= 1 ? this.kyoshinDelay : 1;
+        return Math.max(this.kyoshinDelay, 1);
     }
 
     public void setKyoshinDelay(final int kyoshinDelay) {
@@ -32,7 +32,7 @@ public class Config {
     }
 
     public int getQuakeInfoDelay() {
-        return this.quakeInfoDelay >= 10 ? this.quakeInfoDelay : 10;
+        return Math.max(this.quakeInfoDelay, 10);
     }
 
     public void setQuakeInfoDelay(final int quakeInfoDelay) {
@@ -97,7 +97,17 @@ public class Config {
 
     @Override
     public String toString() {
-        return "Config [token=" + this.token + ", kyoshinDelay=" + this.kyoshinDelay + ", quakeInfoDelay=" + this.quakeInfoDelay + ", nptServer=" + this.nptServer + ", enablePermission=" + this.enablePermission + ", debug=" + this.debug + "]";
+        return "Config{" +
+                "token='" + token + '\'' +
+                ", kyoshinDelay=" + kyoshinDelay +
+                ", quakeInfoDelay=" + quakeInfoDelay +
+                ", dmdataAPIKey='" + dmdataAPIKey + '\'' +
+                ", dmdataReferer='" + dmdataReferer + '\'' +
+                ", nptServer='" + nptServer + '\'' +
+                ", defaultLanuage='" + defaultLanuage + '\'' +
+                ", enablePermission=" + enablePermission +
+                ", systemChannel='" + systemChannel + '\'' +
+                ", debug=" + debug +
+                '}';
     }
-
 }
