@@ -1,8 +1,8 @@
 package net.teamfruit.eewbot;
 
 import net.teamfruit.eewbot.entity.DetailQuakeInfo;
-import net.teamfruit.eewbot.entity.EEW;
-import net.teamfruit.eewbot.gateway.EEWGateway;
+import net.teamfruit.eewbot.entity.KmoniEEW;
+import net.teamfruit.eewbot.gateway.KmoniGateway;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
@@ -42,10 +42,10 @@ public class EEWExecutor {
     public void init() {
         this.provider.init();
 
-        this.executor.scheduleAtFixedRate(new EEWGateway(this.provider) {
+        this.executor.scheduleAtFixedRate(new KmoniGateway(this.provider) {
 
             @Override
-            public void onNewData(final EEW eew) {
+            public void onNewData(final KmoniEEW eew) {
                 Log.logger.info(eew.toString());
 
                 final Predicate<Channel> isAlert = c -> eew.isAlert() ? c.eewAlert : c.eewPrediction;
