@@ -29,6 +29,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -65,10 +66,11 @@ public class EEWBot {
             .setSocketTimeout(10000 * 10)
             .build();
     private final PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager();
-    private final CloseableHttpClient http = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest)
+    private final CloseableHttpClient apacheHttpClient = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest)
             .setDefaultHeaders(Arrays.asList(new BasicHeader(HttpHeaders.ACCEPT_CHARSET, "UTF-8")))
             .setConnectionManager(this.manager)
             .build();
+    private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private GatewayDiscordClient gateway;
     private EEWService service;
@@ -232,8 +234,13 @@ public class EEWBot {
         return this.permissions;
     }
 
-    public CloseableHttpClient getHttpClient() {
-        return this.http;
+    @Deprecated
+    public CloseableHttpClient getApacheHttpClient() {
+        return this.apacheHttpClient;
+    }
+
+    public HttpClient getHttpClient() {
+        return this.httpClient;
     }
 
     public GatewayDiscordClient getClient() {

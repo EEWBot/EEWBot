@@ -34,7 +34,7 @@ public abstract class KmoniGateway implements Gateway<KmoniEEW> {
             final String url = REMOTE + FORMAT.format(date) + ".json";
 
             final HttpGet get = new HttpGet(url);
-            try (CloseableHttpResponse response = EEWBot.instance.getHttpClient().execute(get)) {
+            try (CloseableHttpResponse response = EEWBot.instance.getApacheHttpClient().execute(get)) {
                 if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK)
                     try (InputStreamReader is = new InputStreamReader(response.getEntity().getContent())) {
                         final KmoniEEW eew = EEWBot.GSON.fromJson(is, KmoniEEW.class);

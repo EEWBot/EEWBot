@@ -78,7 +78,7 @@ public abstract class MonitorGateway implements Gateway<Monitor> {
 
     private BufferedImage getImage(final String uri) throws IOException {
         final HttpGet get = new HttpGet(uri);
-        try (CloseableHttpResponse response = EEWBot.instance.getHttpClient().execute(get)) {
+        try (CloseableHttpResponse response = EEWBot.instance.getApacheHttpClient().execute(get)) {
             final StatusLine statusLine = response.getStatusLine();
             if (statusLine.getStatusCode() == HttpStatus.SC_OK)
                 return ImageIO.read(response.getEntity().getContent());
