@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
+import com.google.gson.JsonSyntaxException;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.DmdataEEW;
@@ -7,6 +8,9 @@ import net.teamfruit.eewbot.entity.dmdataapi.DmdataContract;
 import net.teamfruit.eewbot.entity.dmdataapi.DmdataError;
 import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketList;
 import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketStart;
+import net.teamfruit.eewbot.entity.dmdataapi.ws.DmdataWSMessage;
+import net.teamfruit.eewbot.entity.dmdataapi.ws.DmdataWSPing;
+import net.teamfruit.eewbot.entity.dmdataapi.ws.DmdataWSPong;
 
 import java.io.IOException;
 import java.net.URI;
@@ -125,7 +129,22 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
         @Override
         public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-            Log.logger.info("DMDATA WebSocket received: {}", data);
+            String dataString = data.toString();
+            try {
+                DmdataWSMessage message = EEWBot.GSON.fromJson(dataString, DmdataWSMessage.class);
+                switch (message.getType()) {
+                    case PING:
+                        DmdataWSPing ping = EEWBot.GSON.fromJson(dataString, DmdataWSPing.class);
+                        Log.logger.debug("DMDATA WebSocket ping: {}", ping.getPingId());
+
+                        DmdataWSPong pong = new DmdataWSPong(ping.getPingId());
+                        webSocket.sendText(EEWBot.GSON.toJson(pong), true);
+                        Log.logger.debug("DMDATA WebSocket pong: {}", pong.getPingId());
+                        break;
+                }
+            } catch (JsonSyntaxException e) {
+                this.gateway.onError(new EEWGatewayException("Failed to parse DMDATA WebSocket message: " + dataString, e));
+            }
             return WebSocket.Listener.super.onText(webSocket, data, last);
         }
 
