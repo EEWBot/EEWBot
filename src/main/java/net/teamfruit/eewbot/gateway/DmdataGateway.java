@@ -8,10 +8,7 @@ import net.teamfruit.eewbot.entity.dmdataapi.DmdataContract;
 import net.teamfruit.eewbot.entity.dmdataapi.DmdataError;
 import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketList;
 import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketStart;
-import net.teamfruit.eewbot.entity.dmdataapi.ws.DmdataWSMessage;
-import net.teamfruit.eewbot.entity.dmdataapi.ws.DmdataWSPing;
-import net.teamfruit.eewbot.entity.dmdataapi.ws.DmdataWSPong;
-import net.teamfruit.eewbot.entity.dmdataapi.ws.DmdataWSStart;
+import net.teamfruit.eewbot.entity.dmdataapi.ws.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -54,35 +51,16 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                 return;
             }
 
-            DmdataSocketList socketList = openSocketList();
-            Log.logger.info(socketList.toString());
-
-            for (DmdataSocketList.Item item : socketList.getItems()) {
-                Log.logger.info("DMDATA Socket closing: {}", item.getId());
-                socketClose(String.valueOf(item.getId()));
-                Log.logger.info("DMDATA Socket closed: {}", item.getId());
-            }
-
-            DmdataSocketStart.Response socketStart = socketStart(new DmdataSocketStart.Request.Builder()
-                    .setAppName(this.appName)
-                    .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
-                    .setTypes(Collections.singletonList(hasForecastContract ? "VXSE45" : "VXSE43"))
-                    .setTest("including")
-                    .setFormatMode("json")
-                    .build());
-            Log.logger.info(socketStart.toString());
-
-            EEWBot.instance.getHttpClient().newWebSocketBuilder()
-                    .buildAsync(URI.create(socketStart.getWebsocket().getUrl()), new WebSocketListener(this));
+            connectWebSocket(hasForecastContract);
         } catch (DmdataGatewayException e) {
             Log.logger.error(e.getDmdataError().toString());
             onError(e);
-        } catch (final Exception e) {
+        } catch (IOException | InterruptedException e) {
             onError(new EEWGatewayException("Failed to connect to DMDATA", e));
         }
     }
 
-    private DmdataContract contract() throws IOException, InterruptedException {
+    private DmdataContract contract() throws IOException, InterruptedException, DmdataGatewayException {
         HttpRequest request = this.requestBuilder.copy().GET().uri(URI.create(API_BASE + "/contract")).build();
         HttpResponse<String> response = EEWBot.instance.getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
@@ -92,7 +70,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         }
     }
 
-    private DmdataSocketList openSocketList() throws IOException, InterruptedException {
+    private DmdataSocketList openSocketList() throws IOException, InterruptedException, DmdataGatewayException {
         HttpRequest request = this.requestBuilder.copy().GET().uri(URI.create(API_BASE + "/socket?status=open")).build();
         HttpResponse<String> response = EEWBot.instance.getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
@@ -102,7 +80,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         }
     }
 
-    private DmdataSocketStart.Response socketStart(DmdataSocketStart.Request body) throws IOException, InterruptedException {
+    private DmdataSocketStart.Response socketStart(DmdataSocketStart.Request body) throws IOException, InterruptedException, DmdataGatewayException {
         HttpRequest request = this.requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofString(EEWBot.GSON.toJson(body))).uri(URI.create(API_BASE + "/socket")).build();
         HttpResponse<String> response = EEWBot.instance.getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
@@ -112,7 +90,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         }
     }
 
-    private void socketClose(String socketId) throws IOException, InterruptedException {
+    private void socketClose(String socketId) throws IOException, InterruptedException, DmdataGatewayException {
         HttpRequest request = this.requestBuilder.copy().DELETE().uri(URI.create(API_BASE + "/socket/" + socketId)).build();
         HttpResponse<String> response = EEWBot.instance.getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
@@ -120,55 +98,82 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         }
     }
 
-    private static class WebSocketListener implements WebSocket.Listener {
+    private void connectWebSocket(boolean hasForecastContract) throws IOException, InterruptedException, DmdataGatewayException {
+        DmdataSocketList socketList = openSocketList();
+        Log.logger.info(socketList.toString());
 
-        private final Gateway<DmdataEEW> gateway;
-
-        public WebSocketListener(Gateway<DmdataEEW> gateway) {
-            this.gateway = gateway;
+        for (DmdataSocketList.Item item : socketList.getItems()) {
+            Log.logger.info("DMDATA Socket closing: {}", item.getId());
+            socketClose(String.valueOf(item.getId()));
+            Log.logger.info("DMDATA Socket closed: {}", item.getId());
         }
 
-        @Override
-        public void onOpen(WebSocket webSocket) {
-            Log.logger.info("DMDATA WebSocket opened");
-            WebSocket.Listener.super.onOpen(webSocket);
-        }
+        DmdataSocketStart.Response socketStart = socketStart(new DmdataSocketStart.Request.Builder()
+                .setAppName(this.appName)
+                .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
+                .setTypes(Collections.singletonList(hasForecastContract ? "VXSE45" : "VXSE43"))
+                .setTest("including")
+                .setFormatMode("json")
+                .build());
+        Log.logger.info(socketStart.toString());
 
-        @Override
-        public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-            String dataString = data.toString();
-            try {
-                DmdataWSMessage message = EEWBot.GSON.fromJson(dataString, DmdataWSMessage.class);
-                switch (message.getType()) {
-                    case START:
-                        DmdataWSStart start = EEWBot.GSON.fromJson(dataString, DmdataWSStart.class);
-                        Log.logger.info("DMDATA WebSocket start: {}", start);
-                        break;
-                    case PING:
-                        DmdataWSPing ping = EEWBot.GSON.fromJson(dataString, DmdataWSPing.class);
-                        Log.logger.debug("DMDATA WebSocket ping: {}", ping.getPingId());
+        EEWBot.instance.getHttpClient().newWebSocketBuilder()
+                .buildAsync(URI.create(socketStart.getWebsocket().getUrl()), new WebSocket.Listener() {
+                    @Override
+                    public void onOpen(WebSocket webSocket) {
+                        Log.logger.info("DMDATA WebSocket opened");
+                        WebSocket.Listener.super.onOpen(webSocket);
+                    }
 
-                        DmdataWSPong pong = new DmdataWSPong(ping.getPingId());
-                        webSocket.sendText(EEWBot.GSON.toJson(pong), true);
-                        Log.logger.debug("DMDATA WebSocket pong: {}", pong.getPingId());
-                        break;
-                }
-            } catch (JsonSyntaxException e) {
-                this.gateway.onError(new EEWGatewayException("Failed to parse DMDATA WebSocket message: " + dataString, e));
-            }
-            return WebSocket.Listener.super.onText(webSocket, data, last);
-        }
+                    @Override
+                    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                        String dataString = data.toString();
+                        try {
+                            DmdataWSMessage message = EEWBot.GSON.fromJson(dataString, DmdataWSMessage.class);
+                            switch (message.getType()) {
+                                case START:
+                                    DmdataWSStart start = EEWBot.GSON.fromJson(dataString, DmdataWSStart.class);
+                                    Log.logger.info("DMDATA WebSocket start: {}", start);
+                                    break;
+                                case PING:
+                                    DmdataWSPing ping = EEWBot.GSON.fromJson(dataString, DmdataWSPing.class);
+                                    Log.logger.debug("DMDATA WebSocket ping: {}", ping.getPingId());
 
-        @Override
-        public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-            Log.logger.info("DMDATA WebSocket closed: {} {}", statusCode, reason);
-            return null;
-        }
+                                    DmdataWSPong pong = new DmdataWSPong(ping.getPingId());
+                                    webSocket.sendText(EEWBot.GSON.toJson(pong), true);
+                                    Log.logger.debug("DMDATA WebSocket pong: {}", pong.getPingId());
+                                    break;
+                                case ERROR:
+                                    DmdataWSError error = EEWBot.GSON.fromJson(dataString, DmdataWSError.class);
+                                    Log.logger.error("DMDATA WebSocket error: {}", error);
+                                    break;
+                            }
+                        } catch (JsonSyntaxException e) {
+                            DmdataGateway.this.onError(new EEWGatewayException("Failed to parse DMDATA WebSocket message: " + dataString, e));
+                        }
+                        return WebSocket.Listener.super.onText(webSocket, data, last);
+                    }
 
-        @Override
-        public void onError(WebSocket webSocket, Throwable error) {
-            Log.logger.error("DMDATA WebSocket error", error);
-            this.gateway.onError(new EEWGatewayException("DMDATA WebSocket error", error));
-        }
+                    @Override
+                    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+                        Log.logger.info("DMDATA WebSocket closed: {} {}", statusCode, reason);
+                        try {
+                            Log.logger.info("DMDATA WebSocket reconnecting");
+                            connectWebSocket(hasForecastContract);
+                        } catch (DmdataGatewayException e) {
+                            Log.logger.error(e.getDmdataError().toString());
+                            DmdataGateway.this.onError(e);
+                        } catch (IOException | InterruptedException e) {
+                            DmdataGateway.this.onError(new EEWGatewayException("Failed to reconnect to DMDATA", e));
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public void onError(WebSocket webSocket, Throwable error) {
+                        Log.logger.error("DMDATA WebSocket error", error);
+                        DmdataGateway.this.onError(new EEWGatewayException("DMDATA WebSocket error", error));
+                    }
+                });
     }
 }
