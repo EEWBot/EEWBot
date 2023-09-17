@@ -19,7 +19,6 @@ import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 public abstract class DmdataGateway implements Gateway<DmdataEEW> {
@@ -43,20 +42,30 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             Thread.currentThread().setName("eewbot-dmdata-thread");
 
             DmdataContract contract = contract();
-            Log.logger.info(contract.toString());
+            Log.logger.debug(contract.toString());
+
+            boolean hasForecastContract = contract.getItems().stream().anyMatch(item -> item.getClassification().equals("eew.forecast"));
+            boolean hasWarningContract = contract.getItems().stream().anyMatch(item -> item.getClassification().equals("eew.warning"));
+
+            if (!hasForecastContract && !hasWarningContract) {
+                Log.logger.error("DMDATA contract does not have eew.forecast or eew.warning");
+                onError(new EEWGatewayException("DMDATA contract does not have eew.forecast or eew.warning"));
+                return;
+            }
 
             DmdataSocketList socketList = openSocketList();
             Log.logger.info(socketList.toString());
 
             for (DmdataSocketList.Item item : socketList.getItems()) {
+                Log.logger.info("DMDATA Socket closing: {}", item.getId());
                 socketClose(String.valueOf(item.getId()));
                 Log.logger.info("DMDATA Socket closed: {}", item.getId());
             }
 
             DmdataSocketStart.Response socketStart = socketStart(new DmdataSocketStart.Request.Builder()
                     .setAppName(this.appName)
-                    .setClassifications(Collections.singletonList("eew.forecast"))
-                    .setTypes(List.of("VXSE42", "VXSE43", "VXSE45"))
+                    .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
+                    .setTypes(Collections.singletonList(hasForecastContract ? "VXSE45" : "VXSE43"))
                     .setTest("including")
                     .setFormatMode("json")
                     .build());
