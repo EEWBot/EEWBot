@@ -33,6 +33,8 @@ public class DmdataWSMessage {
         @SerializedName("pong")
         PONG,
         @SerializedName("data")
-        DATA
+        DATA,
+        @SerializedName("error")
+        ERROR,
     }
 }
