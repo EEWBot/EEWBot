@@ -1,14 +1,14 @@
 package net.teamfruit.eewbot;
 
 import net.teamfruit.eewbot.entity.DetailQuakeInfo;
+import net.teamfruit.eewbot.entity.DmdataEEW;
 import net.teamfruit.eewbot.entity.KmoniEEW;
+import net.teamfruit.eewbot.gateway.DmdataGateway;
 import net.teamfruit.eewbot.gateway.KmoniGateway;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
-import net.teamfruit.eewbot.registry.ConfigurationRegistry;
 
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -20,12 +20,12 @@ public class EEWExecutor {
     private final TimeProvider provider;
     private final EEWService service;
     private final Config config;
-    private final ConfigurationRegistry<Map<Long, Channel>> channelRegistry;
+    private final long applicationId;
 
-    public EEWExecutor(final EEWService service, final Config config, final ConfigurationRegistry<Map<Long, Channel>> configurationRegistry) {
+    public EEWExecutor(final EEWService service, final Config config, long applicationId) {
         this.service = service;
         this.config = config;
-        this.channelRegistry = configurationRegistry;
+        this.applicationId = applicationId;
 
         this.executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-communication-thread"));
         this.provider = new TimeProvider(this.executor);
@@ -41,6 +41,13 @@ public class EEWExecutor {
 
     public void init() {
         this.provider.init();
+
+        this.executor.execute(new DmdataGateway(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin(), String.valueOf(applicationId)) {
+            @Override
+            public void onNewData(DmdataEEW data) {
+
+            }
+        });
 
         this.executor.scheduleAtFixedRate(new KmoniGateway(this.provider) {
 
