@@ -12,9 +12,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.WebSocket;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
@@ -58,6 +60,9 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                     .setFormatMode("json")
                     .build());
             Log.logger.info(socketStart.toString());
+
+            EEWBot.instance.getHttpClient().newWebSocketBuilder()
+                    .buildAsync(URI.create(socketStart.getWebsocket().getUrl()), new WebSocketListener(this));
         } catch (DmdataGatewayException e) {
             Log.logger.error(e.getDmdataError().toString());
             onError(e);
@@ -101,6 +106,39 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         HttpResponse<String> response = EEWBot.instance.getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
             throw new DmdataGatewayException(EEWBot.GSON.fromJson(response.body(), DmdataError.class));
+        }
+    }
+
+    private static class WebSocketListener implements WebSocket.Listener {
+
+        private final Gateway<DmdataEEW> gateway;
+
+        public WebSocketListener(Gateway<DmdataEEW> gateway) {
+            this.gateway = gateway;
+        }
+
+        @Override
+        public void onOpen(WebSocket webSocket) {
+            Log.logger.info("DMDATA WebSocket opened");
+            WebSocket.Listener.super.onOpen(webSocket);
+        }
+
+        @Override
+        public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+            Log.logger.info("DMDATA WebSocket received: {}", data);
+            return WebSocket.Listener.super.onText(webSocket, data, last);
+        }
+
+        @Override
+        public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+            Log.logger.info("DMDATA WebSocket closed: {} {}", statusCode, reason);
+            return null;
+        }
+
+        @Override
+        public void onError(WebSocket webSocket, Throwable error) {
+            Log.logger.error("DMDATA WebSocket error", error);
+            this.gateway.onError(new EEWGatewayException("DMDATA WebSocket error", error));
         }
     }
 }
