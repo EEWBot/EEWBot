@@ -9,17 +9,23 @@ import net.teamfruit.eewbot.entity.dmdataapi.DmdataError;
 import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketList;
 import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketStart;
 import net.teamfruit.eewbot.entity.dmdataapi.ws.*;
+import org.apache.commons.lang3.StringUtils;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipInputStream;
 
 public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
@@ -165,7 +171,14 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                                         Log.logger.warn("DMDATA WebSocket data version is not 2.0, may not be compatible");
                                     }
 
-                                    String bodyString = wsData.getEncoding().equals("base64") ? new String(Base64.getDecoder().decode(wsData.getBody())) : wsData.getBody();
+                                    String bodyString;
+                                    if (StringUtils.equals(wsData.getCompression(), "gzip")) {
+                                        bodyString = decompressGZIPBase64(wsData.getBody());
+                                    } else if (StringUtils.equals(wsData.getCompression(), "zip")) {
+                                        bodyString = decompressZipBase64(wsData.getBody());
+                                    } else {
+                                        bodyString = wsData.getBody();
+                                    }
 
                                     if (wsData.getHead().isTest()) {
                                         Log.logger.info("DMDATA WebSocket test data body: {}", bodyString);
@@ -180,6 +193,8 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                             }
                         } catch (JsonSyntaxException e) {
                             DmdataGateway.this.onError(new EEWGatewayException("Failed to parse DMDATA WebSocket message: " + dataString, e));
+                        } catch (IOException e) {
+                            DmdataGateway.this.onError(new EEWGatewayException("Failed to decompress DMDATA WebSocket message: " + dataString, e));
                         }
                         return WebSocket.Listener.super.onText(webSocket, data, last);
                     }
@@ -205,5 +220,39 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                         DmdataGateway.this.onError(new EEWGatewayException("DMDATA WebSocket error", error));
                     }
                 });
+    }
+
+    public static String decompressGZIPBase64(String compressedBase64) throws IOException {
+        byte[] compressedBytes = Base64.getDecoder().decode(compressedBase64);
+
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedBytes);
+        GZIPInputStream gzipInputStream = new GZIPInputStream(byteArrayInputStream);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+        byte[] buffer = new byte[1024];
+        int len;
+        while ((len = gzipInputStream.read(buffer)) != -1) {
+            byteArrayOutputStream.write(buffer, 0, len);
+        }
+
+        return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
+    }
+
+    public static String decompressZipBase64(String compressedBase64) throws IOException {
+        byte[] compressedBytes = Base64.getDecoder().decode(compressedBase64);
+
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedBytes);
+        ZipInputStream zipInputStream = new ZipInputStream(byteArrayInputStream);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+        zipInputStream.getNextEntry();
+
+        byte[] buffer = new byte[1024];
+        int len;
+        while ((len = zipInputStream.read(buffer)) != -1) {
+            byteArrayOutputStream.write(buffer, 0, len);
+        }
+
+        return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
     }
 }
