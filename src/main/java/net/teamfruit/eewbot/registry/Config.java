@@ -5,7 +5,7 @@ public class Config {
     private int kyoshinDelay = 1;
     private int quakeInfoDelay = 15;
     private String dmdataAPIKey = "";
-    private String dmdataReferer = "";
+    private String dmdataOrigin = "";
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
     private boolean enablePermission = true;
@@ -47,12 +47,12 @@ public class Config {
         this.dmdataAPIKey = dmdataAPIKey;
     }
 
-    public String getDmdataReferer() {
-        return dmdataReferer;
+    public String getDmdataOrigin() {
+        return dmdataOrigin;
     }
 
-    public void setDmdataReferer(String dmdataReferer) {
-        this.dmdataReferer = dmdataReferer;
+    public void setDmdataOrigin(String dmdataOrigin) {
+        this.dmdataOrigin = dmdataOrigin;
     }
 
     public String getNptServer() {
@@ -102,7 +102,7 @@ public class Config {
                 ", kyoshinDelay=" + kyoshinDelay +
                 ", quakeInfoDelay=" + quakeInfoDelay +
                 ", dmdataAPIKey='" + dmdataAPIKey + '\'' +
-                ", dmdataReferer='" + dmdataReferer + '\'' +
+                ", dmdataOrigin='" + dmdataOrigin + '\'' +
                 ", nptServer='" + nptServer + '\'' +
                 ", defaultLanuage='" + defaultLanuage + '\'' +
                 ", enablePermission=" + enablePermission +
