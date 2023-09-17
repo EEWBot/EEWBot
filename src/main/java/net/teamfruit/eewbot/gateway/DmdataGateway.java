@@ -132,20 +132,36 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                             DmdataWSMessage message = EEWBot.GSON.fromJson(dataString, DmdataWSMessage.class);
                             switch (message.getType()) {
                                 case START:
-                                    DmdataWSStart start = EEWBot.GSON.fromJson(dataString, DmdataWSStart.class);
-                                    Log.logger.info("DMDATA WebSocket start: {}", start);
+                                    DmdataWSStart wsStart = EEWBot.GSON.fromJson(dataString, DmdataWSStart.class);
+                                    Log.logger.info("DMDATA WebSocket start: {}", wsStart);
                                     break;
                                 case PING:
-                                    DmdataWSPing ping = EEWBot.GSON.fromJson(dataString, DmdataWSPing.class);
-                                    Log.logger.debug("DMDATA WebSocket ping: {}", ping.getPingId());
+                                    DmdataWSPing wsPing = EEWBot.GSON.fromJson(dataString, DmdataWSPing.class);
+                                    Log.logger.debug("DMDATA WebSocket ping: {}", wsPing.getPingId());
 
-                                    DmdataWSPong pong = new DmdataWSPong(ping.getPingId());
-                                    webSocket.sendText(EEWBot.GSON.toJson(pong), true);
-                                    Log.logger.debug("DMDATA WebSocket pong: {}", pong.getPingId());
+                                    DmdataWSPong wsPong = new DmdataWSPong(wsPing.getPingId());
+                                    webSocket.sendText(EEWBot.GSON.toJson(wsPong), true);
+                                    Log.logger.debug("DMDATA WebSocket pong: {}", wsPong.getPingId());
+                                    break;
+                                case DATA:
+                                    DmdataWSData wsData = EEWBot.GSON.fromJson(dataString, DmdataWSData.class);
+                                    Log.logger.info("DMDATA WebSocket data: {}", wsData);
+
+                                    if (!wsData.getVersion().equals("2.0")) {
+                                        Log.logger.warn("DMDATA WebSocket data version is not 2.0, may not be compatible");
+                                    }
+
+                                    String bodyString = wsData.getEncoding().equals("base64") ? new String(Base64.getDecoder().decode(wsData.getBody())) : wsData.getBody();
+
+                                    if (wsData.getHead().isTest()) {
+                                        Log.logger.info("DMDATA WebSocket test data body: {}", bodyString);
+                                    } else {
+                                        Log.logger.info("DMDATA WebSocket data body: {}", bodyString);
+                                    }
                                     break;
                                 case ERROR:
-                                    DmdataWSError error = EEWBot.GSON.fromJson(dataString, DmdataWSError.class);
-                                    Log.logger.error("DMDATA WebSocket error: {}", error);
+                                    DmdataWSError wsError = EEWBot.GSON.fromJson(dataString, DmdataWSError.class);
+                                    Log.logger.error("DMDATA WebSocket error: {}", wsError);
                                     break;
                             }
                         } catch (JsonSyntaxException e) {
