@@ -48,13 +48,10 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             DmdataSocketList socketList = openSocketList();
             Log.logger.info(socketList.toString());
 
-            socketList.getItems().forEach(item -> {
-                try {
-                    socketClose(String.valueOf(item.getId()));
-                } catch (IOException | InterruptedException e) {
-                    onError(new EEWGatewayException("Failed to close DMDATA socket", e));
-                }
-            });
+            for (DmdataSocketList.Item item : socketList.getItems()) {
+                socketClose(String.valueOf(item.getId()));
+                Log.logger.info("DMDATA Socket closed: {}", item.getId());
+            }
 
             DmdataSocketStart.Response socketStart = socketStart(new DmdataSocketStart.Request.Builder()
                     .setAppName(this.appName)
