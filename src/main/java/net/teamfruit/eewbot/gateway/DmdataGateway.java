@@ -11,6 +11,7 @@ import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketStart;
 import net.teamfruit.eewbot.entity.dmdataapi.ws.DmdataWSMessage;
 import net.teamfruit.eewbot.entity.dmdataapi.ws.DmdataWSPing;
 import net.teamfruit.eewbot.entity.dmdataapi.ws.DmdataWSPong;
+import net.teamfruit.eewbot.entity.dmdataapi.ws.DmdataWSStart;
 
 import java.io.IOException;
 import java.net.URI;
@@ -139,6 +140,10 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             try {
                 DmdataWSMessage message = EEWBot.GSON.fromJson(dataString, DmdataWSMessage.class);
                 switch (message.getType()) {
+                    case START:
+                        DmdataWSStart start = EEWBot.GSON.fromJson(dataString, DmdataWSStart.class);
+                        Log.logger.info("DMDATA WebSocket start: {}", start);
+                        break;
                     case PING:
                         DmdataWSPing ping = EEWBot.GSON.fromJson(dataString, DmdataWSPing.class);
                         Log.logger.debug("DMDATA WebSocket ping: {}", ping.getPingId());
