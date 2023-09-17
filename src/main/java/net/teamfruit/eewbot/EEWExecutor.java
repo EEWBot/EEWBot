@@ -42,7 +42,7 @@ public class EEWExecutor {
     public void init() {
         this.provider.init();
 
-        this.executor.execute(new DmdataGateway(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin(), String.valueOf(applicationId)) {
+        this.executor.execute(new DmdataGateway(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin(), String.valueOf(applicationId), this.config.isDebug()) {
             @Override
             public void onNewData(DmdataEEW data) {
 

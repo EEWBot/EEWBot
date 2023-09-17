@@ -15,8 +15,10 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 public abstract class DmdataGateway implements Gateway<DmdataEEW> {
@@ -25,13 +27,15 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
     private final HttpRequest.Builder requestBuilder;
     private final String appName;
+    private final boolean debug;
 
-    public DmdataGateway(String apiKey, String origin, String appName) {
+    public DmdataGateway(String apiKey, String origin, String appName, boolean debug) {
         this.requestBuilder = HttpRequest.newBuilder()
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString((apiKey + ":").getBytes()))
                 .header("Origin", origin).header("Content-Type", "application/json")
                 .header("User-Agent", "eewbot");
         this.appName = appName;
+        this.debug = debug;
     }
 
     @Override
@@ -40,7 +44,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             Thread.currentThread().setName("eewbot-dmdata-thread");
 
             DmdataContract contract = contract();
-            Log.logger.debug(contract.toString());
+            Log.logger.info(contract.toString());
 
             boolean hasForecastContract = contract.getItems().stream().anyMatch(item -> item.getClassification().equals("eew.forecast"));
             boolean hasWarningContract = contract.getItems().stream().anyMatch(item -> item.getClassification().equals("eew.warning"));
@@ -108,10 +112,20 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             Log.logger.info("DMDATA Socket closed: {}", item.getId());
         }
 
+        List<String> types = new ArrayList<>();
+        if (hasForecastContract) {
+            types.add("VXSE45");
+        } else {
+            types.add("VXSE43");
+        }
+        if (debug) {
+            types.add("VXSE42");
+        }
+
         DmdataSocketStart.Response socketStart = socketStart(new DmdataSocketStart.Request.Builder()
                 .setAppName(this.appName)
                 .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
-                .setTypes(Collections.singletonList(hasForecastContract ? "VXSE45" : "VXSE43"))
+                .setTypes(types)
                 .setTest("including")
                 .setFormatMode("json")
                 .build());
