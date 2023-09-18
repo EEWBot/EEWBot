@@ -409,10 +409,11 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                             .timestamp(FORMAT.parse(this.reportDateTime, Instant::from))
                             .description(this.body.text)
                             .color(Color.YELLOW)
-                            .footer("eewbot.eew.projectdmdss", null)
+                            .footer(String.join(" ", this.publishingOffice), null)
                             .build())
                     .build();
         }
+
         I18nEmbedCreateSpec.Builder builder = I18nEmbedCreateSpec.builder(lang);
         if (this.body.isWarning) {
             if (this.body.isLastInfo) {
@@ -450,6 +451,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
         if (!isAccurateEnough) {
             builder.description("eewbot.eew.inaccurate");
         }
+        builder.footer(String.join(" ", this.publishingOffice), null);
         return MessageCreateSpec.builder().addEmbed(builder.build()).build();
     }
 
