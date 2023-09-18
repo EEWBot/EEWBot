@@ -441,10 +441,13 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                 builder.addField("eewbot.eew.magnitude", this.body.earthquake.magnitude.value, true);
             }
         }
+        boolean isAccurateEnough = isAccurateEnough();
         if (this.body.intensity != null) {
-            builder.addField("eewbot.eew.seismicintensity", this.body.intensity.forecastMaxInt.from, false);
+            builder.addField(isAccurateEnough ? "eewbot.eew.forecastseismicintensity" : "eewbot.eew.seismicintensity",
+                    SeismicIntensity.get(this.body.intensity.forecastMaxInt.from).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"),
+                    false);
         }
-        if (!isAccurateEnough()) {
+        if (!isAccurateEnough) {
             builder.description("eewbot.eew.inaccurate");
         }
         return MessageCreateSpec.builder().addEmbed(builder.build()).build();
