@@ -19,10 +19,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
@@ -34,6 +31,8 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
     private final HttpRequest.Builder requestBuilder;
     private final String appName;
     private final boolean debug;
+
+    private final Map<String, DmdataEEW> prev = new HashMap<>();
 
     public DmdataGateway(String apiKey, String origin, String appName, boolean debug) {
         this.requestBuilder = HttpRequest.newBuilder()
@@ -194,8 +193,21 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                                     }
 
                                     if (!isTest) {
-                                        // TODO: Filter
-                                        onNewData(eew);
+                                        DmdataEEW prev = DmdataGateway.this.prev.get(eew.eventId);
+                                        if (prev != null) {
+                                            if (Integer.parseInt(prev.serialNo) < Integer.parseInt(eew.serialNo)) {
+                                                eew.prev = prev;
+                                                if (eew.body.isLastInfo) {
+                                                    DmdataGateway.this.prev.remove(eew.eventId);
+                                                } else {
+                                                    DmdataGateway.this.prev.put(eew.eventId, eew);
+                                                }
+                                                onNewData(eew);
+                                            }
+                                        } else {
+                                            DmdataGateway.this.prev.put(eew.eventId, eew);
+                                            onNewData(eew);
+                                        }
                                     }
                                     break;
                                 case ERROR:
