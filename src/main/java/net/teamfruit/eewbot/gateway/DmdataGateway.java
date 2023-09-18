@@ -40,7 +40,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString((apiKey + ":").getBytes()))
                 .header("Origin", origin).header("Content-Type", "application/json")
                 .header("User-Agent", "eewbot");
-        this.appName = appName;
+        this.appName = "eewbot" + appName;
         this.debug = debug;
     }
 
