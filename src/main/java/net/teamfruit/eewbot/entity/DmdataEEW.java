@@ -11,6 +11,7 @@ import java.util.List;
 public class DmdataEEW extends DmdataHeader implements Entity {
 
     public Body body;
+    public DmdataEEW prev;
 
     public static class Body {
 
@@ -455,5 +456,5 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                 "body=" + body +
                 '}';
     }
-    
+
 }
