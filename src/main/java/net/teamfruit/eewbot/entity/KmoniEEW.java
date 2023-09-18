@@ -210,7 +210,7 @@ public class KmoniEEW implements Entity {
                 .addField("eewbot.eew.epicenter", getRegionName(), true)
                 .addField("eewbot.eew.depth", "eewbot.eew.km", true, getDepth())
                 .addField("eewbot.eew.magnitude", String.valueOf(getMagnitude()), true)
-                .addField("eewbot.eew.seismicintensity", getIntensity().map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"), false)
+                .addField("eewbot.eew.forecastseismicintensity", getIntensity().map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"), false)
                 .color(isAlert() ? Color.RED : Color.BLUE)
                 .footer("eewbot.eew.newkyoshinmonitor", null)
                 .build()).build();
