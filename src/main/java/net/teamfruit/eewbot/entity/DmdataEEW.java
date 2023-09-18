@@ -1,7 +1,11 @@
 package net.teamfruit.eewbot.entity;
 
 import discord4j.core.spec.MessageCreateSpec;
+import discord4j.rest.util.Color;
+import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
+import org.apache.commons.lang3.StringUtils;
 
+import java.time.Instant;
 import java.util.List;
 
 public class DmdataEEW extends DmdataHeader implements Entity {
@@ -140,6 +144,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                     public String type;
                     public String unit;
                     public String value;
+                    public String condition;
 
                     @Override
                     public String toString() {
@@ -147,6 +152,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                                 "type='" + type + '\'' +
                                 ", unit='" + unit + '\'' +
                                 ", value='" + value + '\'' +
+                                ", condition='" + condition + '\'' +
                                 '}';
                     }
                 }
@@ -374,9 +380,73 @@ public class DmdataEEW extends DmdataHeader implements Entity {
         }
     }
 
+    public boolean isAccurateEnough() {
+        return isEpicenterAccurateEnough() && isDepthAccurateEnough() && isMagnitudeAccurateEnough() && !StringUtils.equals(this.body.earthquake.condition, "仮定震源要素");
+    }
+
+    public boolean isEpicenterAccurateEnough() {
+        for (String acc1 : this.body.earthquake.hypocenter.accuracy.epicenters) {
+            if (StringUtils.equalsAny(acc1, "0", "1"))
+                return false;
+        }
+        return true;
+    }
+
+    public boolean isDepthAccurateEnough() {
+        return !StringUtils.equalsAny(this.body.earthquake.hypocenter.accuracy.depth, "0", "1");
+    }
+
+    public boolean isMagnitudeAccurateEnough() {
+        return !StringUtils.equalsAny(this.body.earthquake.hypocenter.accuracy.numberOfMagnitudeCalculation, "0", "1");
+    }
+
     @Override
     public MessageCreateSpec createMessage(String lang) {
-        return null;
+        if (this.body.isCanceled) {
+            return MessageCreateSpec.builder().addEmbed(I18nEmbedCreateSpec.builder(lang)
+                            .title("eewbot.eew.eewcancel")
+                            .timestamp(FORMAT.parse(this.reportDateTime, Instant::from))
+                            .description(this.body.text)
+                            .color(Color.YELLOW)
+                            .footer("eewbot.eew.projectdmdss", null)
+                            .build())
+                    .build();
+        }
+        I18nEmbedCreateSpec.Builder builder = I18nEmbedCreateSpec.builder(lang);
+        if (this.body.isWarning) {
+            if (this.body.isLastInfo) {
+                builder.title("eewbot.eew.eewalert.final");
+            } else {
+                builder.title("eewbot.eew.eewalert.num", this.serialNo);
+            }
+            builder.color(Color.RED);
+        } else {
+            if (this.body.isLastInfo) {
+                builder.title("eewbot.eew.eewprediction.final");
+            } else {
+                builder.title("eewbot.eew.eewprediction.num", this.serialNo);
+            }
+            builder.color(Color.BLUE);
+        }
+        builder.timestamp(FORMAT.parse(this.reportDateTime, Instant::from));
+        if (!StringUtils.equals(this.body.earthquake.condition, "仮定震源要素")) {
+            builder.addField("eewbot.eew.epicenter", this.body.earthquake.hypocenter.name, true);
+            if (this.body.earthquake.hypocenter.depth.condition != null) {
+                builder.addField("eewbot.eew.depth", this.body.earthquake.hypocenter.depth.condition, true);
+            } else {
+                builder.addField("eewbot.eew.depth", "eewbot.eew.km", true, this.body.earthquake.hypocenter.depth.value);
+            }
+            if (this.body.earthquake.magnitude != null) {
+                builder.addField("eewbot.eew.magnitude", this.body.earthquake.magnitude.value, true);
+            }
+        }
+        if (this.body.intensity != null) {
+            builder.addField("eewbot.eew.seismicintensity", this.body.intensity.forecastMaxInt.from, false);
+        }
+        if (!isAccurateEnough()) {
+            builder.description("eewbot.eew.inaccurate");
+        }
+        return MessageCreateSpec.builder().addEmbed(builder.build()).build();
     }
 
     @Override
@@ -385,4 +455,5 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                 "body=" + body +
                 '}';
     }
+    
 }

@@ -38,7 +38,8 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
     public DmdataGateway(String apiKey, String origin, String appName, boolean debug) {
         this.requestBuilder = HttpRequest.newBuilder()
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString((apiKey + ":").getBytes()))
-                .header("Origin", origin).header("Content-Type", "application/json")
+                .header("Origin", origin)
+                .header("Content-Type", "application/json")
                 .header("User-Agent", "eewbot");
         this.appName = "eewbot" + appName;
         this.debug = debug;
@@ -141,6 +142,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
         EEWBot.instance.getHttpClient().newWebSocketBuilder()
                 .buildAsync(URI.create(socketStart.getWebsocket().getUrl()), new WebSocket.Listener() {
+
                     @Override
                     public void onOpen(WebSocket webSocket) {
                         Log.logger.info("DMDATA WebSocket opened");
@@ -191,6 +193,10 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                                         Log.logger.warn("DMDATA WebSocket EEW schema version is not 1.0.0, may not be compatible");
                                     }
 
+                                    if (!isTest) {
+                                        // TODO: Filter
+                                        onNewData(eew);
+                                    }
                                     break;
                                 case ERROR:
                                     DmdataWSError wsError = EEWBot.GSON.fromJson(dataString, DmdataWSError.class);
