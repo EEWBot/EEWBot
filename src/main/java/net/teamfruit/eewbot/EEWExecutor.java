@@ -3,12 +3,14 @@ package net.teamfruit.eewbot;
 import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.DmdataEEW;
 import net.teamfruit.eewbot.entity.KmoniEEW;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.gateway.DmdataGateway;
 import net.teamfruit.eewbot.gateway.KmoniGateway;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -44,8 +46,26 @@ public class EEWExecutor {
 
         this.executor.execute(new DmdataGateway(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin(), String.valueOf(applicationId), this.config.isDebug()) {
             @Override
-            public void onNewData(DmdataEEW data) {
-
+            public void onNewData(DmdataEEW eew) {
+                Predicate<Channel> isAlert = c -> eew.body.isWarning ? c.eewAlert : c.eewPrediction;
+                Predicate<Channel> decimation = c -> {
+                    if (!c.eewDecimation)
+                        return true;
+                    if (eew.prev == null)
+                        return true;
+                    if (eew.serialNo.equals("1") || eew.body.isLastInfo)
+                        return true;
+                    if (eew.body.isWarning != eew.prev.body.isWarning)
+                        return true;
+                    if (!eew.body.intensity.forecastMaxInt.from.equals(eew.prev.body.intensity.forecastMaxInt.from))
+                        return true;
+                    return !eew.body.earthquake.hypocenter.name.equals(eew.prev.body.earthquake.hypocenter.name);
+                };
+                Predicate<Channel> sensitivity = c -> {
+                    Optional<SeismicIntensity> intensity = SeismicIntensity.get(eew.body.intensity.forecastMaxInt.from);
+                    return intensity.map(seismicIntensity -> c.minIntensity.compareTo(seismicIntensity) <= 0).orElse(true);
+                };
+                EEWExecutor.this.service.sendMessage(isAlert.and(decimation).and(sensitivity), eew::createMessage);
             }
         });
 
