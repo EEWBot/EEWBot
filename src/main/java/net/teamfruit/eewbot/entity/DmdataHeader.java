@@ -2,9 +2,13 @@ package net.teamfruit.eewbot.entity;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class DmdataHeader {
+
+    public static final DateTimeFormatter FORMAT = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.of("Asia/Tokyo"));
 
     @SerializedName("_originalId")
     public String originalId;
@@ -26,7 +30,7 @@ public class DmdataHeader {
     public String headline;
 
     public static class Schema {
-        
+
         public String type;
         public String version;
 
