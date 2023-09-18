@@ -179,12 +179,16 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                                     } else {
                                         bodyString = wsData.getBody();
                                     }
+                                    Log.logger.debug("DMDATA WebSocket data body: {}", bodyString);
 
-                                    if (wsData.getHead().isTest()) {
-                                        Log.logger.info("DMDATA WebSocket test data body: {}", bodyString);
-                                    } else {
-                                        Log.logger.info("DMDATA WebSocket data body: {}", bodyString);
+                                    DmdataEEW eew = EEWBot.GSON.fromJson(bodyString, DmdataEEW.class);
+                                    boolean isTest = wsData.getHead().isTest() || !eew.status.equals("通常");
+                                    Log.logger.info(isTest ? "DMDATA WebSocket EEW: {}" : "DMDATA WebSocket test EEW: {}", eew);
+
+                                    if (eew.schema.type.equals("eew-information") && !eew.schema.version.equals("1.0.0")) {
+                                        Log.logger.warn("DMDATA WebSocket EEW schema version is not 1.0.0, may not be compatible");
                                     }
+
                                     break;
                                 case ERROR:
                                     DmdataWSError wsError = EEWBot.GSON.fromJson(dataString, DmdataWSError.class);
