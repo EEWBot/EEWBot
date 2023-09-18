@@ -113,9 +113,11 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         Log.logger.info(socketList.toString());
 
         for (DmdataSocketList.Item item : socketList.getItems()) {
-            Log.logger.info("DMDATA Socket closing: {}", item.getId());
-            socketClose(String.valueOf(item.getId()));
-            Log.logger.info("DMDATA Socket closed: {}", item.getId());
+            if (StringUtils.equals(item.getAppName(), this.appName)) {
+                Log.logger.info("DMDATA Socket closing: {}", item.getId());
+                socketClose(String.valueOf(item.getId()));
+                Log.logger.info("DMDATA Socket closed: {}", item.getId());
+            }
         }
 
         List<String> types = new ArrayList<>();
