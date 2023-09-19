@@ -2,10 +2,8 @@ package net.teamfruit.eewbot;
 
 import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.DmdataEEW;
-import net.teamfruit.eewbot.entity.KmoniEEW;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.gateway.DmdataGateway;
-import net.teamfruit.eewbot.gateway.KmoniGateway;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
@@ -69,50 +67,50 @@ public class EEWExecutor {
             }
         });
 
-        this.executor.scheduleAtFixedRate(new KmoniGateway(this.provider) {
-
-            @Override
-            public void onNewData(final KmoniEEW eew) {
-                Log.logger.info(eew.toString());
-
-                final Predicate<Channel> isAlert = c -> eew.isAlert() ? c.eewAlert : c.eewPrediction;
-                final Predicate<Channel> decimation = c -> {
-                    if (!c.eewDecimation)
-                        return true;
-                    if (eew.getPrev() == null)
-                        return true;
-                    if (eew.isInitial() || eew.isFinal())
-                        return true;
-                    if (eew.isAlert() != eew.getPrev().isAlert())
-                        return true;
-                    if (!eew.getIntensity().equals(eew.getPrev().getIntensity()))
-                        return true;
-                    if (!eew.getRegionName().equals(eew.getPrev().getRegionName()))
-                        return true;
-                    return false;
-                };
-                final Predicate<Channel> sensitivity = c -> {
-                    if (!eew.getIntensity().isPresent())
-                        return true;
-                    if (c.minIntensity.compareTo(eew.getIntensity().get()) <= 0)
-                        return true;
-                    return false;
-                };
-                EEWExecutor.this.service.sendMessage(isAlert.and(decimation).and(sensitivity), lang -> eew.createMessage(lang));
-
-//                if (eew.isInitial() || eew.isFinal())
-//                    EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider, eew) {
+//        this.executor.scheduleAtFixedRate(new KmoniGateway(this.provider) {
 //
-//                        Predicate<Channel> monitor = c -> c.monitor && (eew.isAlert() && c.eewAlert || !eew.isAlert() && c.eewPrediction);
+//            @Override
+//            public void onNewData(final KmoniEEW eew) {
+//                Log.logger.info(eew.toString());
 //
-//                        @Override
-//                        public void onNewData(final Monitor data) {
-//                            EEWExecutor.this.service.sendAttachment(this.monitor.and(sensitivity),
-//                                    lang -> data.createMessage(lang));
-//                        }
-//                    });
-            }
-        }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
+//                final Predicate<Channel> isAlert = c -> eew.isAlert() ? c.eewAlert : c.eewPrediction;
+//                final Predicate<Channel> decimation = c -> {
+//                    if (!c.eewDecimation)
+//                        return true;
+//                    if (eew.getPrev() == null)
+//                        return true;
+//                    if (eew.isInitial() || eew.isFinal())
+//                        return true;
+//                    if (eew.isAlert() != eew.getPrev().isAlert())
+//                        return true;
+//                    if (!eew.getIntensity().equals(eew.getPrev().getIntensity()))
+//                        return true;
+//                    if (!eew.getRegionName().equals(eew.getPrev().getRegionName()))
+//                        return true;
+//                    return false;
+//                };
+//                final Predicate<Channel> sensitivity = c -> {
+//                    if (!eew.getIntensity().isPresent())
+//                        return true;
+//                    if (c.minIntensity.compareTo(eew.getIntensity().get()) <= 0)
+//                        return true;
+//                    return false;
+//                };
+//                EEWExecutor.this.service.sendMessage(isAlert.and(decimation).and(sensitivity), lang -> eew.createMessage(lang));
+//
+////                if (eew.isInitial() || eew.isFinal())
+////                    EEWExecutor.this.executor.execute(new MonitorGateway(EEWExecutor.this.provider, eew) {
+////
+////                        Predicate<Channel> monitor = c -> c.monitor && (eew.isAlert() && c.eewAlert || !eew.isAlert() && c.eewPrediction);
+////
+////                        @Override
+////                        public void onNewData(final Monitor data) {
+////                            EEWExecutor.this.service.sendAttachment(this.monitor.and(sensitivity),
+////                                    lang -> data.createMessage(lang));
+////                        }
+////                    });
+//            }
+//        }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
 
         this.executor.scheduleAtFixedRate(new QuakeInfoGateway() {
 
