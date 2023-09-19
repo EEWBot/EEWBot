@@ -157,7 +157,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
                     @Override
                     public void onOpen(WebSocket webSocket) {
-                        Log.logger.info("DMDATA WebSocket opened");
+                        Log.logger.info("DMDATA WebSocket opened: {}", connectionName);
                         WebSocket.Listener.super.onOpen(webSocket);
                     }
 
@@ -169,22 +169,22 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                             switch (message.getType()) {
                                 case START:
                                     DmdataWSStart wsStart = EEWBot.GSON.fromJson(dataString, DmdataWSStart.class);
-                                    Log.logger.info("DMDATA WebSocket start: {}", wsStart);
+                                    Log.logger.info("DMDATA WebSocket {}: start: {}", connectionName, wsStart);
                                     break;
                                 case PING:
                                     DmdataWSPing wsPing = EEWBot.GSON.fromJson(dataString, DmdataWSPing.class);
-                                    Log.logger.debug("DMDATA WebSocket ping: {}", wsPing.getPingId());
+                                    Log.logger.debug("DMDATA WebSocket {}: ping: {}", connectionName, wsPing.getPingId());
 
                                     DmdataWSPong wsPong = new DmdataWSPong(wsPing.getPingId());
                                     webSocket.sendText(EEWBot.GSON.toJson(wsPong), true);
-                                    Log.logger.debug("DMDATA WebSocket pong: {}", wsPong.getPingId());
+                                    Log.logger.debug("DMDATA WebSocket {}: pong: {}", connectionName, wsPong.getPingId());
                                     break;
                                 case DATA:
                                     DmdataWSData wsData = EEWBot.GSON.fromJson(dataString, DmdataWSData.class);
-                                    Log.logger.info("DMDATA WebSocket data: {}", wsData);
+                                    Log.logger.info("DMDATA WebSocket {}: data: {}", connectionName, wsData);
 
                                     if (!wsData.getVersion().equals("2.0")) {
-                                        Log.logger.warn("DMDATA WebSocket data version is not 2.0, may not be compatible");
+                                        Log.logger.warn("DMDATA WebSocket {}: data version is not 2.0, may not be compatible", connectionName);
                                     }
 
                                     String bodyString;
@@ -195,14 +195,14 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                                     } else {
                                         bodyString = wsData.getBody();
                                     }
-                                    Log.logger.debug("DMDATA WebSocket data body: {}", bodyString);
+                                    Log.logger.debug("DMDATA WebSocket {}: data body: {}", connectionName, bodyString);
 
                                     DmdataEEW eew = EEWBot.GSON.fromJson(bodyString, DmdataEEW.class);
                                     boolean isTest = wsData.getHead().isTest() || !eew.status.equals("通常");
-                                    Log.logger.info(isTest ? "DMDATA WebSocket test EEW: {}" : "DMDATA WebSocket EEW: {}", eew);
+                                    Log.logger.info(isTest ? "DMDATA WebSocket {}: test EEW: {}" : "DMDATA WebSocket {}:  EEW: {}", connectionName, eew);
 
                                     if (eew.schema.type.equals("eew-information") && !eew.schema.version.equals("1.0.0")) {
-                                        Log.logger.warn("DMDATA WebSocket EEW schema version is not 1.0.0, may not be compatible");
+                                        Log.logger.warn("DMDATA WebSocket {}: EEW schema version is not 1.0.0, may not be compatible", connectionName);
                                     }
 
                                     if (!isTest) {
@@ -225,7 +225,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                                     break;
                                 case ERROR:
                                     DmdataWSError wsError = EEWBot.GSON.fromJson(dataString, DmdataWSError.class);
-                                    Log.logger.error("DMDATA WebSocket error message: {}", wsError);
+                                    Log.logger.error("DMDATA WebSocket {}: error message: {}", connectionName, wsError);
                                     break;
                             }
                         } catch (JsonSyntaxException e) {
@@ -238,14 +238,14 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
                     @Override
                     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-                        Log.logger.info("DMDATA WebSocket closed: {} {}", statusCode, reason);
+                        Log.logger.info("DMDATA WebSocket {}: closed: {} {}", connectionName, statusCode, reason);
                         reconnectWebSocket(hasForecastContract, connectionName);
                         return null;
                     }
 
                     @Override
                     public void onError(WebSocket webSocket, Throwable error) {
-                        Log.logger.error("DMDATA WebSocket error", error);
+                        Log.logger.error("DMDATA WebSocket {}: error", connectionName, error);
                         DmdataGateway.this.onError(new EEWGatewayException("DMDATA WebSocket error", error));
                         if (webSocket.isOutputClosed() || webSocket.isInputClosed()) {
                             reconnectWebSocket(hasForecastContract, connectionName);
