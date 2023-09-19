@@ -32,7 +32,7 @@ public enum SeismicIntensity {
     private final String symbol;
     private final Color color;
 
-    private SeismicIntensity(final String name, final String symbol, final Color color) {
+    SeismicIntensity(final String name, final String symbol, final Color color) {
         this.name = name;
         this.symbol = symbol;
         this.color = color;
