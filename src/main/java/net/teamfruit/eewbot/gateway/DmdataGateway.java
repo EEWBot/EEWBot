@@ -219,9 +219,9 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                                     break;
                             }
                         } catch (JsonSyntaxException e) {
-                            DmdataGateway.this.onError(new EEWGatewayException("Failed to parse DMDATA WebSocket message: " + dataString, e));
+                            Log.logger.error("DMDATA WebSocket {}: failed to parse message: {}", connectionName, dataString, e);
                         } catch (IOException e) {
-                            DmdataGateway.this.onError(new EEWGatewayException("Failed to decompress DMDATA WebSocket message: " + dataString, e));
+                            Log.logger.error("DMDATA WebSocket {}: failed to decompress message: {}", connectionName, dataString, e);
                         }
                         return WebSocket.Listener.super.onText(webSocket, data, last);
                     }
@@ -230,9 +230,12 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
                         Log.logger.info("DMDATA WebSocket {}: closed: {} {}", connectionName, statusCode, reason);
                         try {
+                            closeWebSocketIfExist(openSocketList(), connectionName);
                             reconnectWebSocket(hasForecastContract, connectionName);
                         } catch (EEWGatewayException e) {
                             DmdataGateway.this.onError(e);
+                        } catch (IOException | InterruptedException e) {
+                            DmdataGateway.this.onError(new EEWGatewayException("Failed to reconnect to DMDATA", e));
                         }
                         return null;
                     }
@@ -243,9 +246,12 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                         DmdataGateway.this.onError(new EEWGatewayException("DMDATA WebSocket error", error));
                         if (webSocket.isOutputClosed() || webSocket.isInputClosed()) {
                             try {
+                                closeWebSocketIfExist(openSocketList(), connectionName);
                                 reconnectWebSocket(hasForecastContract, connectionName);
                             } catch (EEWGatewayException e) {
                                 DmdataGateway.this.onError(e);
+                            } catch (IOException | InterruptedException e) {
+                                DmdataGateway.this.onError(new EEWGatewayException("Failed to reconnect to DMDATA", e));
                             }
                         }
                     }
