@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public enum SeismicIntensity {
+    @SerializedName("unknown")
+    UNKNOWN("不明", "不明", Color.of(127, 140, 141)),
     @SerializedName("1")
     ONE("1", "1", Color.of(127, 140, 141)),
     @SerializedName("2")
@@ -24,9 +26,7 @@ public enum SeismicIntensity {
     @SerializedName("6+")
     SIX_PLUS("6強", "6+", Color.of(255, 46, 18)),
     @SerializedName("7")
-    SEVEN("7", "7", Color.of(114, 0, 172)),
-    @SerializedName("unknown")
-    UNKNOWN("不明", "不明", Color.of(127, 140, 141));
+    SEVEN("7", "7", Color.of(114, 0, 172));
 
     private final String name;
     private final String symbol;
