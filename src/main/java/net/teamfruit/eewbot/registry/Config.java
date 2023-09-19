@@ -6,6 +6,7 @@ public class Config {
     private int quakeInfoDelay = 15;
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
+    private boolean dmdataMultiSocketConnect = false;
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
     private boolean enablePermission = true;
@@ -53,6 +54,14 @@ public class Config {
 
     public void setDmdataOrigin(String dmdataOrigin) {
         this.dmdataOrigin = dmdataOrigin;
+    }
+
+    public boolean isDmdataMultiSocketConnect() {
+        return dmdataMultiSocketConnect;
+    }
+
+    public void setDmdataMultiSocketConnect(boolean dmdataMultiSocketConnect) {
+        this.dmdataMultiSocketConnect = dmdataMultiSocketConnect;
     }
 
     public String getNptServer() {
