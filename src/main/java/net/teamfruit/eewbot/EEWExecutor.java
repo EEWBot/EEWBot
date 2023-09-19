@@ -62,7 +62,7 @@ public class EEWExecutor {
                     return !eew.body.earthquake.hypocenter.name.equals(eew.prev.body.earthquake.hypocenter.name);
                 };
                 Predicate<Channel> sensitivity = c -> {
-                    Optional<SeismicIntensity> intensity = SeismicIntensity.get(eew.body.intensity.forecastMaxInt.from);
+                    Optional<SeismicIntensity> intensity = eew.body.intensity != null ? SeismicIntensity.get(eew.body.intensity.forecastMaxInt.from) : Optional.of(SeismicIntensity.UNKNOWN);
                     return intensity.map(seismicIntensity -> c.minIntensity.compareTo(seismicIntensity) <= 0).orElse(true);
                 };
                 EEWExecutor.this.service.sendMessage(isAlert.and(decimation).and(sensitivity), eew::createMessage);
