@@ -7,6 +7,7 @@ public class DmdataGatewayException extends EEWGatewayException {
     private final DmdataError dmdataError;
 
     public DmdataGatewayException(DmdataError dmdataError) {
+        super(dmdataError.toString());
         this.dmdataError = dmdataError;
     }
 
