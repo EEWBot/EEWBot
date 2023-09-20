@@ -275,12 +275,12 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                                 onNewData(eew);
                             } else if (Integer.parseInt(prev.getSerialNo()) < Integer.parseInt(eew.getSerialNo())) {
                                 eew.setPrev(prev);
-                                if (eew.getBody().isLastInfo()) {
+                                if (prev.getBody().isLastInfo()) {
                                     DmdataGateway.this.prev.remove(eew.getEventId());
                                 } else {
                                     DmdataGateway.this.prev.put(eew.getEventId(), eew);
+                                    onNewData(eew);
                                 }
-                                onNewData(eew);
                             }
                         }
                         break;
