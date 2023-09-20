@@ -11,28 +11,100 @@ public class DmdataHeader {
     public static final DateTimeFormatter FORMAT = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.of("Asia/Tokyo"));
 
     @SerializedName("_originalId")
-    public String originalId;
+    private String originalId;
     @SerializedName("_schema")
-    public Schema schema;
-    public String type;
-    public String title;
-    public String status;
-    public String infoType;
-    public String editorialOffice;
-    public List<String> publishingOffice;
-    public String pressDateTime;
-    public String reportDateTime;
-    public String targetDateTime;
-    public String eventId;
-    public String serialNo;
-    public String infoKind;
-    public String infoKindVersion;
-    public String headline;
+    private Schema schema;
+    private String type;
+    private String title;
+    private String status;
+    private String infoType;
+    private String editorialOffice;
+    private List<String> publishingOffice;
+    private String pressDateTime;
+    private String reportDateTime;
+    private String targetDateTime;
+    private String eventId;
+    private String serialNo;
+    private String infoKind;
+    private String infoKindVersion;
+    private String headline;
+
+    public String getOriginalId() {
+        return originalId;
+    }
+
+    public Schema getSchema() {
+        return schema;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public String getInfoType() {
+        return infoType;
+    }
+
+    public String getEditorialOffice() {
+        return editorialOffice;
+    }
+
+    public List<String> getPublishingOffice() {
+        return publishingOffice;
+    }
+
+    public String getPressDateTime() {
+        return pressDateTime;
+    }
+
+    public String getReportDateTime() {
+        return reportDateTime;
+    }
+
+    public String getTargetDateTime() {
+        return targetDateTime;
+    }
+
+    public String getEventId() {
+        return eventId;
+    }
+
+    public String getSerialNo() {
+        return serialNo;
+    }
+
+    public String getInfoKind() {
+        return infoKind;
+    }
+
+    public String getInfoKindVersion() {
+        return infoKindVersion;
+    }
+
+    public String getHeadline() {
+        return headline;
+    }
 
     public static class Schema {
 
-        public String type;
-        public String version;
+        private String type;
+        private String version;
+
+        public String getType() {
+            return type;
+        }
+
+        public String getVersion() {
+            return version;
+        }
 
         @Override
         public String toString() {

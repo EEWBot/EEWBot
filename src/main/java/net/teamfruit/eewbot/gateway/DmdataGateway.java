@@ -194,23 +194,23 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                                     Log.logger.debug("DMDATA WebSocket {}: data body: {}", connectionName, bodyString);
 
                                     DmdataEEW eew = EEWBot.GSON.fromJson(bodyString, DmdataEEW.class);
-                                    boolean isTest = wsData.getHead().isTest() || !eew.status.equals("通常");
+                                    boolean isTest = wsData.getHead().isTest() || !eew.getStatus().equals("通常");
                                     Log.logger.info(isTest ? "DMDATA WebSocket {}: test EEW: {}" : "DMDATA WebSocket {}:  EEW: {}", connectionName, eew);
 
-                                    if (eew.schema.type.equals("eew-information") && !eew.schema.version.equals("1.0.0")) {
+                                    if (eew.getSchema().getType().equals("eew-information") && !eew.getSchema().getVersion().equals("1.0.0")) {
                                         Log.logger.warn("DMDATA WebSocket {}: EEW schema version is not 1.0.0, may not be compatible", connectionName);
                                     }
 
                                     if (!isTest) {
-                                        DmdataEEW prev = DmdataGateway.this.prev.putIfAbsent(eew.eventId, eew);
+                                        DmdataEEW prev = DmdataGateway.this.prev.putIfAbsent(eew.getEventId(), eew);
                                         if (prev == null) {
                                             onNewData(eew);
-                                        } else if (Integer.parseInt(prev.serialNo) < Integer.parseInt(eew.serialNo)) {
-                                            eew.prev = prev;
-                                            if (eew.body.isLastInfo) {
-                                                DmdataGateway.this.prev.remove(eew.eventId);
+                                        } else if (Integer.parseInt(prev.getSerialNo()) < Integer.parseInt(eew.getSerialNo())) {
+                                            eew.setPrev(prev);
+                                            if (eew.getBody().isLastInfo()) {
+                                                DmdataGateway.this.prev.remove(eew.getEventId());
                                             } else {
-                                                DmdataGateway.this.prev.put(eew.eventId, eew);
+                                                DmdataGateway.this.prev.put(eew.getEventId(), eew);
                                             }
                                             onNewData(eew);
                                         }
