@@ -20,56 +20,28 @@ public class DmdataWSStart extends DmdataWSMessage {
         return socketId;
     }
 
-    public void setSocketId(int socketId) {
-        this.socketId = socketId;
-    }
-
     public List<String> getClassifications() {
         return classifications;
-    }
-
-    public void setClassifications(List<String> classifications) {
-        this.classifications = classifications;
     }
 
     public List<String> getTypes() {
         return types;
     }
 
-    public void setTypes(List<String> types) {
-        this.types = types;
-    }
-
     public String getTest() {
         return test;
-    }
-
-    public void setTest(String test) {
-        this.test = test;
     }
 
     public List<String> getFormats() {
         return formats;
     }
 
-    public void setFormats(List<String> formats) {
-        this.formats = formats;
-    }
-
     public String getAppName() {
         return appName;
     }
 
-    public void setAppName(String appName) {
-        this.appName = appName;
-    }
-
     public String getTime() {
         return time;
-    }
-
-    public void setTime(String time) {
-        this.time = time;
     }
 
     @Override

@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName;
 
 public class DmdataWSMessage {
 
-    private Type type;
+    private final Type type;
 
     public DmdataWSMessage(Type type) {
         this.type = type;
@@ -12,10 +12,6 @@ public class DmdataWSMessage {
 
     public Type getType() {
         return type;
-    }
-
-    public void setType(Type type) {
-        this.type = type;
     }
 
     @Override

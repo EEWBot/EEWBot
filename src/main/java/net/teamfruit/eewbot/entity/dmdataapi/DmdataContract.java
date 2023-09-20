@@ -13,32 +13,16 @@ public class DmdataContract {
         return responseId;
     }
 
-    public void setResponseId(String responseId) {
-        this.responseId = responseId;
-    }
-
     public String getResponseTime() {
         return responseTime;
-    }
-
-    public void setResponseTime(String responseTime) {
-        this.responseTime = responseTime;
     }
 
     public String getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
     public List<Item> getItems() {
         return items;
-    }
-
-    public void setItems(List<Item> items) {
-        this.items = items;
     }
 
     public static class Item {
@@ -56,64 +40,32 @@ public class DmdataContract {
             return id;
         }
 
-        public void setId(int id) {
-            this.id = id;
-        }
-
         public int getPlanId() {
             return planId;
-        }
-
-        public void setPlanId(int planId) {
-            this.planId = planId;
         }
 
         public String getPlanName() {
             return planName;
         }
 
-        public void setPlanName(String planName) {
-            this.planName = planName;
-        }
-
         public String getClassification() {
             return classification;
-        }
-
-        public void setClassification(String classification) {
-            this.classification = classification;
         }
 
         public Price getPrice() {
             return price;
         }
 
-        public void setPrice(Price price) {
-            this.price = price;
-        }
-
         public String getStart() {
             return start;
-        }
-
-        public void setStart(String start) {
-            this.start = start;
         }
 
         public boolean isValid() {
             return isValid;
         }
 
-        public void setValid(boolean valid) {
-            isValid = valid;
-        }
-
         public int getConnectionCounts() {
             return connectionCounts;
-        }
-
-        public void setConnectionCounts(int connectionCounts) {
-            this.connectionCounts = connectionCounts;
         }
 
         @Override
@@ -140,16 +92,8 @@ public class DmdataContract {
             return day;
         }
 
-        public void setDay(int day) {
-            this.day = day;
-        }
-
         public int getMonth() {
             return month;
-        }
-
-        public void setMonth(int month) {
-            this.month = month;
         }
 
         @Override
