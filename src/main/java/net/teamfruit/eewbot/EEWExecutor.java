@@ -4,6 +4,7 @@ import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.DmdataEEW;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.gateway.DmdataGateway;
+import net.teamfruit.eewbot.gateway.DmdataWsLivenessChecker;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
@@ -42,7 +43,7 @@ public class EEWExecutor {
     public void init() {
         this.provider.init();
 
-        this.executor.execute(new DmdataGateway(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin(), applicationId, this.config.isDmdataMultiSocketConnect(), this.config.isDebug()) {
+        DmdataGateway dmdataGateway = new DmdataGateway(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin(), applicationId, this.config.isDmdataMultiSocketConnect(), this.config.isDebug()) {
             @Override
             public void onNewData(DmdataEEW eew) {
                 Predicate<Channel> isAlert = c -> eew.getBody().isWarning() ? c.eewAlert : c.eewPrediction;
@@ -65,7 +66,9 @@ public class EEWExecutor {
                 };
                 EEWExecutor.this.service.sendMessage(isAlert.and(decimation).and(sensitivity), eew::createMessage);
             }
-        });
+        };
+        this.executor.execute(dmdataGateway);
+        this.executor.scheduleAtFixedRate(new DmdataWsLivenessChecker(dmdataGateway), 30, 30, TimeUnit.SECONDS);
 
 //        this.executor.scheduleAtFixedRate(new KmoniGateway(this.provider) {
 //
