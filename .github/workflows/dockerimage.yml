@@ -37,11 +37,11 @@ jobs:
             teamfruit/eewbot
             ghcr.io/${{ github.repository }}
             
-      - name: Set up JDK 8
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
-          java-version: '8'
-          distribution: 'adopt'
+          java-version: '17'
+          distribution: 'corretto'
           cache: maven
           
       - name: Build with Maven
