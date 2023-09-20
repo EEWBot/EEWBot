@@ -45,22 +45,22 @@ public class EEWExecutor {
         this.executor.execute(new DmdataGateway(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin(), applicationId, this.config.isDmdataMultiSocketConnect(), this.config.isDebug()) {
             @Override
             public void onNewData(DmdataEEW eew) {
-                Predicate<Channel> isAlert = c -> eew.body.isWarning ? c.eewAlert : c.eewPrediction;
+                Predicate<Channel> isAlert = c -> eew.getBody().isWarning() ? c.eewAlert : c.eewPrediction;
                 Predicate<Channel> decimation = c -> {
                     if (!c.eewDecimation)
                         return true;
-                    if (eew.prev == null)
+                    if (eew.getPrev() == null)
                         return true;
-                    if (eew.serialNo.equals("1") || eew.body.isLastInfo)
+                    if (eew.getSerialNo().equals("1") || eew.getBody().isLastInfo())
                         return true;
-                    if (eew.body.isWarning != eew.prev.body.isWarning)
+                    if (eew.getBody().isWarning() != eew.getPrev().getBody().isWarning())
                         return true;
-                    if (!eew.body.intensity.forecastMaxInt.from.equals(eew.prev.body.intensity.forecastMaxInt.from))
+                    if (!eew.getBody().getIntensity().getForecastMaxInt().getFrom().equals(eew.getPrev().getBody().getIntensity().getForecastMaxInt().getFrom()))
                         return true;
-                    return !eew.body.earthquake.hypocenter.name.equals(eew.prev.body.earthquake.hypocenter.name);
+                    return !eew.getBody().getEarthquake().getHypocenter().getName().equals(eew.getPrev().getBody().getEarthquake().getHypocenter().getName());
                 };
                 Predicate<Channel> sensitivity = c -> {
-                    Optional<SeismicIntensity> intensity = eew.body.intensity != null ? SeismicIntensity.get(eew.body.intensity.forecastMaxInt.from) : Optional.of(SeismicIntensity.UNKNOWN);
+                    Optional<SeismicIntensity> intensity = eew.getBody().getIntensity() != null ? SeismicIntensity.get(eew.getBody().getIntensity().getForecastMaxInt().getFrom()) : Optional.of(SeismicIntensity.UNKNOWN);
                     return intensity.map(seismicIntensity -> c.minIntensity.compareTo(seismicIntensity) <= 0).orElse(true);
                 };
                 EEWExecutor.this.service.sendMessage(isAlert.and(decimation).and(sensitivity), eew::createMessage);

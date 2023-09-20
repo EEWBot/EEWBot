@@ -10,38 +10,122 @@ import java.util.List;
 
 public class DmdataEEW extends DmdataHeader implements Entity {
 
-    public Body body;
-    public DmdataEEW prev;
+    private Body body;
+    private DmdataEEW prev;
+
+    public Body getBody() {
+        return body;
+    }
+
+    public DmdataEEW getPrev() {
+        return prev;
+    }
+
+    public void setPrev(DmdataEEW prev) {
+        this.prev = prev;
+    }
 
     public static class Body {
 
-        public boolean isLastInfo;
-        public boolean isCanceled;
-        public boolean isWarning;
-        public List<WarningArea> zones;
-        public List<WarningArea> prefectures;
-        public List<WarningArea> regions;
-        public Earthquake earthquake;
-        public Intensity intensity;
-        public String text;
-        public Comments comments;
+        private boolean isLastInfo;
+        private boolean isCanceled;
+        private boolean isWarning;
+        private List<WarningArea> zones;
+        private List<WarningArea> prefectures;
+        private List<WarningArea> regions;
+        private Earthquake earthquake;
+        private Intensity intensity;
+        private String text;
+        private Comments comments;
+
+        public boolean isLastInfo() {
+            return isLastInfo;
+        }
+
+        public boolean isCanceled() {
+            return isCanceled;
+        }
+
+        public boolean isWarning() {
+            return isWarning;
+        }
+
+        public List<WarningArea> getZones() {
+            return zones;
+        }
+
+        public List<WarningArea> getPrefectures() {
+            return prefectures;
+        }
+
+        public List<WarningArea> getRegions() {
+            return regions;
+        }
+
+        public Earthquake getEarthquake() {
+            return earthquake;
+        }
+
+        public Intensity getIntensity() {
+            return intensity;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public Comments getComments() {
+            return comments;
+        }
 
         public static class WarningArea {
 
-            public WarningAreaKind kind;
-            public String code;
-            public String name;
+            private WarningAreaKind kind;
+            private String code;
+            private String name;
+
+            public WarningAreaKind getKind() {
+                return kind;
+            }
+
+            public String getCode() {
+                return code;
+            }
+
+            public String getName() {
+                return name;
+            }
 
             public static class WarningAreaKind {
 
-                public WarningAreaKindLastKind lastKind;
-                public String code;
-                public String name;
+                private WarningAreaKindLastKind lastKind;
+                private String code;
+                private String name;
+
+                public WarningAreaKindLastKind getLastKind() {
+                    return lastKind;
+                }
+
+                public String getCode() {
+                    return code;
+                }
+
+                public String getName() {
+                    return name;
+                }
 
                 public static class WarningAreaKindLastKind {
 
-                    public String code;
-                    public String name;
+                    private String code;
+                    private String name;
+
+                    public String getCode() {
+                        return code;
+                    }
+
+                    public String getName() {
+                        return name;
+                    }
 
                     @Override
                     public String toString() {
@@ -74,34 +158,110 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
         public static class Earthquake {
 
-            public String originTime;
-            public String arrivalTime;
-            public String condition;
-            public EarthquakeHypocenter hypocenter;
-            public EarthquakeMagnitude magnitude;
+            private String originTime;
+            private String arrivalTime;
+            private String condition;
+            private EarthquakeHypocenter hypocenter;
+            private EarthquakeMagnitude magnitude;
+
+            public String getOriginTime() {
+                return originTime;
+            }
+
+            public String getArrivalTime() {
+                return arrivalTime;
+            }
+
+            public String getCondition() {
+                return condition;
+            }
+
+            public EarthquakeHypocenter getHypocenter() {
+                return hypocenter;
+            }
+
+            public EarthquakeMagnitude getMagnitude() {
+                return magnitude;
+            }
 
             public static class EarthquakeHypocenter {
 
-                public Coordinate coordinate;
-                public Depth depth;
-                public EarthquakeHypocenterReduce reduce;
-                public String landOrSea;
-                public EarthquakeHypocenterAccuracy accuracy;
-                public String code;
-                public String name;
+                private Coordinate coordinate;
+                private Depth depth;
+                private EarthquakeHypocenterReduce reduce;
+                private String landOrSea;
+                private EarthquakeHypocenterAccuracy accuracy;
+                private String code;
+                private String name;
+
+                public Coordinate getCoordinate() {
+                    return coordinate;
+                }
+
+                public Depth getDepth() {
+                    return depth;
+                }
+
+                public EarthquakeHypocenterReduce getReduce() {
+                    return reduce;
+                }
+
+                public String getLandOrSea() {
+                    return landOrSea;
+                }
+
+                public EarthquakeHypocenterAccuracy getAccuracy() {
+                    return accuracy;
+                }
+
+                public String getCode() {
+                    return code;
+                }
+
+                public String getName() {
+                    return name;
+                }
 
                 public static class Coordinate {
 
-                    public LatitudeLongitude latitude;
-                    public LatitudeLongitude longitude;
-                    public Height height;
-                    public String geodeticSystem;
-                    public String condition;
+                    private LatitudeLongitude latitude;
+                    private LatitudeLongitude longitude;
+                    private Height height;
+                    private String geodeticSystem;
+                    private String condition;
+
+                    public LatitudeLongitude getLatitude() {
+                        return latitude;
+                    }
+
+                    public LatitudeLongitude getLongitude() {
+                        return longitude;
+                    }
+
+                    public Height getHeight() {
+                        return height;
+                    }
+
+                    public String getGeodeticSystem() {
+                        return geodeticSystem;
+                    }
+
+                    public String getCondition() {
+                        return condition;
+                    }
 
                     public static class LatitudeLongitude {
 
-                        public String text;
-                        public String value;
+                        private String text;
+                        private String value;
+
+                        public String getText() {
+                            return text;
+                        }
+
+                        public String getValue() {
+                            return value;
+                        }
 
                         @Override
                         public String toString() {
@@ -114,9 +274,21 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
                     public static class Height {
 
-                        public String type;
-                        public String unit;
-                        public String value;
+                        private String type;
+                        private String unit;
+                        private String value;
+
+                        public String getType() {
+                            return type;
+                        }
+
+                        public String getUnit() {
+                            return unit;
+                        }
+
+                        public String getValue() {
+                            return value;
+                        }
 
                         @Override
                         public String toString() {
@@ -142,10 +314,26 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
                 public static class Depth {
 
-                    public String type;
-                    public String unit;
-                    public String value;
-                    public String condition;
+                    private String type;
+                    private String unit;
+                    private String value;
+                    private String condition;
+
+                    public String getType() {
+                        return type;
+                    }
+
+                    public String getUnit() {
+                        return unit;
+                    }
+
+                    public String getValue() {
+                        return value;
+                    }
+
+                    public String getCondition() {
+                        return condition;
+                    }
 
                     @Override
                     public String toString() {
@@ -160,8 +348,16 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
                 public static class EarthquakeHypocenterReduce {
 
-                    public String code;
-                    public String name;
+                    private String code;
+                    private String name;
+
+                    public String getCode() {
+                        return code;
+                    }
+
+                    public String getName() {
+                        return name;
+                    }
 
                     @Override
                     public String toString() {
@@ -174,10 +370,26 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
                 public static class EarthquakeHypocenterAccuracy {
 
-                    public List<String> epicenters;
-                    public String depth;
-                    public String magnitudeCalculation;
-                    public String numberOfMagnitudeCalculation;
+                    private List<String> epicenters;
+                    private String depth;
+                    private String magnitudeCalculation;
+                    private String numberOfMagnitudeCalculation;
+
+                    public List<String> getEpicenters() {
+                        return epicenters;
+                    }
+
+                    public String getDepth() {
+                        return depth;
+                    }
+
+                    public String getMagnitudeCalculation() {
+                        return magnitudeCalculation;
+                    }
+
+                    public String getNumberOfMagnitudeCalculation() {
+                        return numberOfMagnitudeCalculation;
+                    }
 
                     @Override
                     public String toString() {
@@ -206,10 +418,26 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
             public static class EarthquakeMagnitude {
 
-                public String type;
-                public String unit;
-                public String value;
-                public String condition;
+                private String type;
+                private String unit;
+                private String value;
+                private String condition;
+
+                public String getType() {
+                    return type;
+                }
+
+                public String getUnit() {
+                    return unit;
+                }
+
+                public String getValue() {
+                    return value;
+                }
+
+                public String getCondition() {
+                    return condition;
+                }
 
                 @Override
                 public String toString() {
@@ -236,15 +464,39 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
         public static class Intensity {
 
-            public IntensityForecastMaxInt forecastMaxInt;
-            public IntensityForecastLgMaxInt forecastMaxLgInt;
-            public IntensityAppendix appendix;
-            public List<IntensityRegionReached> regions;
+            private IntensityForecastMaxInt forecastMaxInt;
+            private IntensityForecastLgMaxInt forecastMaxLgInt;
+            private IntensityAppendix appendix;
+            private List<IntensityRegionReached> regions;
+
+            public IntensityForecastMaxInt getForecastMaxInt() {
+                return forecastMaxInt;
+            }
+
+            public IntensityForecastLgMaxInt getForecastMaxLgInt() {
+                return forecastMaxLgInt;
+            }
+
+            public IntensityAppendix getAppendix() {
+                return appendix;
+            }
+
+            public List<IntensityRegionReached> getRegions() {
+                return regions;
+            }
 
             public static class IntensityForecastMaxInt {
 
-                public String from;
-                public String to;
+                private String from;
+                private String to;
+
+                public String getFrom() {
+                    return from;
+                }
+
+                public String getTo() {
+                    return to;
+                }
 
                 @Override
                 public String toString() {
@@ -257,8 +509,16 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
             public static class IntensityForecastLgMaxInt {
 
-                public String from;
-                public String to;
+                private String from;
+                private String to;
+
+                public String getFrom() {
+                    return from;
+                }
+
+                public String getTo() {
+                    return to;
+                }
 
                 @Override
                 public String toString() {
@@ -271,9 +531,21 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
             public static class IntensityAppendix {
 
-                public String maxIntChange;
-                public String maxLgIntChange;
-                public String maxIntChangeReason;
+                private String maxIntChange;
+                private String maxLgIntChange;
+                private String maxIntChangeReason;
+
+                public String getMaxIntChange() {
+                    return maxIntChange;
+                }
+
+                public String getMaxLgIntChange() {
+                    return maxLgIntChange;
+                }
+
+                public String getMaxIntChangeReason() {
+                    return maxIntChangeReason;
+                }
 
                 @Override
                 public String toString() {
@@ -287,19 +559,59 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
             public static class IntensityRegionReached {
 
-                public String condition;
-                public IntensityForecastMaxInt forecastMaxInt;
-                public IntensityForecastLgMaxInt forecastMaxLgInt;
-                public boolean isPlum;
-                public boolean isWarning;
-                public IntensityRegionKind kind;
-                public String code;
-                public String name;
+                private String condition;
+                private IntensityForecastMaxInt forecastMaxInt;
+                private IntensityForecastLgMaxInt forecastMaxLgInt;
+                private boolean isPlum;
+                private boolean isWarning;
+                private IntensityRegionKind kind;
+                private String code;
+                private String name;
+
+                public String getCondition() {
+                    return condition;
+                }
+
+                public IntensityForecastMaxInt getForecastMaxInt() {
+                    return forecastMaxInt;
+                }
+
+                public IntensityForecastLgMaxInt getForecastMaxLgInt() {
+                    return forecastMaxLgInt;
+                }
+
+                public boolean isPlum() {
+                    return isPlum;
+                }
+
+                public boolean isWarning() {
+                    return isWarning;
+                }
+
+                public IntensityRegionKind getKind() {
+                    return kind;
+                }
+
+                public String getCode() {
+                    return code;
+                }
+
+                public String getName() {
+                    return name;
+                }
 
                 public static class IntensityRegionKind {
 
-                    public String code;
-                    public String name;
+                    private String code;
+                    private String name;
+
+                    public String getCode() {
+                        return code;
+                    }
+
+                    public String getName() {
+                        return name;
+                    }
 
                     @Override
                     public String toString() {
@@ -338,13 +650,29 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
         public static class Comments {
 
-            public String free;
-            public WarningComments warning;
+            private String free;
+            private WarningComments warning;
+
+            public String getFree() {
+                return free;
+            }
+
+            public WarningComments getWarning() {
+                return warning;
+            }
 
             public static class WarningComments {
 
-                public String text;
-                public List<String> codes;
+                private String text;
+                private List<String> codes;
+
+                public String getText() {
+                    return text;
+                }
+
+                public List<String> getCodes() {
+                    return codes;
+                }
 
                 @Override
                 public String toString() {
@@ -382,11 +710,11 @@ public class DmdataEEW extends DmdataHeader implements Entity {
     }
 
     public boolean isAccurateEnough() {
-        return isEpicenterAccurateEnough() && isDepthAccurateEnough() && isMagnitudeAccurateEnough() && !StringUtils.equals(this.body.earthquake.condition, "仮定震源要素");
+        return isEpicenterAccurateEnough() && isDepthAccurateEnough() && isMagnitudeAccurateEnough() && !StringUtils.equals(this.getBody().getEarthquake().getCondition(), "仮定震源要素");
     }
 
     public boolean isEpicenterAccurateEnough() {
-        for (String acc1 : this.body.earthquake.hypocenter.accuracy.epicenters) {
+        for (String acc1 : this.getBody().getEarthquake().getHypocenter().getAccuracy().getEpicenters()) {
             if (StringUtils.equalsAny(acc1, "0", "1"))
                 return false;
         }
@@ -394,11 +722,11 @@ public class DmdataEEW extends DmdataHeader implements Entity {
     }
 
     public boolean isDepthAccurateEnough() {
-        return !StringUtils.equalsAny(this.body.earthquake.hypocenter.accuracy.depth, "0", "1");
+        return !StringUtils.equalsAny(this.getBody().getEarthquake().getHypocenter().getAccuracy().getDepth(), "0", "1");
     }
 
     public boolean isMagnitudeAccurateEnough() {
-        return !StringUtils.equalsAny(this.body.earthquake.hypocenter.accuracy.numberOfMagnitudeCalculation, "0", "1");
+        return !StringUtils.equalsAny(this.getBody().getEarthquake().getHypocenter().getAccuracy().getNumberOfMagnitudeCalculation(), "0", "1");
     }
 
     @Override
@@ -406,52 +734,52 @@ public class DmdataEEW extends DmdataHeader implements Entity {
         if (this.body.isCanceled) {
             return MessageCreateSpec.builder().addEmbed(I18nEmbedCreateSpec.builder(lang)
                             .title("eewbot.eew.eewcancel")
-                            .timestamp(FORMAT.parse(this.reportDateTime, Instant::from))
-                            .description(this.body.text)
+                            .timestamp(FORMAT.parse(this.getReportDateTime(), Instant::from))
+                            .description(this.getBody().getText())
                             .color(Color.YELLOW)
-                            .footer(String.join(" ", this.publishingOffice), null)
+                            .footer(String.join(" ", this.getPublishingOffice()), null)
                             .build())
                     .build();
         }
 
         I18nEmbedCreateSpec.Builder builder = I18nEmbedCreateSpec.builder(lang);
-        if (this.body.isWarning) {
-            if (this.body.isLastInfo) {
+        if (this.getBody().isWarning()) {
+            if (this.getBody().isLastInfo()) {
                 builder.title("eewbot.eew.eewalert.final");
             } else {
-                builder.title("eewbot.eew.eewalert.num", this.serialNo);
+                builder.title("eewbot.eew.eewalert.num", this.getSerialNo());
             }
             builder.color(Color.RED);
         } else {
-            if (this.body.isLastInfo) {
+            if (this.getBody().isLastInfo()) {
                 builder.title("eewbot.eew.eewprediction.final");
             } else {
-                builder.title("eewbot.eew.eewprediction.num", this.serialNo);
+                builder.title("eewbot.eew.eewprediction.num", this.getSerialNo());
             }
             builder.color(Color.BLUE);
         }
-        builder.timestamp(FORMAT.parse(this.reportDateTime, Instant::from));
-        if (!StringUtils.equals(this.body.earthquake.condition, "仮定震源要素")) {
-            builder.addField("eewbot.eew.epicenter", this.body.earthquake.hypocenter.name, true);
-            if (this.body.earthquake.hypocenter.depth.condition != null) {
-                builder.addField("eewbot.eew.depth", this.body.earthquake.hypocenter.depth.condition, true);
+        builder.timestamp(FORMAT.parse(this.getReportDateTime(), Instant::from));
+        if (!StringUtils.equals(this.getBody().getEarthquake().getCondition(), "仮定震源要素")) {
+            builder.addField("eewbot.eew.epicenter", this.getBody().getEarthquake().getHypocenter().getName(), true);
+            if (this.getBody().getEarthquake().getHypocenter().getDepth().getCondition() != null) {
+                builder.addField("eewbot.eew.depth", this.getBody().getEarthquake().getHypocenter().getDepth().getCondition(), true);
             } else {
-                builder.addField("eewbot.eew.depth", "eewbot.eew.km", true, this.body.earthquake.hypocenter.depth.value);
+                builder.addField("eewbot.eew.depth", "eewbot.eew.km", true, this.getBody().getEarthquake().getHypocenter().getDepth().getValue());
             }
-            if (this.body.earthquake.magnitude != null) {
-                builder.addField("eewbot.eew.magnitude", this.body.earthquake.magnitude.value, true);
+            if (this.getBody().getEarthquake().getMagnitude() != null) {
+                builder.addField("eewbot.eew.magnitude", this.getBody().getEarthquake().getMagnitude().getValue(), true);
             }
         }
         boolean isAccurateEnough = isAccurateEnough();
-        if (this.body.intensity != null) {
+        if (this.getBody().getIntensity() != null) {
             builder.addField(isAccurateEnough ? "eewbot.eew.forecastseismicintensity" : "eewbot.eew.seismicintensity",
-                    SeismicIntensity.get(this.body.intensity.forecastMaxInt.from).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"),
+                    SeismicIntensity.get(this.getBody().getIntensity().getForecastMaxInt().getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"),
                     false);
         }
         if (!isAccurateEnough) {
             builder.description("eewbot.eew.inaccurate");
         }
-        builder.footer(String.join(" ", this.publishingOffice), null);
+        builder.footer(String.join(" ", this.getPublishingOffice()), null);
         return MessageCreateSpec.builder().addEmbed(builder.build()).build();
     }
 
