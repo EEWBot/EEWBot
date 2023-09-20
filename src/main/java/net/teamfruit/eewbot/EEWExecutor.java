@@ -3,6 +3,7 @@ package net.teamfruit.eewbot;
 import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.DmdataEEW;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.gateway.DmdataAPI;
 import net.teamfruit.eewbot.gateway.DmdataGateway;
 import net.teamfruit.eewbot.gateway.DmdataWsLivenessChecker;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
@@ -43,7 +44,7 @@ public class EEWExecutor {
     public void init() {
         this.provider.init();
 
-        DmdataGateway dmdataGateway = new DmdataGateway(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin(), applicationId, this.config.isDmdataMultiSocketConnect(), this.config.isDebug()) {
+        DmdataGateway dmdataGateway = new DmdataGateway(new DmdataAPI(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin()), applicationId, this.config.isDmdataMultiSocketConnect(), this.config.isDebug()) {
             @Override
             public void onNewData(DmdataEEW eew) {
                 Predicate<Channel> isAlert = c -> eew.getBody().isWarning() ? c.eewAlert : c.eewPrediction;
