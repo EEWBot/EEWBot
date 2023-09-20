@@ -12,10 +12,6 @@ public class DmdataWSPing extends DmdataWSMessage {
         return pingId;
     }
 
-    public void setPingId(String pingId) {
-        this.pingId = pingId;
-    }
-
     @Override
     public String toString() {
         return "DmdataWSPing{" +

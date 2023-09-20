@@ -2,7 +2,7 @@ package net.teamfruit.eewbot.entity.dmdataapi.ws;
 
 public class DmdataWSPong extends DmdataWSMessage {
 
-    private String pingId;
+    private final String pingId;
 
     public DmdataWSPong(String pingId) {
         super(Type.PONG);
@@ -11,10 +11,6 @@ public class DmdataWSPong extends DmdataWSMessage {
 
     public String getPingId() {
         return pingId;
-    }
-
-    public void setPingId(String pingId) {
-        this.pingId = pingId;
     }
 
     @Override

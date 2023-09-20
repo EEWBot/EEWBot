@@ -98,80 +98,40 @@ public class DmdataSocketStart {
             return responseId;
         }
 
-        public void setResponseId(String responseId) {
-            this.responseId = responseId;
-        }
-
         public String getResponseTime() {
             return responseTime;
-        }
-
-        public void setResponseTime(String responseTime) {
-            this.responseTime = responseTime;
         }
 
         public String getStatus() {
             return status;
         }
 
-        public void setStatus(String status) {
-            this.status = status;
-        }
-
         public String getTicket() {
             return ticket;
-        }
-
-        public void setTicket(String ticket) {
-            this.ticket = ticket;
         }
 
         public WebSocket getWebsocket() {
             return websocket;
         }
 
-        public void setWebsocket(WebSocket websocket) {
-            this.websocket = websocket;
-        }
-
         public List<String> getClassifications() {
             return classifications;
-        }
-
-        public void setClassifications(List<String> classifications) {
-            this.classifications = classifications;
         }
 
         public String getTest() {
             return test;
         }
 
-        public void setTest(String test) {
-            this.test = test;
-        }
-
         public List<String> getTypes() {
             return types;
-        }
-
-        public void setTypes(List<String> types) {
-            this.types = types;
         }
 
         public List<String> getFormats() {
             return formats;
         }
 
-        public void setFormats(List<String> formats) {
-            this.formats = formats;
-        }
-
         public String getAppName() {
             return appName;
-        }
-
-        public void setAppName(String appName) {
-            this.appName = appName;
         }
 
         public static class WebSocket {
@@ -185,32 +145,16 @@ public class DmdataSocketStart {
                 return id;
             }
 
-            public void setId(int id) {
-                this.id = id;
-            }
-
             public String getUrl() {
                 return url;
-            }
-
-            public void setUrl(String url) {
-                this.url = url;
             }
 
             public List<String> getProtocol() {
                 return protocol;
             }
 
-            public void setProtocol(List<String> protocol) {
-                this.protocol = protocol;
-            }
-
             public int getExpiration() {
                 return expiration;
-            }
-
-            public void setExpiration(int expiration) {
-                this.expiration = expiration;
             }
 
             @Override

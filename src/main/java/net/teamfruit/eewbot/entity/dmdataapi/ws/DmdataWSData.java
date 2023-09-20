@@ -23,80 +23,40 @@ public class DmdataWSData extends DmdataWSMessage {
         return version;
     }
 
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
     public String getClassification() {
         return classification;
-    }
-
-    public void setClassification(String classification) {
-        this.classification = classification;
     }
 
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public List<Passing> getPassing() {
         return passing;
-    }
-
-    public void setPassing(List<Passing> passing) {
-        this.passing = passing;
     }
 
     public Head getHead() {
         return head;
     }
 
-    public void setHead(Head head) {
-        this.head = head;
-    }
-
     public XMLReport getXmlReport() {
         return xmlReport;
-    }
-
-    public void setXmlReport(XMLReport xmlReport) {
-        this.xmlReport = xmlReport;
     }
 
     public String getFormat() {
         return format;
     }
 
-    public void setFormat(String format) {
-        this.format = format;
-    }
-
     public String getCompression() {
         return compression;
-    }
-
-    public void setCompression(String compression) {
-        this.compression = compression;
     }
 
     public String getEncoding() {
         return encoding;
     }
 
-    public void setEncoding(String encoding) {
-        this.encoding = encoding;
-    }
-
     public String getBody() {
         return body;
-    }
-
-    public void setBody(String body) {
-        this.body = body;
     }
 
     public static class Passing {
@@ -108,16 +68,8 @@ public class DmdataWSData extends DmdataWSMessage {
             return name;
         }
 
-        public void setName(String name) {
-            this.name = name;
-        }
-
         public String getTime() {
             return time;
-        }
-
-        public void setTime(String time) {
-            this.time = time;
         }
 
         @Override
@@ -141,40 +93,20 @@ public class DmdataWSData extends DmdataWSMessage {
             return type;
         }
 
-        public void setType(String type) {
-            this.type = type;
-        }
-
         public String getAuthor() {
             return author;
-        }
-
-        public void setAuthor(String author) {
-            this.author = author;
         }
 
         public String getTime() {
             return time;
         }
 
-        public void setTime(String time) {
-            this.time = time;
-        }
-
         public boolean isTest() {
             return test;
         }
 
-        public void setTest(boolean test) {
-            this.test = test;
-        }
-
         public boolean isXml() {
             return xml;
-        }
-
-        public void setXml(boolean xml) {
-            this.xml = xml;
         }
 
         @Override
@@ -198,16 +130,8 @@ public class DmdataWSData extends DmdataWSMessage {
             return control;
         }
 
-        public void setControl(Control control) {
-            this.control = control;
-        }
-
         public HeadXML getHead() {
             return head;
-        }
-
-        public void setHead(HeadXML head) {
-            this.head = head;
         }
 
         public static class Control {
@@ -222,40 +146,20 @@ public class DmdataWSData extends DmdataWSMessage {
                 return title;
             }
 
-            public void setTitle(String title) {
-                this.title = title;
-            }
-
             public String getDateTime() {
                 return dateTime;
-            }
-
-            public void setDateTime(String dateTime) {
-                this.dateTime = dateTime;
             }
 
             public String getStatus() {
                 return status;
             }
 
-            public void setStatus(String status) {
-                this.status = status;
-            }
-
             public String getEditorialOffice() {
                 return editorialOffice;
             }
 
-            public void setEditorialOffice(String editorialOffice) {
-                this.editorialOffice = editorialOffice;
-            }
-
             public String getPublishingOffice() {
                 return publishingOffice;
-            }
-
-            public void setPublishingOffice(String publishingOffice) {
-                this.publishingOffice = publishingOffice;
             }
 
             @Override
@@ -286,72 +190,36 @@ public class DmdataWSData extends DmdataWSMessage {
                 return title;
             }
 
-            public void setTitle(String title) {
-                this.title = title;
-            }
-
             public String getReportDateTime() {
                 return reportDateTime;
-            }
-
-            public void setReportDateTime(String reportDateTime) {
-                this.reportDateTime = reportDateTime;
             }
 
             public String getTargetDateTime() {
                 return targetDateTime;
             }
 
-            public void setTargetDateTime(String targetDateTime) {
-                this.targetDateTime = targetDateTime;
-            }
-
             public String getEventId() {
                 return eventId;
-            }
-
-            public void setEventId(String eventId) {
-                this.eventId = eventId;
             }
 
             public String getSerial() {
                 return serial;
             }
 
-            public void setSerial(String serial) {
-                this.serial = serial;
-            }
-
             public String getInfoType() {
                 return infoType;
-            }
-
-            public void setInfoType(String infoType) {
-                this.infoType = infoType;
             }
 
             public String getInfoKind() {
                 return infoKind;
             }
 
-            public void setInfoKind(String infoKind) {
-                this.infoKind = infoKind;
-            }
-
             public String getInfoKindVersion() {
                 return infoKindVersion;
             }
 
-            public void setInfoKindVersion(String infoKindVersion) {
-                this.infoKindVersion = infoKindVersion;
-            }
-
             public String getHeadline() {
                 return headline;
-            }
-
-            public void setHeadline(String headline) {
-                this.headline = headline;
             }
 
             @Override

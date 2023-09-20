@@ -14,24 +14,12 @@ public class DmdataWSError extends DmdataWSMessage {
         return error;
     }
 
-    public void setError(String error) {
-        this.error = error;
-    }
-
     public int getCode() {
         return code;
     }
 
-    public void setCode(int code) {
-        this.code = code;
-    }
-
     public boolean isClose() {
         return close;
-    }
-
-    public void setClose(boolean close) {
-        this.close = close;
     }
 
     @Override

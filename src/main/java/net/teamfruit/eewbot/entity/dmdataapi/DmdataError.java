@@ -11,32 +11,16 @@ public class DmdataError {
         return responseId;
     }
 
-    public void setResponseId(String responseId) {
-        this.responseId = responseId;
-    }
-
     public String getResponseTime() {
         return responseTime;
-    }
-
-    public void setResponseTime(String responseTime) {
-        this.responseTime = responseTime;
     }
 
     public String getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
     public Error getError() {
         return error;
-    }
-
-    public void setError(Error error) {
-        this.error = error;
     }
 
     public static class Error {
@@ -48,16 +32,8 @@ public class DmdataError {
             return message;
         }
 
-        public void setMessage(String message) {
-            this.message = message;
-        }
-
         public int getCode() {
             return code;
-        }
-
-        public void setCode(int code) {
-            this.code = code;
         }
 
         @Override
