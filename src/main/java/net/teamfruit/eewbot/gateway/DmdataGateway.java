@@ -28,10 +28,13 @@ import java.util.zip.ZipInputStream;
 public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
     public static final String API_BASE = "https://api.dmdata.jp/v2";
+    public static final String WS_BASE = "wss://ws.api.dmdata.jp/v2/websocket";
+    public static final String WS_BASE_TOKYO = "wss://ws-tokyo.api.dmdata.jp/v2/websocket";
+    public static final String WS_BASE_OSAKA = "wss://ws-osaka.api.dmdata.jp/v2/websocket";
 
     private final HttpRequest.Builder requestBuilder;
     private final String appName;
-    private final int connections;
+    private final boolean multiConnect;
     private final boolean debug;
 
     private final Map<String, DmdataEEW> prev = new ConcurrentHashMap<>();
@@ -43,7 +46,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                 .header("Content-Type", "application/json")
                 .header("User-Agent", "eewbot");
         this.appName = "eewbot" + "-" + Long.toHexString(appId);
-        this.connections = multiConnect ? 2 : 1;
+        this.multiConnect = multiConnect;
         this.debug = debug;
     }
 
@@ -66,8 +69,11 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
             DmdataSocketList socketList = openSocketList();
             Log.logger.info(socketList.toString());
-            for (int i = 1; i <= this.connections; i++) {
-                connectWebSocket(this.appName + "-" + i, hasForecastContract, openSocketList());
+            if (multiConnect) {
+                connectWebSocket(WS_BASE_TOKYO, this.appName + "-1", hasForecastContract, openSocketList());
+                connectWebSocket(WS_BASE_OSAKA, this.appName + "-2", hasForecastContract, openSocketList());
+            } else {
+                connectWebSocket(WS_BASE, this.appName + "-1", hasForecastContract, openSocketList());
             }
         } catch (EEWGatewayException e) {
             onError(e);
@@ -115,7 +121,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         return null;
     }
 
-    private void connectWebSocket(String connectionName, boolean hasForecastContract, DmdataSocketList socketList) throws EEWGatewayException {
+    private void connectWebSocket(String wsBaseURI, String connectionName, boolean hasForecastContract, DmdataSocketList socketList) throws EEWGatewayException {
         closeWebSocketIfExist(socketList, connectionName);
 
         List<String> types = new ArrayList<>();
@@ -143,7 +149,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         Log.logger.info(socketStart.toString());
 
         EEWBot.instance.getHttpClient().newWebSocketBuilder()
-                .buildAsync(URI.create(socketStart.getWebsocket().getUrl()), new WebSocket.Listener() {
+                .buildAsync(URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()), new WebSocket.Listener() {
 
                     @Override
                     public void onOpen(WebSocket webSocket) {
@@ -231,7 +237,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                         Log.logger.info("DMDATA WebSocket {}: closed: {} {}", connectionName, statusCode, reason);
                         try {
                             closeWebSocketIfExist(openSocketList(), connectionName);
-                            reconnectWebSocket(hasForecastContract, connectionName);
+                            reconnectWebSocket(wsBaseURI, connectionName, hasForecastContract);
                         } catch (EEWGatewayException e) {
                             DmdataGateway.this.onError(e);
                         } catch (IOException | InterruptedException e) {
@@ -247,7 +253,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                         if (webSocket.isOutputClosed() || webSocket.isInputClosed()) {
                             try {
                                 closeWebSocketIfExist(openSocketList(), connectionName);
-                                reconnectWebSocket(hasForecastContract, connectionName);
+                                reconnectWebSocket(wsBaseURI, connectionName, hasForecastContract);
                             } catch (EEWGatewayException e) {
                                 DmdataGateway.this.onError(e);
                             } catch (IOException | InterruptedException e) {
@@ -258,10 +264,10 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                 });
     }
 
-    private void reconnectWebSocket(boolean hasForecastContract, String connectionName) throws EEWGatewayException {
+    private void reconnectWebSocket(String wsBaseURI, String connectionName, boolean hasForecastContract) throws EEWGatewayException {
         try {
             Log.logger.info("DMDATA WebSocket reconnecting");
-            connectWebSocket(connectionName, hasForecastContract, openSocketList());
+            connectWebSocket(wsBaseURI, connectionName, hasForecastContract, openSocketList());
         } catch (IOException | InterruptedException e) {
             throw new EEWGatewayException("Failed to reconnect to DMDATA", e);
         }
