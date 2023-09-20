@@ -8,9 +8,9 @@ import java.io.ByteArrayInputStream;
 public class Monitor implements Entity {
 
     private final byte[] image;
-    private final EEW relationEEW;
+    private final KmoniEEW relationEEW;
 
-    public Monitor(final byte[] image, final EEW relationEEW) {
+    public Monitor(final byte[] image, final KmoniEEW relationEEW) {
         this.image = image;
         this.relationEEW = relationEEW;
     }
@@ -23,7 +23,7 @@ public class Monitor implements Entity {
         return this.image;
     }
 
-    public EEW getRelationEEW() {
+    public KmoniEEW getRelationEEW() {
         return this.relationEEW;
     }
 

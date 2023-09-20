@@ -1,85 +1,122 @@
 package net.teamfruit.eewbot.registry;
 
 public class Config {
-	private String token = "";
-	private int kyoshinDelay = 1;
-	private int quakeInfoDelay = 15;
-	private String nptServer = "time.google.com";
-	private String defaultLanuage = "ja_jp";
-	private boolean enablePermission = true;
-	private String systemChannel = "";
-	private boolean debug = false;
+    private String token = "";
+    private int kyoshinDelay = 1;
+    private int quakeInfoDelay = 15;
+    private String dmdataAPIKey = "";
+    private String dmdataOrigin = "";
+    private boolean dmdataMultiSocketConnect = false;
+    private String nptServer = "time.google.com";
+    private String defaultLanuage = "ja_jp";
+    private boolean enablePermission = true;
+    private String systemChannel = "";
+    private boolean debug = false;
 
-	public Config() {
-	}
+    public Config() {
+    }
 
-	public String getToken() {
-		return this.token;
-	}
+    public String getToken() {
+        return this.token;
+    }
 
-	public void setToken(final String token) {
-		this.token = token;
-	}
+    public void setToken(final String token) {
+        this.token = token;
+    }
 
-	public int getKyoshinDelay() {
-		return this.kyoshinDelay>=1 ? this.kyoshinDelay : 1;
-	}
+    public int getKyoshinDelay() {
+        return Math.max(this.kyoshinDelay, 1);
+    }
 
-	public void setKyoshinDelay(final int kyoshinDelay) {
-		this.kyoshinDelay = kyoshinDelay;
-	}
+    public void setKyoshinDelay(final int kyoshinDelay) {
+        this.kyoshinDelay = kyoshinDelay;
+    }
 
-	public int getQuakeInfoDelay() {
-		return this.quakeInfoDelay>=10 ? this.quakeInfoDelay : 10;
-	}
+    public int getQuakeInfoDelay() {
+        return Math.max(this.quakeInfoDelay, 10);
+    }
 
-	public void setQuakeInfoDelay(final int quakeInfoDelay) {
-		this.quakeInfoDelay = quakeInfoDelay;
-	}
+    public void setQuakeInfoDelay(final int quakeInfoDelay) {
+        this.quakeInfoDelay = quakeInfoDelay;
+    }
 
-	public String getNptServer() {
-		return this.nptServer;
-	}
+    public String getDmdataAPIKey() {
+        return dmdataAPIKey;
+    }
 
-	public void setNptServer(final String nptServer) {
-		this.nptServer = nptServer;
-	}
+    public void setDmdataAPIKey(String dmdataAPIKey) {
+        this.dmdataAPIKey = dmdataAPIKey;
+    }
 
-	public String getDefaultLanuage() {
-		return this.defaultLanuage;
-	}
+    public String getDmdataOrigin() {
+        return dmdataOrigin;
+    }
 
-	public void setDefaultLanuage(final String defaultLanuage) {
-		this.defaultLanuage = defaultLanuage;
-	}
+    public void setDmdataOrigin(String dmdataOrigin) {
+        this.dmdataOrigin = dmdataOrigin;
+    }
 
-	public boolean isEnablePermission() {
-		return this.enablePermission;
-	}
+    public boolean isDmdataMultiSocketConnect() {
+        return dmdataMultiSocketConnect;
+    }
 
-	public void setEnablePermission(final boolean enablePermission) {
-		this.enablePermission = enablePermission;
-	}
+    public void setDmdataMultiSocketConnect(boolean dmdataMultiSocketConnect) {
+        this.dmdataMultiSocketConnect = dmdataMultiSocketConnect;
+    }
 
-	public String getSystemChannel() {
-		return this.systemChannel;
-	}
+    public String getNptServer() {
+        return this.nptServer;
+    }
 
-	public void setSystemChannel(final String systemChannel) {
-		this.systemChannel = systemChannel;
-	}
+    public void setNptServer(final String nptServer) {
+        this.nptServer = nptServer;
+    }
 
-	public boolean isDebug() {
-		return this.debug;
-	}
+    public String getDefaultLanuage() {
+        return this.defaultLanuage;
+    }
 
-	public void setDebug(final boolean debug) {
-		this.debug = debug;
-	}
+    public void setDefaultLanuage(final String defaultLanuage) {
+        this.defaultLanuage = defaultLanuage;
+    }
 
-	@Override
-	public String toString() {
-		return "Config [token="+this.token+", kyoshinDelay="+this.kyoshinDelay+", quakeInfoDelay="+this.quakeInfoDelay+", nptServer="+this.nptServer+", enablePermission="+this.enablePermission+", debug="+this.debug+"]";
-	}
+    public boolean isEnablePermission() {
+        return this.enablePermission;
+    }
 
+    public void setEnablePermission(final boolean enablePermission) {
+        this.enablePermission = enablePermission;
+    }
+
+    public String getSystemChannel() {
+        return this.systemChannel;
+    }
+
+    public void setSystemChannel(final String systemChannel) {
+        this.systemChannel = systemChannel;
+    }
+
+    public boolean isDebug() {
+        return this.debug;
+    }
+
+    public void setDebug(final boolean debug) {
+        this.debug = debug;
+    }
+
+    @Override
+    public String toString() {
+        return "Config{" +
+                "token='" + token + '\'' +
+                ", kyoshinDelay=" + kyoshinDelay +
+                ", quakeInfoDelay=" + quakeInfoDelay +
+                ", dmdataAPIKey='" + dmdataAPIKey + '\'' +
+                ", dmdataOrigin='" + dmdataOrigin + '\'' +
+                ", nptServer='" + nptServer + '\'' +
+                ", defaultLanuage='" + defaultLanuage + '\'' +
+                ", enablePermission=" + enablePermission +
+                ", systemChannel='" + systemChannel + '\'' +
+                ", debug=" + debug +
+                '}';
+    }
 }
