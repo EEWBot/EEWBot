@@ -726,7 +726,8 @@ public class DmdataEEW extends DmdataHeader implements Entity {
     }
 
     public boolean isMagnitudeAccurateEnough() {
-        return !StringUtils.equalsAny(this.getBody().getEarthquake().getHypocenter().getAccuracy().getNumberOfMagnitudeCalculation(), "0", "1");
+        return !(this.getBody().getEarthquake().getHypocenter().getAccuracy().getMagnitudeCalculation().equals("0") ||
+                this.getBody().getEarthquake().getHypocenter().getAccuracy().getNumberOfMagnitudeCalculation().equals("1"));
     }
 
     @Override
