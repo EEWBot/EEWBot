@@ -39,10 +39,9 @@ public class TimeSlashCommand implements IButtonSlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
-        return event.reply().withEmbeds(buildTimeEmbed(bot.getExecutor().getProvider(), lang))
+        return event.reply().withEmbeds(buildTimeEmbed(bot.getExecutor().getTimeProvider(), lang))
                 .withComponents(ActionRow.of(Button.primary("timesync", I18n.INSTANCE.get(lang, "eewbot.scmd.time.resync"))));
     }
-
 
     @Override
     public Mono<Void> onClick(EEWBot bot, ButtonInteractionEvent event, String lang) {
@@ -50,7 +49,7 @@ public class TimeSlashCommand implements IButtonSlashCommand {
     }
 
     private Mono<Message> resync(EEWBot bot, ButtonInteractionEvent event, String lang) {
-        return bot.getExecutor().getProvider().fetch()
+        return bot.getExecutor().getTimeProvider().fetch()
                 .flatMap(time -> event.editReply()
                         .withEmbeds(buildTimeEmbed(time, lang))
                         .withComponents(ActionRow.of(Button.primary("timesync", I18n.INSTANCE.get(lang, "eewbot.scmd.time.resync")).disabled())));

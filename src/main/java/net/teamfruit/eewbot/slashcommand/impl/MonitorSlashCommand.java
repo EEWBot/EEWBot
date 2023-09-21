@@ -28,7 +28,7 @@ public class MonitorSlashCommand implements ISlashCommand {
     }
 
     public Mono<Void> get(EEWBot bot, ApplicationCommandInteractionEvent event) {
-        bot.getExecutor().getExecutor().execute(new MonitorGateway(bot.getExecutor().getProvider()) {
+        bot.getExecutor().getExecutor().execute(new MonitorGateway(bot.getExecutor().getTimeProvider()) {
 
             @Override
             public void onNewData(final Monitor data) {

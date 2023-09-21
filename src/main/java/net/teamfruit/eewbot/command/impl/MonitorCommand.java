@@ -9,18 +9,18 @@ import reactor.core.publisher.Mono;
 
 public class MonitorCommand implements ICommand {
 
-	@Override
-	public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
-		bot.getExecutor().getExecutor().execute(new MonitorGateway(bot.getExecutor().getProvider()) {
+    @Override
+    public Mono<Void> execute(final EEWBot bot, final MessageCreateEvent event, final String lang) {
+        bot.getExecutor().getExecutor().execute(new MonitorGateway(bot.getExecutor().getTimeProvider()) {
 
-			@Override
-			public void onNewData(final Monitor data) {
-				event.getMessage().getChannel()
-						.flatMap(channel -> channel.createMessage(data.createMessage(lang)))
-						.subscribe();
-			}
-		});
-		return Mono.empty();
-	}
+            @Override
+            public void onNewData(final Monitor data) {
+                event.getMessage().getChannel()
+                        .flatMap(channel -> channel.createMessage(data.createMessage(lang)))
+                        .subscribe();
+            }
+        });
+        return Mono.empty();
+    }
 
 }

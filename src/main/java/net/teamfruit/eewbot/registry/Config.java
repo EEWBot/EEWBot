@@ -5,16 +5,17 @@ import org.apache.commons.lang3.StringUtils;
 
 public class Config {
     private String token = "";
-    private int kyoshinDelay = 1;
-    private int quakeInfoDelay = 15;
-    private String dmdataAPIKey = "";
-    private String dmdataOrigin = "";
-    private boolean dmdataMultiSocketConnect = false;
-    private String nptServer = "time.google.com";
-    private String defaultLanuage = "ja_jp";
-    private boolean enablePermission = true;
-    private String systemChannel = "";
-    private boolean debug = false;
+    private boolean enableKyoshin = false;
+    private final int kyoshinDelay = 1;
+    private final int quakeInfoDelay = 15;
+    private final String dmdataAPIKey = "";
+    private final String dmdataOrigin = "";
+    private final boolean dmdataMultiSocketConnect = false;
+    private final String nptServer = "time.google.com";
+    private final String defaultLanuage = "ja_jp";
+    private final boolean enablePermission = true;
+    private final String systemChannel = "";
+    private final boolean debug = false;
 
     public Config() {
     }
@@ -27,84 +28,48 @@ public class Config {
         this.token = token;
     }
 
-    public int getKyoshinDelay() {
-        return Math.max(this.kyoshinDelay, 1);
+    public boolean isEnableKyoshin() {
+        return enableKyoshin;
     }
 
-    public void setKyoshinDelay(final int kyoshinDelay) {
-        this.kyoshinDelay = kyoshinDelay;
+    public int getKyoshinDelay() {
+        return Math.max(this.kyoshinDelay, 1);
     }
 
     public int getQuakeInfoDelay() {
         return Math.max(this.quakeInfoDelay, 10);
     }
 
-    public void setQuakeInfoDelay(final int quakeInfoDelay) {
-        this.quakeInfoDelay = quakeInfoDelay;
-    }
-
     public String getDmdataAPIKey() {
         return dmdataAPIKey;
-    }
-
-    public void setDmdataAPIKey(String dmdataAPIKey) {
-        this.dmdataAPIKey = dmdataAPIKey;
     }
 
     public String getDmdataOrigin() {
         return dmdataOrigin;
     }
 
-    public void setDmdataOrigin(String dmdataOrigin) {
-        this.dmdataOrigin = dmdataOrigin;
-    }
-
     public boolean isDmdataMultiSocketConnect() {
         return dmdataMultiSocketConnect;
-    }
-
-    public void setDmdataMultiSocketConnect(boolean dmdataMultiSocketConnect) {
-        this.dmdataMultiSocketConnect = dmdataMultiSocketConnect;
     }
 
     public String getNptServer() {
         return this.nptServer;
     }
 
-    public void setNptServer(final String nptServer) {
-        this.nptServer = nptServer;
-    }
-
     public String getDefaultLanuage() {
         return this.defaultLanuage;
-    }
-
-    public void setDefaultLanuage(final String defaultLanuage) {
-        this.defaultLanuage = defaultLanuage;
     }
 
     public boolean isEnablePermission() {
         return this.enablePermission;
     }
 
-    public void setEnablePermission(final boolean enablePermission) {
-        this.enablePermission = enablePermission;
-    }
-
     public String getSystemChannel() {
         return this.systemChannel;
     }
 
-    public void setSystemChannel(final String systemChannel) {
-        this.systemChannel = systemChannel;
-    }
-
     public boolean isDebug() {
         return this.debug;
-    }
-
-    public void setDebug(final boolean debug) {
-        this.debug = debug;
     }
 
     public boolean validate() {
@@ -112,9 +77,17 @@ public class Config {
             Log.logger.info("Please set a discord token");
             return false;
         }
-        if (StringUtils.isEmpty(getDmdataAPIKey())) {
+        boolean enableDmdata = !StringUtils.isEmpty(getDmdataAPIKey());
+        if (!isEnableKyoshin() && !enableDmdata) {
             Log.logger.info("Please set a DMDATA API key");
             return false;
+        }
+        if (isEnableKyoshin() && enableDmdata) {
+            this.enableKyoshin = false;
+            Log.logger.info("Dmdata API key provided, disabling Kyoshin");
+        }
+        if (isEnableKyoshin()) {
+            Log.logger.warn("Kyoshin EEW is enabled, please consider using DMDATA");
         }
         return true;
     }
@@ -123,10 +96,12 @@ public class Config {
     public String toString() {
         return "Config{" +
                 "token='" + token + '\'' +
+                ", enableKyoshin=" + enableKyoshin +
                 ", kyoshinDelay=" + kyoshinDelay +
                 ", quakeInfoDelay=" + quakeInfoDelay +
                 ", dmdataAPIKey='" + dmdataAPIKey + '\'' +
                 ", dmdataOrigin='" + dmdataOrigin + '\'' +
+                ", dmdataMultiSocketConnect=" + dmdataMultiSocketConnect +
                 ", nptServer='" + nptServer + '\'' +
                 ", defaultLanuage='" + defaultLanuage + '\'' +
                 ", enablePermission=" + enablePermission +
