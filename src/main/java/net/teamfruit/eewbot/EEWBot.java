@@ -94,8 +94,7 @@ public class EEWBot {
         if (token != null)
             getConfig().setToken(token);
 
-        if (StringUtils.isEmpty(getConfig().getToken())) {
-            Log.logger.info("Please set a token");
+        if (!getConfig().validate()) {
             return;
         }
 

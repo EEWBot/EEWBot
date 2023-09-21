@@ -732,7 +732,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
     @Override
     public MessageCreateSpec createMessage(String lang) {
-        if (this.body.isCanceled) {
+        if (this.getBody().isCanceled()) {
             return MessageCreateSpec.builder().addEmbed(I18nEmbedCreateSpec.builder(lang)
                             .title("eewbot.eew.eewcancel")
                             .timestamp(FORMAT.parse(this.getReportDateTime(), Instant::from))

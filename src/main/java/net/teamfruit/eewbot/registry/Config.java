@@ -1,5 +1,8 @@
 package net.teamfruit.eewbot.registry;
 
+import net.teamfruit.eewbot.Log;
+import org.apache.commons.lang3.StringUtils;
+
 public class Config {
     private String token = "";
     private int kyoshinDelay = 1;
@@ -102,6 +105,18 @@ public class Config {
 
     public void setDebug(final boolean debug) {
         this.debug = debug;
+    }
+
+    public boolean validate() {
+        if (StringUtils.isEmpty(getToken())) {
+            Log.logger.info("Please set a discord token");
+            return false;
+        }
+        if (StringUtils.isEmpty(getDmdataAPIKey())) {
+            Log.logger.info("Please set a DMDATA API key");
+            return false;
+        }
+        return true;
     }
 
     @Override
