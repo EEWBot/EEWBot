@@ -9,8 +9,8 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.TimeProvider;
-import net.teamfruit.eewbot.command.CommandUtils;
 import net.teamfruit.eewbot.i18n.I18n;
+import net.teamfruit.eewbot.slashcommand.CommandUtils;
 import net.teamfruit.eewbot.slashcommand.IButtonSlashCommand;
 import reactor.core.publisher.Mono;
 

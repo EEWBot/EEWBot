@@ -3,7 +3,7 @@ package net.teamfruit.eewbot.slashcommand.impl;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.command.CommandUtils;
+import net.teamfruit.eewbot.slashcommand.CommandUtils;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import reactor.core.publisher.Mono;
 

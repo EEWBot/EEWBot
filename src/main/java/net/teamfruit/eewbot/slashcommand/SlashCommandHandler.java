@@ -7,7 +7,6 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.command.CommandUtils;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
