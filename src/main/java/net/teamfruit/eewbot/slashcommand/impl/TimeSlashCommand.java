@@ -10,8 +10,8 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.slashcommand.CommandUtils;
 import net.teamfruit.eewbot.slashcommand.IButtonSlashCommand;
+import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import reactor.core.publisher.Mono;
 
 import java.time.ZonedDateTime;
@@ -58,7 +58,7 @@ public class TimeSlashCommand implements IButtonSlashCommand {
 
     private EmbedCreateSpec buildTimeEmbed(TimeProvider time, String lang) {
         if (time.isProviding())
-            return CommandUtils.createEmbed(lang)
+            return SlashCommandUtils.createEmbed(lang)
                     .title("eewbot.scmd.time.title")
                     .addField("eewbot.scmd.time.field.lastpctime.name", time.getLastComputerTime().toString(), false)
                     .addField("eewbot.scmd.time.field.lastntptime.name", time.getLastNTPTime().toString(), false)
@@ -66,7 +66,7 @@ public class TimeSlashCommand implements IButtonSlashCommand {
                     .addField("eewbot.scmd.time.field.nowoffsettime.name", time.now().toString(), false)
                     .addField("eewbot.scmd.time.field.offset.name", String.valueOf(time.getOffset()), false)
                     .build();
-        return CommandUtils.createEmbed(lang)
+        return SlashCommandUtils.createEmbed(lang)
                 .title("eewbot.scmd.time.title")
                 .addField("eewbot.scmd.time.field.lastpctime.name", "eewbot.scmd.time.field.nonsync.value", false)
                 .addField("eewbot.scmd.time.field.lastntptime.name", "eewbot.scmd.time.field.nonsync.value", false)
