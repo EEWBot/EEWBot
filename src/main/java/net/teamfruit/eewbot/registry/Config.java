@@ -3,19 +3,21 @@ package net.teamfruit.eewbot.registry;
 import net.teamfruit.eewbot.Log;
 import org.apache.commons.lang3.StringUtils;
 
+@SuppressWarnings("FieldMayBeFinal")
 public class Config {
+
     private String token = "";
     private boolean enableKyoshin = false;
-    private final int kyoshinDelay = 1;
-    private final int quakeInfoDelay = 15;
-    private final String dmdataAPIKey = "";
-    private final String dmdataOrigin = "";
-    private final boolean dmdataMultiSocketConnect = false;
-    private final String nptServer = "time.google.com";
-    private final String defaultLanuage = "ja_jp";
-    private final boolean enablePermission = true;
-    private final String systemChannel = "";
-    private final boolean debug = false;
+    private int kyoshinDelay = 1;
+    private int quakeInfoDelay = 15;
+    private String dmdataAPIKey = "";
+    private String dmdataOrigin = "";
+    private boolean dmdataMultiSocketConnect = false;
+    private String nptServer = "time.google.com";
+    private String defaultLanuage = "ja_jp";
+    private boolean enablePermission = true;
+    private String systemChannel = "";
+    private boolean debug = false;
 
     public Config() {
     }
@@ -77,12 +79,12 @@ public class Config {
             Log.logger.info("Please set a discord token");
             return false;
         }
-        boolean enableDmdata = !StringUtils.isEmpty(getDmdataAPIKey());
-        if (!isEnableKyoshin() && !enableDmdata) {
+        boolean isDmdataAPIKeyProvided = !StringUtils.isEmpty(getDmdataAPIKey());
+        if (!isEnableKyoshin() && !isDmdataAPIKeyProvided) {
             Log.logger.info("Please set a DMDATA API key");
             return false;
         }
-        if (isEnableKyoshin() && enableDmdata) {
+        if (isEnableKyoshin() && isDmdataAPIKeyProvided) {
             this.enableKyoshin = false;
             Log.logger.info("Dmdata API key provided, disabling Kyoshin");
         }
