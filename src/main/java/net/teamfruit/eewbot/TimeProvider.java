@@ -8,7 +8,6 @@ import reactor.core.publisher.Mono;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -17,8 +16,8 @@ public class TimeProvider {
     public static final ZoneId ZONE_ID = ZoneId.of("Asia/Tokyo");
 
     private long offset;
-    private Optional<ZonedDateTime> lastComputerTime;
-    private Optional<ZonedDateTime> lastNTPTime;
+    private ZonedDateTime lastComputerTime;
+    private ZonedDateTime lastNTPTime;
 
     private final NTPGateway gateway = new Gateway();
     private final ScheduledExecutorService executor;
@@ -27,12 +26,16 @@ public class TimeProvider {
         this.executor = executor;
     }
 
-    public Optional<ZonedDateTime> getLastComputerTime() {
+    public ZonedDateTime getLastComputerTime() {
         return this.lastComputerTime;
     }
 
-    public Optional<ZonedDateTime> getLastNTPTime() {
+    public ZonedDateTime getLastNTPTime() {
         return this.lastNTPTime;
+    }
+
+    public boolean isProviding() {
+        return this.lastComputerTime != null && this.lastNTPTime != null;
     }
 
     public void init() {
@@ -78,9 +81,9 @@ public class TimeProvider {
             data.computeDetails();
             final Long offsetValue = data.getOffset();
             final Long delayValue = data.getDelay();
-            TimeProvider.this.offset = (offsetValue != null ? offsetValue.longValue() : 0) + (delayValue != null ? delayValue.longValue() : 0);
-            TimeProvider.this.lastComputerTime = Optional.of(ZonedDateTime.now(ZONE_ID));
-            TimeProvider.this.lastNTPTime = Optional.of(now());
+            TimeProvider.this.offset = (offsetValue != null ? offsetValue : 0) + (delayValue != null ? delayValue : 0);
+            TimeProvider.this.lastComputerTime = ZonedDateTime.now(ZONE_ID);
+            TimeProvider.this.lastNTPTime = now();
         }
 
     }
