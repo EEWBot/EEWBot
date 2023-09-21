@@ -59,20 +59,20 @@ public class TimeSlashCommand implements IButtonSlashCommand {
     private EmbedCreateSpec buildTimeEmbed(TimeProvider time, String lang) {
         if (time.isProviding())
             return CommandUtils.createEmbed(lang)
-                    .title("eewbot.cmd.time.title")
-                    .addField("eewbot.cmd.time.field.lastpctime.name", time.getLastComputerTime().toString(), false)
-                    .addField("eewbot.cmd.time.field.lastntptime.name", time.getLastNTPTime().toString(), false)
-                    .addField("eewbot.cmd.time.field.nowpctime.name", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
-                    .addField("eewbot.cmd.time.field.nowoffsettime.name", time.now().toString(), false)
-                    .addField("eewbot.cmd.time.field.offset.name", String.valueOf(time.getOffset()), false)
+                    .title("eewbot.scmd.time.title")
+                    .addField("eewbot.scmd.time.field.lastpctime.name", time.getLastComputerTime().toString(), false)
+                    .addField("eewbot.scmd.time.field.lastntptime.name", time.getLastNTPTime().toString(), false)
+                    .addField("eewbot.scmd.time.field.nowpctime.name", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
+                    .addField("eewbot.scmd.time.field.nowoffsettime.name", time.now().toString(), false)
+                    .addField("eewbot.scmd.time.field.offset.name", String.valueOf(time.getOffset()), false)
                     .build();
         return CommandUtils.createEmbed(lang)
-                .title("eewbot.cmd.time.title")
-                .addField("eewbot.cmd.time.field.lastpctime.name", "eewbot.cmd.time.field.nonsync.value", false)
-                .addField("eewbot.cmd.time.field.lastntptime.name", "eewbot.cmd.time.field.nonsync.value", false)
-                .addField("eewbot.cmd.time.field.nowpctime.name", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
-                .addField("eewbot.cmd.time.field.nowoffsettime.name", time.now().toString(), false)
-                .addField("eewbot.cmd.time.field.offset.name", String.valueOf(time.getOffset()), false)
+                .title("eewbot.scmd.time.title")
+                .addField("eewbot.scmd.time.field.lastpctime.name", "eewbot.scmd.time.field.nonsync.value", false)
+                .addField("eewbot.scmd.time.field.lastntptime.name", "eewbot.scmd.time.field.nonsync.value", false)
+                .addField("eewbot.scmd.time.field.nowpctime.name", ZonedDateTime.now(TimeProvider.ZONE_ID).toString(), false)
+                .addField("eewbot.scmd.time.field.nowoffsettime.name", time.now().toString(), false)
+                .addField("eewbot.scmd.time.field.offset.name", String.valueOf(time.getOffset()), false)
                 .build();
     }
 }
