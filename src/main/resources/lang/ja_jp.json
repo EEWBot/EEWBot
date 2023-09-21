@@ -13,7 +13,7 @@
   "eewbot.eew.seismicintensity": "震度",
   "eewbot.eew.unknown": "不明",
   "eewbot.eew.inaccurate": "※この情報は精度が低い可能性があります",
-  "eewbot.eew.newkyoshinmonitor": "新強震モニタ",
+  "eewbot.eew.newkyoshinmonitor": "新強震モニタ ⚠Project DM-D.S.Sに移行してください！",
   "eewbot.quakeinfo.intensity.title": "地震情報（震度速報）",
   "eewbot.quakeinfo.epicenter.title": "地震情報（震源に関する情報）",
   "eewbot.quakeinfo.detail.title": "地震情報",
