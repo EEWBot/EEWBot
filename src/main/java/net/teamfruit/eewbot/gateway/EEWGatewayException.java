@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
-public class EEWGatewayException extends RuntimeException {
+public class EEWGatewayException extends Exception {
 
     public EEWGatewayException() {
         super();

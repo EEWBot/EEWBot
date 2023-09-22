@@ -3,8 +3,8 @@ package net.teamfruit.eewbot.slashcommand.impl;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.command.CommandUtils;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
+import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import reactor.core.publisher.Mono;
 
 public class HelpSlashCommand implements ISlashCommand {
@@ -24,7 +24,7 @@ public class HelpSlashCommand implements ISlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
-        return event.reply().withEmbeds(CommandUtils.createEmbed(lang)
+        return event.reply().withEmbeds(SlashCommandUtils.createEmbed(lang)
                 .title("eewbot.scmd.help.title")
                 .description("eewbot.scmd.help.desc")
                 .addField("/setup", "eewbot.scmd.help.field.set.value", false)

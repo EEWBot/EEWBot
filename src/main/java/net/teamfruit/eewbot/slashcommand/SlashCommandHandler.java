@@ -7,7 +7,6 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.command.CommandUtils;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -22,7 +21,6 @@ public class SlashCommandHandler {
     static {
         registerCommand(new SetupSlashCommand());
         registerCommand(new QuakeInfoSlashCommand());
-//        registerCommand(new MonitorSlashCommand());
         registerCommand(new TimeSlashCommand());
         registerCommand(new InviteSlashCommand());
         registerCommand(new HelpSlashCommand());
@@ -54,7 +52,7 @@ public class SlashCommandHandler {
                         .flatMap(cmd -> cmd.on(bot, event, getLanguage(bot, event)))
                         .doOnError(err -> Log.logger.error("Error during {} command", event.getCommandName(), err))
                         .onErrorResume(err -> event.reply()
-                                .withEmbeds(CommandUtils.createErrorEmbed(getLanguage(bot, event))
+                                .withEmbeds(SlashCommandUtils.createErrorEmbed(getLanguage(bot, event))
                                         .title("eewbot.scmd.error")
                                         .description(ExceptionUtils.getMessage(err))
                                         .build())

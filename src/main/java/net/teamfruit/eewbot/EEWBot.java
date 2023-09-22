@@ -13,12 +13,10 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.IntentSet;
-import net.teamfruit.eewbot.command.CommandHandler;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
-import net.teamfruit.eewbot.registry.Permission;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
@@ -29,6 +27,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -50,13 +49,6 @@ public class EEWBot {
     private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(CONDIG_DIRECTORY != null ? Paths.get(CONDIG_DIRECTORY, "config.json") : Paths.get("config.json"), () -> new Config(), Config.class);
     private final ConfigurationRegistry<Map<Long, Channel>> channels = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, Channel>(), new TypeToken<Map<Long, Channel>>() {
     }.getType());
-    private final ConfigurationRegistry<Map<String, Permission>> permissions = new ConfigurationRegistry<>(CONDIG_DIRECTORY != null ? Paths.get(CONDIG_DIRECTORY, "permission.json") : Paths.get("permission.json"), () -> new HashMap<String, Permission>() {
-        {
-            put("owner", Permission.ALL);
-            put("everyone", Permission.DEFAULT_EVERYONE);
-        }
-    }, new TypeToken<Map<String, Permission>>() {
-    }.getType());
 
     private final ReentrantReadWriteLock channelsLock = new ReentrantReadWriteLock();
 
@@ -65,16 +57,15 @@ public class EEWBot {
             .setSocketTimeout(10000 * 10)
             .build();
     private final PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager();
-    private final CloseableHttpClient http = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest)
+    private final CloseableHttpClient apacheHttpClient = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest)
             .setDefaultHeaders(Arrays.asList(new BasicHeader(HttpHeaders.ACCEPT_CHARSET, "UTF-8")))
             .setConnectionManager(this.manager)
             .build();
+    private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private GatewayDiscordClient gateway;
     private EEWService service;
     private EEWExecutor executor;
-    private CommandHandler command;
-
     private SlashCommandHandler slashCommand;
 
     private long applicationId;
@@ -85,15 +76,13 @@ public class EEWBot {
     public void initialize() throws IOException {
         this.config.init();
         initChannels();
-        this.permissions.init();
         I18n.INSTANCE.init();
 
         final String token = System.getenv("TOKEN");
         if (token != null)
             getConfig().setToken(token);
 
-        if (StringUtils.isEmpty(getConfig().getToken())) {
-            Log.logger.info("Please set a token");
+        if (!getConfig().validate()) {
             return;
         }
 
@@ -161,8 +150,7 @@ public class EEWBot {
         this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: " + channel.getGuildId().asString() + " System Channel: " + channel.getId().asString()));
 
         this.service = new EEWService(getClient(), getChannels(), getChannelsLock(), getSystemChannel());
-        this.executor = new EEWExecutor(getService(), getConfig(), getChannelRegistry());
-        this.command = new CommandHandler(this);
+        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId());
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
@@ -216,10 +204,6 @@ public class EEWBot {
         return this.channelsLock;
     }
 
-    public Map<String, Permission> getPermissions() {
-        return this.permissions.getElement();
-    }
-
     public ConfigurationRegistry<Config> getConfigRegistry() {
         return this.config;
     }
@@ -228,12 +212,13 @@ public class EEWBot {
         return this.channels;
     }
 
-    public ConfigurationRegistry<Map<String, Permission>> getPermissionsRegistry() {
-        return this.permissions;
+    @Deprecated
+    public CloseableHttpClient getApacheHttpClient() {
+        return this.apacheHttpClient;
     }
 
-    public CloseableHttpClient getHttpClient() {
-        return this.http;
+    public HttpClient getHttpClient() {
+        return this.httpClient;
     }
 
     public GatewayDiscordClient getClient() {
@@ -246,10 +231,6 @@ public class EEWBot {
 
     public EEWExecutor getExecutor() {
         return this.executor;
-    }
-
-    public CommandHandler getCommandHandler() {
-        return this.command;
     }
 
     public SlashCommandHandler getSlashCommandHandler() {
