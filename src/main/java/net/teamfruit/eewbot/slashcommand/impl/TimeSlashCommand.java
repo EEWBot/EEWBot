@@ -41,7 +41,7 @@ public class TimeSlashCommand implements IButtonSlashCommand {
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
         return event.reply().withEmbeds(buildTimeEmbed(bot.getExecutor().getTimeProvider(), lang))
                 .withComponents(ActionRow.of(Button.primary("timesync", I18n.INSTANCE.get(lang, "eewbot.scmd.time.resync"))
-                        .disabled(!bot.getExecutor().getTimeProvider().isProviding())));
+                        .disabled(!bot.getConfig().isEnableKyoshin())));
     }
 
     @Override
