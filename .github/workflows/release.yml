@@ -57,6 +57,7 @@ jobs:
       # Docker meta
       - name: Docker meta
         uses: docker/metadata-action@v5
+        id: meta
         with:
           images: |
             teamfruit/eewbot
