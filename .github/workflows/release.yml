@@ -2,6 +2,8 @@ name: Release and Publish Docker image
 
 on:
   push:
+    branches:
+      - 'master'
     tags:
       - 'v*.*.*'
 
@@ -62,6 +64,11 @@ jobs:
           images: |
             teamfruit/eewbot
             ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
 
       # Build and push Docker image
       - name: Build and push
