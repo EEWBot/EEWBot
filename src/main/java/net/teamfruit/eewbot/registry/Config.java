@@ -15,7 +15,6 @@ public class Config {
     private boolean dmdataMultiSocketConnect = false;
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
-    private boolean enablePermission = true;
     private String systemChannel = "";
     private boolean debug = false;
 
@@ -62,10 +61,6 @@ public class Config {
         return this.defaultLanuage;
     }
 
-    public boolean isEnablePermission() {
-        return this.enablePermission;
-    }
-
     public String getSystemChannel() {
         return this.systemChannel;
     }
@@ -106,7 +101,6 @@ public class Config {
                 ", dmdataMultiSocketConnect=" + dmdataMultiSocketConnect +
                 ", nptServer='" + nptServer + '\'' +
                 ", defaultLanuage='" + defaultLanuage + '\'' +
-                ", enablePermission=" + enablePermission +
                 ", systemChannel='" + systemChannel + '\'' +
                 ", debug=" + debug +
                 '}';
