@@ -82,6 +82,10 @@ public class EEWBot {
         if (token != null)
             getConfig().setToken(token);
 
+        String dmdataAPIKey = System.getenv("DMDATA_API_KEY");
+        if (dmdataAPIKey != null)
+            getConfig().setDmdataAPIKey(dmdataAPIKey);
+
         if (!getConfig().validate()) {
             return;
         }
