@@ -45,6 +45,10 @@ public class Config {
         return dmdataAPIKey;
     }
 
+    public void setDmdataAPIKey(String dmdataAPIKey) {
+        this.dmdataAPIKey = dmdataAPIKey;
+    }
+
     public String getDmdataOrigin() {
         return dmdataOrigin;
     }
