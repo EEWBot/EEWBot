@@ -29,7 +29,6 @@ public class HelpSlashCommand implements ISlashCommand {
                 .description("eewbot.scmd.help.desc")
                 .addField("/setup", "eewbot.scmd.help.field.set.value", false)
                 .addField("/quakeinfo", "eewbot.scmd.help.field.quakeinfo.value", false)
-                .addField("/monitor", "eewbot.scmd.help.field.monitor.value", false)
                 .addField("/time", "eewbot.scmd.help.field.time.value", false)
                 .addField("/invite", "eewbot.scmd.help.field.invite.value", false)
                 .addField("/help", "eewbot.scmd.help.field.help.value", false)

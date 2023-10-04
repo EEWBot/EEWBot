@@ -95,7 +95,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         } else {
             types.add("VXSE43");
         }
-        if (debug) {
+        if (this.debug) {
             types.add("VXSE42");
         }
 
@@ -105,7 +105,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                     .setAppName(connectionName)
                     .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
                     .setTypes(types)
-                    .setTest("including")
+                    .setTest(this.debug ? "including" : "no")
                     .setFormatMode("json")
                     .build());
         } catch (IOException | InterruptedException e) {
@@ -194,6 +194,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         private final boolean hasForecastContract;
 
         private long lastPingTime;
+        private boolean reconnecting;
 
         public WebSocketListener(String connectionName, String wsBaseURI, boolean hasForecastContract) {
             this.connectionName = connectionName;
@@ -300,14 +301,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         @Override
         public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
             Log.logger.info("DMDATA WebSocket {}: closed: {} {}", connectionName, statusCode, reason);
-            try {
-                closeWebSocketIfExist(DmdataGateway.this.dmdataAPI.openSocketList(), connectionName);
-                reconnectWebSocket(wsBaseURI, connectionName, hasForecastContract);
-            } catch (EEWGatewayException e) {
-                DmdataGateway.this.onError(e);
-            } catch (IOException | InterruptedException e) {
-                DmdataGateway.this.onError(new EEWGatewayException("Failed to reconnect to DMDATA", e));
-            }
+            onDisconnected();
             return null;
         }
 
@@ -316,14 +310,26 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             Log.logger.error("DMDATA WebSocket {}: error", connectionName, error);
             DmdataGateway.this.onError(new EEWGatewayException("DMDATA WebSocket error", error));
             if (webSocket.isOutputClosed() || webSocket.isInputClosed()) {
-                try {
-                    closeWebSocketIfExist(DmdataGateway.this.dmdataAPI.openSocketList(), connectionName);
-                    reconnectWebSocket(wsBaseURI, connectionName, hasForecastContract);
-                } catch (EEWGatewayException e) {
-                    DmdataGateway.this.onError(e);
-                } catch (IOException | InterruptedException e) {
-                    DmdataGateway.this.onError(new EEWGatewayException("Failed to reconnect to DMDATA", e));
-                }
+                onDisconnected();
+            }
+        }
+
+        private void onDisconnected() {
+            if (this.reconnecting) {
+                return;
+            }
+
+            this.reconnecting = true;
+            try {
+                Thread.sleep(3000);
+                closeWebSocketIfExist(DmdataGateway.this.dmdataAPI.openSocketList(), connectionName);
+                reconnectWebSocket(wsBaseURI, connectionName, hasForecastContract);
+            } catch (EEWGatewayException e) {
+                DmdataGateway.this.onError(e);
+            } catch (IOException | InterruptedException e) {
+                DmdataGateway.this.onError(new EEWGatewayException("Failed to reconnect to DMDATA", e));
+            } finally {
+                this.reconnecting = false;
             }
         }
     }
