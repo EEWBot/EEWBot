@@ -300,14 +300,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         @Override
         public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
             Log.logger.info("DMDATA WebSocket {}: closed: {} {}", connectionName, statusCode, reason);
-            try {
-                closeWebSocketIfExist(DmdataGateway.this.dmdataAPI.openSocketList(), connectionName);
-                reconnectWebSocket(wsBaseURI, connectionName, hasForecastContract);
-            } catch (EEWGatewayException e) {
-                DmdataGateway.this.onError(e);
-            } catch (IOException | InterruptedException e) {
-                DmdataGateway.this.onError(new EEWGatewayException("Failed to reconnect to DMDATA", e));
-            }
+            onDisconnected();
             return null;
         }
 
@@ -316,14 +309,19 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             Log.logger.error("DMDATA WebSocket {}: error", connectionName, error);
             DmdataGateway.this.onError(new EEWGatewayException("DMDATA WebSocket error", error));
             if (webSocket.isOutputClosed() || webSocket.isInputClosed()) {
-                try {
-                    closeWebSocketIfExist(DmdataGateway.this.dmdataAPI.openSocketList(), connectionName);
-                    reconnectWebSocket(wsBaseURI, connectionName, hasForecastContract);
-                } catch (EEWGatewayException e) {
-                    DmdataGateway.this.onError(e);
-                } catch (IOException | InterruptedException e) {
-                    DmdataGateway.this.onError(new EEWGatewayException("Failed to reconnect to DMDATA", e));
-                }
+                onDisconnected();
+            }
+        }
+
+        private void onDisconnected() {
+            try {
+                Thread.sleep(3000);
+                closeWebSocketIfExist(DmdataGateway.this.dmdataAPI.openSocketList(), connectionName);
+                reconnectWebSocket(wsBaseURI, connectionName, hasForecastContract);
+            } catch (EEWGatewayException e) {
+                DmdataGateway.this.onError(e);
+            } catch (IOException | InterruptedException e) {
+                DmdataGateway.this.onError(new EEWGatewayException("Failed to reconnect to DMDATA", e));
             }
         }
     }
