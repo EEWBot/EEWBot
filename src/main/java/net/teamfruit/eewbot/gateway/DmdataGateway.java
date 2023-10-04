@@ -194,6 +194,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         private final boolean hasForecastContract;
 
         private long lastPingTime;
+        private boolean reconnecting;
 
         public WebSocketListener(String connectionName, String wsBaseURI, boolean hasForecastContract) {
             this.connectionName = connectionName;
@@ -314,6 +315,11 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         }
 
         private void onDisconnected() {
+            if (this.reconnecting) {
+                return;
+            }
+            
+            this.reconnecting = true;
             try {
                 Thread.sleep(3000);
                 closeWebSocketIfExist(DmdataGateway.this.dmdataAPI.openSocketList(), connectionName);
@@ -322,6 +328,8 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                 DmdataGateway.this.onError(e);
             } catch (IOException | InterruptedException e) {
                 DmdataGateway.this.onError(new EEWGatewayException("Failed to reconnect to DMDATA", e));
+            } finally {
+                this.reconnecting = false;
             }
         }
     }
