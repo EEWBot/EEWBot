@@ -95,7 +95,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         } else {
             types.add("VXSE43");
         }
-        if (debug) {
+        if (this.debug) {
             types.add("VXSE42");
         }
 
@@ -105,7 +105,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                     .setAppName(connectionName)
                     .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
                     .setTypes(types)
-                    .setTest("including")
+                    .setTest(this.debug ? "including" : "no")
                     .setFormatMode("json")
                     .build());
         } catch (IOException | InterruptedException e) {
@@ -318,7 +318,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             if (this.reconnecting) {
                 return;
             }
-            
+
             this.reconnecting = true;
             try {
                 Thread.sleep(3000);
