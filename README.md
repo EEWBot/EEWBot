@@ -2,7 +2,7 @@
 
 <img align="right" src="https://cdn.discordapp.com/avatars/329257498668302346/7582f611d95b33514b7acdf08b5a5e35.png?size=256" width=27%>
 
-A Discord bot for Earthquake Early Warning (EEW) system in Japan
+A Discord bot to notify Earthquake Early Warning (EEW) in Japan
 
 緊急地震速報(EEW)をDiscordに通知するBotです。
 
