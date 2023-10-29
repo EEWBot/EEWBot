@@ -21,7 +21,7 @@ public class DmdataWsLivenessChecker implements Runnable {
     }
 
     private void check(DmdataGateway.WebSocketListener listener) {
-        if (System.currentTimeMillis() - listener.getLastPingTime() > 60 * 1000) {
+        if (listener.isReconnectFailed()) {
             Log.logger.warn("DMDATA WebSocket {} is not alive, reconnecting...", listener.getConnectionName());
             try {
                 this.gateway.reconnectWebSocket(listener);
