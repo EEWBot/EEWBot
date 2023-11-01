@@ -202,8 +202,8 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         private final String wsBaseURI;
         private final boolean hasForecastContract;
 
-        private boolean reconnecting;
-        private boolean reconnectFailed;
+        private volatile boolean reconnecting;
+        private volatile boolean reconnectFailed;
 
         public WebSocketListener(String connectionName, String wsBaseURI, boolean hasForecastContract) {
             this.connectionName = connectionName;
