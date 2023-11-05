@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.registry;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18n;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -27,18 +28,21 @@ public class Channel {
 
     public SeismicIntensity minIntensity = SeismicIntensity.ONE;
 
+    public String webhook;
+
     public String lang = I18n.DEFAULT_LANGUAGE;
 
     public Channel() {
     }
 
-    public Channel(final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final boolean quakeInfoDetail, final boolean monitor, final SeismicIntensity minIntensity) {
+    public Channel(final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final boolean quakeInfoDetail, final boolean monitor, final SeismicIntensity minIntensity, String webhook) {
         this.eewAlert = eewAlert;
         this.eewPrediction = eewPrediction;
         this.eewDecimation = eewDecimation;
         this.quakeInfo = quakeInfo;
         this.monitor = monitor;
         this.minIntensity = minIntensity;
+        this.webhook = webhook;
     }
 
     /*
@@ -54,7 +58,7 @@ public class Channel {
                         throw new RuntimeException(e);
                     }
                 })
-                .findAny().orElseThrow(() -> new IllegalArgumentException());
+                .findAny().orElseThrow(IllegalArgumentException::new);
     }
 
     public void set(final String name, final boolean bool) {
@@ -71,15 +75,14 @@ public class Channel {
 
     public boolean exits(final String name) {
         return Arrays.stream(getClass().getFields())
-                .filter(field -> field.isAnnotationPresent(CommandName.class) && (field.getAnnotation(CommandName.class).value().equals(name) || field.getName().equals(name)))
-                .count() > 0;
+                .anyMatch(field -> field.isAnnotationPresent(CommandName.class) && (field.getAnnotation(CommandName.class).value().equals(name) || field.getName().equals(name)));
 
     }
 
     public Map<String, Boolean> getCommandFields() {
         return Arrays.stream(getClass().getFields())
                 .filter(field -> field.isAnnotationPresent(CommandName.class))
-                .collect(Collectors.toMap(field -> field.getName(), field -> {
+                .collect(Collectors.toMap(Field::getName, field -> {
                     try {
                         return field.getBoolean(this);
                     } catch (IllegalAccessException e) {
@@ -118,6 +121,7 @@ public class Channel {
                 old.quakeInfo.get(),
                 old.quakeInfoDetail.get(),
                 old.monitor.get(),
-                SeismicIntensity.ONE);
+                SeismicIntensity.ONE,
+                null);
     }
 }
