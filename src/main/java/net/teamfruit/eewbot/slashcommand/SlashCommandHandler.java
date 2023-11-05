@@ -57,8 +57,10 @@ public class SlashCommandHandler {
                                         .description(ExceptionUtils.getMessage(err))
                                         .build())
                                 .withEphemeral(true)
-                                .onErrorResume(e -> Mono.empty())))
-                .onErrorResume(e -> Mono.empty())
+                                .onErrorResume(e -> {
+                                    Log.logger.error("Error during follow-up message", e);
+                                    return Mono.empty();
+                                })))
                 .subscribe(null, err -> Log.logger.error("Unhandled exception during ApplicationCommandInteractionEvent handling", err));
 
         bot.getClient().on(SelectMenuInteractionEvent.class)
