@@ -5,8 +5,10 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.Webhook;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import discord4j.discordjson.json.WebhookCreateRequest;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.EEWBot;
@@ -47,29 +49,60 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
-        if (!bot.getChannels().containsKey(channelId)) {
-            bot.getChannelsLock().writeLock().lock();
-            bot.getChannels().put(channelId, new Channel(false, false, false, false, false, false, SeismicIntensity.ONE));
-            bot.getChannelsLock().writeLock().unlock();
-        }
+        return getOrCreateWebhook(event)
+                .flatMap(webhook -> {
+                    return Mono.fromRunnable(() -> {
+                        if (!bot.getChannels().containsKey(channelId)) {
+                            bot.getChannelsLock().writeLock().lock();
+                            try {
+                                bot.getChannels().put(channelId, new Channel(false, false, false, false, false, false, SeismicIntensity.ONE, webhook));
+                            } finally {
+                                bot.getChannelsLock().writeLock().unlock();
+                            }
+                        } else {
+                            Channel channel = bot.getChannels().get(channelId);
+                            if (!channel.webhook.equals(webhook)) {
+                                channel.webhook = webhook;
+                                try {
+                                    bot.getChannelRegistry().save();
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        }
+                    }).thenReturn(webhook);
+                })
+                .flatMap(webhook ->
+                        event.deferReply().withEphemeral(true).then(event.getInteraction().getChannel()
+                                        .flatMap(channel -> Mono.just(channel)
+                                                .filter(GuildChannel.class::isInstance)
+                                                .cast(GuildChannel.class)
+                                                .flatMap(guildChannel -> guildChannel.getEffectivePermissions(bot.getClient().getSelfId()))
+                                                .filter(perms -> !perms.contains(Permission.VIEW_CHANNEL) || !perms.contains(Permission.SEND_MESSAGES))
+                                                .flatMap(perms -> {
+                                                    if (!perms.contains(Permission.VIEW_CHANNEL))
+                                                        return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel")).withEphemeral(true);
+                                                    return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.sendmessages")).withEphemeral(true);
+                                                }))
+                                        .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel"))
+                                                .withEphemeral(true))
+                                        .switchIfEmpty(event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply"))
+                                                .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)))
+                                                .withEphemeral(true)
+                                        )
+                                )
+                                .then());
+    }
 
-        return event.deferReply().withEphemeral(true).then(event.getInteraction().getChannel()
-                .flatMap(channel -> Mono.just(channel)
-                        .filter(GuildChannel.class::isInstance)
-                        .cast(GuildChannel.class)
-                        .flatMap(guildChannel -> guildChannel.getEffectivePermissions(bot.getClient().getSelfId()))
-                        .filter(perms -> !perms.contains(Permission.VIEW_CHANNEL) || !perms.contains(Permission.SEND_MESSAGES))
-                        .flatMap(perms -> {
-                            if (!perms.contains(Permission.VIEW_CHANNEL))
-                                return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel")).withEphemeral(true);
-                            return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.sendmessages")).withEphemeral(true);
-                        }))
-                .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel"))
-                        .withEphemeral(true))
-                .switchIfEmpty(event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply"))
-                        .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)))
-                        .withEphemeral(true)
-                )).then();
+    private Mono<String> getOrCreateWebhook(ApplicationCommandInteractionEvent event) {
+        return event.getInteraction().getGuild().flatMap(guild -> guild.getWebhooks()
+                .filter(webhook -> webhook.getChannelId().equals(event.getInteraction().getChannelId()) && webhook.getCreator().filter(user -> user.getId().equals(event.getClient().getSelfId())).isPresent())
+                .next()
+                .map(Webhook::getToken)
+                .flatMap(Mono::justOrEmpty)
+                .switchIfEmpty(event.getInteraction().getClient().getRestClient().getWebhookService()
+                        .createWebhook(event.getInteraction().getChannelId().asLong(), WebhookCreateRequest.builder().name("EEWBot").build(), "Create EEWBot webhook")
+                        .map(webhookData -> webhookData.token().get())));
     }
 
     private SelectMenu buildMainSelectMenu(EEWBot bot, long channelId, String lang) {
