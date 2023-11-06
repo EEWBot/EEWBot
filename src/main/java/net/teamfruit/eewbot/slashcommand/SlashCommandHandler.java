@@ -23,6 +23,7 @@ public class SlashCommandHandler {
         registerCommand(new QuakeInfoSlashCommand());
         registerCommand(new TimeSlashCommand());
         registerCommand(new InviteSlashCommand());
+        registerCommand(new TestMessageSlashCommand());
         registerCommand(new HelpSlashCommand());
     }
 
