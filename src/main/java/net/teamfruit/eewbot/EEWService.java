@@ -50,9 +50,9 @@ public class EEWService {
         this.lock.readLock().unlock();
     }
 
-    public Mono<Message> sendMessange(long channelId, final Function<String, MessageCreateSpec> spec) {
+    public Mono<Message> sendMessangePassErrors(long channelId, final Function<String, MessageCreateSpec> spec) {
         Channel channel = this.channels.get(channelId);
-        return directSendMessage(channelId, spec.apply(channel != null ? channel.lang : I18n.DEFAULT_LANGUAGE));
+        return directSendMessagePassErrors(channelId, spec.apply(channel != null ? channel.lang : I18n.DEFAULT_LANGUAGE));
     }
 
     public void sendAttachment(final String key, final Function<String, MessageCreateSpec> spec) {
@@ -69,16 +69,7 @@ public class EEWService {
     }
 
     private Mono<Message> directSendMessage(final long channelId, final MessageCreateSpec spec) {
-        return Mono.defer(() -> {
-//			final MessageCreateSpec mutatedSpec = new MessageCreateSpec();
-//			this.gateway.getRestClient().getRestResources()
-//					.getAllowedMentions()
-//					.ifPresent(mutatedSpec::setAllowedMentions);
-//			spec.accept(mutatedSpec);
-                    return this.gateway.getRestClient().getChannelService()
-                            .createMessage(channelId, spec.asRequest());
-                })
-                .map(data -> new Message(this.gateway, data))
+        return directSendMessagePassErrors(channelId, spec)
                 .doOnError(ClientException.class, err -> {
                     Log.logger.error("Failed to send message: ChannelID={} Message={}", channelId, err.getMessage());
                     if (err.getStatus() == HttpResponseStatus.NOT_FOUND || err.getStatus() == HttpResponseStatus.FORBIDDEN) {
@@ -89,5 +80,11 @@ public class EEWService {
                     }
                 })
                 .onErrorResume(e -> Mono.empty());
+    }
+
+    private Mono<Message> directSendMessagePassErrors(long channelId, MessageCreateSpec spec) {
+        return Mono.defer(() -> this.gateway.getRestClient().getChannelService()
+                        .createMessage(channelId, spec.asRequest()))
+                .map(data -> new Message(this.gateway, data));
     }
 }
