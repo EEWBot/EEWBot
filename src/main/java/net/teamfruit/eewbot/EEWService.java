@@ -6,6 +6,7 @@ import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -45,8 +46,13 @@ public class EEWService {
                 .parallel()
                 .runOn(Schedulers.parallel())
                 .groups()
-                .subscribe(g -> g.subscribe());
+                .subscribe(Flux::subscribe);
         this.lock.readLock().unlock();
+    }
+
+    public Mono<Message> sendMessange(long channelId, final Function<String, MessageCreateSpec> spec) {
+        Channel channel = this.channels.get(channelId);
+        return directSendMessage(channelId, spec.apply(channel != null ? channel.lang : I18n.DEFAULT_LANGUAGE));
     }
 
     public void sendAttachment(final String key, final Function<String, MessageCreateSpec> spec) {
