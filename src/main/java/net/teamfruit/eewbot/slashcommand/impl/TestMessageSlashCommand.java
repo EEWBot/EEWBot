@@ -23,7 +23,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
     public ApplicationCommandRequest buildCommand() {
         return ApplicationCommandRequest.builder()
                 .name(getCommandName())
-                .description("テストメッセージを送信します。")
+                .description("Botからテストメッセージを送信し、現在のチャンネルで正常に動作するか確認します。")
                 .build();
     }
 

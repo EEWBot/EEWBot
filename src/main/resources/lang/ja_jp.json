@@ -66,6 +66,7 @@
   "eewbot.scmd.help.field.quakeinfo.value": "最新の地震情報が取得できます。",
   "eewbot.scmd.help.field.time.value": "Botの時刻同期情報の確認と、強制再同期ができます。",
   "eewbot.scmd.help.field.invite.value": "Botの招待URLを取得します。",
+  "eewbot.scmd.help.field.testmessage.value": "Botからテストメッセージを送信し、現在のチャンネルで正常に動作するか確認します。",
   "eewbot.scmd.help.field.help.value": "Helpを表示します。",
   "eewbot.scmd.help.field.links.name": "リンク",
   "eewbot.scmd.help.field.links.value": "[GitHub](https://github.com/Team-Fruit/EEWBot)\n[サポートサーバー](https://discord.gg/upt9n86ctG)"
