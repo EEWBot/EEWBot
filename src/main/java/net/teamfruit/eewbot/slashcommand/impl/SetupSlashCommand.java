@@ -84,7 +84,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                 Channel botChannel = bot.getChannels().get(channelId);
                                                 String webhook = webhookData.id() + "/" + webhookData.token().get();
                                                 if (channelId != webhookChannelId) {
-                                                    webhook = webhook + "?thread_id" + webhookChannelId;
+                                                    webhook = webhook + "?thread_id=" + webhookChannelId;
                                                 }
                                                 if (!StringUtils.equals(botChannel.webhook, webhook)) {
                                                     botChannel.webhook = webhook;
