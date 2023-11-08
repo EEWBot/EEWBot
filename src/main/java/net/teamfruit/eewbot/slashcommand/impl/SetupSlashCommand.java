@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.slashcommand.impl;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.component.ActionRow;
@@ -7,6 +8,7 @@ import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.Webhook;
 import discord4j.core.object.entity.channel.GuildChannel;
+import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.WebhookCreateRequest;
 import discord4j.rest.http.client.ClientException;
@@ -62,27 +64,40 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                         }
                     }
                 }))
-                .then(event.getInteraction().getGuild().flatMap(guild -> guild.getWebhooks()
-                        .filter(webhook -> webhook.getChannelId().equals(event.getInteraction().getChannelId()) && webhook.getCreator().filter(user -> user.getId().equals(event.getClient().getSelfId())).isPresent())
-                        .next()
-                        .map(Webhook::getToken)
-                        .flatMap(Mono::justOrEmpty)
-                        .switchIfEmpty(event.getInteraction().getClient().getRestClient().getWebhookService()
-                                .createWebhook(event.getInteraction().getChannelId().asLong(), WebhookCreateRequest.builder().name("EEWBot").build(), "Create EEWBot webhook")
-                                .map(webhookData -> webhookData.token().get()))
-                        .flatMap(token -> Mono.fromRunnable(() -> {
-                            Channel channel = bot.getChannels().get(channelId);
-                            if (!StringUtils.equals(channel.webhook, token)) {
-                                channel.webhook = token;
-                                try {
-                                    bot.getChannelRegistry().save();
-                                } catch (IOException e) {
-                                    Log.logger.error("Failed to save channel registry during setup command", e);
-                                    throw new RuntimeException(e);
-                                }
-                                Log.logger.info(token);
-                            }
-                        }).thenReturn(token))))
+                .then(event.getInteraction().getChannel()
+                        .flatMap(channel -> {
+                            Mono<Long> webhookChannelIdMono = (channel instanceof ThreadChannel)
+                                    ? Mono.justOrEmpty(((ThreadChannel) channel).getParentId().map(Snowflake::asLong))
+                                    : Mono.just(channelId);
+
+                            return webhookChannelIdMono.flatMap(webhookChannelId ->
+                                    event.getInteraction().getGuild().flatMap(guild -> guild.getWebhooks()
+                                            .filter(webhook -> webhook.getChannelId().asLong() == webhookChannelId)
+                                            .next()
+                                            .map(Webhook::getToken)
+                                            .flatMap(Mono::justOrEmpty)
+                                            .switchIfEmpty(
+                                                    event.getInteraction().getClient().getRestClient().getWebhookService()
+                                                            .createWebhook(webhookChannelId, WebhookCreateRequest.builder().name("EEWBot").build(), "Create EEWBot webhook")
+                                                            .map(webhookData -> webhookData.token().get())
+                                            )
+                                            .flatMap(token -> Mono.fromRunnable(() -> {
+                                                Channel botChannel = bot.getChannels().get(channelId);
+                                                if (!StringUtils.equals(botChannel.webhook, token)) {
+                                                    botChannel.webhook = token;
+                                                    try {
+                                                        bot.getChannelRegistry().save();
+                                                    } catch (IOException e) {
+                                                        Log.logger.error("Failed to save channel registry during setup command", e);
+                                                        throw new RuntimeException(e);
+                                                    }
+                                                    Log.logger.info("Webhook token: " + token);
+                                                }
+                                            }).thenReturn(token))
+                                    )
+                            );
+                        })
+                )
                 .onErrorResume(ClientException.isStatusCode(403), err -> buildReply(bot, event, lang, channelId, "eewbot.scmd.setup.permserror.managewebhooks")
                         .then(Mono.empty()))
                 .flatMap(webhook -> buildReply(bot, event, lang, channelId, null)
