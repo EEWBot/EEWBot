@@ -50,7 +50,7 @@ public class EEWService {
         this.lock.readLock().unlock();
     }
 
-    public Mono<Message> sendMessangePassErrors(long channelId, final Function<String, MessageCreateSpec> spec) {
+    public Mono<Message> sendMessagePassErrors(long channelId, final Function<String, MessageCreateSpec> spec) {
         Channel channel = this.channels.get(channelId);
         return directSendMessagePassErrors(channelId, spec.apply(channel != null ? channel.lang : I18n.DEFAULT_LANGUAGE));
     }

@@ -30,7 +30,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
         return event.deferReply()
-                .then(bot.getService().sendMessangePassErrors(event.getInteraction().getChannelId().asLong(), this::createMessage)
+                .then(bot.getService().sendMessagePassErrors(event.getInteraction().getChannelId().asLong(), this::createMessage)
                         .flatMap(message -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.testmessage.success")))
                         .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                                 .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
