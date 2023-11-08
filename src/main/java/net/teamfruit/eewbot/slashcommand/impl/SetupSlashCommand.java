@@ -74,26 +74,28 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                     event.getInteraction().getGuild().flatMap(guild -> guild.getWebhooks()
                                             .filter(webhook -> webhook.getChannelId().asLong() == webhookChannelId)
                                             .next()
-                                            .map(Webhook::getToken)
+                                            .map(Webhook::getData)
                                             .flatMap(Mono::justOrEmpty)
                                             .switchIfEmpty(
                                                     event.getInteraction().getClient().getRestClient().getWebhookService()
                                                             .createWebhook(webhookChannelId, WebhookCreateRequest.builder().name("EEWBot").build(), "Create EEWBot webhook")
-                                                            .map(webhookData -> webhookData.token().get())
                                             )
-                                            .flatMap(token -> Mono.fromRunnable(() -> {
+                                            .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 Channel botChannel = bot.getChannels().get(channelId);
-                                                if (!StringUtils.equals(botChannel.webhook, token)) {
-                                                    botChannel.webhook = token;
+                                                String webhook = webhookData.id() + "/" + webhookData.token().get();
+                                                if (channelId != webhookChannelId) {
+                                                    webhook = webhook + "?thread_id" + webhookChannelId;
+                                                }
+                                                if (!StringUtils.equals(botChannel.webhook, webhook)) {
+                                                    botChannel.webhook = webhook;
                                                     try {
                                                         bot.getChannelRegistry().save();
                                                     } catch (IOException e) {
                                                         Log.logger.error("Failed to save channel registry during setup command", e);
                                                         throw new RuntimeException(e);
                                                     }
-                                                    Log.logger.info("Webhook token: " + token);
                                                 }
-                                            }).thenReturn(token))
+                                            }).thenReturn(webhookData))
                                     )
                             );
                         })
