@@ -49,6 +49,12 @@ public class TestMessageSlashCommand implements ISlashCommand {
                                                     .build().asRequest())
                                             .build())))
                     .flatMap(message -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.testmessage.success")))
+                    .onErrorResume(ClientException.isStatusCode(404), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
+                            .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
+                                    .title("eewbot.scmd.testmessage.error.title")
+                                    .description("eewbot.scmd.testmessage.error.unknownwebhook", ExceptionUtils.getMessage(err))
+                                    .build())
+                            .build()))
                     .onErrorResume(err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
                                     .title("eewbot.scmd.testmessage.error.title")
@@ -87,12 +93,4 @@ public class TestMessageSlashCommand implements ISlashCommand {
         }
     }
 
-//    private MessageCreateSpec createMessage(String lang) {
-//        return MessageCreateSpec.builder()
-//                .addEmbed(SlashCommandUtils.createEmbed(lang)
-//                        .title("eewbot.scmd.testmessage.title")
-//                        .description("eewbot.scmd.testmessage.desc")
-//                        .build())
-//                .build();
-//    }
 }
