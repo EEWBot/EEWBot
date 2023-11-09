@@ -71,7 +71,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
                             return webhookChannelIdMono.flatMap(webhookChannelId ->
                                     event.getInteraction().getGuild().flatMap(guild -> guild.getWebhooks()
-                                            .filter(webhook -> webhook.getChannelId().asLong() == webhookChannelId)
+                                            .filter(webhook -> webhook.getChannelId().asLong() == webhookChannelId && webhook.getCreator().filter(user -> user.getId().equals(event.getClient().getSelfId())).isPresent())
                                             .next()
                                             .map(Webhook::getData)
                                             .flatMap(Mono::justOrEmpty)
