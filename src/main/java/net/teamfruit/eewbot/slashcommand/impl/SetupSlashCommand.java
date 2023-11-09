@@ -19,7 +19,6 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
-import org.apache.commons.codec.binary.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -77,16 +76,13 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                             .map(Webhook::getData)
                                             .flatMap(Mono::justOrEmpty)
                                             .switchIfEmpty(
-                                                    event.getInteraction().getClient().getRestClient().getWebhookService()
+                                                    event.getClient().getRestClient().getWebhookService()
                                                             .createWebhook(webhookChannelId, WebhookCreateRequest.builder().name("EEWBot").build(), "Create EEWBot webhook")
                                             )
                                             .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 Channel botChannel = bot.getChannels().get(channelId);
-                                                String webhook = webhookData.id() + "/" + webhookData.token().get();
-                                                if (channelId != webhookChannelId) {
-                                                    webhook = webhook + "?thread_id=" + webhookChannelId;
-                                                }
-                                                if (!StringUtils.equals(botChannel.webhook, webhook)) {
+                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asString(), webhookData.token().get(), channelId != webhookChannelId ? String.valueOf(webhookChannelId) : null);
+                                                if (!webhook.equals(botChannel.webhook)) {
                                                     botChannel.webhook = webhook;
                                                     try {
                                                         bot.getChannelRegistry().save();
