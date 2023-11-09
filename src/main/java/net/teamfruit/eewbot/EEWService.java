@@ -6,7 +6,6 @@ import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -50,9 +49,8 @@ public class EEWService {
         this.lock.readLock().unlock();
     }
 
-    public Mono<Message> sendMessagePassErrors(long channelId, final Function<String, MessageCreateSpec> spec) {
-        Channel channel = this.channels.get(channelId);
-        return directSendMessagePassErrors(channelId, spec.apply(channel != null ? channel.lang : I18n.DEFAULT_LANGUAGE));
+    public Mono<Message> sendMessagePassErrors(long channelId, final MessageCreateSpec spec) {
+        return directSendMessagePassErrors(channelId, spec);
     }
 
     public void sendAttachment(final String key, final Function<String, MessageCreateSpec> spec) {
