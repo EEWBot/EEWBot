@@ -7,6 +7,7 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.MessageData;
 import discord4j.discordjson.json.WebhookExecuteRequest;
 import discord4j.rest.http.client.ClientException;
+import discord4j.rest.json.response.ErrorResponse;
 import discord4j.rest.request.DiscordWebRequest;
 import discord4j.rest.request.Router;
 import discord4j.rest.route.Routes;
@@ -58,10 +59,10 @@ public class TestMessageSlashCommand implements ISlashCommand {
                                     .description("eewbot.scmd.testmessage.error.unknownwebhook", ExceptionUtils.getMessage(err))
                                     .build())
                             .build()))
-                    .onErrorResume(err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
+                    .onErrorResume(ClientException.class, err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
                                     .title("eewbot.scmd.testmessage.error.title")
-                                    .description("eewbot.scmd.testmessage.error.unknown", ExceptionUtils.getMessage(err))
+                                    .description("eewbot.scmd.testmessage.error.unknown", err.getErrorResponse().map(ErrorResponse::toString).orElse(""))
                                     .build())
                             .build()))
                     .then();
