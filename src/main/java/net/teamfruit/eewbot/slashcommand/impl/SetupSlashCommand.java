@@ -65,7 +65,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                 }))
                 .then(event.getInteraction().getChannel()
                         .flatMap(channel -> {
-                            Mono<Long> webhookChannelIdMono = (channel instanceof ThreadChannel)
+                            boolean isThread = channel instanceof ThreadChannel;
+                            Mono<Long> webhookChannelIdMono = isThread
                                     ? Mono.justOrEmpty(((ThreadChannel) channel).getParentId().map(Snowflake::asLong))
                                     : Mono.just(channelId);
 
@@ -81,7 +82,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                             )
                                             .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 Channel botChannel = bot.getChannels().get(channelId);
-                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asString(), webhookData.token().get(), channelId != webhookChannelId ? String.valueOf(webhookChannelId) : null);
+                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asString(), webhookData.token().get(), isThread ? String.valueOf(channelId) : null);
                                                 if (!webhook.equals(botChannel.webhook)) {
                                                     botChannel.webhook = webhook;
                                                     try {
