@@ -4,8 +4,12 @@ import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEven
 import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import discord4j.discordjson.json.MessageData;
 import discord4j.discordjson.json.WebhookExecuteRequest;
 import discord4j.rest.http.client.ClientException;
+import discord4j.rest.request.DiscordWebRequest;
+import discord4j.rest.request.Router;
+import discord4j.rest.route.Routes;
 import discord4j.rest.util.MultipartRequest;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.i18n.I18n;
@@ -14,6 +18,8 @@ import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import reactor.core.publisher.Mono;
+
+import java.util.Objects;
 
 public class TestMessageSlashCommand implements ISlashCommand {
 
@@ -38,16 +44,13 @@ public class TestMessageSlashCommand implements ISlashCommand {
 
         if (hasWebhook) {
             return event.deferReply()
-                    .then(event.getClient().getRestClient().getWebhookService()
-                            .executeWebhook(Long.parseLong(channel.webhook.id),
-                                    channel.webhook.threadId != null ? channel.webhook.token + "?thread_id=" + channel.webhook.threadId : channel.webhook.token,
-                                    true,
-                                    MultipartRequest.ofRequest(WebhookExecuteRequest.builder()
-                                            .addEmbed(SlashCommandUtils.createEmbed(lang)
-                                                    .title("eewbot.scmd.testmessage.title")
-                                                    .description("eewbot.scmd.testmessage.webhook")
-                                                    .build().asRequest())
-                                            .build())))
+                    .then(executeWebhook(event.getClient().getCoreResources().getRouter(), Long.parseLong(channel.webhook.id), channel.webhook.token, true, channel.webhook.threadId,
+                            MultipartRequest.ofRequest(WebhookExecuteRequest.builder()
+                                    .addEmbed(SlashCommandUtils.createEmbed(lang)
+                                            .title("eewbot.scmd.testmessage.title")
+                                            .description("eewbot.scmd.testmessage.webhook")
+                                            .build().asRequest())
+                                    .build())))
                     .flatMap(message -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.testmessage.success")))
                     .onErrorResume(ClientException.isStatusCode(404), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
@@ -91,6 +94,20 @@ public class TestMessageSlashCommand implements ISlashCommand {
                             .build()))
                     .then();
         }
+    }
+
+    // Temporary solution
+    public Mono<MessageData> executeWebhook(Router router, long webhookId, String token, boolean wait, String threadId, MultipartRequest<? extends WebhookExecuteRequest> request) {
+        DiscordWebRequest req = Routes.WEBHOOK_EXECUTE.newRequest(webhookId, token)
+                .query("wait", wait)
+                .header("content-type", request.getFiles().isEmpty() ? "application/json" : "multipart/form-data")
+                .body(Objects.requireNonNull(request.getFiles().isEmpty() ? request.getJsonPayload() : request));
+        if (threadId != null) {
+            req.query("thread_id", threadId);
+        }
+
+        return req.exchange(router)
+                .bodyToMono(MessageData.class);
     }
 
 }
