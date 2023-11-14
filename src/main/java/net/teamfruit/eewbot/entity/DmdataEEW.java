@@ -4,6 +4,7 @@ import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import org.apache.commons.lang3.StringUtils;
+import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
 import java.util.List;
@@ -66,6 +67,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
             return earthquake;
         }
 
+        @Nullable
         public Intensity getIntensity() {
             return intensity;
         }

@@ -82,11 +82,17 @@ public class EEWExecutor {
                             return true;
                         if (eew.getPrev() == null)
                             return true;
-                        if (eew.getSerialNo().equals("1") || eew.getBody().isLastInfo())
+                        DmdataEEW.Body currentBody = eew.getBody();
+                        DmdataEEW.Body prevBody = eew.getPrev().getBody();
+                        if (eew.getSerialNo().equals("1") || currentBody.isLastInfo())
                             return true;
-                        if (eew.getBody().isWarning() != eew.getPrev().getBody().isWarning())
+                        if (currentBody.isWarning() != prevBody.isWarning())
                             return true;
-                        if (!eew.getBody().getIntensity().getForecastMaxInt().getFrom().equals(eew.getPrev().getBody().getIntensity().getForecastMaxInt().getFrom()))
+                        DmdataEEW.Body.Intensity currentIntensity = currentBody.getIntensity();
+                        DmdataEEW.Body.Intensity prevIntensity = prevBody.getIntensity();
+                        if ((currentIntensity == null) != (prevIntensity == null))
+                            return true;
+                        if (currentIntensity != null && !currentIntensity.getForecastMaxInt().getFrom().equals(prevIntensity.getForecastMaxInt().getFrom()))
                             return true;
                         return !eew.getBody().getEarthquake().getHypocenter().getName().equals(eew.getPrev().getBody().getEarthquake().getHypocenter().getName());
                     };
