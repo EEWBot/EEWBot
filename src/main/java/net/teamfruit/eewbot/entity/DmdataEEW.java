@@ -13,17 +13,32 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
     private Body body;
     private DmdataEEW prev;
+    private SeismicIntensity maxIntensityBefore = SeismicIntensity.UNKNOWN;
 
     public Body getBody() {
         return body;
     }
 
+    @Nullable
     public DmdataEEW getPrev() {
         return prev;
     }
 
     public void setPrev(DmdataEEW prev) {
         this.prev = prev;
+        SeismicIntensity prevIntensity = prev.getBody().getIntensity() != null ?
+                SeismicIntensity.get(prev.getBody().getIntensity().getForecastMaxInt().getFrom()).orElse(SeismicIntensity.UNKNOWN) : SeismicIntensity.UNKNOWN;
+        if (this.maxIntensityBefore.compareTo(prevIntensity) < 0)
+            this.maxIntensityBefore = prevIntensity;
+    }
+
+    public SeismicIntensity getMaxIntensityEEW() {
+        if (getBody().getIntensity() == null)
+            return maxIntensityBefore;
+        SeismicIntensity intensity = SeismicIntensity.get(getBody().getIntensity().getForecastMaxInt().getFrom()).orElse(SeismicIntensity.UNKNOWN);
+        if (intensity.compareTo(maxIntensityBefore) > 0)
+            return intensity;
+        return maxIntensityBefore;
     }
 
     public static class Body {
