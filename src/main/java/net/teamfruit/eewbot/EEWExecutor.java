@@ -47,27 +47,22 @@ public class EEWExecutor {
                 @Override
                 public void onNewData(final KmoniEEW eew) {
                     Log.logger.info(eew.toString());
+                    KmoniEEW prev = eew.getPrev();
 
-                    final Predicate<Channel> isAlert = c -> eew.isAlert() ? c.eewAlert : c.eewPrediction;
-                    final Predicate<Channel> decimation = c -> {
-                        if (!c.eewDecimation)
-                            return true;
-                        if (eew.getPrev() == null)
-                            return true;
-                        if (eew.isInitial() || eew.isFinal())
-                            return true;
-                        if (eew.isAlert() != eew.getPrev().isAlert())
-                            return true;
-                        if (!eew.getIntensity().equals(eew.getPrev().getIntensity()))
-                            return true;
-                        return !eew.getRegionName().equals(eew.getPrev().getRegionName());
-                    };
-                    final Predicate<Channel> sensitivity = c -> {
-                        if (eew.getIntensity().isEmpty())
-                            return true;
-                        return c.minIntensity.compareTo(eew.getIntensity().get()) <= 0;
-                    };
-                    EEWExecutor.this.service.sendMessage(isAlert.and(decimation).and(sensitivity), eew::createMessage);
+                    boolean isWarning = eew.isCancel() ? prev != null && prev.isAlert() : eew.isAlert();
+                    Predicate<Channel> warning = c -> isWarning ? c.eewAlert : c.eewPrediction;
+
+                    boolean isImportant = prev == null ||
+                            eew.isInitial() ||
+                            eew.isFinal() ||
+                            eew.isAlert() != prev.isAlert() ||
+                            !eew.getIntensity().equals(prev.getIntensity()) ||
+                            !eew.getRegionName().equals(prev.getRegionName());
+                    Predicate<Channel> decimation = c -> !c.eewDecimation || isImportant;
+
+                    SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
+                    Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(maxIntensity) <= 0;
+                    EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew::createMessage);
 
                 }
             }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
