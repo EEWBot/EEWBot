@@ -4,6 +4,7 @@ import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import org.apache.commons.lang3.StringUtils;
+import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
 import java.util.List;
@@ -12,17 +13,32 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
     private Body body;
     private DmdataEEW prev;
+    private SeismicIntensity maxIntensityBefore = SeismicIntensity.UNKNOWN;
 
     public Body getBody() {
         return body;
     }
 
+    @Nullable
     public DmdataEEW getPrev() {
         return prev;
     }
 
     public void setPrev(DmdataEEW prev) {
         this.prev = prev;
+        SeismicIntensity prevIntensity = prev.getBody().getIntensity() != null ?
+                SeismicIntensity.get(prev.getBody().getIntensity().getForecastMaxInt().getFrom()).orElse(SeismicIntensity.UNKNOWN) : SeismicIntensity.UNKNOWN;
+        if (this.maxIntensityBefore.compareTo(prevIntensity) < 0)
+            this.maxIntensityBefore = prevIntensity;
+    }
+
+    public SeismicIntensity getMaxIntensityEEW() {
+        if (getBody().getIntensity() == null)
+            return maxIntensityBefore;
+        SeismicIntensity intensity = SeismicIntensity.get(getBody().getIntensity().getForecastMaxInt().getFrom()).orElse(SeismicIntensity.UNKNOWN);
+        if (intensity.compareTo(maxIntensityBefore) > 0)
+            return intensity;
+        return maxIntensityBefore;
     }
 
     public static class Body {
@@ -66,6 +82,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
             return earthquake;
         }
 
+        @Nullable
         public Intensity getIntensity() {
             return intensity;
         }

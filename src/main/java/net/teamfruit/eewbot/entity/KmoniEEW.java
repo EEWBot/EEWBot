@@ -4,6 +4,7 @@ import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import org.apache.commons.lang3.StringUtils;
+import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -34,6 +35,28 @@ public class KmoniEEW implements Entity {
     private Security security;
 
     private KmoniEEW prev;
+    private SeismicIntensity maxIntensityBefore = SeismicIntensity.UNKNOWN;
+
+    public void setPrev(final KmoniEEW eew) {
+        this.prev = eew;
+        SeismicIntensity prevIntensity = eew.getIntensity().orElse(SeismicIntensity.UNKNOWN);
+        if (this.maxIntensityBefore.compareTo(prevIntensity) < 0)
+            this.maxIntensityBefore = prevIntensity;
+    }
+
+    @Nullable
+    public KmoniEEW getPrev() {
+        return this.prev;
+    }
+
+    public SeismicIntensity getMaxIntensityEEW() {
+        if (getIntensity().isEmpty())
+            return maxIntensityBefore;
+        SeismicIntensity intensity = getIntensity().get();
+        if (intensity.compareTo(maxIntensityBefore) > 0)
+            return intensity;
+        return maxIntensityBefore;
+    }
 
     public static class Result {
         private boolean is_auth;
@@ -176,15 +199,6 @@ public class KmoniEEW implements Entity {
         if (StringUtils.isEmpty(this.request_time))
             return null;
         return FORMAT.parse(this.request_time, Instant::from);
-    }
-
-    public KmoniEEW setPrev(final KmoniEEW eew) {
-        this.prev = eew;
-        return this;
-    }
-
-    public KmoniEEW getPrev() {
-        return this.prev;
     }
 
     @Override
