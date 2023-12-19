@@ -65,6 +65,11 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                 }))
                 .then(event.getInteraction().getChannel()
                         .flatMap(channel -> {
+                            // DM channel
+                            if (event.getInteraction().getGuildId().isEmpty()) {
+                                return Mono.just(channel);
+                            }
+
                             boolean isThread = channel instanceof ThreadChannel;
                             Mono<Long> webhookChannelIdMono = isThread
                                     ? Mono.justOrEmpty(((ThreadChannel) channel).getParentId().map(Snowflake::asLong))
