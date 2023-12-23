@@ -6,6 +6,7 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.PartialMember;
 import discord4j.core.object.entity.Webhook;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
@@ -82,8 +83,11 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                             .map(Webhook::getData)
                                             .flatMap(Mono::justOrEmpty)
                                             .switchIfEmpty(
-                                                    event.getClient().getRestClient().getWebhookService()
-                                                            .createWebhook(webhookChannelId, WebhookCreateRequest.builder().name("EEWBot").build(), "Create EEWBot webhook")
+                                                    guild.getSelfMember().map(PartialMember::getDisplayName)
+                                                            .flatMap(name -> event.getClient().getRestClient().getWebhookService()
+                                                                    .createWebhook(webhookChannelId, WebhookCreateRequest.builder()
+                                                                            .name(name)
+                                                                            .build(), "Create EEWBot webhook"))
                                             )
                                             .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 Channel botChannel = bot.getChannels().get(channelId);
