@@ -51,6 +51,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                                             .title("eewbot.scmd.testmessage.title")
                                             .description("eewbot.scmd.testmessage.webhook")
                                             .build().asRequest())
+                                    .avatarUrl(bot.getAvatarUrl())
                                     .build())))
                     .flatMap(message -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.testmessage.success")))
                     .onErrorResume(ClientException.isStatusCode(404), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
