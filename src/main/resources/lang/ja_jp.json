@@ -26,7 +26,7 @@
   "eewbot.scmd.setup.reply": "このチャンネルのBotの動作を設定します。\n[Botの利用における免責事項をお読みください。](<https://github.com/Team-Fruit/EEWBot/wiki/Bot%E3%81%AE%E5%88%A9%E7%94%A8%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8B%E5%85%8D%E8%B2%AC%E4%BA%8B%E9%A0%85>)",
   "eewbot.scmd.setup.permserror.viewchannel": "Botがこのチャンネルを閲覧する権限がありません！",
   "eewbot.scmd.setup.permserror.sendmessages": "Botがこのチャンネルにメッセージを送信する権限がありません！",
-  "eewbot.scmd.setup.permserror.managewebhooks": ":warning: Botがウェブフックを管理する権限がありません！\nメッセージ遅延の改善のため、Botへのウェブフックの管理権限の付与を推奨します。",
+  "eewbot.scmd.setup.permserror.managewebhooks": ":warning: Botがウェブフックを管理する権限がありません！\nウェブフックを使用すると、メッセージの配信遅延を改善できることがあります。",
   "eewbot.scmd.setup.channel.placeholder": "メイン設定（複数選択可）",
   "eewbot.scmd.setup.channel.eewalert.label": "EEW警報",
   "eewbot.scmd.setup.channel.eewalert.desc": "最大震度5弱以上と予想される緊急地震速報",
