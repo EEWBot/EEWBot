@@ -4,10 +4,12 @@ import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.entity.KmoniEEW;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
 
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -33,26 +35,29 @@ public abstract class KmoniGateway implements Gateway<KmoniEEW> {
             final ZonedDateTime date = this.time.offset(1000);
             final String url = REMOTE + FORMAT.format(date) + ".json";
 
-            final HttpGet get = new HttpGet(url);
-            try (CloseableHttpResponse response = EEWBot.instance.getApacheHttpClient().execute(get)) {
-                if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK)
-                    try (InputStreamReader is = new InputStreamReader(response.getEntity().getContent())) {
-                        final KmoniEEW eew = EEWBot.GSON.fromJson(is, KmoniEEW.class);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+            HttpResponse<InputStream> response = EEWBot.instance.getHttpClient().send(request, HttpResponse.BodyHandlers.ofInputStream());
 
-                        if (eew != null && eew.isEEW()) {
-                            final KmoniEEW prev = this.prev.get(eew.getReportId());
+            if (response.statusCode() == HttpStatus.SC_OK)
+                try (InputStreamReader is = new InputStreamReader(response.body())) {
+                    final KmoniEEW eew = EEWBot.GSON.fromJson(is, KmoniEEW.class);
+
+                    if (eew != null && eew.isEEW()) {
+                        final KmoniEEW prev = this.prev.get(eew.getReportId());
+                        if (prev != null)
                             eew.setPrev(prev);
-                            if (prev == null || prev.getReportNum() < eew.getReportNum()) {
-                                this.prev.put(eew.getReportId(), eew);
-                                onNewData(eew);
-                            }
-                        } else
-                            this.prev.clear();
-
-                    }
-                else
-                    onError(new EEWGatewayException("Failed to fetch EEW: HTTP " + response.getStatusLine().getStatusCode()));
-            }
+                        if (prev == null || prev.getReportNum() < eew.getReportNum()) {
+                            this.prev.put(eew.getReportId(), eew);
+                            onNewData(eew);
+                        }
+                    } else
+                        this.prev.clear();
+                }
+            else
+                onError(new EEWGatewayException("Failed to fetch EEW: HTTP " + response.statusCode()));
         } catch (final Exception e) {
             onError(new EEWGatewayException("Failed to fetch EEW", e));
         }
