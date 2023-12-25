@@ -3,7 +3,6 @@ package net.teamfruit.eewbot.gateway;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.entity.KmoniEEW;
-import org.apache.http.HttpStatus;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -41,7 +40,7 @@ public abstract class KmoniGateway implements Gateway<KmoniEEW> {
                     .build();
             HttpResponse<InputStream> response = EEWBot.instance.getHttpClient().send(request, HttpResponse.BodyHandlers.ofInputStream());
 
-            if (response.statusCode() == HttpStatus.SC_OK)
+            if (response.statusCode() == 200)
                 try (InputStreamReader is = new InputStreamReader(response.body())) {
                     final KmoniEEW eew = EEWBot.GSON.fromJson(is, KmoniEEW.class);
 
