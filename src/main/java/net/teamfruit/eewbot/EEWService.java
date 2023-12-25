@@ -6,6 +6,7 @@ import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -15,6 +16,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -50,11 +52,14 @@ public class EEWService {
     }
 
     public void sendMessage(final Predicate<Channel> filter, final Function<String, MessageCreateSpec> spec) {
+        Map<String, MessageCreateSpec> cache = new HashMap<>();
+        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cache.put(lang, spec.apply(lang)));
+
         this.lock.readLock().lock();
         Flux.merge(this.channels.entrySet().stream()
                         .filter(entry -> entry.getValue().webhook == null)
                         .filter(entry -> filter.test(entry.getValue()))
-                        .map(entry -> directSendMessage(entry.getKey(), spec.apply(entry.getValue().lang)))
+                        .map(entry -> directSendMessage(entry.getKey(), cache.get(entry.getValue().lang)))
                         .collect(Collectors.toList()))
                 .parallel()
                 .runOn(Schedulers.parallel())
