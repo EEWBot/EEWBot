@@ -141,7 +141,7 @@ public class EEWBot {
 
         this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: " + channel.getGuildId().asString() + " System Channel: " + channel.getId().asString()));
 
-        this.service = new EEWService(getClient(), getChannels(), getChannelsLock(), getSystemChannel());
+        this.service = new EEWService(getClient(), getChannels(), getChannelsLock(), getSystemChannel(), getConfig().getPoolingMax(), getConfig().getPoolingMaxPerRoute());
         this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId());
         this.slashCommand = new SlashCommandHandler(this);
 

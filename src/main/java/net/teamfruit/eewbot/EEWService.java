@@ -7,6 +7,10 @@ import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import net.teamfruit.eewbot.registry.Channel;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -24,12 +28,21 @@ public class EEWService {
     private final Map<Long, Channel> channels;
     private final ReentrantReadWriteLock lock;
     private final Optional<TextChannel> systemChannel;
+    private final CloseableHttpAsyncClient httpClient;
 
-    public EEWService(final GatewayDiscordClient gateway, final Map<Long, Channel> map, final ReentrantReadWriteLock lock, final Optional<TextChannel> systemChannel) {
+    public EEWService(final GatewayDiscordClient gateway, final Map<Long, Channel> map, final ReentrantReadWriteLock lock, final Optional<TextChannel> systemChannel, int poolingMax, int poolingMaxPerRoute) {
         this.gateway = gateway;
         this.channels = map;
         this.lock = lock;
         this.systemChannel = systemChannel;
+        PoolingAsyncClientConnectionManager connectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
+                .setMaxConnTotal(poolingMax)
+                .setMaxConnPerRoute(poolingMaxPerRoute)
+                .build();
+        this.httpClient = HttpAsyncClients.custom()
+                .setConnectionManager(connectionManager)
+                .build();
+        this.httpClient.start();
     }
 
     public void sendMessage(final String key, final Function<String, MessageCreateSpec> spec) {
@@ -39,6 +52,7 @@ public class EEWService {
     public void sendMessage(final Predicate<Channel> filter, final Function<String, MessageCreateSpec> spec) {
         this.lock.readLock().lock();
         Flux.merge(this.channels.entrySet().stream()
+                        .filter(entry -> entry.getValue().webhook == null)
                         .filter(entry -> filter.test(entry.getValue()))
                         .map(entry -> directSendMessage(entry.getKey(), spec.apply(entry.getValue().lang)))
                         .collect(Collectors.toList()))

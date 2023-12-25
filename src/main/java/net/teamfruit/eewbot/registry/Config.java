@@ -13,6 +13,8 @@ public class Config {
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
+    private int poolingMax = 40;
+    private int poolingMaxPerRoute = 20;
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
     private String systemChannel = "";
@@ -55,6 +57,14 @@ public class Config {
 
     public boolean isDmdataMultiSocketConnect() {
         return dmdataMultiSocketConnect;
+    }
+
+    public int getPoolingMax() {
+        return poolingMax;
+    }
+
+    public int getPoolingMaxPerRoute() {
+        return poolingMaxPerRoute;
     }
 
     public String getNptServer() {
@@ -103,10 +113,13 @@ public class Config {
                 ", dmdataAPIKey='" + dmdataAPIKey + '\'' +
                 ", dmdataOrigin='" + dmdataOrigin + '\'' +
                 ", dmdataMultiSocketConnect=" + dmdataMultiSocketConnect +
+                ", poolingMax=" + poolingMax +
+                ", poolingMaxPerRoute=" + poolingMaxPerRoute +
                 ", nptServer='" + nptServer + '\'' +
                 ", defaultLanuage='" + defaultLanuage + '\'' +
                 ", systemChannel='" + systemChannel + '\'' +
                 ", debug=" + debug +
                 '}';
     }
+
 }
