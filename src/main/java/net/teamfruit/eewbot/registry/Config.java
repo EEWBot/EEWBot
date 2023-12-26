@@ -13,7 +13,7 @@ public class Config {
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
-    private int poolingMax = 40;
+    private int poolingMax = 20;
     private int poolingMaxPerRoute = 20;
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
