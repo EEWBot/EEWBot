@@ -6,6 +6,7 @@ import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import net.teamfruit.eewbot.entity.DiscordWebhook;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
@@ -41,15 +42,19 @@ public class EEWService {
 
     private final GatewayDiscordClient gateway;
     private final Map<Long, Channel> channels;
+    private final String avatarUrl;
     private final ReentrantReadWriteLock lock;
     private final Optional<TextChannel> systemChannel;
     private final MinimalHttpAsyncClient httpClient;
 
-    public EEWService(final GatewayDiscordClient gateway, final Map<Long, Channel> map, final ReentrantReadWriteLock lock, final Optional<TextChannel> systemChannel, int poolingMax, int poolingMaxPerRoute) {
-        this.gateway = gateway;
-        this.channels = map;
-        this.lock = lock;
-        this.systemChannel = systemChannel;
+    public EEWService(EEWBot bot) {
+        this.gateway = bot.getClient();
+        this.channels = bot.getChannels();
+        this.avatarUrl = bot.getAvatarUrl();
+        this.lock = bot.getChannelsLock();
+        this.systemChannel = bot.getSystemChannel();
+        int poolingMax = bot.getConfig().getPoolingMax();
+        int poolingMaxPerRoute = bot.getConfig().getPoolingMaxPerRoute();
         PoolingAsyncClientConnectionManager connectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
                 .setMaxConnTotal(poolingMax)
                 .setMaxConnPerRoute(poolingMaxPerRoute)
@@ -75,7 +80,11 @@ public class EEWService {
                 .collect(Collectors.partitioningBy(entry -> entry.getValue().webhook != null));
 
         Map<String, String> cacheWebhook = new HashMap<>();
-        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheWebhook.put(lang, entity.createWebhook(lang).json()));
+        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> {
+            DiscordWebhook webhook = entity.createWebhook(lang);
+            webhook.avatar_url = this.avatarUrl;
+            cacheWebhook.put(lang, webhook.json());
+        });
 
         this.lock.readLock().lock();
 
