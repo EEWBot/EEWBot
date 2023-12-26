@@ -23,6 +23,7 @@ import org.apache.hc.core5.http.config.Http1Config;
 import org.apache.hc.core5.http.nio.AsyncClientEndpoint;
 import org.apache.hc.core5.http2.config.H2Config;
 import org.apache.hc.core5.reactor.IOReactorConfig;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -35,6 +36,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -67,15 +70,11 @@ public class EEWService {
         this.httpClient.start();
     }
 
-    public void sendMessage(final String key, final Entity entity, boolean highPriority) {
-        sendMessage(channel -> channel.value(key), entity, highPriority);
-    }
-
     public void sendMessage(final Predicate<Channel> filter, final Entity entity, boolean highPriority) {
         Map<String, MessageCreateSpec> cacheMsg = new HashMap<>();
         I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheMsg.put(lang, entity.createMessage(lang)));
 
-        Map<Boolean, List<Map.Entry<Long, Channel>>> partitioned = this.channels.entrySet().stream()
+        Map<Boolean, List<Map.Entry<Long, Channel>>> webhookPartitioned = this.channels.entrySet().stream()
                 .filter(entry -> filter.test(entry.getValue()))
                 .collect(Collectors.partitioningBy(entry -> entry.getValue().webhook != null));
 
@@ -90,115 +89,14 @@ public class EEWService {
 
         String duplicatorAddress = EEWBot.instance.getConfig().getDuplicatorAddress();
         if (StringUtils.isEmpty(duplicatorAddress)) {
-            HttpHost target = new HttpHost("https", "discord.com");
-            Map<String, SimpleHttpRequest> cacheReq = new HashMap<>();
-            I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheReq.put(lang, SimpleRequestBuilder.post()
-                    .setHttpHost(target)
-                    .addHeader("User-Agent", "EEWBot")
-                    .setBody(cacheWebhook.get(lang), ContentType.APPLICATION_JSON)
-                    .build()));
-
-            try {
-                final Future<AsyncClientEndpoint> leaseFuture = this.httpClient.lease(target, null);
-                final AsyncClientEndpoint endpoint = leaseFuture.get(30, TimeUnit.SECONDS);
-                try {
-                    final CountDownLatch latch = new CountDownLatch(partitioned.get(true).size());
-                    partitioned.get(true).forEach(entry -> {
-                        SimpleHttpRequest request = cacheReq.get(entry.getValue().lang);
-                        request.setPath("/api/webhooks" + entry.getValue().webhook.getJoined());
-                        endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
-                            @Override
-                            public void completed(SimpleHttpResponse simpleHttpResponse) {
-                                latch.countDown();
-                                if (simpleHttpResponse.getCode() < 200 || simpleHttpResponse.getCode() >= 300) {
-                                    MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-                                    directSendMessage(entry.getKey(), spec).subscribe();
-                                }
-                            }
-
-                            @Override
-                            public void failed(Exception e) {
-                                latch.countDown();
-                                Log.logger.info("Failed to send webhook: ChannelID={} Message={}", entry.getKey(), e.getMessage());
-                                MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-                                directSendMessage(entry.getKey(), spec).subscribe();
-                            }
-
-                            @Override
-                            public void cancelled() {
-                                latch.countDown();
-                                Log.logger.info("Cancelled to send webhook: ChannelID={}", entry.getKey());
-                                MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-                                directSendMessage(entry.getKey(), spec).subscribe();
-                            }
-                        });
-                    });
-                    latch.await();
-                } finally {
-                    endpoint.releaseAndReuse();
-                }
-            } catch (ExecutionException | InterruptedException | TimeoutException e) {
-                Log.logger.error("Failed to send message");
-            }
+            sendWebhook(cacheWebhook, webhookPartitioned.get(true), (id, channel) -> directSendMessage(id, cacheMsg.get(channel.lang)).subscribe());
         } else {
             try {
-                HttpHost target = HttpHost.create(new URI(duplicatorAddress));
-                Map<String, SimpleHttpRequest> cacheReq = new HashMap<>();
-                I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheReq.put(lang, SimpleRequestBuilder.post()
-                        .setHttpHost(target)
-                        .addHeader("User-Agent", "EEWBot")
-                        .setPath(highPriority ? "/duplicate/high_priority" : "/duplicate/low_priority")
-                        .setBody(cacheWebhook.get(lang), ContentType.APPLICATION_JSON)
-                        .build()));
-                final Future<AsyncClientEndpoint> leaseFuture = this.httpClient.lease(target, null);
-                final AsyncClientEndpoint endpoint = leaseFuture.get(10, TimeUnit.SECONDS);
-                try {
-                    final CountDownLatch latch = new CountDownLatch(I18n.INSTANCE.getLanguages().size());
-                    I18n.INSTANCE.getLanguages().keySet().forEach(lang -> {
-                        String[] targets = partitioned.get(true).stream()
-                                .map(entry -> "https://discord.com/api/webhooks" + entry.getValue().webhook.getJoined())
-                                .toArray(String[]::new);
-                        SimpleHttpRequest request = cacheReq.get(lang);
-                        request.addHeader("X-Duplicate-Targets", EEWBot.GSON.toJson(targets));
-                        endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
-                            @Override
-                            public void completed(SimpleHttpResponse simpleHttpResponse) {
-                                latch.countDown();
-                                if (simpleHttpResponse.getCode() < 200 || simpleHttpResponse.getCode() >= 300) {
-                                    MessageCreateSpec spec = cacheMsg.get(lang);
-                                    partitioned.get(true).forEach(entry -> directSendMessage(entry.getKey(), spec).subscribe());
-                                }
-                            }
-
-                            @Override
-                            public void failed(Exception e) {
-                                latch.countDown();
-                                Log.logger.info("Failed to connect to duplicator: {}", e.getMessage());
-                                partitioned.get(true).forEach(entry -> {
-                                    MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-                                    directSendMessage(entry.getKey(), spec).subscribe();
-                                });
-                            }
-
-                            @Override
-                            public void cancelled() {
-                                latch.countDown();
-                                Log.logger.info("Cancelled to connect to duplicator");
-                                partitioned.get(true).forEach(entry -> {
-                                    MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-                                    directSendMessage(entry.getKey(), spec).subscribe();
-                                });
-                            }
-                        });
-                    });
-                    latch.await();
-                } finally {
-                    endpoint.releaseAndReuse();
-                }
+                sendDuplicator(highPriority, new URI(duplicatorAddress), cacheWebhook, webhookPartitioned.get(true), channels ->
+                        sendWebhook(cacheWebhook, channels, (id, channel) -> directSendMessage(id, cacheMsg.get(channel.lang)).subscribe()));
             } catch (URISyntaxException e) {
-                Log.logger.error("Failed to send message: Invalid duplicator address");
-            } catch (ExecutionException | InterruptedException | TimeoutException e) {
-                Log.logger.error("Failed to send message: Failed to connect to duplicator");
+                Log.logger.error("Webhook send fallback: Invalid duplicator address");
+                sendWebhook(cacheWebhook, webhookPartitioned.get(true), (id, channel) -> directSendMessage(id, cacheMsg.get(channel.lang)).subscribe());
             }
         }
 
@@ -207,7 +105,7 @@ public class EEWService {
 //            directSendMessage(entry.getKey(), spec).subscribe();
 //        });
 
-        Flux.merge(partitioned.get(false).stream()
+        Flux.merge(webhookPartitioned.get(false).stream()
                         .map(entry -> directSendMessage(entry.getKey(), cacheMsg.get(entry.getValue().lang)))
                         .collect(Collectors.toList()))
                 .parallel()
@@ -216,6 +114,107 @@ public class EEWService {
                 .subscribe(Flux::subscribe);
 
         this.lock.readLock().unlock();
+    }
+
+    private void sendWebhook(Map<String, String> webhookBodyByLang, List<Map.Entry<Long, Channel>> webhookChannels, BiFunction<Long, Channel, Disposable> onError) {
+        HttpHost target = new HttpHost("https", "discord.com");
+        Map<String, SimpleHttpRequest> cacheReq = new HashMap<>();
+        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheReq.put(lang, SimpleRequestBuilder.post()
+                .setHttpHost(target)
+                .addHeader("User-Agent", "EEWBot")
+                .setBody(webhookBodyByLang.get(lang), ContentType.APPLICATION_JSON)
+                .build()));
+
+        try {
+            final Future<AsyncClientEndpoint> leaseFuture = this.httpClient.lease(target, null);
+            final AsyncClientEndpoint endpoint = leaseFuture.get(30, TimeUnit.SECONDS);
+            try {
+                final CountDownLatch latch = new CountDownLatch(webhookChannels.size());
+                webhookChannels.forEach(entry -> {
+                    SimpleHttpRequest request = cacheReq.get(entry.getValue().lang);
+                    request.setPath("/api/webhooks" + entry.getValue().webhook.getJoined());
+                    endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
+                        @Override
+                        public void completed(SimpleHttpResponse simpleHttpResponse) {
+                            latch.countDown();
+                            if (simpleHttpResponse.getCode() < 200 || simpleHttpResponse.getCode() >= 300) {
+                                onError.apply(entry.getKey(), entry.getValue());
+                            }
+                        }
+
+                        @Override
+                        public void failed(Exception e) {
+                            latch.countDown();
+                            Log.logger.info("Failed to send webhook: ChannelID={} Message={}", entry.getKey(), e.getMessage());
+                            onError.apply(entry.getKey(), entry.getValue());
+                        }
+
+                        @Override
+                        public void cancelled() {
+                            latch.countDown();
+                            Log.logger.info("Cancelled to send webhook: ChannelID={}", entry.getKey());
+                            onError.apply(entry.getKey(), entry.getValue());
+                        }
+                    });
+                });
+                latch.await();
+            } finally {
+                endpoint.releaseAndReuse();
+            }
+        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+            Log.logger.error("Failed to send message");
+        }
+    }
+
+    private void sendDuplicator(boolean highPriority, URI duplicator, Map<String, String> webhookByLang, List<Map.Entry<Long, Channel>> webhookChannels, Consumer<List<Map.Entry<Long, Channel>>> onError) {
+        try {
+            HttpHost target = HttpHost.create(duplicator);
+            Map<String, SimpleHttpRequest> requestsByLang = new HashMap<>();
+            I18n.INSTANCE.getLanguages().keySet().forEach(lang -> requestsByLang.put(lang, SimpleRequestBuilder.post()
+                    .setHttpHost(target)
+                    .addHeader("User-Agent", "EEWBot")
+                    .addHeader("X-Duplicate-Targets", EEWBot.GSON.toJson(webhookChannels.stream()
+                            .filter(entry -> entry.getValue().lang.equals(lang))
+                            .map(entry -> "https://discord.com/api/webhooks" + entry.getValue().webhook.getJoined())
+                            .toArray(String[]::new)))
+                    .setPath(highPriority ? "/duplicate/high_priority" : "/duplicate/low_priority")
+                    .setBody(webhookByLang.get(lang), ContentType.APPLICATION_JSON)
+                    .build()));
+            final Future<AsyncClientEndpoint> leaseFuture = this.httpClient.lease(target, null);
+            final AsyncClientEndpoint endpoint = leaseFuture.get(10, TimeUnit.SECONDS);
+            try {
+                final CountDownLatch latch = new CountDownLatch(I18n.INSTANCE.getLanguages().size());
+                requestsByLang.forEach((lang, request) -> endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
+                    
+                    @Override
+                    public void completed(SimpleHttpResponse simpleHttpResponse) {
+                        latch.countDown();
+                        if (simpleHttpResponse.getCode() < 200 || simpleHttpResponse.getCode() >= 300) {
+                            onError.accept(webhookChannels.stream().filter(entry -> entry.getValue().lang.equals(lang)).collect(Collectors.toList()));
+                        }
+                    }
+
+                    @Override
+                    public void failed(Exception e) {
+                        latch.countDown();
+                        Log.logger.info("Failed to connect to duplicator: {}", e.getMessage());
+                        onError.accept(webhookChannels.stream().filter(entry -> entry.getValue().lang.equals(lang)).collect(Collectors.toList()));
+                    }
+
+                    @Override
+                    public void cancelled() {
+                        latch.countDown();
+                        Log.logger.info("Cancelled to connect to duplicator");
+                        onError.accept(webhookChannels.stream().filter(entry -> entry.getValue().lang.equals(lang)).collect(Collectors.toList()));
+                    }
+                }));
+                latch.await();
+            } finally {
+                endpoint.releaseAndReuse();
+            }
+        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+            Log.logger.error("Failed to send message: Failed to connect to duplicator");
+        }
     }
 
     public Mono<Message> sendMessagePassErrors(long channelId, final MessageCreateSpec spec) {
