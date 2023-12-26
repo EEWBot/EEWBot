@@ -144,9 +144,9 @@ public class Channel {
 
         public String getJoined() {
             if (this.threadId != null) {
-                return this.id + "/" + this.token + "?thread_id=" + this.threadId;
+                return "/" + this.id + "/" + this.token + "?thread_id=" + this.threadId;
             } else {
-                return this.id + "/" + this.token;
+                return "/" + this.id + "/" + this.token;
             }
         }
 

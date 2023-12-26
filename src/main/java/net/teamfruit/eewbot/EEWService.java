@@ -6,7 +6,6 @@ import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import net.teamfruit.eewbot.entity.DiscordWebhook;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
@@ -66,46 +65,49 @@ public class EEWService {
     public void sendMessage(final Predicate<Channel> filter, final Entity entity) {
         Map<String, MessageCreateSpec> cacheMsg = new HashMap<>();
         I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheMsg.put(lang, entity.createMessage(lang)));
-        Map<String, DiscordWebhook> cacheWebhook = new HashMap<>();
-        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheWebhook.put(lang, entity.createWebhook(lang)));
+        Map<String, String> cacheWebhook = new HashMap<>();
+        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheWebhook.put(lang, entity.createWebhook(lang).json()));
 
         this.lock.readLock().lock();
         try {
             HttpHost target = new HttpHost("https", "discord.com");
             final Future<AsyncClientEndpoint> leaseFuture = this.httpClient.lease(target, null);
             final AsyncClientEndpoint endpoint = leaseFuture.get(30, TimeUnit.SECONDS);
+            try {
+                this.channels.entrySet().stream().filter(entry -> filter.test(entry.getValue())).forEach(entry -> {
+                    if (entry.getValue().webhook != null) {
+                        SimpleHttpRequest request = SimpleRequestBuilder.post()
+                                .setHttpHost(target)
+                                .setPath("/api/webhooks" + entry.getValue().webhook.getJoined())
+                                .setBody(cacheWebhook.get(entry.getValue().lang), ContentType.APPLICATION_JSON)
+                                .build();
+                        endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
+                            @Override
+                            public void completed(SimpleHttpResponse simpleHttpResponse) {
+                            }
 
-            this.channels.entrySet().stream().filter(entry -> filter.test(entry.getValue())).forEach(entry -> {
-                if (entry.getValue().webhook != null) {
-                    DiscordWebhook webhook = cacheWebhook.get(entry.getValue().lang);
-                    Log.logger.info(webhook.json());
-                    SimpleHttpRequest request = SimpleRequestBuilder.post()
-                            .setBody(webhook.json(), ContentType.APPLICATION_JSON)
-                            .setPath(entry.getValue().webhook.getJoined())
-                            .build();
-                    endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
-                        @Override
-                        public void completed(SimpleHttpResponse simpleHttpResponse) {
+                            @Override
+                            public void failed(Exception e) {
+                                Log.logger.info("Failed to send message: ChannelID={} Message={}", entry.getKey(), e.getMessage());
+                                MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
+                                directSendMessage(entry.getKey(), spec).subscribe();
+                            }
 
-                        }
-
-                        @Override
-                        public void failed(Exception e) {
-                            MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-                            directSendMessage(entry.getKey(), spec).subscribe();
-                        }
-
-                        @Override
-                        public void cancelled() {
-                            MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-                            directSendMessage(entry.getKey(), spec).subscribe();
-                        }
-                    });
-                } else {
-                    MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-                    directSendMessage(entry.getKey(), spec).subscribe();
-                }
-            });
+                            @Override
+                            public void cancelled() {
+                                Log.logger.info("Failed to send message: ChannelID={}", entry.getKey());
+                                MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
+                                directSendMessage(entry.getKey(), spec).subscribe();
+                            }
+                        });
+                    } else {
+                        MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
+                        directSendMessage(entry.getKey(), spec).subscribe();
+                    }
+                });
+            } finally {
+                endpoint.releaseAndReuse();
+            }
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             Log.logger.error("Failed to send message");
         }
