@@ -8,6 +8,7 @@ import net.teamfruit.eewbot.gateway.*;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +16,8 @@ import java.util.function.Predicate;
 
 public class EEWExecutor {
 
-    private final ScheduledExecutorService executor;
+    private final ScheduledExecutorService scheduledExecutor;
+    private final ExecutorService messageExcecutor;
     private final TimeProvider timeProvider;
     private final EEWService service;
     private final Config config;
@@ -26,12 +28,13 @@ public class EEWExecutor {
         this.config = config;
         this.applicationId = applicationId;
 
-        this.executor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-communication-thread"));
-        this.timeProvider = new TimeProvider(this.executor);
+        this.scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-communication-thread"));
+        this.messageExcecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "eewbot-send-message-thread"));
+        this.timeProvider = new TimeProvider(this.scheduledExecutor);
     }
 
-    public ScheduledExecutorService getExecutor() {
-        return this.executor;
+    public ScheduledExecutorService getScheduledExecutor() {
+        return this.scheduledExecutor;
     }
 
     public TimeProvider getTimeProvider() {
@@ -42,7 +45,7 @@ public class EEWExecutor {
         if (this.config.isEnableKyoshin()) {
             this.timeProvider.init();
 
-            this.executor.scheduleAtFixedRate(new KmoniGateway(this.timeProvider) {
+            this.scheduledExecutor.scheduleAtFixedRate(new KmoniGateway(this.timeProvider) {
 
                 @Override
                 public void onNewData(final KmoniEEW eew) {
@@ -62,8 +65,7 @@ public class EEWExecutor {
 
                     SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
                     Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(maxIntensity) <= 0;
-                    EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew);
-
+                    EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew));
                 }
             }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
         } else {
@@ -88,14 +90,14 @@ public class EEWExecutor {
 
                     SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
                     Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(maxIntensity) <= 0;
-                    EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew);
+                    EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew));
                 }
             };
-            this.executor.execute(dmdataGateway);
-            this.executor.scheduleAtFixedRate(new DmdataWsLivenessChecker(dmdataGateway), 30, 30, TimeUnit.SECONDS);
+            this.scheduledExecutor.execute(dmdataGateway);
+            this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(dmdataGateway), 30, 30, TimeUnit.SECONDS);
         }
 
-        this.executor.scheduleAtFixedRate(new QuakeInfoGateway() {
+        this.scheduledExecutor.scheduleAtFixedRate(new QuakeInfoGateway() {
 
             @Override
             public void onNewData(final DetailQuakeInfo data) {
@@ -103,7 +105,7 @@ public class EEWExecutor {
 
                 final Predicate<Channel> quakeInfo = c -> c.quakeInfo;
                 final Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(data.getEarthquake().getIntensity()) <= 0;
-                EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), data);
+                EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), data));
             }
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
     }

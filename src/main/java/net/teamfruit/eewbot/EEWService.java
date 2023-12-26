@@ -24,14 +24,13 @@ import org.apache.hc.core5.reactor.IOReactorConfig;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class EEWService {
 
@@ -65,52 +64,62 @@ public class EEWService {
     public void sendMessage(final Predicate<Channel> filter, final Entity entity) {
         Map<String, MessageCreateSpec> cacheMsg = new HashMap<>();
         I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheMsg.put(lang, entity.createMessage(lang)));
-        Map<String, String> cacheWebhook = new HashMap<>();
-        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheWebhook.put(lang, entity.createWebhook(lang).json()));
+
+        HttpHost target = new HttpHost("https", "discord.com");
+        Map<String, SimpleHttpRequest> cacheWebhook = new HashMap<>();
+        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheWebhook.put(lang, SimpleRequestBuilder.post()
+                .setHttpHost(target)
+                .setBody(entity.createWebhook(lang).json(), ContentType.APPLICATION_JSON)
+                .build()));
+
+        Map<Boolean, List<Map.Entry<Long, Channel>>> partitioned = this.channels.entrySet().stream()
+                .filter(entry -> filter.test(entry.getValue()))
+                .collect(Collectors.partitioningBy(entry -> entry.getValue().webhook != null));
 
         this.lock.readLock().lock();
         try {
-            HttpHost target = new HttpHost("https", "discord.com");
             final Future<AsyncClientEndpoint> leaseFuture = this.httpClient.lease(target, null);
             final AsyncClientEndpoint endpoint = leaseFuture.get(30, TimeUnit.SECONDS);
             try {
-                this.channels.entrySet().stream().filter(entry -> filter.test(entry.getValue())).forEach(entry -> {
-                    if (entry.getValue().webhook != null) {
-                        SimpleHttpRequest request = SimpleRequestBuilder.post()
-                                .setHttpHost(target)
-                                .setPath("/api/webhooks" + entry.getValue().webhook.getJoined())
-                                .setBody(cacheWebhook.get(entry.getValue().lang), ContentType.APPLICATION_JSON)
-                                .build();
-                        endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
-                            @Override
-                            public void completed(SimpleHttpResponse simpleHttpResponse) {
-                            }
+                final CountDownLatch latch = new CountDownLatch(partitioned.get(true).size());
+                partitioned.get(true).forEach(entry -> {
+                    SimpleHttpRequest request = cacheWebhook.get(entry.getValue().lang);
+                    request.setPath("/api/webhooks" + entry.getValue().webhook.getJoined());
+                    endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
+                        @Override
+                        public void completed(SimpleHttpResponse simpleHttpResponse) {
+                            latch.countDown();
+                        }
 
-                            @Override
-                            public void failed(Exception e) {
-                                Log.logger.info("Failed to send message: ChannelID={} Message={}", entry.getKey(), e.getMessage());
-                                MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-                                directSendMessage(entry.getKey(), spec).subscribe();
-                            }
+                        @Override
+                        public void failed(Exception e) {
+                            latch.countDown();
+                            Log.logger.info("Failed to send message: ChannelID={} Message={}", entry.getKey(), e.getMessage());
+                            MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
+                            directSendMessage(entry.getKey(), spec).subscribe();
+                        }
 
-                            @Override
-                            public void cancelled() {
-                                Log.logger.info("Failed to send message: ChannelID={}", entry.getKey());
-                                MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-                                directSendMessage(entry.getKey(), spec).subscribe();
-                            }
-                        });
-                    } else {
-                        MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-                        directSendMessage(entry.getKey(), spec).subscribe();
-                    }
+                        @Override
+                        public void cancelled() {
+                            latch.countDown();
+                            Log.logger.info("Failed to send message: ChannelID={}", entry.getKey());
+                            MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
+                            directSendMessage(entry.getKey(), spec).subscribe();
+                        }
+                    });
                 });
+                latch.await();
             } finally {
                 endpoint.releaseAndReuse();
             }
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             Log.logger.error("Failed to send message");
         }
+
+        partitioned.get(false).forEach(entry -> {
+            MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
+            directSendMessage(entry.getKey(), spec).subscribe();
+        });
 
 //        Flux.merge(this.channels.entrySet().stream()
 //                        .filter(entry -> entry.getValue().webhook == null)
