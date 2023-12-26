@@ -32,6 +32,11 @@ public class Monitor implements Entity {
         return MessageCreateSpec.builder().addFile("kyoshinmonitor.png", new ByteArrayInputStream(getImage())).build();
     }
 
+    @Override
+    public DiscordWebhook createWebhook(final String lang) {
+        throw new UnsupportedOperationException();
+    }
+
     public MessageCreateFields.File getFile() {
         return MessageCreateFields.File.of("kyoshinmonitor.png", new ByteArrayInputStream(getImage()));
     }

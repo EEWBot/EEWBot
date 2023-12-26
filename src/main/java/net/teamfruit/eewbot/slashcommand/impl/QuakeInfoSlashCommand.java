@@ -41,11 +41,11 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
                     .flatMap(record -> record.getItems().stream().findFirst())
                     .map(QuakeInfo.Record.Item::getUrl);
 
-            if (!url.isPresent())
+            if (url.isEmpty())
                 return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.error"));
 
             DetailQuakeInfo detail = DetailQuakeInfo.DETAIL_QUAKE_INFO_MAPPER.readValue(new URL(url.get()), DetailQuakeInfo.class);
-            return event.createFollowup().withEmbeds(detail.createEmbed(lang));
+            return event.createFollowup().withEmbeds(detail.createD4JEmbed(lang));
         } catch (IOException e) {
             return Mono.error(e);
         }

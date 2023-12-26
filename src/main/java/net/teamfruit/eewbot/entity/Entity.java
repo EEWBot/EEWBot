@@ -4,5 +4,7 @@ import discord4j.core.spec.MessageCreateSpec;
 
 public interface Entity {
 
-	MessageCreateSpec createMessage(String lang);
+    MessageCreateSpec createMessage(String lang);
+
+    DiscordWebhook createWebhook(String lang);
 }

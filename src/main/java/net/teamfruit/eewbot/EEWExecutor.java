@@ -62,7 +62,7 @@ public class EEWExecutor {
 
                     SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
                     Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(maxIntensity) <= 0;
-                    EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew::createMessage);
+                    EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew);
 
                 }
             }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
@@ -88,7 +88,7 @@ public class EEWExecutor {
 
                     SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
                     Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(maxIntensity) <= 0;
-                    EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew::createMessage);
+                    EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew);
                 }
             };
             this.executor.execute(dmdataGateway);
@@ -103,7 +103,7 @@ public class EEWExecutor {
 
                 final Predicate<Channel> quakeInfo = c -> c.quakeInfo;
                 final Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(data.getEarthquake().getIntensity()) <= 0;
-                EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), data::createMessage);
+                EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), data);
             }
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
     }
