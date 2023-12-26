@@ -3,6 +3,9 @@ package net.teamfruit.eewbot.registry;
 import net.teamfruit.eewbot.Log;
 import org.apache.commons.lang3.StringUtils;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 @SuppressWarnings("FieldMayBeFinal")
 public class Config {
 
@@ -13,6 +16,7 @@ public class Config {
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
+    private String duplicatorAddress = "";
     private int poolingMax = 20;
     private int poolingMaxPerRoute = 20;
     private String nptServer = "time.google.com";
@@ -59,6 +63,10 @@ public class Config {
         return dmdataMultiSocketConnect;
     }
 
+    public String getDuplicatorAddress() {
+        return duplicatorAddress;
+    }
+
     public int getPoolingMax() {
         return poolingMax;
     }
@@ -99,6 +107,14 @@ public class Config {
         }
         if (isEnableKyoshin()) {
             Log.logger.warn("Kyoshin EEW is enabled, please consider using DMDATA");
+        }
+        if (StringUtils.isNotEmpty(getDuplicatorAddress())) {
+            try {
+                new URI(getDuplicatorAddress());
+            } catch (URISyntaxException e) {
+                Log.logger.info("Invalid duplicator address");
+                return false;
+            }
         }
         return true;
     }
