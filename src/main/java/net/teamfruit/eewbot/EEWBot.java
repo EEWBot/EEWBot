@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
@@ -46,6 +48,8 @@ public class EEWBot {
     private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(CONDIG_DIRECTORY != null ? Paths.get(CONDIG_DIRECTORY, "config.json") : Paths.get("config.json"), () -> new Config(), Config.class);
     private final ConfigurationRegistry<Map<Long, Channel>> channels = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, Channel>(), new TypeToken<Map<Long, Channel>>() {
     }.getType());
+
+    private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
 
     private final ReentrantReadWriteLock channelsLock = new ReentrantReadWriteLock();
 
@@ -142,7 +146,7 @@ public class EEWBot {
         this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: " + channel.getGuildId().asString() + " System Channel: " + channel.getId().asString()));
 
         this.service = new EEWService(this);
-        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId());
+        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor);
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
@@ -190,6 +194,10 @@ public class EEWBot {
 
     public Map<Long, Channel> getChannels() {
         return this.channels.getElement();
+    }
+
+    public ScheduledExecutorService getScheduledExecutor() {
+        return this.scheduledExecutor;
     }
 
     public ReentrantReadWriteLock getChannelsLock() {

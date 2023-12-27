@@ -46,6 +46,7 @@ public class EEWService {
     private final GatewayDiscordClient gateway;
     private final Map<Long, Channel> channels;
     private final String avatarUrl;
+    private final ScheduledExecutorService executor;
     private final ReentrantReadWriteLock lock;
     private final Optional<TextChannel> systemChannel;
     private final MinimalHttpAsyncClient httpClient;
@@ -54,6 +55,7 @@ public class EEWService {
         this.gateway = bot.getClient();
         this.channels = bot.getChannels();
         this.avatarUrl = bot.getAvatarUrl();
+        this.executor = bot.getScheduledExecutor();
         this.lock = bot.getChannelsLock();
         this.systemChannel = bot.getSystemChannel();
         int poolingMax = bot.getConfig().getPoolingMax();
@@ -185,7 +187,7 @@ public class EEWService {
             try {
                 final CountDownLatch latch = new CountDownLatch(I18n.INSTANCE.getLanguages().size());
                 requestsByLang.forEach((lang, request) -> endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
-                    
+
                     @Override
                     public void completed(SimpleHttpResponse simpleHttpResponse) {
                         latch.countDown();
@@ -239,10 +241,12 @@ public class EEWService {
                 .doOnError(ClientException.class, err -> {
                     Log.logger.error("Failed to send message: ChannelID={} Message={}", channelId, err.getMessage());
                     if (err.getStatus() == HttpResponseStatus.NOT_FOUND || err.getStatus() == HttpResponseStatus.FORBIDDEN) {
-                        this.lock.writeLock().lock();
-                        if (this.channels.remove(channelId) != null)
-                            Log.logger.info(err.getStatus() == HttpResponseStatus.NOT_FOUND ? "Channel {} has been deleted, unregister" : "Missing permissions {}", channelId);
-                        this.lock.writeLock().unlock();
+                        this.executor.execute(() -> {
+                            this.lock.writeLock().lock();
+                            if (this.channels.remove(channelId) != null)
+                                Log.logger.info(err.getStatus() == HttpResponseStatus.NOT_FOUND ? "Channel {} has been deleted, unregister" : "Missing permissions {}", channelId);
+                            this.lock.writeLock().unlock();
+                        });
                     }
                 })
                 .onErrorResume(e -> Mono.empty());

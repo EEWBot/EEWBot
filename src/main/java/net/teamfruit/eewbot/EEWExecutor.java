@@ -23,12 +23,12 @@ public class EEWExecutor {
     private final Config config;
     private final long applicationId;
 
-    public EEWExecutor(final EEWService service, final Config config, long applicationId) {
+    public EEWExecutor(final EEWService service, final Config config, long applicationId, ScheduledExecutorService executor) {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;
 
-        this.scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-communication-thread"));
+        this.scheduledExecutor = executor;
         this.messageExcecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "eewbot-send-message-thread"));
         this.timeProvider = new TimeProvider(this.scheduledExecutor);
     }
