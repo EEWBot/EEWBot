@@ -142,6 +142,14 @@ public class EEWService {
                             if (simpleHttpResponse.getCode() < 200 || simpleHttpResponse.getCode() >= 300) {
                                 onError.apply(entry.getKey(), entry.getValue());
                             }
+                            if (simpleHttpResponse.getCode() == 404) {
+                                EEWService.this.executor.execute(() -> {
+                                    EEWService.this.lock.writeLock().lock();
+                                    entry.getValue().webhook = null;
+                                    Log.logger.info("Webhook for {} has been deleted, unregister", entry.getKey());
+                                    EEWService.this.lock.writeLock().unlock();
+                                });
+                            }
                         }
 
                         @Override
