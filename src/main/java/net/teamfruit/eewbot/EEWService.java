@@ -1,8 +1,8 @@
 package net.teamfruit.eewbot;
 
+import com.google.gson.reflect.TypeToken;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -32,6 +32,9 @@ import reactor.core.scheduler.Schedulers;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -48,8 +51,10 @@ public class EEWService {
     private final ScheduledExecutorService executor;
     private final ConfigurationRegistry<Map<Long, Channel>> channelRegistry;
     private final ReentrantReadWriteLock lock;
-    private final Optional<TextChannel> systemChannel;
-    private final MinimalHttpAsyncClient httpClient;
+    //    private final Optional<TextChannel> systemChannel;
+    private final HttpClient httpClient;
+    private final MinimalHttpAsyncClient asyncHttpClient;
+    private final URI duplicatorAddress;
 
     public EEWService(EEWBot bot) {
         this.gateway = bot.getClient();
@@ -58,19 +63,31 @@ public class EEWService {
         this.executor = bot.getScheduledExecutor();
         this.channelRegistry = bot.getChannelRegistry();
         this.lock = bot.getChannelsLock();
-        this.systemChannel = bot.getSystemChannel();
+//        this.systemChannel = bot.getSystemChannel();
+        this.httpClient = bot.getHttpClient();
         int poolingMax = bot.getConfig().getPoolingMax();
         int poolingMaxPerRoute = bot.getConfig().getPoolingMaxPerRoute();
+
         PoolingAsyncClientConnectionManager connectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
                 .setMaxConnTotal(poolingMax)
                 .setMaxConnPerRoute(poolingMaxPerRoute)
                 .build();
-        this.httpClient = HttpAsyncClients.createMinimal(
+        this.asyncHttpClient = HttpAsyncClients.createMinimal(
                 H2Config.DEFAULT,
                 Http1Config.DEFAULT,
                 IOReactorConfig.DEFAULT,
                 connectionManager);
-        this.httpClient.start();
+        this.asyncHttpClient.start();
+
+        if (StringUtils.isNotEmpty(bot.getConfig().getDuplicatorAddress())) {
+            try {
+                this.duplicatorAddress = new URI(bot.getConfig().getDuplicatorAddress());
+            } catch (URISyntaxException e) {
+                // should not happen
+                throw new RuntimeException(e);
+            }
+        } else
+            this.duplicatorAddress = null;
     }
 
     public void sendMessage(final Predicate<Channel> filter, final Entity entity, boolean highPriority) {
@@ -90,17 +107,11 @@ public class EEWService {
 
         this.lock.readLock().lock();
 
-        String duplicatorAddress = EEWBot.instance.getConfig().getDuplicatorAddress();
-        if (StringUtils.isEmpty(duplicatorAddress)) {
+        if (this.duplicatorAddress == null) {
             sendWebhook(cacheWebhook, webhookPartitioned.get(true), (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.lang)).subscribe());
         } else {
-            try {
-                sendDuplicator(highPriority, new URI(duplicatorAddress), cacheWebhook, webhookPartitioned.get(true), channels ->
-                        sendWebhook(cacheWebhook, channels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.lang)).subscribe()));
-            } catch (URISyntaxException e) {
-                Log.logger.error("Webhook send fallback: Invalid duplicator address");
-                sendWebhook(cacheWebhook, webhookPartitioned.get(true), (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.lang)).subscribe());
-            }
+            sendDuplicator(highPriority, this.duplicatorAddress, cacheWebhook, webhookPartitioned.get(true), channels ->
+                    sendWebhook(cacheWebhook, channels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.lang)).subscribe()));
         }
 
 //        partitioned.get(false).forEach(entry -> {
@@ -158,7 +169,7 @@ public class EEWService {
                 .build()));
 
         try {
-            final Future<AsyncClientEndpoint> leaseFuture = this.httpClient.lease(target, null);
+            final Future<AsyncClientEndpoint> leaseFuture = this.asyncHttpClient.lease(target, null);
             final AsyncClientEndpoint endpoint = leaseFuture.get(30, TimeUnit.SECONDS);
             try {
                 final CountDownLatch latch = new CountDownLatch(webhookChannels.size());
@@ -233,7 +244,7 @@ public class EEWService {
                     .setPath(highPriority ? "/duplicate/high_priority" : "/duplicate/low_priority")
                     .setBody(webhookByLang.get(lang), ContentType.APPLICATION_JSON)
                     .build()));
-            final Future<AsyncClientEndpoint> leaseFuture = this.httpClient.lease(target, null);
+            final Future<AsyncClientEndpoint> leaseFuture = this.asyncHttpClient.lease(target, null);
             final AsyncClientEndpoint endpoint = leaseFuture.get(10, TimeUnit.SECONDS);
             try {
                 final CountDownLatch latch = new CountDownLatch(I18n.INSTANCE.getLanguages().size());
@@ -291,5 +302,40 @@ public class EEWService {
         return Mono.defer(() -> this.gateway.getRestClient().getChannelService()
                         .createMessage(channelId, spec.asRequest()))
                 .map(data -> new Message(this.gateway, data));
+    }
+
+    public void handleDuplicatorMetrics() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(this.duplicatorAddress)
+                    .header("User-Agent", "eewbot")
+                    .build();
+            HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                Map<String, List<String>> resultMap = EEWBot.GSON.fromJson(response.body(), new TypeToken<Map<String, List<String>>>() {
+                }.getType());
+                List<String> notFoundList = resultMap.get("404");
+                if (notFoundList != null) {
+                    Set<String> identifiers = notFoundList.stream()
+                            .map(webhookURI -> StringUtils.removeStart(webhookURI, "https://discord.com/api/webhooks"))
+                            .collect(Collectors.toSet());
+                    this.lock.writeLock().lock();
+                    this.channels.values().stream()
+                            .filter(channel -> channel.webhook != null && identifiers.contains(channel.webhook.getJoined()))
+                            .forEach(channel -> {
+                                Log.logger.info("Webhook {} is deleted, unregister", channel.webhook.id);
+                                channel.webhook = null;
+                            });
+                    this.lock.writeLock().unlock();
+                }
+            } else {
+                Log.logger.error("Failed to fetch errors from duplicator: " + response.statusCode() + " " + response.body());
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            Log.logger.error("Interrupted while fetching errors from duplicator", e);
+        }
     }
 }

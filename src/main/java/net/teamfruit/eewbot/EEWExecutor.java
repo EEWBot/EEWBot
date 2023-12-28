@@ -7,6 +7,7 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.gateway.*;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,8 +28,8 @@ public class EEWExecutor {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;
-
         this.scheduledExecutor = executor;
+
         this.messageExcecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "eewbot-send-message-thread"));
         this.timeProvider = new TimeProvider(this.scheduledExecutor);
     }
@@ -108,6 +109,10 @@ public class EEWExecutor {
                 EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), data, false));
             }
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
+
+        if (StringUtils.isNotEmpty(this.config.getDuplicatorAddress())) {
+            this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorMetrics, 60, 60, TimeUnit.SECONDS);
+        }
     }
 
 }
