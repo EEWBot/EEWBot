@@ -241,10 +241,17 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             WebSocket.Listener.super.onOpen(webSocket);
         }
 
+        private StringBuilder buffer = new StringBuilder();
+
         @Override
         public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-            Log.logger.info("DMDATA WebSocket length: {}, last: {}", data.length(), last);
-            String dataString = data.toString();
+            if (!last) {
+                this.buffer.append(data);
+                return WebSocket.Listener.super.onText(webSocket, data, false);
+            }
+
+            String dataString = buffer.append(data).toString();
+            this.buffer = new StringBuilder();
             try {
                 DmdataWSMessage message = EEWBot.GSON.fromJson(dataString, DmdataWSMessage.class);
                 switch (message.getType()) {
