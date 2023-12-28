@@ -281,10 +281,6 @@ public class EEWService {
         }
     }
 
-    public Mono<Message> sendMessagePassErrors(long channelId, final MessageCreateSpec spec) {
-        return directSendMessagePassErrors(channelId, spec);
-    }
-
 //    public void sendAttachment(final String key, final Function<String, MessageCreateSpec> spec) {
 //        sendAttachment(channel -> channel.value(key), spec);
 //    }
@@ -298,7 +294,7 @@ public class EEWService {
 //            sendMessage(filter, spec);
 //    }
 
-    private Mono<Message> directSendMessagePassErrors(long channelId, MessageCreateSpec spec) {
+    public Mono<Message> directSendMessagePassErrors(long channelId, MessageCreateSpec spec) {
         return Mono.defer(() -> this.gateway.getRestClient().getChannelService()
                         .createMessage(channelId, spec.asRequest()))
                 .map(data -> new Message(this.gateway, data));

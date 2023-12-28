@@ -69,7 +69,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                     .then();
         } else {
             return event.deferReply()
-                    .then(bot.getService().sendMessagePassErrors(channelId, MessageCreateSpec.builder()
+                    .then(bot.getService().directSendMessagePassErrors(channelId, MessageCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createEmbed(lang)
                                     .title("eewbot.scmd.testmessage.title")
                                     .description("eewbot.scmd.testmessage.normal")
