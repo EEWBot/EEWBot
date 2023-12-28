@@ -10,6 +10,7 @@ import net.teamfruit.eewbot.entity.DiscordWebhook;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.ConfigurationRegistry;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.async.methods.*;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -28,12 +29,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
@@ -47,6 +46,7 @@ public class EEWService {
     private final Map<Long, Channel> channels;
     private final String avatarUrl;
     private final ScheduledExecutorService executor;
+    private final ConfigurationRegistry<Map<Long, Channel>> channelRegistry;
     private final ReentrantReadWriteLock lock;
     private final Optional<TextChannel> systemChannel;
     private final MinimalHttpAsyncClient httpClient;
@@ -56,6 +56,7 @@ public class EEWService {
         this.channels = bot.getChannels();
         this.avatarUrl = bot.getAvatarUrl();
         this.executor = bot.getScheduledExecutor();
+        this.channelRegistry = bot.getChannelRegistry();
         this.lock = bot.getChannelsLock();
         this.systemChannel = bot.getSystemChannel();
         int poolingMax = bot.getConfig().getPoolingMax();
@@ -73,8 +74,8 @@ public class EEWService {
     }
 
     public void sendMessage(final Predicate<Channel> filter, final Entity entity, boolean highPriority) {
-        Map<String, MessageCreateSpec> cacheMsg = new HashMap<>();
-        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheMsg.put(lang, entity.createMessage(lang)));
+        Map<String, MessageCreateSpec> msgByLang = new HashMap<>();
+        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang)));
 
         Map<Boolean, List<Map.Entry<Long, Channel>>> webhookPartitioned = this.channels.entrySet().stream()
                 .filter(entry -> filter.test(entry.getValue()))
@@ -91,14 +92,14 @@ public class EEWService {
 
         String duplicatorAddress = EEWBot.instance.getConfig().getDuplicatorAddress();
         if (StringUtils.isEmpty(duplicatorAddress)) {
-            sendWebhook(cacheWebhook, webhookPartitioned.get(true), (id, channel) -> directSendMessage(id, cacheMsg.get(channel.lang)).subscribe());
+            sendWebhook(cacheWebhook, webhookPartitioned.get(true), (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.lang)).subscribe());
         } else {
             try {
                 sendDuplicator(highPriority, new URI(duplicatorAddress), cacheWebhook, webhookPartitioned.get(true), channels ->
-                        sendWebhook(cacheWebhook, channels, (id, channel) -> directSendMessage(id, cacheMsg.get(channel.lang)).subscribe()));
+                        sendWebhook(cacheWebhook, channels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.lang)).subscribe()));
             } catch (URISyntaxException e) {
                 Log.logger.error("Webhook send fallback: Invalid duplicator address");
-                sendWebhook(cacheWebhook, webhookPartitioned.get(true), (id, channel) -> directSendMessage(id, cacheMsg.get(channel.lang)).subscribe());
+                sendWebhook(cacheWebhook, webhookPartitioned.get(true), (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.lang)).subscribe());
             }
         }
 
@@ -107,15 +108,44 @@ public class EEWService {
 //            directSendMessage(entry.getKey(), spec).subscribe();
 //        });
 
-        Flux.merge(webhookPartitioned.get(false).stream()
-                        .map(entry -> directSendMessage(entry.getKey(), cacheMsg.get(entry.getValue().lang)))
+        sendMessageD4J(webhookPartitioned.get(false), msgByLang);
+
+        this.lock.readLock().unlock();
+    }
+
+    private void sendMessageD4J(List<Map.Entry<Long, Channel>> channels, Map<String, MessageCreateSpec> msgByLang) {
+        List<Long> erroredChannels = new ArrayList<>();
+        Flux.merge(channels.stream()
+                        .map(entry -> directSendMessagePassErrors(entry.getKey(), msgByLang.get(entry.getValue().lang))
+                                .doOnError(ClientException.class, err -> {
+                                    if ((err.getStatus() == HttpResponseStatus.NOT_FOUND || err.getStatus() == HttpResponseStatus.FORBIDDEN)) {
+                                        synchronized (erroredChannels) {
+                                            erroredChannels.add(entry.getKey());
+                                        }
+                                    }
+                                })
+                                .onErrorResume(e -> Mono.empty()))
                         .collect(Collectors.toList()))
                 .parallel()
                 .runOn(Schedulers.parallel())
-                .groups()
-                .subscribe(Flux::subscribe);
-
-        this.lock.readLock().unlock();
+                .doOnComplete(() -> {
+                    if (!erroredChannels.isEmpty()) {
+                        this.executor.execute(() -> {
+                            this.lock.writeLock().lock();
+                            erroredChannels.forEach(channelId -> {
+                                this.channels.remove(channelId);
+                                Log.logger.info("Channel {} permission is missing or has been deleted, unregister", channelId);
+                            });
+                            this.lock.writeLock().unlock();
+                            try {
+                                this.channelRegistry.save();
+                            } catch (IOException e) {
+                                Log.logger.error("Failed to save channels", e);
+                            }
+                        });
+                    }
+                })
+                .subscribe();
     }
 
     private void sendWebhook(Map<String, String> webhookBodyByLang, List<Map.Entry<Long, Channel>> webhookChannels, BiFunction<Long, Channel, Disposable> onError) {
@@ -132,6 +162,7 @@ public class EEWService {
             final AsyncClientEndpoint endpoint = leaseFuture.get(30, TimeUnit.SECONDS);
             try {
                 final CountDownLatch latch = new CountDownLatch(webhookChannels.size());
+                List<Channel> erroredChannels = new ArrayList<>();
                 webhookChannels.forEach(entry -> {
                     SimpleHttpRequest request = cacheReq.get(entry.getValue().lang);
                     request.setPath("/api/webhooks" + entry.getValue().webhook.getJoined());
@@ -143,12 +174,9 @@ public class EEWService {
                                 onError.apply(entry.getKey(), entry.getValue());
                             }
                             if (simpleHttpResponse.getCode() == 404) {
-                                EEWService.this.executor.execute(() -> {
-                                    EEWService.this.lock.writeLock().lock();
-                                    entry.getValue().webhook = null;
-                                    Log.logger.info("Webhook for {} has been deleted, unregister", entry.getKey());
-                                    EEWService.this.lock.writeLock().unlock();
-                                });
+                                synchronized (erroredChannels) {
+                                    erroredChannels.add(entry.getValue());
+                                }
                             }
                         }
 
@@ -168,6 +196,21 @@ public class EEWService {
                     });
                 });
                 latch.await();
+                if (!erroredChannels.isEmpty()) {
+                    this.executor.execute(() -> {
+                        this.lock.writeLock().lock();
+                        erroredChannels.forEach(channel -> {
+                            Log.logger.info("Webhook {} is deleted, unregister", channel.webhook.id);
+                            channel.webhook = null;
+                        });
+                        this.lock.writeLock().unlock();
+                        try {
+                            this.channelRegistry.save();
+                        } catch (IOException e) {
+                            Log.logger.error("Failed to save channels", e);
+                        }
+                    });
+                }
             } finally {
                 endpoint.releaseAndReuse();
             }
@@ -243,22 +286,6 @@ public class EEWService {
 //        else
 //            sendMessage(filter, spec);
 //    }
-
-    private Mono<Message> directSendMessage(final long channelId, final MessageCreateSpec spec) {
-        return directSendMessagePassErrors(channelId, spec)
-                .doOnError(ClientException.class, err -> {
-                    Log.logger.error("Failed to send message: ChannelID={} Message={}", channelId, err.getMessage());
-                    if (err.getStatus() == HttpResponseStatus.NOT_FOUND || err.getStatus() == HttpResponseStatus.FORBIDDEN) {
-                        this.executor.execute(() -> {
-                            this.lock.writeLock().lock();
-                            if (this.channels.remove(channelId) != null)
-                                Log.logger.info(err.getStatus() == HttpResponseStatus.NOT_FOUND ? "Channel {} has been deleted, unregister" : "Missing permissions {}", channelId);
-                            this.lock.writeLock().unlock();
-                        });
-                    }
-                })
-                .onErrorResume(e -> Mono.empty());
-    }
 
     private Mono<Message> directSendMessagePassErrors(long channelId, MessageCreateSpec spec) {
         return Mono.defer(() -> this.gateway.getRestClient().getChannelService()
