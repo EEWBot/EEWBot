@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
@@ -76,7 +77,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
                 DmdataSocketList socketList = this.dmdataAPI.openSocketList();
                 Log.logger.info(socketList.toString());
-                if (multiConnect) {
+                if (this.multiConnect) {
                     String ws1Name = this.appName + "-1", ws2Name = this.appName + "-2";
                     closeWebSocketIfExist(socketList, ws1Name);
                     this.webSocket1 = connectWebSocket(WS_BASE_TOKYO, ws1Name, hasForecastContract);
@@ -90,7 +91,8 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             } else {
                 Log.logger.info("DMDATA WebSocket test mode");
                 this.webSocket1 = connectWebSocket(WS_BASE_TEST, this.appName + "-1", true);
-                this.webSocket2 = connectWebSocket(WS_BASE_TEST, this.appName + "-2", true);
+                if (this.multiConnect)
+                    this.webSocket2 = connectWebSocket(WS_BASE_TEST, this.appName + "-2", true);
             }
         } catch (EEWGatewayException e) {
             onError(e);
@@ -294,17 +296,25 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                         }
 
                         if (!isTest) {
-                            DmdataEEW prev = DmdataGateway.this.prev.putIfAbsent(eew.getEventId(), eew);
-                            if (prev == null) {
-                                onNewData(eew);
-                            } else if (Integer.parseInt(prev.getSerialNo()) < Integer.parseInt(eew.getSerialNo())) {
-                                eew.setPrev(prev);
-                                if (prev.getBody().isLastInfo()) {
-                                    DmdataGateway.this.prev.remove(eew.getEventId());
+                            int currentSerialNo = Integer.parseInt(eew.getSerialNo());
+                            AtomicBoolean update = new AtomicBoolean(false);
+                            DmdataGateway.this.prev.compute(eew.getEventId(), (key, value) -> {
+                                if (value == null || Integer.parseInt(value.getSerialNo()) < currentSerialNo) {
+                                    update.set(true);
+                                    return eew;
                                 } else {
-                                    DmdataGateway.this.prev.put(eew.getEventId(), eew);
-                                    onNewData(eew);
+                                    return value;
                                 }
+                            });
+                            if (update.get()) {
+                                onNewData(eew);
+                                if (!DmdataGateway.this.multiConnect && eew.getBody().isLastInfo()) {
+                                    DmdataGateway.this.prev.remove(eew.getEventId());
+                                    Log.logger.info("Flush");
+                                }
+                            } else if (DmdataGateway.this.multiConnect && eew.getBody().isLastInfo()) {
+                                DmdataGateway.this.prev.remove(eew.getEventId());
+                                Log.logger.info("Flush");
                             }
                         }
                         break;
