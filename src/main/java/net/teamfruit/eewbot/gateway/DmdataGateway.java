@@ -112,23 +112,29 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             types.add("VXSE42");
         }
 
-        DmdataSocketStart.Response socketStart;
-        try {
-            socketStart = this.dmdataAPI.socketStart(new DmdataSocketStart.Request.Builder()
-                    .setAppName(connectionName)
-                    .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
-                    .setTypes(types)
-                    .setTest(this.debug ? "including" : "no")
-                    .setFormatMode("json")
-                    .build());
-        } catch (IOException | InterruptedException e) {
-            throw new EEWGatewayException(e);
-        }
-        Log.logger.info(socketStart.toString());
+        if (StringUtils.isEmpty(WS_BASE_TEST)) {
+            DmdataSocketStart.Response socketStart;
+            try {
+                socketStart = this.dmdataAPI.socketStart(new DmdataSocketStart.Request.Builder()
+                        .setAppName(connectionName)
+                        .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
+                        .setTypes(types)
+                        .setTest(this.debug ? "including" : "no")
+                        .setFormatMode("json")
+                        .build());
+            } catch (IOException | InterruptedException e) {
+                throw new EEWGatewayException(e);
+            }
+            Log.logger.info(socketStart.toString());
 
-        WebSocketListener listener = new WebSocketListener(connectionName, wsBaseURI, hasForecastContract);
-        EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()), listener);
-        return listener;
+            WebSocketListener listener = new WebSocketListener(connectionName, wsBaseURI, hasForecastContract);
+            EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()), listener);
+            return listener;
+        } else {
+            WebSocketListener listener = new WebSocketListener(connectionName, wsBaseURI, hasForecastContract);
+            EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI), listener);
+            return listener;
+        }
     }
 
     public void reconnectWebSocket(WebSocketListener listener) throws EEWGatewayException {
