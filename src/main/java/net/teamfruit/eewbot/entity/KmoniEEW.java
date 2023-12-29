@@ -2,7 +2,9 @@ package net.teamfruit.eewbot.entity;
 
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.util.Color;
+import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
+import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 import reactor.util.annotation.Nullable;
 
@@ -210,16 +212,23 @@ public class KmoniEEW implements Entity {
 
     @Override
     public MessageCreateSpec createMessage(final String lang) {
+        return MessageCreateSpec.builder().addEmbed(createEmbed(lang, I18nEmbedCreateSpec.builder(lang))).build();
+    }
+
+    @Override
+    public DiscordWebhook createWebhook(final String lang) {
+        return DiscordWebhook.builder().addEmbed(createEmbed(lang, I18nDiscordEmbed.builder(lang))).build();
+    }
+
+    public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         if (isCancel())
-            return MessageCreateSpec.builder().addEmbed(I18nEmbedCreateSpec.builder(lang)
-                    .title("eewbot.eew.eewcancel")
+            return builder.title("eewbot.eew.eewcancel")
                     .timestamp(getReportTime())
                     .description("eewbot.eew.cancel")
                     .color(discord4j.rest.util.Color.YELLOW)
                     .footer("eewbot.eew.newkyoshinmonitor", null)
-                    .build()).build();
-        return MessageCreateSpec.builder().addEmbed(I18nEmbedCreateSpec.builder(lang)
-                .title(isAlert() ? isFinal() ? "eewbot.eew.eewalert.final" : "eewbot.eew.eewalert.num" : isFinal() ? "eewbot.eew.eewprediction.final" : "eewbot.eew.eewprediction.num", getReportNum())
+                    .build();
+        return builder.title(isAlert() ? isFinal() ? "eewbot.eew.eewalert.final" : "eewbot.eew.eewalert.num" : isFinal() ? "eewbot.eew.eewprediction.final" : "eewbot.eew.eewprediction.num", getReportNum())
                 .timestamp(getReportTime())
                 .addField("eewbot.eew.epicenter", getRegionName(), true)
                 .addField("eewbot.eew.depth", "eewbot.eew.km", true, getDepth())
@@ -227,6 +236,6 @@ public class KmoniEEW implements Entity {
                 .addField("eewbot.eew.forecastseismicintensity", getIntensity().map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"), false)
                 .color(isAlert() ? Color.RED : Color.BLUE)
                 .footer("eewbot.eew.newkyoshinmonitor", null)
-                .build()).build();
+                .build();
     }
 }

@@ -14,7 +14,9 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
+import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
+import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -345,13 +347,21 @@ public class DetailQuakeInfo implements Entity {
 
     @Override
     public MessageCreateSpec createMessage(final String lang) {
-        return MessageCreateSpec.builder().addEmbed(createEmbed(lang)).build();
+        return MessageCreateSpec.builder().addEmbed(createD4JEmbed(lang)).build();
     }
 
-    public EmbedCreateSpec createEmbed(String lang) {
+    @Override
+    public DiscordWebhook createWebhook(final String lang) {
+        return DiscordWebhook.builder().addEmbed(createEmbed(lang, I18nDiscordEmbed.builder(lang))).build();
+    }
+
+    public EmbedCreateSpec createD4JEmbed(String lang) {
+        return createEmbed(lang, I18nEmbedCreateSpec.builder(lang));
+    }
+
+    private <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         Earthquake eq = getEarthquake();
         Type type = getType();
-        I18nEmbedCreateSpec.Builder builder = I18nEmbedCreateSpec.builder(lang);
 
         switch (type) {
             case INTENSITY:
@@ -380,7 +390,7 @@ public class DetailQuakeInfo implements Entity {
                 .build();
     }
 
-    private void addIntensityGroupFields(I18nEmbedCreateSpec.Builder builder, Earthquake eq) {
+    private <T> void addIntensityGroupFields(IEmbedBuilder<T> builder, Earthquake eq) {
         eq.getRelative().getGroups().forEach(group -> builder.addField("eewbot.quakeinfo.field.intensity",
                 group.getAreas().stream().map(Earthquake.Relative.Group.Area::getName).collect(Collectors.joining(" ")),
                 false, group.getIntensity().getSimple()));
