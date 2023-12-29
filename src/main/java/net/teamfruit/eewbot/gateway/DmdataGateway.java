@@ -310,11 +310,9 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                                 onNewData(eew);
                                 if (!DmdataGateway.this.multiConnect && eew.getBody().isLastInfo()) {
                                     DmdataGateway.this.prev.remove(eew.getEventId());
-                                    Log.logger.info("Flush");
                                 }
                             } else if (DmdataGateway.this.multiConnect && eew.getBody().isLastInfo()) {
                                 DmdataGateway.this.prev.remove(eew.getEventId());
-                                Log.logger.info("Flush");
                             }
                         }
                         break;
