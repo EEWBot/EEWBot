@@ -90,6 +90,10 @@ public class EEWExecutor {
             DmdataGateway dmdataGateway = new DmdataGateway(new DmdataAPI(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin()), applicationId, this.config.isDmdataMultiSocketConnect(), this.config.isDebug()) {
                 @Override
                 public void onNewData(DmdataEEW eew) {
+                    if (StringUtils.equals(eew.getBody().getEarthquake().getCondition(), "仮定震源要素") && eew.getBody().getIntensity() == null) {
+                        return;
+                    }
+
                     DmdataEEW.Body currentBody = eew.getBody();
                     DmdataEEW.Body prevBody = eew.getPrev() != null ? eew.getPrev().getBody() : null;
 
