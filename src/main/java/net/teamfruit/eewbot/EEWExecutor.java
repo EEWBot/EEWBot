@@ -4,6 +4,7 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.entity.PartialMember;
 import discord4j.core.object.entity.channel.ThreadChannel;
+import discord4j.discordjson.json.ChannelData;
 import discord4j.discordjson.json.WebhookCreateRequest;
 import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.DmdataEEW;
@@ -14,6 +15,7 @@ import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
 import org.apache.commons.lang3.StringUtils;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.Map;
@@ -132,13 +134,19 @@ public class EEWExecutor {
             this.channels.entrySet().stream()
                     .filter(entry -> entry.getValue().webhook == null)
                     .forEach(entry -> {
-                        this.client.getGuildById(Snowflake.of(entry.getKey()))
-                                .flatMap(guild -> guild.getSelfMember().map(PartialMember::getDisplayName)
-                                        .flatMap(name -> this.client.getRestClient().getWebhookService()
-                                                .createWebhook(entry.getKey(), WebhookCreateRequest.builder()
-                                                        .name(name)
-                                                        .build(), "Create EEWBot webhook")))
-                                .subscribe(webhookData -> {
+                        this.client.getChannelById(Snowflake.of(entry.getKey()))
+                                .flatMap(channel -> channel.getRestChannel().getData().map(ChannelData::guildId))
+                                .flatMap(guildId -> {
+                                    if (!guildId.isAbsent()) {
+                                        return this.client.getGuildById(Snowflake.of(guildId.get()))
+                                                .flatMap(guild -> guild.getSelfMember().map(PartialMember::getDisplayName)
+                                                        .flatMap(name -> this.client.getRestClient().getWebhookService()
+                                                                .createWebhook(entry.getKey(), WebhookCreateRequest.builder()
+                                                                        .name(name)
+                                                                        .build(), "Create EEWBot webhook")));
+                                    }
+                                    return Mono.empty();
+                                }).subscribe(webhookData -> {
                                     this.client.getChannelById(Snowflake.of(entry.getKey()))
                                             .subscribe(channel -> {
                                                 boolean isThread = channel instanceof ThreadChannel;
