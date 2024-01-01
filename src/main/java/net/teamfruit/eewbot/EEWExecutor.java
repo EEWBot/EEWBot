@@ -128,7 +128,7 @@ public class EEWExecutor {
             this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorMetrics, 60, 60, TimeUnit.SECONDS);
         }
 
-        this.scheduledExecutor.scheduleAtFixedRate(() -> {
+        this.scheduledExecutor.execute(() -> {
             this.channels.entrySet().stream()
                     .filter(entry -> entry.getValue().webhook == null)
                     .forEach(entry -> {
@@ -156,7 +156,7 @@ public class EEWExecutor {
                                             });
                                 });
                     });
-        }, 0, 1, TimeUnit.SECONDS);
+        });
     }
 
 }
