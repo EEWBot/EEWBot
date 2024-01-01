@@ -6,6 +6,7 @@ import discord4j.core.object.entity.PartialMember;
 import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.discordjson.json.ChannelData;
 import discord4j.discordjson.json.WebhookCreateRequest;
+import discord4j.rest.http.client.ClientException;
 import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.DmdataEEW;
 import net.teamfruit.eewbot.entity.KmoniEEW;
@@ -135,6 +136,7 @@ public class EEWExecutor {
                     .filter(entry -> entry.getValue().webhook == null)
                     .forEach(entry -> {
                         this.client.getChannelById(Snowflake.of(entry.getKey()))
+                                .onErrorComplete(ClientException.class)
                                 .flatMap(channel -> channel.getRestChannel().getData().map(ChannelData::guildId))
                                 .flatMap(guildId -> {
                                     if (!guildId.isAbsent()) {
