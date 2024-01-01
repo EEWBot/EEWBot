@@ -114,18 +114,6 @@ public class Channel {
                 .findAny();
     }
 
-    @SuppressWarnings("deprecation")
-    public static Channel fromOldChannel(final OldChannel old) {
-        return new Channel(old.eewAlert.get(),
-                old.eewPrediction.get(),
-                old.eewDecimation.get(),
-                old.quakeInfo.get(),
-                old.quakeInfoDetail.get(),
-                old.monitor.get(),
-                SeismicIntensity.ONE,
-                null);
-    }
-
     public static class Webhook {
 
         public String id;

@@ -1,8 +1,6 @@
 package net.teamfruit.eewbot;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
@@ -19,25 +17,19 @@ import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
 public class EEWBot {
     public static EEWBot instance;
 
     @SuppressWarnings("deprecation")
-    public static final Gson GSON = new GsonBuilder()
-            .registerTypeAdapter(net.teamfruit.eewbot.registry.OldChannel.class, new net.teamfruit.eewbot.registry.OldChannel.ChannelTypeAdapter())
-            .create();
+    public static final Gson GSON = new Gson();
 
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
     public static final String CONDIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
@@ -64,7 +56,7 @@ public class EEWBot {
 
     public void initialize() throws IOException {
         this.config.init();
-        initChannels();
+        this.channels.init();
         I18n.INSTANCE.init();
 
         final String token = System.getenv("TOKEN");
@@ -161,28 +153,8 @@ public class EEWBot {
     }
 
     @SuppressWarnings("deprecation")
-    private boolean initChannels() throws IOException {
-        try {
-            this.channels.init();
-            return false;
-        } catch (final JsonSyntaxException e) {
-            Log.logger.info("Migrating channels.json");
-
-            final ConfigurationRegistry<Map<Long, List<net.teamfruit.eewbot.registry.OldChannel>>> oldChannels = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"),
-                    () -> new ConcurrentHashMap<Long, List<net.teamfruit.eewbot.registry.OldChannel>>(),
-                    new TypeToken<Map<Long, Collection<net.teamfruit.eewbot.registry.OldChannel>>>() {
-                    }.getType());
-
-            Files.copy(oldChannels.getPath(), DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "oldchannels.json") : Paths.get("oldchannels.json"));
-            oldChannels.init();
-
-            final Map<Long, Channel> map = oldChannels.getElement().values().stream()
-                    .flatMap(List::stream)
-                    .collect(Collectors.toMap(old -> old.id, Channel::fromOldChannel));
-            this.channels.setElement(map);
-            this.channels.save();
-            return true;
-        }
+    private void initChannels() throws IOException {
+        this.channels.init();
     }
 
     public Config getConfig() {
