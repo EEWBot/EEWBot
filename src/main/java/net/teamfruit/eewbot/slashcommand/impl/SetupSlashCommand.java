@@ -52,9 +52,9 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
+        event.deferReply().subscribe();
         long channelId = event.getInteraction().getChannelId().asLong();
-        return event.deferReply().withEphemeral(true)
-                .then(Mono.fromRunnable(() -> {
+        return Mono.fromRunnable(() -> {
                     if (!bot.getChannels().containsKey(channelId)) {
                         bot.getChannelsLock().writeLock().lock();
                         try {
@@ -63,7 +63,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                             bot.getChannelsLock().writeLock().unlock();
                         }
                     }
-                }))
+                })
                 .then(event.getInteraction().getChannel()
                         .flatMap(channel -> {
                             // DM channel
