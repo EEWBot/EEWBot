@@ -4,11 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
-import discord4j.core.object.Region;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.shard.ShardingStrategy;
@@ -18,7 +16,6 @@ import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -115,35 +112,35 @@ public class EEWBot {
 
         Log.logger.info("BotUser: {}", this.userName);
 
-        if (StringUtils.isEmpty(getConfig().getSystemChannel())) {
-            this.systemChannel = Optional.ofNullable(this.gateway.getGuilds()
-                    .filter(guild -> self.getId().equals(guild.getId()))
-                    .next()
-                    .flatMap(guild -> guild.getChannels()
-                            .filter(c -> c.getName().equals("monitor"))
-                            .next())
-                    .cast(TextChannel.class)
-                    .switchIfEmpty(this.gateway.getGuilds()
-                            .count()
-                            .filter(count -> count < 10)
-                            .flatMap(count -> this.gateway.createGuild(spec -> spec.setName("EEWBot System")
-                                            .setRegion(Region.Id.JAPAN)
-                                            .addChannel("monitor", discord4j.core.object.entity.channel.Channel.Type.GUILD_TEXT))
-                                    .flatMap(g -> g.getChannels()
-                                            .filter(c -> c.getName().equals("monitor"))
-                                            .next()
-                                            .cast(TextChannel.class))))
-                    .block());
-        } else {
-            this.systemChannel = Optional.ofNullable(this.gateway.getChannelById(Snowflake.of(getConfig().getSystemChannel()))
-                    .cast(TextChannel.class)
-                    .doOnError(err -> {
-                        Log.logger.error("SystemChannelを正常に取得出来ませんでした: " + getConfig().getSystemChannel());
-                    })
-                    .block());
-        }
+//        if (StringUtils.isEmpty(getConfig().getSystemChannel())) {
+//            this.systemChannel = Optional.ofNullable(this.gateway.getGuilds()
+//                    .filter(guild -> self.getId().equals(guild.getId()))
+//                    .next()
+//                    .flatMap(guild -> guild.getChannels()
+//                            .filter(c -> c.getName().equals("monitor"))
+//                            .next())
+//                    .cast(TextChannel.class)
+//                    .switchIfEmpty(this.gateway.getGuilds()
+//                            .count()
+//                            .filter(count -> count < 10)
+//                            .flatMap(count -> this.gateway.createGuild(spec -> spec.setName("EEWBot System")
+//                                            .setRegion(Region.Id.JAPAN)
+//                                            .addChannel("monitor", discord4j.core.object.entity.channel.Channel.Type.GUILD_TEXT))
+//                                    .flatMap(g -> g.getChannels()
+//                                            .filter(c -> c.getName().equals("monitor"))
+//                                            .next()
+//                                            .cast(TextChannel.class))))
+//                    .block());
+//        } else {
+//            this.systemChannel = Optional.ofNullable(this.gateway.getChannelById(Snowflake.of(getConfig().getSystemChannel()))
+//                    .cast(TextChannel.class)
+//                    .doOnError(err -> {
+//                        Log.logger.error("SystemChannelを正常に取得出来ませんでした: " + getConfig().getSystemChannel());
+//                    })
+//                    .block());
+//        }
 
-        this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: " + channel.getGuildId().asString() + " System Channel: " + channel.getId().asString()));
+//        this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: " + channel.getGuildId().asString() + " System Channel: " + channel.getId().asString()));
 
         this.service = new EEWService(this);
         this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getChannelRegistry());
