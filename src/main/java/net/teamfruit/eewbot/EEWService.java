@@ -142,6 +142,8 @@ public class EEWService {
                 .doOnComplete(() -> {
                     if (!erroredChannels.isEmpty()) {
                         this.executor.execute(() -> {
+                            Thread.currentThread().setName("eewbot-channel-unregister-thread");
+                            
                             this.lock.writeLock().lock();
                             erroredChannels.forEach(channelId -> {
                                 this.channels.remove(channelId);
@@ -209,6 +211,8 @@ public class EEWService {
                 latch.await();
                 if (!erroredChannels.isEmpty()) {
                     this.executor.execute(() -> {
+                        Thread.currentThread().setName("eewbot-channel-unregister-thread");
+
                         this.lock.writeLock().lock();
                         erroredChannels.forEach(channel -> {
                             Log.logger.info("Webhook {} is deleted, unregister", channel.webhook.id);
