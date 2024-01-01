@@ -56,12 +56,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         long channelId = event.getInteraction().getChannelId().asLong();
         return Mono.fromRunnable(() -> {
                     if (!bot.getChannels().containsKey(channelId)) {
-                        bot.getChannelsLock().writeLock().lock();
-                        try {
-                            bot.getChannels().put(channelId, new Channel(false, false, false, false, false, false, SeismicIntensity.ONE, null));
-                        } finally {
-                            bot.getChannelsLock().writeLock().unlock();
-                        }
+                        bot.getChannels().put(channelId, new Channel(false, false, false, false, false, false, SeismicIntensity.ONE, null));
                     }
                 })
                 .then(event.getInteraction().getChannel()
@@ -95,7 +90,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                 if (!webhook.equals(botChannel.webhook)) {
                                                     botChannel.webhook = webhook;
                                                     try {
-                                                        bot.getChannelRegistry().save();
+                                                        bot.getChannels().save();
                                                     } catch (IOException e) {
                                                         Log.logger.error("Failed to save channel registry during setup command", e);
                                                         throw new RuntimeException(e);
@@ -171,7 +166,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
         channel.getCommandFields().keySet().forEach(name -> channel.set(name, event.getValues().contains(name)));
         try {
-            bot.getChannelRegistry().save();
+            bot.getChannels().save();
         } catch (IOException e) {
             return Mono.error(e);
         }
@@ -190,7 +185,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
             return Mono.empty();
         channel.minIntensity = intensity.get();
         try {
-            bot.getChannelRegistry().save();
+            bot.getChannels().save();
         } catch (IOException e) {
             return Mono.error(e);
         }

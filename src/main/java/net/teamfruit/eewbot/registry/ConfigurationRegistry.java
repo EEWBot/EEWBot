@@ -49,7 +49,7 @@ public class ConfigurationRegistry<E> {
         Path parent = path.getParent();
         if (parent != null)
             Files.createDirectories(parent);
-        
+
         try (Writer w = Files.newBufferedWriter(path)) {
             if (type != null)
                 EEWBot.GSON.toJson(obj, type, w);

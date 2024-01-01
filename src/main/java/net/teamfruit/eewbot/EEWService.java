@@ -10,7 +10,7 @@ import net.teamfruit.eewbot.entity.DiscordWebhook;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
-import net.teamfruit.eewbot.registry.ConfigurationRegistry;
+import net.teamfruit.eewbot.registry.MapRegistry;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.async.methods.*;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -37,7 +37,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -46,11 +45,9 @@ import java.util.stream.Collectors;
 public class EEWService {
 
     private final GatewayDiscordClient gateway;
-    private final Map<Long, Channel> channels;
     private final String avatarUrl;
     private final ScheduledExecutorService executor;
-    private final ConfigurationRegistry<Map<Long, Channel>> channelRegistry;
-    private final ReentrantReadWriteLock lock;
+    private final MapRegistry<Long, Channel> channels;
     //    private final Optional<TextChannel> systemChannel;
     private final HttpClient httpClient;
     private final MinimalHttpAsyncClient asyncHttpClient;
@@ -61,8 +58,6 @@ public class EEWService {
         this.channels = bot.getChannels();
         this.avatarUrl = bot.getAvatarUrl();
         this.executor = bot.getScheduledExecutor();
-        this.channelRegistry = bot.getChannelRegistry();
-        this.lock = bot.getChannelsLock();
 //        this.systemChannel = bot.getSystemChannel();
         this.httpClient = bot.getHttpClient();
         int poolingMax = bot.getConfig().getPoolingMax();
@@ -105,8 +100,6 @@ public class EEWService {
             cacheWebhook.put(lang, webhook.json());
         });
 
-        this.lock.readLock().lock();
-
         if (this.duplicatorAddress == null) {
             sendWebhook(cacheWebhook, webhookPartitioned.get(true), (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.lang)).subscribe());
         } else {
@@ -120,8 +113,6 @@ public class EEWService {
 //        });
 
         sendMessageD4J(webhookPartitioned.get(false), msgByLang);
-
-        this.lock.readLock().unlock();
     }
 
     private void sendMessageD4J(List<Map.Entry<Long, Channel>> channels, Map<String, MessageCreateSpec> msgByLang) {
@@ -143,15 +134,13 @@ public class EEWService {
                     if (!erroredChannels.isEmpty()) {
                         this.executor.execute(() -> {
                             Thread.currentThread().setName("eewbot-channel-unregister-thread");
-                            
-                            this.lock.writeLock().lock();
+
                             erroredChannels.forEach(channelId -> {
                                 this.channels.remove(channelId);
                                 Log.logger.info("Channel {} permission is missing or has been deleted, unregister", channelId);
                             });
-                            this.lock.writeLock().unlock();
                             try {
-                                this.channelRegistry.save();
+                                this.channels.save();
                             } catch (IOException e) {
                                 Log.logger.error("Failed to save channels", e);
                             }
@@ -213,14 +202,12 @@ public class EEWService {
                     this.executor.execute(() -> {
                         Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
-                        this.lock.writeLock().lock();
                         erroredChannels.forEach(channel -> {
                             Log.logger.info("Webhook {} is deleted, unregister", channel.webhook.id);
                             channel.webhook = null;
                         });
-                        this.lock.writeLock().unlock();
                         try {
-                            this.channelRegistry.save();
+                            this.channels.save();
                         } catch (IOException e) {
                             Log.logger.error("Failed to save channels", e);
                         }
@@ -320,14 +307,12 @@ public class EEWService {
                     Set<String> identifiers = notFoundList.stream()
                             .map(webhookURI -> StringUtils.removeStart(webhookURI, "https://discord.com/api/webhooks"))
                             .collect(Collectors.toSet());
-                    this.lock.writeLock().lock();
                     this.channels.values().stream()
                             .filter(channel -> channel.webhook != null && identifiers.contains(channel.webhook.getJoined()))
                             .forEach(channel -> {
                                 Log.logger.info("Webhook {} is deleted, unregister", channel.webhook.id);
                                 channel.webhook = null;
                             });
-                    this.lock.writeLock().unlock();
                 }
             } else {
                 Log.logger.error("Failed to fetch errors from duplicator: " + response.statusCode() + " " + response.body());

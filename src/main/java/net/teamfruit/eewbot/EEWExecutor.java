@@ -14,12 +14,11 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.gateway.*;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
-import net.teamfruit.eewbot.registry.ConfigurationRegistry;
+import net.teamfruit.eewbot.registry.MapRegistry;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,10 +34,9 @@ public class EEWExecutor {
     private final Config config;
     private final long applicationId;
     private final GatewayDiscordClient client;
-    private final Map<Long, Channel> channels;
-    private final ConfigurationRegistry<Map<Long, Channel>> channelRegistry;
+    private final MapRegistry<Long, Channel> channels;
 
-    public EEWExecutor(final EEWService service, final Config config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, Map<Long, Channel> channels, ConfigurationRegistry<Map<Long, Channel>> channelRegistry) {
+    public EEWExecutor(final EEWService service, final Config config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, MapRegistry<Long, Channel> channels) {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;
@@ -48,7 +46,6 @@ public class EEWExecutor {
         this.timeProvider = new TimeProvider(this.scheduledExecutor);
         this.client = client;
         this.channels = channels;
-        this.channelRegistry = channelRegistry;
     }
 
     public ScheduledExecutorService getScheduledExecutor() {
@@ -161,7 +158,7 @@ public class EEWExecutor {
                                                 if (!webhook.equals(botChannel.webhook)) {
                                                     botChannel.webhook = webhook;
                                                     try {
-                                                        this.channelRegistry.save();
+                                                        this.channels.save();
                                                     } catch (IOException e) {
                                                         Log.logger.error("Failed to save channels during webhook creation batch", e);
                                                     }

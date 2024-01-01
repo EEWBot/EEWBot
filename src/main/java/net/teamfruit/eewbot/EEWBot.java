@@ -13,6 +13,7 @@ import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
+import net.teamfruit.eewbot.registry.MapRegistry;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 
 import java.io.IOException;
@@ -23,7 +24,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class EEWBot {
     public static EEWBot instance;
@@ -34,13 +34,11 @@ public class EEWBot {
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
     public static final String CONDIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
-    private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(CONDIG_DIRECTORY != null ? Paths.get(CONDIG_DIRECTORY, "config.json") : Paths.get("config.json"), () -> new Config(), Config.class);
-    private final ConfigurationRegistry<Map<Long, Channel>> channels = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, Channel>(), new TypeToken<Map<Long, Channel>>() {
+    private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(CONDIG_DIRECTORY != null ? Paths.get(CONDIG_DIRECTORY, "config.json") : Paths.get("config.json"), Config::new, Config.class);
+    private final MapRegistry<Long, Channel> channels = new MapRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), ConcurrentHashMap::new, new TypeToken<Map<Long, Channel>>() {
     }.getType());
 
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
-
-    private final ReentrantReadWriteLock channelsLock = new ReentrantReadWriteLock();
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -135,7 +133,7 @@ public class EEWBot {
 //        this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: " + channel.getGuildId().asString() + " System Channel: " + channel.getId().asString()));
 
         this.service = new EEWService(this);
-        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getChannelRegistry());
+        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels());
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
@@ -143,7 +141,7 @@ public class EEWBot {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             Log.logger.info("Shutdown");
             try {
-                getChannelRegistry().save();
+                getChannels().save();
             } catch (final IOException e) {
                 Log.logger.error("Save failed", e);
             }
@@ -152,32 +150,19 @@ public class EEWBot {
         this.gateway.onDisconnect().block();
     }
 
-    @SuppressWarnings("deprecation")
-    private void initChannels() throws IOException {
-        this.channels.init();
-    }
-
     public Config getConfig() {
         return this.config.getElement();
-    }
-
-    public Map<Long, Channel> getChannels() {
-        return this.channels.getElement();
     }
 
     public ScheduledExecutorService getScheduledExecutor() {
         return this.scheduledExecutor;
     }
 
-    public ReentrantReadWriteLock getChannelsLock() {
-        return this.channelsLock;
-    }
-
     public ConfigurationRegistry<Config> getConfigRegistry() {
         return this.config;
     }
 
-    public ConfigurationRegistry<Map<Long, Channel>> getChannelRegistry() {
+    public MapRegistry<Long, Channel> getChannels() {
         return this.channels;
     }
 
