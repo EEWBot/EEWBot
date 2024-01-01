@@ -150,8 +150,8 @@ public class EEWExecutor {
                                                         this.channelRegistry.save();
                                                     } catch (IOException e) {
                                                         Log.logger.error("Failed to save channels during webhook creation batch", e);
-                                                        throw new RuntimeException(e);
                                                     }
+                                                    Log.logger.info("Created webhook for " + entry.getKey());
                                                 }
                                             });
                                 });
