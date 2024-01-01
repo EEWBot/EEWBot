@@ -2,7 +2,9 @@ package net.teamfruit.eewbot.entity;
 
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.util.Color;
+import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
+import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 import reactor.util.annotation.Nullable;
 
@@ -748,19 +750,25 @@ public class DmdataEEW extends DmdataHeader implements Entity {
     }
 
     @Override
-    public MessageCreateSpec createMessage(String lang) {
+    public MessageCreateSpec createMessage(final String lang) {
+        return MessageCreateSpec.builder().addEmbed(createEmbed(lang, I18nEmbedCreateSpec.builder(lang))).build();
+    }
+
+    @Override
+    public DiscordWebhook createWebhook(final String lang) {
+        return DiscordWebhook.builder().addEmbed(createEmbed(lang, I18nDiscordEmbed.builder(lang))).build();
+    }
+
+    public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         if (this.getBody().isCanceled()) {
-            return MessageCreateSpec.builder().addEmbed(I18nEmbedCreateSpec.builder(lang)
-                            .title("eewbot.eew.eewcancel")
-                            .timestamp(FORMAT.parse(this.getReportDateTime(), Instant::from))
-                            .description(this.getBody().getText())
-                            .color(Color.YELLOW)
-                            .footer(String.join(" ", this.getPublishingOffice()), null)
-                            .build())
+            return builder.title("eewbot.eew.eewcancel")
+                    .timestamp(FORMAT.parse(this.getReportDateTime(), Instant::from))
+                    .description(this.getBody().getText())
+                    .color(Color.YELLOW)
+                    .footer(String.join(" ", this.getPublishingOffice()), null)
                     .build();
         }
 
-        I18nEmbedCreateSpec.Builder builder = I18nEmbedCreateSpec.builder(lang);
         if (this.getBody().isWarning()) {
             if (this.getBody().isLastInfo()) {
                 builder.title("eewbot.eew.eewalert.final");
@@ -798,7 +806,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
             builder.description("eewbot.eew.inaccurate");
         }
         builder.footer(String.join(" ", this.getPublishingOffice()), null);
-        return MessageCreateSpec.builder().addEmbed(builder.build()).build();
+        return builder.build();
     }
 
     @Override

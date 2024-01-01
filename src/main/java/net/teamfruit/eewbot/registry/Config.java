@@ -3,6 +3,9 @@ package net.teamfruit.eewbot.registry;
 import net.teamfruit.eewbot.Log;
 import org.apache.commons.lang3.StringUtils;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 @SuppressWarnings("FieldMayBeFinal")
 public class Config {
 
@@ -13,6 +16,9 @@ public class Config {
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
+    private String duplicatorAddress = "";
+    private int poolingMax = 20;
+    private int poolingMaxPerRoute = 20;
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
     private String systemChannel = "";
@@ -57,6 +63,18 @@ public class Config {
         return dmdataMultiSocketConnect;
     }
 
+    public String getDuplicatorAddress() {
+        return duplicatorAddress;
+    }
+
+    public int getPoolingMax() {
+        return poolingMax;
+    }
+
+    public int getPoolingMaxPerRoute() {
+        return poolingMaxPerRoute;
+    }
+
     public String getNptServer() {
         return this.nptServer;
     }
@@ -90,6 +108,14 @@ public class Config {
         if (isEnableKyoshin()) {
             Log.logger.warn("Kyoshin EEW is enabled, please consider using DMDATA");
         }
+        if (StringUtils.isNotEmpty(getDuplicatorAddress())) {
+            try {
+                new URI(getDuplicatorAddress());
+            } catch (URISyntaxException e) {
+                Log.logger.info("Invalid duplicator address");
+                return false;
+            }
+        }
         return true;
     }
 
@@ -103,10 +129,13 @@ public class Config {
                 ", dmdataAPIKey='" + dmdataAPIKey + '\'' +
                 ", dmdataOrigin='" + dmdataOrigin + '\'' +
                 ", dmdataMultiSocketConnect=" + dmdataMultiSocketConnect +
+                ", poolingMax=" + poolingMax +
+                ", poolingMaxPerRoute=" + poolingMaxPerRoute +
                 ", nptServer='" + nptServer + '\'' +
                 ", defaultLanuage='" + defaultLanuage + '\'' +
                 ", systemChannel='" + systemChannel + '\'' +
                 ", debug=" + debug +
                 '}';
     }
+
 }

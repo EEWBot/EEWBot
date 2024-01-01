@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
@@ -28,6 +29,8 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
     public static final String WS_BASE = "wss://ws.api.dmdata.jp/v2/websocket";
     public static final String WS_BASE_TOKYO = "wss://ws-tokyo.api.dmdata.jp/v2/websocket";
     public static final String WS_BASE_OSAKA = "wss://ws-osaka.api.dmdata.jp/v2/websocket";
+
+    public static final String WS_BASE_TEST = "";
 
     private final DmdataAPI dmdataAPI;
     private final String appName;
@@ -59,30 +62,37 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         try {
             Thread.currentThread().setName("eewbot-dmdata-thread");
 
-            DmdataContract contract = this.dmdataAPI.contract();
-            Log.logger.info(contract.toString());
+            if (StringUtils.isEmpty(WS_BASE_TEST)) {
+                DmdataContract contract = this.dmdataAPI.contract();
+                Log.logger.info(contract.toString());
 
-            boolean hasForecastContract = contract.getItems().stream().anyMatch(item -> item.getClassification().equals("eew.forecast"));
-            boolean hasWarningContract = contract.getItems().stream().anyMatch(item -> item.getClassification().equals("eew.warning"));
+                boolean hasForecastContract = contract.getItems().stream().anyMatch(item -> item.getClassification().equals("eew.forecast"));
+                boolean hasWarningContract = contract.getItems().stream().anyMatch(item -> item.getClassification().equals("eew.warning"));
 
-            if (!hasForecastContract && !hasWarningContract) {
-                Log.logger.error("DMDATA contract does not have eew.forecast or eew.warning");
-                onError(new EEWGatewayException("DMDATA contract does not have eew.forecast or eew.warning"));
-                return;
-            }
+                if (!hasForecastContract && !hasWarningContract) {
+                    Log.logger.error("DMDATA contract does not have eew.forecast or eew.warning");
+                    onError(new EEWGatewayException("DMDATA contract does not have eew.forecast or eew.warning"));
+                    return;
+                }
 
-            DmdataSocketList socketList = this.dmdataAPI.openSocketList();
-            Log.logger.info(socketList.toString());
-            if (multiConnect) {
-                String ws1Name = this.appName + "-1", ws2Name = this.appName + "-2";
-                closeWebSocketIfExist(socketList, ws1Name);
-                this.webSocket1 = connectWebSocket(WS_BASE_TOKYO, ws1Name, hasForecastContract);
-                closeWebSocketIfExist(socketList, ws2Name);
-                this.webSocket2 = connectWebSocket(WS_BASE_OSAKA, ws2Name, hasForecastContract);
+                DmdataSocketList socketList = this.dmdataAPI.openSocketList();
+                Log.logger.info(socketList.toString());
+                if (this.multiConnect) {
+                    String ws1Name = this.appName + "-1", ws2Name = this.appName + "-2";
+                    closeWebSocketIfExist(socketList, ws1Name);
+                    this.webSocket1 = connectWebSocket(WS_BASE_TOKYO, ws1Name, hasForecastContract);
+                    closeWebSocketIfExist(socketList, ws2Name);
+                    this.webSocket2 = connectWebSocket(WS_BASE_OSAKA, ws2Name, hasForecastContract);
+                } else {
+                    String wsName = this.appName + "-1";
+                    closeWebSocketIfExist(socketList, wsName);
+                    this.webSocket1 = connectWebSocket(WS_BASE, wsName, hasForecastContract);
+                }
             } else {
-                String wsName = this.appName + "-1";
-                closeWebSocketIfExist(socketList, wsName);
-                this.webSocket1 = connectWebSocket(WS_BASE, wsName, hasForecastContract);
+                Log.logger.info("DMDATA WebSocket test mode");
+                this.webSocket1 = connectWebSocket(WS_BASE_TEST, this.appName + "-1", true);
+                if (this.multiConnect)
+                    this.webSocket2 = connectWebSocket(WS_BASE_TEST, this.appName + "-2", true);
             }
         } catch (EEWGatewayException e) {
             onError(e);
@@ -102,23 +112,29 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             types.add("VXSE42");
         }
 
-        DmdataSocketStart.Response socketStart;
-        try {
-            socketStart = this.dmdataAPI.socketStart(new DmdataSocketStart.Request.Builder()
-                    .setAppName(connectionName)
-                    .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
-                    .setTypes(types)
-                    .setTest(this.debug ? "including" : "no")
-                    .setFormatMode("json")
-                    .build());
-        } catch (IOException | InterruptedException e) {
-            throw new EEWGatewayException(e);
-        }
-        Log.logger.info(socketStart.toString());
+        if (StringUtils.isEmpty(WS_BASE_TEST)) {
+            DmdataSocketStart.Response socketStart;
+            try {
+                socketStart = this.dmdataAPI.socketStart(new DmdataSocketStart.Request.Builder()
+                        .setAppName(connectionName)
+                        .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
+                        .setTypes(types)
+                        .setTest(this.debug ? "including" : "no")
+                        .setFormatMode("json")
+                        .build());
+            } catch (IOException | InterruptedException e) {
+                throw new EEWGatewayException(e);
+            }
+            Log.logger.info(socketStart.toString());
 
-        WebSocketListener listener = new WebSocketListener(connectionName, wsBaseURI, hasForecastContract);
-        EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()), listener);
-        return listener;
+            WebSocketListener listener = new WebSocketListener(connectionName, wsBaseURI, hasForecastContract);
+            EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()), listener);
+            return listener;
+        } else {
+            WebSocketListener listener = new WebSocketListener(connectionName, wsBaseURI, hasForecastContract);
+            EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI), listener);
+            return listener;
+        }
     }
 
     public void reconnectWebSocket(WebSocketListener listener) throws EEWGatewayException {
@@ -233,9 +249,17 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             WebSocket.Listener.super.onOpen(webSocket);
         }
 
+        private StringBuilder buffer = new StringBuilder();
+
         @Override
         public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-            String dataString = data.toString();
+            if (!last) {
+                this.buffer.append(data);
+                return WebSocket.Listener.super.onText(webSocket, data, false);
+            }
+
+            String dataString = buffer.append(data).toString();
+            this.buffer = new StringBuilder();
             try {
                 DmdataWSMessage message = EEWBot.GSON.fromJson(dataString, DmdataWSMessage.class);
                 switch (message.getType()) {
@@ -278,17 +302,23 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                         }
 
                         if (!isTest) {
-                            DmdataEEW prev = DmdataGateway.this.prev.putIfAbsent(eew.getEventId(), eew);
-                            if (prev == null) {
-                                onNewData(eew);
-                            } else if (Integer.parseInt(prev.getSerialNo()) < Integer.parseInt(eew.getSerialNo())) {
-                                eew.setPrev(prev);
-                                if (prev.getBody().isLastInfo()) {
-                                    DmdataGateway.this.prev.remove(eew.getEventId());
+                            int currentSerialNo = Integer.parseInt(eew.getSerialNo());
+                            AtomicBoolean update = new AtomicBoolean(false);
+                            DmdataGateway.this.prev.compute(eew.getEventId(), (key, value) -> {
+                                if (value == null || Integer.parseInt(value.getSerialNo()) < currentSerialNo) {
+                                    update.set(true);
+                                    return eew;
                                 } else {
-                                    DmdataGateway.this.prev.put(eew.getEventId(), eew);
-                                    onNewData(eew);
+                                    return value;
                                 }
+                            });
+                            if (update.get()) {
+                                onNewData(eew);
+                                if (!DmdataGateway.this.multiConnect && eew.getBody().isLastInfo()) {
+                                    DmdataGateway.this.prev.remove(eew.getEventId());
+                                }
+                            } else if (DmdataGateway.this.multiConnect && eew.getBody().isLastInfo()) {
+                                DmdataGateway.this.prev.remove(eew.getEventId());
                             }
                         }
                         break;

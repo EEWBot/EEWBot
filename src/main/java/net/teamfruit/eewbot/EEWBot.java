@@ -19,19 +19,18 @@ import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHeaders;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.message.BasicHeader;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
@@ -50,17 +49,10 @@ public class EEWBot {
     private final ConfigurationRegistry<Map<Long, Channel>> channels = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, Channel>(), new TypeToken<Map<Long, Channel>>() {
     }.getType());
 
+    private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
+
     private final ReentrantReadWriteLock channelsLock = new ReentrantReadWriteLock();
 
-    private final RequestConfig reqest = RequestConfig.custom()
-            .setConnectTimeout(1000 * 10)
-            .setSocketTimeout(10000 * 10)
-            .build();
-    private final PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager();
-    private final CloseableHttpClient apacheHttpClient = HttpClientBuilder.create().setDefaultRequestConfig(this.reqest)
-            .setDefaultHeaders(Arrays.asList(new BasicHeader(HttpHeaders.ACCEPT_CHARSET, "UTF-8")))
-            .setConnectionManager(this.manager)
-            .build();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private GatewayDiscordClient gateway;
@@ -153,8 +145,8 @@ public class EEWBot {
 
         this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: " + channel.getGuildId().asString() + " System Channel: " + channel.getId().asString()));
 
-        this.service = new EEWService(getClient(), getChannels(), getChannelsLock(), getSystemChannel());
-        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId());
+        this.service = new EEWService(this);
+        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getChannelRegistry());
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
@@ -204,6 +196,10 @@ public class EEWBot {
         return this.channels.getElement();
     }
 
+    public ScheduledExecutorService getScheduledExecutor() {
+        return this.scheduledExecutor;
+    }
+
     public ReentrantReadWriteLock getChannelsLock() {
         return this.channelsLock;
     }
@@ -214,11 +210,6 @@ public class EEWBot {
 
     public ConfigurationRegistry<Map<Long, Channel>> getChannelRegistry() {
         return this.channels;
-    }
-
-    @Deprecated
-    public CloseableHttpClient getApacheHttpClient() {
-        return this.apacheHttpClient;
     }
 
     public HttpClient getHttpClient() {

@@ -3,8 +3,10 @@ package net.teamfruit.eewbot.registry;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18n;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -27,18 +29,21 @@ public class Channel {
 
     public SeismicIntensity minIntensity = SeismicIntensity.ONE;
 
+    public Webhook webhook;
+
     public String lang = I18n.DEFAULT_LANGUAGE;
 
     public Channel() {
     }
 
-    public Channel(final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final boolean quakeInfoDetail, final boolean monitor, final SeismicIntensity minIntensity) {
+    public Channel(final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final boolean quakeInfoDetail, final boolean monitor, final SeismicIntensity minIntensity, Webhook webhook) {
         this.eewAlert = eewAlert;
         this.eewPrediction = eewPrediction;
         this.eewDecimation = eewDecimation;
         this.quakeInfo = quakeInfo;
         this.monitor = monitor;
         this.minIntensity = minIntensity;
+        this.webhook = webhook;
     }
 
     /*
@@ -54,7 +59,7 @@ public class Channel {
                         throw new RuntimeException(e);
                     }
                 })
-                .findAny().orElseThrow(() -> new IllegalArgumentException());
+                .findAny().orElseThrow(IllegalArgumentException::new);
     }
 
     public void set(final String name, final boolean bool) {
@@ -71,15 +76,14 @@ public class Channel {
 
     public boolean exits(final String name) {
         return Arrays.stream(getClass().getFields())
-                .filter(field -> field.isAnnotationPresent(CommandName.class) && (field.getAnnotation(CommandName.class).value().equals(name) || field.getName().equals(name)))
-                .count() > 0;
+                .anyMatch(field -> field.isAnnotationPresent(CommandName.class) && (field.getAnnotation(CommandName.class).value().equals(name) || field.getName().equals(name)));
 
     }
 
     public Map<String, Boolean> getCommandFields() {
         return Arrays.stream(getClass().getFields())
                 .filter(field -> field.isAnnotationPresent(CommandName.class))
-                .collect(Collectors.toMap(field -> field.getName(), field -> {
+                .collect(Collectors.toMap(Field::getName, field -> {
                     try {
                         return field.getBoolean(this);
                     } catch (IllegalAccessException e) {
@@ -118,6 +122,58 @@ public class Channel {
                 old.quakeInfo.get(),
                 old.quakeInfoDetail.get(),
                 old.monitor.get(),
-                SeismicIntensity.ONE);
+                SeismicIntensity.ONE,
+                null);
+    }
+
+    public static class Webhook {
+
+        public String id;
+        public String token;
+        public String threadId;
+
+        public Webhook(String id, String token, String threadId) {
+            this.id = id;
+            this.token = token;
+            this.threadId = threadId;
+        }
+
+        public Webhook(String id, String token) {
+            this(id, token, null);
+        }
+
+        public String getJoined() {
+            if (this.threadId != null) {
+                return "/" + this.id + "/" + this.token + "?thread_id=" + this.threadId;
+            } else {
+                return "/" + this.id + "/" + this.token;
+            }
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Webhook webhook = (Webhook) o;
+            return Objects.equals(id, webhook.id) && Objects.equals(token, webhook.token) && Objects.equals(threadId, webhook.threadId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id, token, threadId);
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Channel channel = (Channel) o;
+        return eewAlert == channel.eewAlert && eewPrediction == channel.eewPrediction && eewDecimation == channel.eewDecimation && quakeInfo == channel.quakeInfo && monitor == channel.monitor && minIntensity == channel.minIntensity && Objects.equals(webhook, channel.webhook) && Objects.equals(lang, channel.lang);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(eewAlert, eewPrediction, eewDecimation, quakeInfo, monitor, minIntensity, webhook, lang);
     }
 }
