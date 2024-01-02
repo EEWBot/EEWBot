@@ -133,13 +133,13 @@ public class EEWExecutor {
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
 
         if (StringUtils.isNotEmpty(this.config.getDuplicatorAddress())) {
-            this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorMetrics, 60, 60, TimeUnit.SECONDS);
+            this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorMetrics, 15, 15, TimeUnit.SECONDS);
         }
 
         if (this.config.isWebhookMigration())
-            this.scheduledExecutor.scheduleAtFixedRate(() -> {
+            this.scheduledExecutor.scheduleWithFixedDelay(() -> {
                 Thread.currentThread().setName("eewbot-webhook-migration-thread");
-                
+
                 this.channels.entrySet().stream()
                         .filter(entry -> entry.getValue().webhook == null)
                         .forEach(entry -> {
