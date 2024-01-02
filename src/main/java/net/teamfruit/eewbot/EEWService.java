@@ -23,6 +23,7 @@ import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.config.Http1Config;
 import org.apache.hc.core5.http.nio.AsyncClientEndpoint;
 import org.apache.hc.core5.http2.config.H2Config;
+import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -143,7 +144,7 @@ public class EEWService {
                     if (!erroredChannels.isEmpty()) {
                         this.executor.execute(() -> {
                             Thread.currentThread().setName("eewbot-channel-unregister-thread");
-                            
+
                             this.lock.writeLock().lock();
                             erroredChannels.forEach(channelId -> {
                                 this.channels.remove(channelId);
@@ -305,10 +306,12 @@ public class EEWService {
     }
 
     public void handleDuplicatorMetrics() {
+        Thread.currentThread().setName("eewbot-duplicator-metrics-thread");
+
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .GET()
-                    .uri(this.duplicatorAddress)
+                    .uri(new URIBuilder(this.duplicatorAddress).setPath("/target_metrics").build())
                     .header("User-Agent", "eewbot")
                     .build();
             HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -333,9 +336,11 @@ public class EEWService {
                 Log.logger.error("Failed to fetch errors from duplicator: " + response.statusCode() + " " + response.body());
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            Log.logger.error("Failed to fetch metrics from duplicator", e);
         } catch (InterruptedException e) {
             Log.logger.error("Interrupted while fetching errors from duplicator", e);
+        } catch (URISyntaxException e) {
+            Log.logger.error("Invalid duplicator metrics URI", e);
         }
     }
 }
