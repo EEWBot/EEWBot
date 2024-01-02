@@ -214,12 +214,10 @@ public class EEWService {
                     this.executor.execute(() -> {
                         Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
-                        this.lock.writeLock().lock();
                         erroredChannels.forEach(channel -> {
                             Log.logger.info("Webhook {} is deleted, unregister", channel.webhook.id);
                             channel.webhook = null;
                         });
-                        this.lock.writeLock().unlock();
                         try {
                             this.channelRegistry.save();
                         } catch (IOException e) {
@@ -323,14 +321,12 @@ public class EEWService {
                     Set<String> identifiers = notFoundList.stream()
                             .map(webhookURI -> StringUtils.removeStart(webhookURI, "https://discord.com/api/webhooks"))
                             .collect(Collectors.toSet());
-                    this.lock.writeLock().lock();
                     this.channels.values().stream()
                             .filter(channel -> channel.webhook != null && identifiers.contains(channel.webhook.getJoined()))
                             .forEach(channel -> {
                                 Log.logger.info("Webhook {} is deleted, unregister", channel.webhook.id);
                                 channel.webhook = null;
                             });
-                    this.lock.writeLock().unlock();
                 }
             } else {
                 Log.logger.error("Failed to fetch errors from duplicator: " + response.statusCode() + " " + response.body());
