@@ -19,6 +19,7 @@ public class Config {
     private String duplicatorAddress = "";
     private int poolingMax = 20;
     private int poolingMaxPerRoute = 20;
+    private boolean webhookMigration = false;
     private String redisAddress = "";
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
@@ -74,6 +75,10 @@ public class Config {
 
     public int getPoolingMaxPerRoute() {
         return poolingMaxPerRoute;
+    }
+
+    public boolean isWebhookMigration() {
+        return webhookMigration;
     }
 
     public String getRedisAddress() {
