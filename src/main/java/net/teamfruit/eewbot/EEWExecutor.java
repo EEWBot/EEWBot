@@ -68,7 +68,7 @@ public class EEWExecutor {
                     KmoniEEW prev = eew.getPrev();
 
                     boolean isWarning = eew.isCancel() ? prev != null && prev.isAlert() : eew.isAlert();
-                    Predicate<Channel> warning = c -> isWarning ? c.eewAlert : c.eewPrediction;
+                    Predicate<Channel> warning = c -> isWarning ? c.isEewAlert() : c.isEewPrediction();
 
                     boolean isImportant = prev == null ||
                             eew.isInitial() ||
@@ -76,10 +76,10 @@ public class EEWExecutor {
                             eew.isAlert() != prev.isAlert() ||
                             !eew.getIntensity().equals(prev.getIntensity()) ||
                             !eew.getRegionName().equals(prev.getRegionName());
-                    Predicate<Channel> decimation = c -> !c.eewDecimation || isImportant;
+                    Predicate<Channel> decimation = c -> !c.isEewDecimation() || isImportant;
 
                     SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
-                    Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(maxIntensity) <= 0;
+                    Predicate<Channel> sensitivity = c -> c.getMinIntensity().compareTo(maxIntensity) <= 0;
                     EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew, true));
                 }
             }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
@@ -95,7 +95,7 @@ public class EEWExecutor {
                     DmdataEEW.Body prevBody = eew.getPrev() != null ? eew.getPrev().getBody() : null;
 
                     boolean isWarning = currentBody.isCanceled() ? prevBody != null && prevBody.isWarning() : currentBody.isWarning();
-                    Predicate<Channel> warning = c -> isWarning ? c.eewAlert : c.eewPrediction;
+                    Predicate<Channel> warning = c -> isWarning ? c.isEewAlert() : c.isEewPrediction();
 
                     DmdataEEW.Body.Intensity currentIntensity = currentBody.getIntensity();
                     DmdataEEW.Body.Intensity prevIntensity = prevBody != null ? prevBody.getIntensity() : null;
@@ -105,10 +105,10 @@ public class EEWExecutor {
                             (currentIntensity == null) != (prevIntensity == null) ||
                             currentIntensity != null && !currentIntensity.getForecastMaxInt().getFrom().equals(prevIntensity.getForecastMaxInt().getFrom()) ||
                             !currentBody.getEarthquake().getHypocenter().getName().equals(prevBody.getEarthquake().getHypocenter().getName());
-                    Predicate<Channel> decimation = c -> !c.eewDecimation || isImportant;
+                    Predicate<Channel> decimation = c -> !c.isEewDecimation() || isImportant;
 
                     SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
-                    Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(maxIntensity) <= 0;
+                    Predicate<Channel> sensitivity = c -> c.getMinIntensity().compareTo(maxIntensity) <= 0;
                     EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew, true));
                 }
             };
@@ -122,8 +122,8 @@ public class EEWExecutor {
             public void onNewData(final DetailQuakeInfo data) {
                 Log.logger.info(data.toString());
 
-                final Predicate<Channel> quakeInfo = c -> c.quakeInfo;
-                final Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(data.getEarthquake().getIntensity()) <= 0;
+                final Predicate<Channel> quakeInfo = Channel::isQuakeInfo;
+                final Predicate<Channel> sensitivity = c -> c.getMinIntensity().compareTo(data.getEarthquake().getIntensity()) <= 0;
                 EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), data, false));
             }
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
@@ -153,8 +153,8 @@ public class EEWExecutor {
                                         boolean isThread = channel instanceof ThreadChannel;
                                         Channel botChannel = entry.getValue();
                                         Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asString(), webhookData.token().get(), isThread ? String.valueOf(entry.getKey()) : null);
-                                        if (!webhook.equals(botChannel.webhook)) {
-                                            botChannel.webhook = webhook;
+                                        if (!webhook.equals(botChannel.getWebhook())) {
+                                            this.channels.setWebhook(entry.getKey(), webhook);
                                             try {
                                                 this.channels.save();
                                             } catch (IOException e) {

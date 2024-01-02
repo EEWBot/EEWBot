@@ -41,11 +41,11 @@ public class TestMessageSlashCommand implements ISlashCommand {
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
         Channel channel = bot.getChannels().get(channelId);
-        boolean hasWebhook = channel != null && channel.webhook != null;
+        boolean hasWebhook = channel != null && channel.getWebhook() != null;
 
         if (hasWebhook) {
             return event.deferReply()
-                    .then(executeWebhook(event.getClient().getCoreResources().getRouter(), Long.parseLong(channel.webhook.id), channel.webhook.token, true, channel.webhook.threadId,
+                    .then(executeWebhook(event.getClient().getCoreResources().getRouter(), Long.parseLong(channel.getWebhook().getId()), channel.getWebhook().getToken(), true, channel.getWebhook().getThreadId(),
                             MultipartRequest.ofRequest(WebhookExecuteRequest.builder()
                                     .addEmbed(SlashCommandUtils.createEmbed(lang)
                                             .title("eewbot.scmd.testmessage.title")

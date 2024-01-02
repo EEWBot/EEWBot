@@ -55,7 +55,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         event.deferReply().subscribe();
         long channelId = event.getInteraction().getChannelId().asLong();
         return Mono.fromRunnable(() -> {
-                    bot.getChannels().computeIfAbsent(channelId, key -> new Channel(false, false, false, false, false, false, SeismicIntensity.ONE, null));
+                    bot.getChannels().computeIfAbsent(channelId, key -> new Channel(false, false, false, false, SeismicIntensity.ONE, null));
                 })
                 .then(event.getInteraction().getChannel()
                         .flatMap(channel -> {
@@ -85,8 +85,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                             .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 Channel botChannel = bot.getChannels().get(channelId);
                                                 Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asString(), webhookData.token().get(), isThread ? String.valueOf(channelId) : null);
-                                                if (!webhook.equals(botChannel.webhook)) {
-                                                    botChannel.webhook = webhook;
+                                                if (!webhook.equals(botChannel.getWebhook())) {
+                                                    bot.getChannels().setWebhook(channelId, webhook);
                                                     try {
                                                         bot.getChannels().save();
                                                     } catch (IOException e) {
@@ -142,7 +142,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         Channel channel = bot.getChannels().get(channelId);
         return SelectMenu.of("sensitivity", Arrays.stream(SeismicIntensity.values()).map(intensity -> {
                     String label = intensity == SeismicIntensity.UNKNOWN ? I18n.INSTANCE.get(lang, "eewbot.scmd.setup.sensitivity.option.unknown") : I18n.INSTANCE.format(lang, "eewbot.scmd.setup.sensitivity.option", intensity);
-                    if (channel.minIntensity == intensity)
+                    if (channel.getMinIntensity() == intensity)
                         return SelectMenu.Option.ofDefault(label, intensity.getSimple());
                     return SelectMenu.Option.of(label, intensity.getSimple());
                 }).collect(Collectors.toList()))
@@ -161,8 +161,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private Mono<Message> applyChannel(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
-        Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
-        channel.getCommandFields().keySet().forEach(name -> channel.set(name, event.getValues().contains(name)));
+        long channelId = event.getInteraction().getChannelId().asLong();
+        Channel.COMMAND_KEYS.forEach(name -> bot.getChannels().set(channelId, name, event.getValues().contains(name)));
         try {
             bot.getChannels().save();
         } catch (IOException e) {
@@ -177,17 +177,18 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
-        Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
+        long channelId = event.getInteraction().getChannelId().asLong();
+        Channel channel = bot.getChannels().get(channelId);
         Optional<SeismicIntensity> intensity = SeismicIntensity.get(event.getValues().get(0));
         if (intensity.isEmpty())
             return Mono.empty();
-        channel.minIntensity = intensity.get();
+        bot.getChannels().setMinIntensity(channelId, intensity.get());
         try {
             bot.getChannels().save();
         } catch (IOException e) {
             return Mono.error(e);
         }
-        return event.createFollowup(I18n.INSTANCE.format(lang, channel.minIntensity != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", channel.minIntensity.getSimple()))
+        return event.createFollowup(I18n.INSTANCE.format(lang, channel.getMinIntensity() != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", channel.getMinIntensity().getSimple()))
                 .withEphemeral(true);
     }
 }

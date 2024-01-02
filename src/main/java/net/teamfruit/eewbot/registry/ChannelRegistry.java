@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.registry;
 
 import com.google.gson.reflect.TypeToken;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
 import redis.clients.jedis.JedisPooled;
 
 import java.nio.file.Path;
@@ -37,23 +38,35 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
         return getElement().computeIfAbsent(key, mappingFunction);
     }
 
+    public void set(long key, String name, boolean bool) {
+        getElement().get(key).set(name, bool);
+    }
+
+    public void setMinIntensity(long key, SeismicIntensity intensity) {
+        getElement().get(key).setMinIntensity(intensity);
+    }
+
+    public void setWebhook(long key, Channel.Webhook webhook) {
+        getElement().get(key).setWebhook(webhook);
+    }
+
     public List<Map.Entry<Long, Channel>> getWebhookAbsentChannels() {
         return getElement().entrySet()
                 .stream()
-                .filter(entry -> entry.getValue().webhook == null)
+                .filter(entry -> entry.getValue().getWebhook() == null)
                 .collect(Collectors.toList());
     }
 
-    public List<Channel> getChannels(Predicate<Channel> filter) {
-        return getElement().values().stream()
-                .filter(filter)
-                .collect(Collectors.toList());
+    public Map<Long, Channel> getChannels(Predicate<Channel> filter) {
+        return getElement().entrySet().stream()
+                .filter(entry -> filter.test(entry.getValue()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public Map<Boolean, List<Map.Entry<Long, Channel>>> getChannelsPartitionedByWebhookPresent(Predicate<Channel> filter) {
         return getElement().entrySet().stream()
                 .filter(entry -> filter.test(entry.getValue()))
-                .collect(Collectors.partitioningBy(entry -> entry.getValue().webhook != null));
+                .collect(Collectors.partitioningBy(entry -> entry.getValue().getWebhook() != null));
     }
 
 }
