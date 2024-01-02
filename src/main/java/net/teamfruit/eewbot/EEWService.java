@@ -165,7 +165,7 @@ public class EEWService {
                 Map<Long, Channel> erroredChannels = new ConcurrentHashMap<>();
                 webhookChannels.forEach(entry -> {
                     SimpleHttpRequest request = cacheReq.get(entry.getValue().getLang());
-                    request.setPath("/api/webhooks" + Objects.requireNonNull(entry.getValue().getWebhook()).getJoined());
+                    request.setPath("/api/webhooks" + Objects.requireNonNull(entry.getValue().getWebhook()).getPath());
                     endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
                         @Override
                         public void completed(SimpleHttpResponse simpleHttpResponse) {
@@ -226,7 +226,7 @@ public class EEWService {
                     .addHeader("User-Agent", "EEWBot")
                     .addHeader("X-Duplicate-Targets", EEWBot.GSON.toJson(webhookChannels.stream()
                             .filter(entry -> entry.getValue().getLang().equals(lang))
-                            .map(entry -> "https://discord.com/api/webhooks" + Objects.requireNonNull(entry.getValue().getWebhook()).getJoined())
+                            .map(entry -> Objects.requireNonNull(entry.getValue().getWebhook()).getUrl())
                             .toArray(String[]::new)))
                     .setPath(highPriority ? "/duplicate/high_priority" : "/duplicate/low_priority")
                     .setBody(webhookByLang.get(lang), ContentType.APPLICATION_JSON)
@@ -296,14 +296,11 @@ public class EEWService {
                     .build();
             HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
-                Map<String, List<String>> resultMap = EEWBot.GSON.fromJson(response.body(), new TypeToken<Map<String, List<String>>>() {
+                Map<String, Set<String>> resultMap = EEWBot.GSON.fromJson(response.body(), new TypeToken<Map<String, Set<String>>>() {
                 }.getType());
-                List<String> notFoundList = resultMap.get("404");
+                Set<String> notFoundList = resultMap.get("404");
                 if (notFoundList != null) {
-                    Set<String> identifiers = notFoundList.stream()
-                            .map(webhookURI -> StringUtils.removeStart(webhookURI, "https://discord.com/api/webhooks"))
-                            .collect(Collectors.toSet());
-                    this.channels.getChannels(channel -> channel.getWebhook() != null && identifiers.contains(channel.getWebhook().getJoined()))
+                    this.channels.getChannels(channel -> channel.getWebhook() != null && notFoundList.contains(channel.getWebhook().getUrl()))
                             .forEach((key, value) -> {
                                 Log.logger.info("Webhook {} is deleted, unregister", Objects.requireNonNull(value.getWebhook()).getId());
                                 this.channels.setWebhook(key, null);

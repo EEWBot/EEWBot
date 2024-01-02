@@ -210,11 +210,19 @@ public class Channel {
             this.threadId = threadId;
         }
 
-        public String getJoined() {
+        public String getPath() {
             if (this.threadId != null) {
                 return "/" + this.id + "/" + this.token + "?thread_id=" + this.threadId;
             } else {
                 return "/" + this.id + "/" + this.token;
+            }
+        }
+
+        public String getUrl() {
+            if (this.threadId != null) {
+                return "https://discord.com/api/webhooks/" + this.id + "/" + this.token + "?thread_id=" + this.threadId;
+            } else {
+                return "https://discord.com/api/webhooks/" + this.id + "/" + this.token;
             }
         }
 
