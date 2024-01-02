@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
@@ -10,38 +9,36 @@ import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.IntentSet;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.ChannelRegistry;
 import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
-import net.teamfruit.eewbot.registry.MapRegistry;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
+import org.apache.commons.lang3.StringUtils;
+import redis.clients.jedis.JedisPooled;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class EEWBot {
     public static EEWBot instance;
 
-    @SuppressWarnings("deprecation")
     public static final Gson GSON = new Gson();
 
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
     public static final String CONDIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
     private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(CONDIG_DIRECTORY != null ? Paths.get(CONDIG_DIRECTORY, "config.json") : Paths.get("config.json"), Config::new, Config.class);
-    private final MapRegistry<Long, Channel> channels = new MapRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), ConcurrentHashMap::new, new TypeToken<Map<Long, Channel>>() {
-    }.getType());
+    private final ChannelRegistry channels = new ChannelRegistry(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"));
 
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
+    private JedisPooled jedisPooled;
     private GatewayDiscordClient gateway;
     private EEWService service;
     private EEWExecutor executor;
@@ -67,6 +64,11 @@ public class EEWBot {
 
         if (!getConfig().validate()) {
             return;
+        }
+
+        if (StringUtils.isNotEmpty(getConfig().getRedisAddress())) {
+            this.jedisPooled = new JedisPooled(getConfig().getRedisAddress());
+            this.channels.setJedis(this.jedisPooled);
         }
 
         this.gateway = DiscordClient.create(getConfig().getToken())
@@ -162,7 +164,7 @@ public class EEWBot {
         return this.config;
     }
 
-    public MapRegistry<Long, Channel> getChannels() {
+    public ChannelRegistry getChannels() {
         return this.channels;
     }
 

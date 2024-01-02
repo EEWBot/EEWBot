@@ -10,7 +10,7 @@ import net.teamfruit.eewbot.entity.DiscordWebhook;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
-import net.teamfruit.eewbot.registry.MapRegistry;
+import net.teamfruit.eewbot.registry.ChannelRegistry;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.async.methods.*;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -47,7 +47,7 @@ public class EEWService {
     private final GatewayDiscordClient gateway;
     private final String avatarUrl;
     private final ScheduledExecutorService executor;
-    private final MapRegistry<Long, Channel> channels;
+    private final ChannelRegistry channels;
     //    private final Optional<TextChannel> systemChannel;
     private final HttpClient httpClient;
     private final MinimalHttpAsyncClient asyncHttpClient;
@@ -89,9 +89,7 @@ public class EEWService {
         Map<String, MessageCreateSpec> msgByLang = new HashMap<>();
         I18n.INSTANCE.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang)));
 
-        Map<Boolean, List<Map.Entry<Long, Channel>>> webhookPartitioned = this.channels.entrySet().stream()
-                .filter(entry -> filter.test(entry.getValue()))
-                .collect(Collectors.partitioningBy(entry -> entry.getValue().webhook != null));
+        Map<Boolean, List<Map.Entry<Long, Channel>>> webhookPartitioned = this.channels.getChannelsPartitionedByWebhookPresent(filter);
 
         Map<String, String> cacheWebhook = new HashMap<>();
         I18n.INSTANCE.getLanguages().keySet().forEach(lang -> {
@@ -307,8 +305,7 @@ public class EEWService {
                     Set<String> identifiers = notFoundList.stream()
                             .map(webhookURI -> StringUtils.removeStart(webhookURI, "https://discord.com/api/webhooks"))
                             .collect(Collectors.toSet());
-                    this.channels.values().stream()
-                            .filter(channel -> channel.webhook != null && identifiers.contains(channel.webhook.getJoined()))
+                    this.channels.getChannels(channel -> channel.webhook != null && identifiers.contains(channel.webhook.getJoined()))
                             .forEach(channel -> {
                                 Log.logger.info("Webhook {} is deleted, unregister", channel.webhook.id);
                                 channel.webhook = null;

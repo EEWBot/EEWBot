@@ -19,6 +19,7 @@ public class Config {
     private String duplicatorAddress = "";
     private int poolingMax = 20;
     private int poolingMaxPerRoute = 20;
+    private String redisAddress = "";
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
     private String systemChannel = "";
@@ -75,6 +76,10 @@ public class Config {
         return poolingMaxPerRoute;
     }
 
+    public String getRedisAddress() {
+        return this.redisAddress;
+    }
+
     public String getNptServer() {
         return this.nptServer;
     }
@@ -113,6 +118,14 @@ public class Config {
                 new URI(getDuplicatorAddress());
             } catch (URISyntaxException e) {
                 Log.logger.info("Invalid duplicator address");
+                return false;
+            }
+        }
+        if (StringUtils.isNotEmpty(getRedisAddress())) {
+            try {
+                new URI(getRedisAddress());
+            } catch (URISyntaxException e) {
+                Log.logger.info("Invalid redis address");
                 return false;
             }
         }

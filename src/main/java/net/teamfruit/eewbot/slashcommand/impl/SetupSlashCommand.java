@@ -55,9 +55,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         event.deferReply().subscribe();
         long channelId = event.getInteraction().getChannelId().asLong();
         return Mono.fromRunnable(() -> {
-                    if (!bot.getChannels().containsKey(channelId)) {
-                        bot.getChannels().put(channelId, new Channel(false, false, false, false, false, false, SeismicIntensity.ONE, null));
-                    }
+                    bot.getChannels().computeIfAbsent(channelId, key -> new Channel(false, false, false, false, false, false, SeismicIntensity.ONE, null));
                 })
                 .then(event.getInteraction().getChannel()
                         .flatMap(channel -> {
