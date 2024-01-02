@@ -13,7 +13,7 @@ public class Channel {
     public static final List<String> COMMAND_KEYS;
 
     static {
-        COMMAND_KEYS = Arrays.stream(Channel.class.getFields())
+        COMMAND_KEYS = Arrays.stream(Channel.class.getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(CommandName.class))
                 .map(Field::getName)
                 .collect(Collectors.toUnmodifiableList());
@@ -112,7 +112,7 @@ public class Channel {
      * TODO: minIntensity
      */
     public boolean value(final String name) {
-        return Arrays.stream(getClass().getFields())
+        return Arrays.stream(getClass().getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(CommandName.class) && (field.getAnnotation(CommandName.class).value().equals(name) || field.getName().equals(name)))
                 .map(field -> {
                     try {
@@ -125,7 +125,7 @@ public class Channel {
     }
 
     void set(final String name, final boolean bool) {
-        Arrays.stream(getClass().getFields())
+        Arrays.stream(getClass().getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(CommandName.class) && (field.getAnnotation(CommandName.class).value().equals(name) || field.getName().equals(name)))
                 .findAny().ifPresent(field -> {
                     try {
@@ -136,24 +136,21 @@ public class Channel {
                 });
     }
 
-    public boolean exits(final String name) {
-        return Arrays.stream(getClass().getFields())
-                .anyMatch(field -> field.isAnnotationPresent(CommandName.class) && (field.getAnnotation(CommandName.class).value().equals(name) || field.getName().equals(name)));
-
-    }
-
     public Map<String, Boolean> getCommandFields() {
-        Map<String, Boolean> map = new HashMap<>();
-        map.put("eewAlert", eewAlert);
-        map.put("eewPrediction", eewPrediction);
-        map.put("eewDecimation", eewDecimation);
-        map.put("quakeInfo", quakeInfo);
-        return map;
+        return Arrays.stream(getClass().getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(CommandName.class))
+                .collect(Collectors.toMap(Field::getName, field -> {
+                    try {
+                        return field.getBoolean(this);
+                    } catch (IllegalArgumentException | IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                }));
     }
 
     @Override
     public String toString() {
-        return Arrays.stream(getClass().getFields())
+        return Arrays.stream(getClass().getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(CommandName.class))
                 .map(field -> {
                     try {
@@ -167,7 +164,7 @@ public class Channel {
     }
 
     public static Optional<String> toCommandName(String fieldName) {
-        return Arrays.stream(Channel.class.getFields())
+        return Arrays.stream(Channel.class.getDeclaredFields())
                 .filter(field -> field.getName().equals(fieldName) && field.isAnnotationPresent(CommandName.class))
                 .map(field -> field.getAnnotation(CommandName.class).value())
                 .findAny();
