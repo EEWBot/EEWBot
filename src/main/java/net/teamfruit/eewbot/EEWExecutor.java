@@ -135,42 +135,43 @@ public class EEWExecutor {
             this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorMetrics, 60, 60, TimeUnit.SECONDS);
         }
 
-        this.scheduledExecutor.execute(() -> {
-            this.channels.entrySet().stream()
-                    .filter(entry -> entry.getValue().webhook == null)
-                    .forEach(entry -> {
-                        this.client.getChannelById(Snowflake.of(entry.getKey()))
-                                .onErrorComplete(ClientException.class)
-                                .flatMap(channel -> channel.getRestChannel().getData().map(ChannelData::guildId))
-                                .flatMap(guildId -> {
-                                    if (!guildId.isAbsent()) {
-                                        return this.client.getGuildById(Snowflake.of(guildId.get()))
-                                                .flatMap(guild -> guild.getSelfMember().map(PartialMember::getDisplayName)
-                                                        .flatMap(name -> this.client.getRestClient().getWebhookService()
-                                                                .createWebhook(entry.getKey(), WebhookCreateRequest.builder()
-                                                                        .name(name)
-                                                                        .build(), "Create EEWBot webhook")));
-                                    }
-                                    return Mono.empty();
-                                }).subscribe(webhookData -> {
-                                    this.client.getChannelById(Snowflake.of(entry.getKey()))
-                                            .subscribe(channel -> {
-                                                boolean isThread = channel instanceof ThreadChannel;
-                                                Channel botChannel = entry.getValue();
-                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asString(), webhookData.token().get(), isThread ? String.valueOf(entry.getKey()) : null);
-                                                if (!webhook.equals(botChannel.webhook)) {
-                                                    botChannel.webhook = webhook;
-                                                    try {
-                                                        this.channelRegistry.save();
-                                                    } catch (IOException e) {
-                                                        Log.logger.error("Failed to save channels during webhook creation batch", e);
+        if (this.config.isWebhookMigration())
+            this.scheduledExecutor.execute(() -> {
+                this.channels.entrySet().stream()
+                        .filter(entry -> entry.getValue().webhook == null)
+                        .forEach(entry -> {
+                            this.client.getChannelById(Snowflake.of(entry.getKey()))
+                                    .onErrorComplete(ClientException.class)
+                                    .flatMap(channel -> channel.getRestChannel().getData().map(ChannelData::guildId))
+                                    .flatMap(guildId -> {
+                                        if (!guildId.isAbsent()) {
+                                            return this.client.getGuildById(Snowflake.of(guildId.get()))
+                                                    .flatMap(guild -> guild.getSelfMember().map(PartialMember::getDisplayName)
+                                                            .flatMap(name -> this.client.getRestClient().getWebhookService()
+                                                                    .createWebhook(entry.getKey(), WebhookCreateRequest.builder()
+                                                                            .name(name)
+                                                                            .build(), "Create EEWBot webhook")));
+                                        }
+                                        return Mono.empty();
+                                    }).subscribe(webhookData -> {
+                                        this.client.getChannelById(Snowflake.of(entry.getKey()))
+                                                .subscribe(channel -> {
+                                                    boolean isThread = channel instanceof ThreadChannel;
+                                                    Channel botChannel = entry.getValue();
+                                                    Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asString(), webhookData.token().get(), isThread ? String.valueOf(entry.getKey()) : null);
+                                                    if (!webhook.equals(botChannel.webhook)) {
+                                                        botChannel.webhook = webhook;
+                                                        try {
+                                                            this.channelRegistry.save();
+                                                        } catch (IOException e) {
+                                                            Log.logger.error("Failed to save channels during webhook creation batch", e);
+                                                        }
+                                                        Log.logger.info("Created webhook for " + entry.getKey());
                                                     }
-                                                    Log.logger.info("Created webhook for " + entry.getKey());
-                                                }
-                                            });
-                                });
-                    });
-        });
+                                                });
+                                    });
+                        });
+            });
     }
 
 }
