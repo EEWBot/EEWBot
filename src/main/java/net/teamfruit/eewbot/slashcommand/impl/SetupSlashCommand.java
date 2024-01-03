@@ -41,12 +41,22 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     @Override
+    public boolean isEphemeral() {
+        return true;
+    }
+
+    @Override
     public List<String> getCustomIds() {
         return Arrays.asList("channel", "sensitivity");
     }
 
     @Override
     public boolean isDeferOnSelect() {
+        return true;
+    }
+
+    @Override
+    public boolean isEphemeralOnSelect() {
         return true;
     }
 
@@ -130,7 +140,6 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                         .withEphemeral(true))
                 .switchIfEmpty(event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply") + (warnMessageKey != null ? "\n\n" + I18n.INSTANCE.get(lang, warnMessageKey) : ""))
                         .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)))
-                        .withEphemeral(true)
                 );
     }
 
@@ -180,9 +189,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         if (event.getValues().isEmpty())
             return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.channel.followup.none"));
         return event.createFollowup(I18n.INSTANCE.format(lang, "eewbot.scmd.setup.channel.followup.any",
-                        event.getValues().stream()
-                                .map(value -> Channel.toCommandName(value).orElse("")).collect(Collectors.joining(", "))))
-                .withEphemeral(true);
+                event.getValues().stream()
+                        .map(value -> Channel.toCommandName(value).orElse("")).collect(Collectors.joining(", "))));
     }
 
     private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
@@ -197,7 +205,6 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         } catch (IOException e) {
             return Mono.error(e);
         }
-        return event.createFollowup(I18n.INSTANCE.format(lang, channel.getMinIntensity() != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", channel.getMinIntensity().getSimple()))
-                .withEphemeral(true);
+        return event.createFollowup(I18n.INSTANCE.format(lang, channel.getMinIntensity() != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", channel.getMinIntensity().getSimple()));
     }
 }

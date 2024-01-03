@@ -4,6 +4,7 @@ import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEven
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
+import discord4j.core.spec.InteractionCallbackSpec;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
@@ -50,7 +51,9 @@ public class SlashCommandHandler {
                 .flatMap(event -> Mono.just(event.getCommandName())
                         .filter(name -> commands.containsKey(name))
                         .map(commands::get)
-                        .flatMap(cmd -> cmd.isDefer() ? event.deferReply().thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
+                        .flatMap(cmd -> cmd.isDefer() ? event.deferReply(InteractionCallbackSpec.builder()
+                                .ephemeral(cmd.isEphemeral())
+                                .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> cmd.on(bot, event, getLanguage(bot, event)))
                         .doOnError(err -> Log.logger.error("Error during {} command", event.getCommandName(), err))
                         .onErrorResume(err -> event.reply()
@@ -71,7 +74,9 @@ public class SlashCommandHandler {
                                 .map(ISelectMenuSlashCommand.class::cast)
                                 .filter(cmd -> cmd.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
-                        .flatMap(cmd -> cmd.isDeferOnSelect() ? event.deferReply().thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
+                        .flatMap(cmd -> cmd.isDeferOnSelect() ? event.deferReply(InteractionCallbackSpec.builder()
+                                .ephemeral(cmd.isEphemeralOnSelect())
+                                .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> cmd.onSelect(bot, event, getLanguage(bot, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
@@ -84,7 +89,9 @@ public class SlashCommandHandler {
                                 .map(IButtonSlashCommand.class::cast)
                                 .filter(cmd -> cmd.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
-                        .flatMap(cmd -> cmd.isDeferOnClick() ? event.deferReply().thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
+                        .flatMap(cmd -> cmd.isDeferOnClick() ? event.deferReply(InteractionCallbackSpec.builder()
+                                .ephemeral(cmd.isEphemeralOnClick())
+                                .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> cmd.onClick(bot, event, getLanguage(bot, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
