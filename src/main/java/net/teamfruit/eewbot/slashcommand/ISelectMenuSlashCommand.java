@@ -14,5 +14,9 @@ public interface ISelectMenuSlashCommand extends ISlashCommand {
         return false;
     }
 
+    default boolean isEphemeralOnSelect() {
+        return false;
+    }
+
     Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event, String lang);
 }

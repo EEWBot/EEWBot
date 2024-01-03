@@ -13,6 +13,10 @@ public interface ISlashCommand {
         return false;
     }
 
+    default boolean isEphemeral() {
+        return false;
+    }
+
     ApplicationCommandRequest buildCommand();
 
     Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang);

@@ -41,12 +41,22 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     @Override
+    public boolean isEphemeral() {
+        return true;
+    }
+
+    @Override
     public List<String> getCustomIds() {
         return Arrays.asList("channel", "sensitivity");
     }
 
     @Override
     public boolean isDeferOnSelect() {
+        return true;
+    }
+
+    @Override
+    public boolean isEphemeralOnSelect() {
         return true;
     }
 
@@ -133,11 +143,9 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                 return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel")).withEphemeral(true);
                             return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.sendmessages")).withEphemeral(true);
                         }))
-                .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel"))
-                        .withEphemeral(true))
+                .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel")))
                 .switchIfEmpty(event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply") + (warnMessageKey != null ? "\n\n" + I18n.INSTANCE.get(lang, warnMessageKey) : ""))
                         .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)))
-                        .withEphemeral(true)
                 );
     }
 
@@ -187,9 +195,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         if (event.getValues().isEmpty())
             return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.channel.followup.none"));
         return event.createFollowup(I18n.INSTANCE.format(lang, "eewbot.scmd.setup.channel.followup.any",
-                        event.getValues().stream()
-                                .map(value -> Channel.toCommandName(value).orElse("")).collect(Collectors.joining(", "))))
-                .withEphemeral(true);
+                event.getValues().stream()
+                        .map(value -> Channel.toCommandName(value).orElse("")).collect(Collectors.joining(", "))));
     }
 
     private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
@@ -203,7 +210,6 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         } catch (IOException e) {
             return Mono.error(e);
         }
-        return event.createFollowup(I18n.INSTANCE.format(lang, channel.minIntensity != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", channel.minIntensity.getSimple()))
-                .withEphemeral(true);
+        return event.createFollowup(I18n.INSTANCE.format(lang, channel.minIntensity != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", channel.minIntensity.getSimple()));
     }
 }
