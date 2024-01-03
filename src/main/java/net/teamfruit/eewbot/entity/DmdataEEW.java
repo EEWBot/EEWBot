@@ -824,8 +824,15 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                     .filter(Body.Intensity.IntensityRegionReached::isPlum)
                     .collect(Collectors.groupingBy(Body.Intensity.IntensityRegionReached::getForecastMaxInt,
                             Collectors.mapping(Body.Intensity.IntensityRegionReached::getName, Collectors.toList())))
-                    .forEach((intensity, regions) -> builder.addField(intensity.getTo().equals("over") ? "eewbot.eew.plumseismicintensityplus" : "eewbot.eew.plumseismicintensity",
-                            String.join(" ", regions), false, SeismicIntensity.get(intensity.getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown")));
+                    .forEach((intensity, regions) -> {
+                        if (intensity.getTo().equals("over")) {
+                            builder.addField("eewbot.eew.plumseismicintensityplus",
+                                    String.join(" ", regions), false, SeismicIntensity.get(intensity.getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
+                        } else {
+                            builder.addField("eewbot.eew.plumseismicintensity",
+                                    String.join(" ", regions), false, SeismicIntensity.get(intensity.getTo()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
+                        }
+                    });
         }
 
         if (!isAccurateEnough()) {
