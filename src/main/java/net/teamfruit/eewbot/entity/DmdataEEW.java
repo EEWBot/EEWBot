@@ -820,19 +820,25 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                         false);
             }
         } else if (this.getBody().getIntensity() != null && this.getBody().getIntensity().getRegions() != null) {
-            this.getBody().getIntensity().getRegions().stream()
-                    .filter(Body.Intensity.IntensityRegionReached::isPlum)
-                    .collect(Collectors.groupingBy(Body.Intensity.IntensityRegionReached::getForecastMaxInt,
-                            Collectors.mapping(Body.Intensity.IntensityRegionReached::getName, Collectors.toList())))
-                    .forEach((intensity, regions) -> {
-                        if (intensity.getTo().equals("over")) {
-                            builder.addField("eewbot.eew.plumseismicintensityplus",
-                                    String.join(" ", regions), false, SeismicIntensity.get(intensity.getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
-                        } else {
-                            builder.addField("eewbot.eew.plumseismicintensity",
-                                    String.join(" ", regions), false, SeismicIntensity.get(intensity.getTo()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
-                        }
-                    });
+            if (this.getBody().getIntensity().getRegions().isEmpty()) {
+                builder.addField("eewbot.eew.plumseismicintensityplus", "eewbot.eew.near", false,
+                        SeismicIntensity.get(this.getBody().getIntensity().getForecastMaxInt().getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"),
+                        getBody().getEarthquake().getHypocenter().getName());
+            } else {
+                this.getBody().getIntensity().getRegions().stream()
+                        .filter(Body.Intensity.IntensityRegionReached::isPlum)
+                        .collect(Collectors.groupingBy(Body.Intensity.IntensityRegionReached::getForecastMaxInt,
+                                Collectors.mapping(Body.Intensity.IntensityRegionReached::getName, Collectors.toList())))
+                        .forEach((intensity, regions) -> {
+                            if (intensity.getTo().equals("over")) {
+                                builder.addField("eewbot.eew.plumseismicintensityplus",
+                                        String.join(" ", regions), false, SeismicIntensity.get(intensity.getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
+                            } else {
+                                builder.addField("eewbot.eew.plumseismicintensity",
+                                        String.join(" ", regions), false, SeismicIntensity.get(intensity.getTo()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
+                            }
+                        });
+            }
         }
 
         if (!isAccurateEnough()) {
