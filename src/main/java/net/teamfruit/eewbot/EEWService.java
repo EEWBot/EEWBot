@@ -10,6 +10,7 @@ import net.teamfruit.eewbot.entity.DiscordWebhook;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.ChannelFilter;
 import net.teamfruit.eewbot.registry.ChannelRegistry;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.async.methods.*;
@@ -40,10 +41,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class EEWService {
+
+    private static final Pattern WEBHOOK_PATTERN = Pattern.compile("discord\\.com/api/webhooks/(\\d+)/");
 
     private final GatewayDiscordClient gateway;
     private final String avatarUrl;
@@ -86,7 +89,7 @@ public class EEWService {
             this.duplicatorAddress = null;
     }
 
-    public void sendMessage(final Predicate<Channel> filter, final Entity entity, boolean highPriority) {
+    public void sendMessage(final ChannelFilter filter, final Entity entity, boolean highPriority) {
         Map<String, MessageCreateSpec> msgByLang = new HashMap<>();
         I18n.INSTANCE.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang)));
 
@@ -299,15 +302,15 @@ public class EEWService {
                     .build();
             HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
-                Map<String, Set<String>> resultMap = EEWBot.GSON.fromJson(response.body(), new TypeToken<Map<String, Set<String>>>() {
+                Map<String, List<String>> resultMap = EEWBot.GSON.fromJson(response.body(), new TypeToken<Map<String, List<String>>>() {
                 }.getType());
-                Set<String> notFoundList = resultMap.get("404");
+                List<String> notFoundList = resultMap.get("404");
                 if (notFoundList != null) {
-                    this.channels.getChannels(channel -> channel.getWebhook() != null && notFoundList.contains(channel.getWebhook().getUrl()))
-                            .forEach((key, value) -> {
-                                Log.logger.info("Webhook {} is deleted, unregister", Objects.requireNonNull(value.getWebhook()).getId());
-                                this.channels.setWebhook(key, null);
-                            });
+                    notFoundList.stream().map(webhook -> WEBHOOK_PATTERN.matcher(webhook).group(1))
+                            .forEach(webhookId -> this.channels.actionOnChannels(ChannelFilter.builder().webhookId(webhookId).build(), entry -> {
+                                Log.logger.info("Webhook {} is deleted, unregister", Objects.requireNonNull(entry.getValue().getWebhook()).getId());
+                                this.channels.setWebhook(entry.getKey(), null);
+                            }));
                 }
             } else {
                 Log.logger.error("Failed to fetch errors from duplicator: " + response.statusCode() + " " + response.body());

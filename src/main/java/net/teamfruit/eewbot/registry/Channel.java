@@ -53,7 +53,7 @@ public class Channel {
     }
 
     public boolean isEewAlert() {
-        return eewAlert;
+        return this.eewAlert;
     }
 
     void setEewAlert(boolean eewAlert) {
@@ -61,7 +61,7 @@ public class Channel {
     }
 
     public boolean isEewPrediction() {
-        return eewPrediction;
+        return this.eewPrediction;
     }
 
     void setEewPrediction(boolean eewPrediction) {
@@ -69,7 +69,7 @@ public class Channel {
     }
 
     public boolean isEewDecimation() {
-        return eewDecimation;
+        return this.eewDecimation;
     }
 
     void setEewDecimation(boolean eewDecimation) {
@@ -77,7 +77,7 @@ public class Channel {
     }
 
     public boolean isQuakeInfo() {
-        return quakeInfo;
+        return this.quakeInfo;
     }
 
     void setQuakeInfo(boolean quakeInfo) {
@@ -85,7 +85,7 @@ public class Channel {
     }
 
     public SeismicIntensity getMinIntensity() {
-        return minIntensity;
+        return this.minIntensity;
     }
 
     void setMinIntensity(SeismicIntensity minIntensity) {
@@ -93,7 +93,7 @@ public class Channel {
     }
 
     public @Nullable Webhook getWebhook() {
-        return webhook;
+        return this.webhook;
     }
 
     void setWebhook(Webhook webhook) {
@@ -101,7 +101,7 @@ public class Channel {
     }
 
     public String getLang() {
-        return lang;
+        return this.lang;
     }
 
     void setLang(String lang) {
@@ -187,7 +187,7 @@ public class Channel {
         }
 
         public String getId() {
-            return id;
+            return this.id;
         }
 
         void setId(String id) {
@@ -195,7 +195,7 @@ public class Channel {
         }
 
         public String getToken() {
-            return token;
+            return this.token;
         }
 
         void setToken(String token) {
@@ -203,7 +203,7 @@ public class Channel {
         }
 
         public @Nullable String getThreadId() {
-            return threadId;
+            return this.threadId;
         }
 
         void setThreadId(String threadId) {
@@ -231,12 +231,12 @@ public class Channel {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Webhook webhook = (Webhook) o;
-            return Objects.equals(id, webhook.id) && Objects.equals(token, webhook.token) && Objects.equals(threadId, webhook.threadId);
+            return Objects.equals(this.id, webhook.id) && Objects.equals(this.token, webhook.token) && Objects.equals(this.threadId, webhook.threadId);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(id, token, threadId);
+            return Objects.hash(this.id, this.token, this.threadId);
         }
     }
 
@@ -245,11 +245,11 @@ public class Channel {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Channel channel = (Channel) o;
-        return eewAlert == channel.eewAlert && eewPrediction == channel.eewPrediction && eewDecimation == channel.eewDecimation && quakeInfo == channel.quakeInfo && minIntensity == channel.minIntensity && Objects.equals(webhook, channel.webhook) && Objects.equals(lang, channel.lang);
+        return this.eewAlert == channel.eewAlert && this.eewPrediction == channel.eewPrediction && this.eewDecimation == channel.eewDecimation && this.quakeInfo == channel.quakeInfo && this.minIntensity == channel.minIntensity && Objects.equals(this.webhook, channel.webhook) && Objects.equals(this.lang, channel.lang);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(eewAlert, eewPrediction, eewDecimation, quakeInfo, minIntensity, webhook, lang);
+        return Objects.hash(this.eewAlert, this.eewPrediction, this.eewDecimation, this.quakeInfo, this.minIntensity, this.webhook, this.lang);
     }
 }

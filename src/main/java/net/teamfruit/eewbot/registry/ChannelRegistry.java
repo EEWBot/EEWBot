@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, Channel>> {
@@ -57,13 +57,13 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
                 .collect(Collectors.toList());
     }
 
-    public Map<Long, Channel> getChannels(Predicate<Channel> filter) {
-        return getElement().entrySet().stream()
+    public void actionOnChannels(ChannelFilter filter, Consumer<Map.Entry<Long, Channel>> consumer) {
+        getElement().entrySet().stream()
                 .filter(entry -> filter.test(entry.getValue()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .forEach(consumer);
     }
 
-    public Map<Boolean, List<Map.Entry<Long, Channel>>> getChannelsPartitionedByWebhookPresent(Predicate<Channel> filter) {
+    public Map<Boolean, List<Map.Entry<Long, Channel>>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
         return getElement().entrySet().stream()
                 .filter(entry -> filter.test(entry.getValue()))
                 .collect(Collectors.partitioningBy(entry -> entry.getValue().getWebhook() != null));
