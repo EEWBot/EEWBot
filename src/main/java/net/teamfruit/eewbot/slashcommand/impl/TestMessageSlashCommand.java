@@ -30,6 +30,11 @@ public class TestMessageSlashCommand implements ISlashCommand {
     }
 
     @Override
+    public boolean isDefer() {
+        return true;
+    }
+
+    @Override
     public ApplicationCommandRequest buildCommand() {
         return ApplicationCommandRequest.builder()
                 .name(getCommandName())
@@ -44,15 +49,14 @@ public class TestMessageSlashCommand implements ISlashCommand {
         boolean hasWebhook = channel != null && channel.webhook != null;
 
         if (hasWebhook) {
-            return event.deferReply()
-                    .then(executeWebhook(event.getClient().getCoreResources().getRouter(), Long.parseLong(channel.webhook.id), channel.webhook.token, true, channel.webhook.threadId,
-                            MultipartRequest.ofRequest(WebhookExecuteRequest.builder()
-                                    .addEmbed(SlashCommandUtils.createEmbed(lang)
-                                            .title("eewbot.scmd.testmessage.title")
-                                            .description("eewbot.scmd.testmessage.webhook")
-                                            .build().asRequest())
-                                    .avatarUrl(bot.getAvatarUrl())
-                                    .build())))
+            return executeWebhook(event.getClient().getCoreResources().getRouter(), Long.parseLong(channel.webhook.id), channel.webhook.token, true, channel.webhook.threadId,
+                    MultipartRequest.ofRequest(WebhookExecuteRequest.builder()
+                            .addEmbed(SlashCommandUtils.createEmbed(lang)
+                                    .title("eewbot.scmd.testmessage.title")
+                                    .description("eewbot.scmd.testmessage.webhook")
+                                    .build().asRequest())
+                            .avatarUrl(bot.getAvatarUrl())
+                            .build()))
                     .flatMap(message -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.testmessage.success")))
                     .onErrorResume(ClientException.isStatusCode(404), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
@@ -68,13 +72,12 @@ public class TestMessageSlashCommand implements ISlashCommand {
                             .build()))
                     .then();
         } else {
-            return event.deferReply()
-                    .then(bot.getService().directSendMessagePassErrors(channelId, MessageCreateSpec.builder()
+            return bot.getService().directSendMessagePassErrors(channelId, MessageCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createEmbed(lang)
                                     .title("eewbot.scmd.testmessage.title")
                                     .description("eewbot.scmd.testmessage.normal")
                                     .build())
-                            .build()))
+                            .build())
                     .flatMap(message -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.testmessage.success")))
                     .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)

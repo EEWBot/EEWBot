@@ -10,6 +10,10 @@ public interface IButtonSlashCommand extends ISlashCommand {
 
     List<String> getCustomIds();
 
+    default boolean isDeferOnClick() {
+        return false;
+    }
+
     Mono<Void> onClick(EEWBot bot, ButtonInteractionEvent event, String lang);
 
 }

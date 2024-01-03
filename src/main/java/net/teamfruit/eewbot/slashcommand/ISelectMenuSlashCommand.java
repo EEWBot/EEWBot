@@ -10,5 +10,9 @@ public interface ISelectMenuSlashCommand extends ISlashCommand {
 
     List<String> getCustomIds();
 
+    default boolean isDeferOnSelect() {
+        return false;
+    }
+
     Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event, String lang);
 }

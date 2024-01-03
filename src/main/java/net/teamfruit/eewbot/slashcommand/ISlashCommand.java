@@ -9,6 +9,10 @@ public interface ISlashCommand {
 
     String getCommandName();
 
+    default boolean isDefer() {
+        return false;
+    }
+
     ApplicationCommandRequest buildCommand();
 
     Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang);
