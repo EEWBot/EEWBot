@@ -36,8 +36,18 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     @Override
+    public boolean isDefer() {
+        return true;
+    }
+
+    @Override
     public List<String> getCustomIds() {
         return Arrays.asList("channel", "sensitivity");
+    }
+
+    @Override
+    public boolean isDeferOnSelect() {
+        return true;
     }
 
     @Override
@@ -52,7 +62,6 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
-        event.deferReply().subscribe();
         long channelId = event.getInteraction().getChannelId().asLong();
         return Mono.fromRunnable(() -> {
                     if (!bot.getChannels().containsKey(channelId)) {
@@ -161,9 +170,9 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     @Override
     public Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         if (event.getCustomId().equals("channel"))
-            return event.deferReply().then(applyChannel(bot, event, lang)).then();
+            return applyChannel(bot, event, lang).then();
         else if (event.getCustomId().equals("sensitivity"))
-            return event.deferReply().then(applySensitivity(bot, event, lang)).then();
+            return applySensitivity(bot, event, lang).then();
         return Mono.empty();
     }
 

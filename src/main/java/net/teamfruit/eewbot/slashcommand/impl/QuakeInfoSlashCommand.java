@@ -22,6 +22,11 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
     }
 
     @Override
+    public boolean isDefer() {
+        return true;
+    }
+
+    @Override
     public ApplicationCommandRequest buildCommand() {
         return ApplicationCommandRequest.builder()
                 .name(getCommandName())
@@ -31,7 +36,7 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
-        return event.deferReply().then(get(event, lang)).then();
+        return get(event, lang).then();
     }
 
     private Mono<Message> get(ApplicationCommandInteractionEvent event, String lang) {
