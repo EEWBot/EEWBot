@@ -14,6 +14,10 @@ public interface IButtonSlashCommand extends ISlashCommand {
         return false;
     }
 
+    default boolean isEphemeralOnClick() {
+        return false;
+    }
+
     Mono<Void> onClick(EEWBot bot, ButtonInteractionEvent event, String lang);
 
 }
