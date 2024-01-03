@@ -88,12 +88,13 @@ public class EEWExecutor {
                 }
             }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
         } else {
-            DmdataGateway dmdataGateway = new DmdataGateway(new DmdataAPI(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin()), applicationId, this.config.isDmdataMultiSocketConnect(), this.config.isDebug()) {
+            DmdataGateway dmdataGateway = new DmdataGateway(new DmdataAPI(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin()), this.applicationId, this.config.isDmdataMultiSocketConnect(), this.config.isDebug()) {
                 @Override
                 public void onNewData(DmdataEEW eew) {
-                    if (StringUtils.equals(eew.getBody().getEarthquake().getCondition(), "仮定震源要素") && eew.getBody().getIntensity() == null) {
+                    if (eew.getBody().getEarthquake() != null &&
+                            StringUtils.equals(eew.getBody().getEarthquake().getCondition(), "仮定震源要素") &&
+                            eew.getBody().getIntensity() == null)
                         return;
-                    }
 
                     DmdataEEW.Body currentBody = eew.getBody();
                     DmdataEEW.Body prevBody = eew.getPrev() != null ? eew.getPrev().getBody() : null;
