@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -828,14 +829,17 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                 this.getBody().getIntensity().getRegions().stream()
                         .filter(Body.Intensity.IntensityRegionReached::isPlum)
                         .collect(Collectors.groupingBy(Body.Intensity.IntensityRegionReached::getForecastMaxInt,
-                                Collectors.mapping(Body.Intensity.IntensityRegionReached::getName, Collectors.toList())))
-                        .forEach((intensity, regions) -> {
-                            if (intensity.getTo().equals("over")) {
+                                Collectors.mapping(Body.Intensity.IntensityRegionReached::getName, Collectors.joining("　"))))
+                        .entrySet()
+                        .stream()
+                        .sorted(Comparator.comparing(entry -> SeismicIntensity.get(entry.getKey().getFrom()).orElse(SeismicIntensity.UNKNOWN), Comparator.reverseOrder()))
+                        .forEach(entry -> {
+                            if (entry.getKey().getTo().equals("over")) {
                                 builder.addField("eewbot.eew.plumseismicintensityplus",
-                                        String.join(" ", regions), false, SeismicIntensity.get(intensity.getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
+                                        entry.getValue(), false, SeismicIntensity.get(entry.getKey().getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
                             } else {
                                 builder.addField("eewbot.eew.plumseismicintensity",
-                                        String.join(" ", regions), false, SeismicIntensity.get(intensity.getTo()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
+                                        entry.getValue(), false, SeismicIntensity.get(entry.getKey().getTo()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
                             }
                         });
             }
