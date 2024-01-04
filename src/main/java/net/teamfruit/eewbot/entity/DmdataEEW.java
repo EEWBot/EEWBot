@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,6 +18,8 @@ public class DmdataEEW extends DmdataHeader implements Entity {
     private Body body;
     private DmdataEEW prev;
     private SeismicIntensity maxIntensityBefore = SeismicIntensity.UNKNOWN;
+    private boolean concurrent;
+    private int concurrentIndex;
 
     public Body getBody() {
         return this.body;
@@ -42,6 +45,22 @@ public class DmdataEEW extends DmdataHeader implements Entity {
         if (intensity.compareTo(this.maxIntensityBefore) > 0)
             return intensity;
         return this.maxIntensityBefore;
+    }
+
+    public boolean isConcurrent() {
+        return this.concurrent;
+    }
+
+    public void setConcurrent(boolean concurrent) {
+        this.concurrent = concurrent;
+    }
+
+    public int getConcurrentIndex() {
+        return this.concurrentIndex;
+    }
+
+    public void setConcurrentIndex(int concurrentIndex) {
+        this.concurrentIndex = concurrentIndex;
     }
 
     public static class Body {
@@ -780,8 +799,11 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
     public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         if (this.getBody().isCanceled()) {
-            return builder.title("eewbot.eew.eewcancel")
-                    .timestamp(FORMAT.parse(this.getReportDateTime(), Instant::from))
+            if (isConcurrent())
+                builder.title("eewbot.eew.eewcancel.concurrent", getConcurrentIndex());
+            else
+                builder.title("eewbot.eew.eewcancel");
+            return builder.timestamp(FORMAT.parse(this.getReportDateTime(), Instant::from))
                     .description(this.getBody().getText())
                     .color(Color.YELLOW)
                     .footer(String.join(" ", this.getPublishingOffice()), null)
@@ -790,16 +812,28 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
         if (this.getBody().isWarning()) {
             if (this.getBody().isLastInfo()) {
-                builder.title("eewbot.eew.eewalert.final");
+                if (isConcurrent())
+                    builder.title("eewbot.eew.eewalert.final.concurrent", getConcurrentIndex());
+                else
+                    builder.title("eewbot.eew.eewalert.final");
             } else {
-                builder.title("eewbot.eew.eewalert.num", this.getSerialNo());
+                if (isConcurrent())
+                    builder.title("eewbot.eew.eewalert.num.concurrent", getConcurrentIndex(), this.getSerialNo());
+                else
+                    builder.title("eewbot.eew.eewalert.num", this.getSerialNo());
             }
             builder.color(Color.RED);
         } else {
             if (this.getBody().isLastInfo()) {
-                builder.title("eewbot.eew.eewprediction.final");
+                if (isConcurrent())
+                    builder.title("eewbot.eew.eewprediction.final.concurrent", getConcurrentIndex());
+                else
+                    builder.title("eewbot.eew.eewprediction.final");
             } else {
-                builder.title("eewbot.eew.eewprediction.num", this.getSerialNo());
+                if (isConcurrent())
+                    builder.title("eewbot.eew.eewprediction.num.concurrent", getConcurrentIndex(), this.getSerialNo());
+                else
+                    builder.title("eewbot.eew.eewprediction.num", this.getSerialNo());
             }
             builder.color(Color.BLUE);
         }
@@ -820,12 +854,28 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                         false);
             }
         } else if (this.getBody().getIntensity() != null && this.getBody().getIntensity().getRegions() != null) {
-            this.getBody().getIntensity().getRegions().stream()
-                    .filter(Body.Intensity.IntensityRegionReached::isPlum)
-                    .collect(Collectors.groupingBy(Body.Intensity.IntensityRegionReached::getForecastMaxInt,
-                            Collectors.mapping(Body.Intensity.IntensityRegionReached::getName, Collectors.toList())))
-                    .forEach((intensity, regions) -> builder.addField(intensity.getTo().equals("over") ? "eewbot.eew.plumseismicintensityplus" : "eewbot.eew.plumseismicintensity",
-                            String.join(" ", regions), false, SeismicIntensity.get(intensity.getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown")));
+            if (this.getBody().getIntensity().getRegions().isEmpty()) {
+                builder.addField("eewbot.eew.plumseismicintensityplus", "eewbot.eew.near", false,
+                        SeismicIntensity.get(this.getBody().getIntensity().getForecastMaxInt().getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"),
+                        getBody().getEarthquake().getHypocenter().getName());
+            } else {
+                this.getBody().getIntensity().getRegions().stream()
+                        .filter(Body.Intensity.IntensityRegionReached::isPlum)
+                        .collect(Collectors.groupingBy(Body.Intensity.IntensityRegionReached::getForecastMaxInt,
+                                Collectors.mapping(Body.Intensity.IntensityRegionReached::getName, Collectors.joining("　"))))
+                        .entrySet()
+                        .stream()
+                        .sorted(Comparator.comparing(entry -> SeismicIntensity.get(entry.getKey().getFrom()).orElse(SeismicIntensity.UNKNOWN), Comparator.reverseOrder()))
+                        .forEach(entry -> {
+                            if (entry.getKey().getTo().equals("over")) {
+                                builder.addField("eewbot.eew.plumseismicintensityplus",
+                                        entry.getValue(), false, SeismicIntensity.get(entry.getKey().getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
+                            } else {
+                                builder.addField("eewbot.eew.plumseismicintensity",
+                                        entry.getValue(), false, SeismicIntensity.get(entry.getKey().getTo()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
+                            }
+                        });
+            }
         }
 
         if (!isAccurateEnough()) {

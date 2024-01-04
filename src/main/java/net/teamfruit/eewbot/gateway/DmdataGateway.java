@@ -305,7 +305,17 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                             int currentSerialNo = Integer.parseInt(eew.getSerialNo());
                             AtomicBoolean update = new AtomicBoolean(false);
                             DmdataGateway.this.prev.compute(eew.getEventId(), (key, value) -> {
-                                if (value == null || Integer.parseInt(value.getSerialNo()) < currentSerialNo || eew.getBody().isCanceled()) {
+                                int size = DmdataGateway.this.prev.size();
+                                if (value == null) {
+                                    eew.setConcurrentIndex(size + 1);
+                                    if (size >= 1)
+                                        eew.setConcurrent(true);
+                                } else {
+                                    eew.setConcurrentIndex(value.getConcurrentIndex());
+                                    eew.setConcurrent(value.isConcurrent() || size >= 2);
+                                }
+                                if (value == null || Integer.parseInt(value.getSerialNo()) < currentSerialNo ||
+                                        (eew.getBody().isCanceled() && !value.getBody().isCanceled())) {
                                     update.set(true);
                                     return eew;
                                 } else {
