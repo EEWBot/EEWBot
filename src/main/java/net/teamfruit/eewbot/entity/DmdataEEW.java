@@ -18,6 +18,8 @@ public class DmdataEEW extends DmdataHeader implements Entity {
     private Body body;
     private DmdataEEW prev;
     private SeismicIntensity maxIntensityBefore = SeismicIntensity.UNKNOWN;
+    private boolean concurrent;
+    private int concurrentIndex;
 
     public Body getBody() {
         return this.body;
@@ -43,6 +45,22 @@ public class DmdataEEW extends DmdataHeader implements Entity {
         if (intensity.compareTo(this.maxIntensityBefore) > 0)
             return intensity;
         return this.maxIntensityBefore;
+    }
+
+    public boolean isConcurrent() {
+        return this.concurrent;
+    }
+
+    public void setConcurrent(boolean concurrent) {
+        this.concurrent = concurrent;
+    }
+
+    public int getConcurrentIndex() {
+        return this.concurrentIndex;
+    }
+
+    public void setConcurrentIndex(int concurrentIndex) {
+        this.concurrentIndex = concurrentIndex;
     }
 
     public static class Body {
@@ -781,8 +799,11 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
     public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         if (this.getBody().isCanceled()) {
-            return builder.title("eewbot.eew.eewcancel")
-                    .timestamp(FORMAT.parse(this.getReportDateTime(), Instant::from))
+            if (isConcurrent())
+                builder.title("eewbot.eew.eewcancel.concurrent", getConcurrentIndex());
+            else
+                builder.title("eewbot.eew.eewcancel");
+            return builder.timestamp(FORMAT.parse(this.getReportDateTime(), Instant::from))
                     .description(this.getBody().getText())
                     .color(Color.YELLOW)
                     .footer(String.join(" ", this.getPublishingOffice()), null)
@@ -791,16 +812,28 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
         if (this.getBody().isWarning()) {
             if (this.getBody().isLastInfo()) {
-                builder.title("eewbot.eew.eewalert.final");
+                if (isConcurrent())
+                    builder.title("eewbot.eew.eewalert.final.concurrent", getConcurrentIndex());
+                else
+                    builder.title("eewbot.eew.eewalert.final");
             } else {
-                builder.title("eewbot.eew.eewalert.num", this.getSerialNo());
+                if (isConcurrent())
+                    builder.title("eewbot.eew.eewalert.num.concurrent", getConcurrentIndex(), this.getSerialNo());
+                else
+                    builder.title("eewbot.eew.eewalert.num", this.getSerialNo());
             }
             builder.color(Color.RED);
         } else {
             if (this.getBody().isLastInfo()) {
-                builder.title("eewbot.eew.eewprediction.final");
+                if (isConcurrent())
+                    builder.title("eewbot.eew.eewprediction.final.concurrent", getConcurrentIndex());
+                else
+                    builder.title("eewbot.eew.eewprediction.final");
             } else {
-                builder.title("eewbot.eew.eewprediction.num", this.getSerialNo());
+                if (isConcurrent())
+                    builder.title("eewbot.eew.eewprediction.num.concurrent", getConcurrentIndex(), this.getSerialNo());
+                else
+                    builder.title("eewbot.eew.eewprediction.num", this.getSerialNo());
             }
             builder.color(Color.BLUE);
         }
