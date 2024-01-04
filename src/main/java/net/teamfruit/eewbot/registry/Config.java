@@ -38,7 +38,7 @@ public class Config {
     }
 
     public boolean isEnableKyoshin() {
-        return enableKyoshin;
+        return this.enableKyoshin;
     }
 
     public int getKyoshinDelay() {
@@ -50,7 +50,7 @@ public class Config {
     }
 
     public String getDmdataAPIKey() {
-        return dmdataAPIKey;
+        return this.dmdataAPIKey;
     }
 
     public void setDmdataAPIKey(String dmdataAPIKey) {
@@ -58,27 +58,27 @@ public class Config {
     }
 
     public String getDmdataOrigin() {
-        return dmdataOrigin;
+        return this.dmdataOrigin;
     }
 
     public boolean isDmdataMultiSocketConnect() {
-        return dmdataMultiSocketConnect;
+        return this.dmdataMultiSocketConnect;
     }
 
     public String getDuplicatorAddress() {
-        return duplicatorAddress;
+        return this.duplicatorAddress;
     }
 
     public int getPoolingMax() {
-        return poolingMax;
+        return this.poolingMax;
     }
 
     public int getPoolingMaxPerRoute() {
-        return poolingMaxPerRoute;
+        return this.poolingMaxPerRoute;
     }
 
     public boolean isWebhookMigration() {
-        return webhookMigration;
+        return this.webhookMigration;
     }
 
     public String getRedisAddress() {
@@ -140,19 +140,22 @@ public class Config {
     @Override
     public String toString() {
         return "Config{" +
-                "token='" + token + '\'' +
-                ", enableKyoshin=" + enableKyoshin +
-                ", kyoshinDelay=" + kyoshinDelay +
-                ", quakeInfoDelay=" + quakeInfoDelay +
-                ", dmdataAPIKey='" + dmdataAPIKey + '\'' +
-                ", dmdataOrigin='" + dmdataOrigin + '\'' +
-                ", dmdataMultiSocketConnect=" + dmdataMultiSocketConnect +
-                ", poolingMax=" + poolingMax +
-                ", poolingMaxPerRoute=" + poolingMaxPerRoute +
-                ", nptServer='" + nptServer + '\'' +
-                ", defaultLanuage='" + defaultLanuage + '\'' +
-                ", systemChannel='" + systemChannel + '\'' +
-                ", debug=" + debug +
+                "token='" + this.token + '\'' +
+                ", enableKyoshin=" + this.enableKyoshin +
+                ", kyoshinDelay=" + this.kyoshinDelay +
+                ", quakeInfoDelay=" + this.quakeInfoDelay +
+                ", dmdataAPIKey='" + this.dmdataAPIKey + '\'' +
+                ", dmdataOrigin='" + this.dmdataOrigin + '\'' +
+                ", dmdataMultiSocketConnect=" + this.dmdataMultiSocketConnect +
+                ", duplicatorAddress='" + this.duplicatorAddress + '\'' +
+                ", poolingMax=" + this.poolingMax +
+                ", poolingMaxPerRoute=" + this.poolingMaxPerRoute +
+                ", webhookMigration=" + this.webhookMigration +
+                ", redisAddress='" + this.redisAddress + '\'' +
+                ", nptServer='" + this.nptServer + '\'' +
+                ", defaultLanuage='" + this.defaultLanuage + '\'' +
+                ", systemChannel='" + this.systemChannel + '\'' +
+                ", debug=" + this.debug +
                 '}';
     }
 
