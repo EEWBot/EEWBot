@@ -16,6 +16,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.WebSocket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
@@ -44,7 +45,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
     public DmdataGateway(DmdataAPI api, long appId, boolean multiConnect, boolean debug) {
         this.dmdataAPI = api;
-        this.appName = "eewbot" + "-" + Long.toHexString(appId);
+        this.appName = "eewbot" + "-" + encodeAppId(appId);
         this.multiConnect = multiConnect;
         this.debug = debug;
     }
@@ -55,6 +56,11 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
     public WebSocketListener getWebSocket2() {
         return this.webSocket2;
+    }
+
+    private String encodeAppId(long appId) {
+        byte[] bytes = ByteBuffer.allocate(Long.BYTES).putLong(appId).array();
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     @Override
