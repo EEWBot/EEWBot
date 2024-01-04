@@ -3,6 +3,9 @@ package net.teamfruit.eewbot.registry;
 import com.google.gson.reflect.TypeToken;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.search.IndexDefinition;
+import redis.clients.jedis.search.IndexOptions;
+import redis.clients.jedis.search.Schema;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -24,6 +27,21 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
 
     public void setJedis(JedisPooled jedisPooled) {
         this.jedisPool = jedisPooled;
+        initJedis();
+    }
+
+    private void initJedis() {
+        Schema schema = new Schema()
+                .addTextField("eewAlert", 1.0)
+                .addTextField("eewPrediction", 1.0)
+                .addTextField("eewDecimation", 1.0)
+                .addTextField("quakeInfo", 1.0)
+                .addTextField("minIntensity", 1.0)
+                .addNumericField("webhook.id")
+                .addNumericField("webhook.threadId");
+        IndexDefinition indexDefinition = new IndexDefinition()
+                .setPrefixes("channel:");
+        this.jedisPool.ftCreate("channel-index", IndexOptions.defaultOptions().setDefinition(indexDefinition), schema);
     }
 
     public Channel get(long key) {
