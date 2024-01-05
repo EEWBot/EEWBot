@@ -142,6 +142,14 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
     }
 
     @Override
+    public void load() throws IOException {
+        if (!this.redisReady)
+            super.load();
+    }
+
+    @Override
     public void save() throws IOException {
+        if (!this.redisReady)
+            super.save();
     }
 }
