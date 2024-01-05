@@ -14,7 +14,9 @@ import net.teamfruit.eewbot.registry.Config;
 import net.teamfruit.eewbot.registry.ConfigurationRegistry;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
-import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.UnifiedJedis;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -52,8 +54,8 @@ public class EEWBot {
         this.config.init();
 
         if (StringUtils.isNotEmpty(getConfig().getRedisAddress())) {
-            JedisPooled jedisPooled = new JedisPooled(getConfig().getRedisAddress());
-            this.channels.init(jedisPooled);
+            UnifiedJedis unifiedJedis = new UnifiedJedis(HostAndPort.from(getConfig().getRedisAddress()), DefaultJedisClientConfig.builder().resp3().build());
+            this.channels.init(unifiedJedis);
         } else {
             this.channels.init();
         }
