@@ -38,7 +38,6 @@ public class EEWBot {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    private JedisPooled jedisPooled;
     private GatewayDiscordClient gateway;
     private EEWService service;
     private EEWExecutor executor;
@@ -51,7 +50,14 @@ public class EEWBot {
 
     public void initialize() throws IOException {
         this.config.init();
-        this.channels.init();
+
+        if (StringUtils.isNotEmpty(getConfig().getRedisAddress())) {
+            JedisPooled jedisPooled = new JedisPooled(getConfig().getRedisAddress());
+            this.channels.init(jedisPooled);
+        } else {
+            this.channels.init();
+        }
+
         I18n.INSTANCE.init();
 
         final String token = System.getenv("TOKEN");
@@ -64,11 +70,6 @@ public class EEWBot {
 
         if (!getConfig().validate()) {
             return;
-        }
-
-        if (StringUtils.isNotEmpty(getConfig().getRedisAddress())) {
-            this.jedisPooled = new JedisPooled(getConfig().getRedisAddress());
-            this.channels.setJedis(this.jedisPooled);
         }
 
         this.gateway = DiscordClient.create(getConfig().getToken())
