@@ -4,8 +4,9 @@ import com.google.gson.reflect.TypeToken;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import redis.clients.jedis.AbstractTransaction;
-import redis.clients.jedis.UnifiedJedis;
+import redis.clients.jedis.Connection;
+import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisDataException;
 import redis.clients.jedis.search.IndexDefinition;
 import redis.clients.jedis.search.IndexOptions;
@@ -26,7 +27,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
 
     private static final String CHANNEL_PREFIX = "channel:";
 
-    private UnifiedJedis unifiedJedis;
+    private JedisPooled jedisPool;
     private boolean redisReady = false;
 
     public ChannelRegistry(Path path) {
@@ -34,15 +35,15 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
         }.getType());
     }
 
-    public void init(UnifiedJedis jedisPooled) throws IOException {
-        this.unifiedJedis = jedisPooled;
+    public void init(JedisPooled jedisPooled) throws IOException {
+        this.jedisPool = jedisPooled;
         initJedis();
     }
 
     private void initJedis() throws IOException {
         Log.logger.info("Connecting to Redis");
         try {
-            this.unifiedJedis.ftInfo("channel-index");
+            this.jedisPool.ftInfo("channel-index");
         } catch (JedisDataException e) {
             Log.logger.info("Creating index");
             createJedisIndex();
@@ -68,13 +69,15 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
                 .addNumericField("webhook.threadId");
         IndexDefinition indexDefinition = new IndexDefinition()
                 .setPrefixes(CHANNEL_PREFIX);
-        this.unifiedJedis.ftCreate("channel-index", IndexOptions.defaultOptions().setDefinition(indexDefinition), schema);
+        this.jedisPool.ftCreate("channel-index", IndexOptions.defaultOptions().setDefinition(indexDefinition), schema);
     }
 
     public void migrationToJedis() {
-        AbstractTransaction transaction = this.unifiedJedis.multi();
-        getElement().forEach((key, channel) -> transaction.jsonSet(CHANNEL_PREFIX + key, EEWBot.GSON.toJson(channel)));
-        transaction.exec();
+        try (Connection connection = this.jedisPool.getPool().getResource()) {
+            Transaction transaction = new Transaction(connection);
+            getElement().forEach((key, channel) -> transaction.jsonSet(CHANNEL_PREFIX + key, EEWBot.GSON.toJson(channel)));
+            transaction.exec();
+        }
     }
 
     public Channel get(long key) {
@@ -120,7 +123,4 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
                 .collect(Collectors.partitioningBy(entry -> entry.getValue().getWebhook() != null));
     }
 
-    @Override
-    public void save() throws IOException {
-    }
 }
