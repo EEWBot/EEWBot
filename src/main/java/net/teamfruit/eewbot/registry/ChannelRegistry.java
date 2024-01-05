@@ -8,13 +8,14 @@ import redis.clients.jedis.Connection;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisDataException;
+import redis.clients.jedis.json.JsonSetParams;
+import redis.clients.jedis.json.Path;
 import redis.clients.jedis.search.IndexDefinition;
 import redis.clients.jedis.search.IndexOptions;
 import redis.clients.jedis.search.Schema;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +31,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
     private JedisPooled jedisPool;
     private boolean redisReady = false;
 
-    public ChannelRegistry(Path path) {
+    public ChannelRegistry(java.nio.file.Path path) {
         super(path, ConcurrentHashMap::new, new TypeToken<ConcurrentHashMap<Long, Channel>>() {
         }.getType());
     }
@@ -81,27 +82,44 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
     }
 
     public Channel get(long key) {
+        if (this.redisReady)
+            return this.jedisPool.jsonGet(CHANNEL_PREFIX + key, Channel.class);
         return getElement().get(key);
     }
 
-    public Channel remove(long key) {
-        return getElement().remove(key);
+    public void remove(long key) {
+        if (this.redisReady)
+            this.jedisPool.jsonDel(CHANNEL_PREFIX + key);
+        else
+            getElement().remove(key);
     }
 
-    public Channel computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction) {
-        return getElement().computeIfAbsent(key, mappingFunction);
+    public void computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction) {
+        if (this.redisReady)
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, EEWBot.GSON.toJson(mappingFunction.apply(key)), new JsonSetParams().nx());
+        else
+            getElement().computeIfAbsent(key, mappingFunction);
     }
 
     public void set(long key, String name, boolean bool) {
-        getElement().get(key).set(name, bool);
+        if (this.redisReady)
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$." + name), bool);
+        else
+            getElement().get(key).set(name, bool);
     }
 
     public void setMinIntensity(long key, SeismicIntensity intensity) {
-        getElement().get(key).setMinIntensity(intensity);
+        if (this.redisReady)
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.minIntensity"), intensity.getSerializedName());
+        else
+            getElement().get(key).setMinIntensity(intensity);
     }
 
     public void setWebhook(long key, Channel.Webhook webhook) {
-        getElement().get(key).setWebhook(webhook);
+        if (this.redisReady)
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.webhook"), EEWBot.GSON.toJson(webhook));
+        else
+            getElement().get(key).setWebhook(webhook);
     }
 
     public List<Map.Entry<Long, Channel>> getWebhookAbsentChannels() {
@@ -123,4 +141,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
                 .collect(Collectors.partitioningBy(entry -> entry.getValue().getWebhook() != null));
     }
 
+    @Override
+    public void save() throws IOException {
+    }
 }
