@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.entity;
 import com.google.gson.annotations.SerializedName;
 import discord4j.rest.util.Color;
 
+import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -48,6 +49,16 @@ public enum SeismicIntensity {
 
     public Color getColor() {
         return this.color;
+    }
+
+    public String getSerializedName() {
+        try {
+            Field field = getClass().getField(name());
+            SerializedName serializedName = field.getAnnotation(SerializedName.class);
+            return serializedName.value();
+        } catch (NoSuchFieldException e) {
+            return null;
+        }
     }
 
     @Override
