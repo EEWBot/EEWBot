@@ -61,14 +61,14 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
 
     private void createJedisIndex() {
         Schema schema = new Schema()
-                .addTextField("eewAlert", 1.0)
-                .addTextField("eewPrediction", 1.0)
-                .addTextField("eewDecimation", 1.0)
-                .addTextField("quakeInfo", 1.0)
-                .addTextField("minIntensity", 1.0)
-                .addNumericField("webhook.id")
-                .addNumericField("webhook.threadId");
-        IndexDefinition indexDefinition = new IndexDefinition()
+                .addTextField("$.eewAlert", 1.0)
+                .addTextField("$.eewPrediction", 1.0)
+                .addTextField("$.eewDecimation", 1.0)
+                .addTextField("$.quakeInfo", 1.0)
+                .addTextField("$.minIntensity", 1.0)
+                .addNumericField("$.webhook.id")
+                .addNumericField("$.webhook.threadId");
+        IndexDefinition indexDefinition = new IndexDefinition(IndexDefinition.Type.JSON)
                 .setPrefixes(CHANNEL_PREFIX);
         this.jedisPool.ftCreate("channel-index", IndexOptions.defaultOptions().setDefinition(indexDefinition), schema);
     }
