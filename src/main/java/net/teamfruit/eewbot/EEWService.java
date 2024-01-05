@@ -306,7 +306,7 @@ public class EEWService {
                 }.getType());
                 List<String> notFoundList = resultMap.get("404");
                 if (notFoundList != null) {
-                    notFoundList.stream().map(webhook -> WEBHOOK_PATTERN.matcher(webhook).group(1))
+                    notFoundList.stream().map(webhook -> Long.parseLong(WEBHOOK_PATTERN.matcher(webhook).group(1)))
                             .forEach(webhookId -> this.channels.actionOnChannels(ChannelFilter.builder().webhookId(webhookId).build(), entry -> {
                                 Log.logger.info("Webhook {} is deleted, unregister", Objects.requireNonNull(entry.getValue().getWebhook()).getId());
                                 this.channels.setWebhook(entry.getKey(), null);

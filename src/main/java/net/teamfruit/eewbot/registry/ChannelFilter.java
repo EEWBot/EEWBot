@@ -14,7 +14,7 @@ public class ChannelFilter {
     private boolean quakeInfoPresent;
     private SeismicIntensity intensity;
     private boolean intensityPresent;
-    private String webhookId;
+    private long webhookId;
     private boolean webhookIdPresent;
 
     public boolean test(Channel channel) {
@@ -30,7 +30,7 @@ public class ChannelFilter {
             return false;
         if (this.webhookIdPresent && channel.getWebhook() == null)
             return false;
-        return !this.webhookIdPresent || channel.getWebhook().getId().equals(this.webhookId);
+        return !this.webhookIdPresent || channel.getWebhook().getId() == this.webhookId;
     }
 
     public static ChannelFilter.Builder builder() {
@@ -71,7 +71,7 @@ public class ChannelFilter {
             return this;
         }
 
-        public Builder webhookId(String webhookId) {
+        public Builder webhookId(long webhookId) {
             this.filter.webhookId = webhookId;
             this.filter.webhookIdPresent = true;
             return this;

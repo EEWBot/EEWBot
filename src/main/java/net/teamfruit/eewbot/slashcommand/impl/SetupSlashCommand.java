@@ -73,9 +73,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
-        return Mono.fromRunnable(() -> {
-                    bot.getChannels().computeIfAbsent(channelId, key -> new Channel(false, false, false, false, SeismicIntensity.ONE, null));
-                })
+        return Mono.fromRunnable(() -> bot.getChannels().computeIfAbsent(channelId, key -> new Channel(false, false, false, false, SeismicIntensity.ONE, null)))
                 .then(event.getInteraction().getChannel()
                         .flatMap(channel -> {
                             // DM channel
@@ -103,7 +101,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                             )
                                             .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 Channel botChannel = bot.getChannels().get(channelId);
-                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asString(), webhookData.token().get(), isThread ? String.valueOf(channelId) : null);
+                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
                                                 if (!webhook.equals(botChannel.getWebhook())) {
                                                     bot.getChannels().setWebhook(channelId, webhook);
                                                     try {

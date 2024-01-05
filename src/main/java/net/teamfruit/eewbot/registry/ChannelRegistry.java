@@ -66,8 +66,8 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
                 .addTagField("$.eewDecimation").as("eewDecimation")
                 .addTagField("$.quakeInfo").as("quakeInfo")
                 .addTagField("$.minIntensity").as("minIntensity")
-                .addTagField("$.webhook.id").as("webhookId")
-                .addTagField("$.webhook.threadId").as("webhookThreadId");
+                .addNumericField("$.webhook.id").as("webhookId")
+                .addNumericField("$.webhook.threadId").as("webhookThreadId");
         IndexDefinition indexDefinition = new IndexDefinition(IndexDefinition.Type.JSON)
                 .setPrefixes(CHANNEL_PREFIX);
         this.jedisPool.ftCreate("channel-index", IndexOptions.defaultOptions().setDefinition(indexDefinition), schema);

@@ -172,25 +172,25 @@ public class Channel {
 
     public static class Webhook {
 
-        private String id;
+        private long id;
         private String token;
-        private String threadId;
+        private Long threadId;
 
-        public Webhook(String id, String token, String threadId) {
+        public Webhook(long id, String token, Long threadId) {
             this.id = id;
             this.token = token;
             this.threadId = threadId;
         }
 
-        public Webhook(String id, String token) {
+        public Webhook(long id, String token) {
             this(id, token, null);
         }
 
-        public String getId() {
+        public long getId() {
             return this.id;
         }
 
-        void setId(String id) {
+        void setId(long id) {
             this.id = id;
         }
 
@@ -202,11 +202,11 @@ public class Channel {
             this.token = token;
         }
 
-        public @Nullable String getThreadId() {
+        public @Nullable Long getThreadId() {
             return this.threadId;
         }
 
-        void setThreadId(String threadId) {
+        void setThreadId(Long threadId) {
             this.threadId = threadId;
         }
 

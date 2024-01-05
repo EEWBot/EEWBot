@@ -176,7 +176,7 @@ public class EEWExecutor {
                                             }).flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 boolean isThread = guildChannel instanceof ThreadChannel;
                                                 Channel botChannel = entry.getValue();
-                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asString(), webhookData.token().get(), isThread ? String.valueOf(entry.getKey()) : null);
+                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? entry.getKey() : null);
                                                 if (!webhook.equals(botChannel.getWebhook())) {
                                                     this.channels.setWebhook(entry.getKey(), webhook);
                                                     try {
