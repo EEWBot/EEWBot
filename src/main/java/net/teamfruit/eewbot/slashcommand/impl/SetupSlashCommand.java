@@ -96,8 +96,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                             .flatMap(name -> event.getClient().getRestClient().getWebhookService()
                                                                     .createWebhook(webhookChannelId, WebhookCreateRequest.builder()
                                                                             .name(name)
-                                                                            .build(), "Create EEWBot webhook"))
-                                            )
+                                                                            .build(), "Create EEWBot webhook")))
                                             .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 Channel botChannel = bot.getChannels().get(channelId);
                                                 net.teamfruit.eewbot.registry.Webhook webhook = new net.teamfruit.eewbot.registry.Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
@@ -192,7 +191,6 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
-        Channel channel = bot.getChannels().get(channelId);
         SeismicIntensity intensity = SeismicIntensity.get(event.getValues().get(0));
         bot.getChannels().setMinIntensity(channelId, intensity);
         try {
@@ -200,6 +198,6 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         } catch (IOException e) {
             return Mono.error(e);
         }
-        return event.createFollowup(I18n.INSTANCE.format(lang, channel.getMinIntensity() != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", channel.getMinIntensity().getSimple()));
+        return event.createFollowup(I18n.INSTANCE.format(lang, intensity != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", intensity.getSimple()));
     }
 }
