@@ -45,7 +45,7 @@ public class ChannelFilter {
         if (this.quakeInfoPresent)
             builder.append("@quakeInfo:{").append(this.quakeInfo).append("} ");
         if (this.intensityPresent)
-            builder.append("@minIntensity:{").append(this.intensity.getLegacySerializedName()).append("} ");
+            builder.append("@minIntensity:[0 ").append(this.intensity.ordinal()).append("] ");
         if (this.webhookIdPresent)
             builder.append("@webhookId:[").append(this.webhookId).append(" ").append(this.webhookId).append("]");
         return new Query(builder.toString());

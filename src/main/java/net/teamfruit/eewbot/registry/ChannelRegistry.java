@@ -65,7 +65,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
                 .addTagField("$.eewPrediction").as("eewPrediction")
                 .addTagField("$.eewDecimation").as("eewDecimation")
                 .addTagField("$.quakeInfo").as("quakeInfo")
-                .addTagField("$.minIntensity").as("minIntensity")
+                .addNumericField("$.minIntensity").as("minIntensity")
                 .addNumericField("$.webhook.id").as("webhookId")
                 .addNumericField("$.webhook.threadId").as("webhookThreadId");
         IndexDefinition indexDefinition = new IndexDefinition(IndexDefinition.Type.JSON)
