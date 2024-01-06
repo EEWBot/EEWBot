@@ -4,15 +4,14 @@ import com.google.gson.reflect.TypeToken;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Connection;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisDataException;
 import redis.clients.jedis.json.JsonSetParams;
 import redis.clients.jedis.json.Path;
-import redis.clients.jedis.search.IndexDefinition;
-import redis.clients.jedis.search.IndexOptions;
-import redis.clients.jedis.search.Schema;
+import redis.clients.jedis.search.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,6 +26,7 @@ import java.util.stream.Collectors;
 public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, Channel>> {
 
     private static final String CHANNEL_PREFIX = "channel:";
+    private static final String CHANNEL_INDEX = "channel-index";
 
     private JedisPooled jedisPool;
     private boolean redisReady = false;
@@ -70,7 +70,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
                 .addNumericField("$.webhook.threadId").as("webhookThreadId");
         IndexDefinition indexDefinition = new IndexDefinition(IndexDefinition.Type.JSON)
                 .setPrefixes(CHANNEL_PREFIX);
-        this.jedisPool.ftCreate("channel-index", IndexOptions.defaultOptions().setDefinition(indexDefinition), schema);
+        this.jedisPool.ftCreate(CHANNEL_INDEX, IndexOptions.defaultOptions().setDefinition(indexDefinition), schema);
     }
 
     public void migrationToJedis() {
@@ -122,11 +122,20 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
             getElement().get(key).setWebhook(webhook);
     }
 
-    public List<Map.Entry<Long, Channel>> getWebhookAbsentChannels() {
-        return getElement().entrySet()
-                .stream()
-                .filter(entry -> entry.getValue().getWebhook() == null)
-                .collect(Collectors.toList());
+    public List<Long> getWebhookAbsentChannels() {
+        if (this.redisReady) {
+            Query query = new Query("-@webhookId:[0 inf]").setNoContent();
+            SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
+            return searchResult.getDocuments().stream()
+                    .map(doc -> StringUtils.removeStart(doc.getId(), CHANNEL_PREFIX))
+                    .map(Long::parseLong)
+                    .collect(Collectors.toList());
+        } else
+            return getElement().entrySet()
+                    .stream()
+                    .filter(entry -> entry.getValue().getWebhook() == null)
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList());
     }
 
     public void actionOnChannels(ChannelFilter filter, Consumer<Map.Entry<Long, Channel>> consumer) {
