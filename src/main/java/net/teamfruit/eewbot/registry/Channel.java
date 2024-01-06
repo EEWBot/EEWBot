@@ -1,14 +1,12 @@
 package net.teamfruit.eewbot.registry;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.i18n.I18n;
-import reactor.util.annotation.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Channel {
+public class Channel extends ChannelBase {
 
     public static final List<String> COMMAND_KEYS;
 
@@ -36,10 +34,6 @@ public class Channel {
 
     private SeismicIntensity minIntensity = SeismicIntensity.ONE;
 
-    private Webhook webhook;
-
-    private String lang = I18n.DEFAULT_LANGUAGE;
-
     public Channel() {
     }
 
@@ -56,32 +50,16 @@ public class Channel {
         return this.eewAlert;
     }
 
-    void setEewAlert(boolean eewAlert) {
-        this.eewAlert = eewAlert;
-    }
-
     public boolean isEewPrediction() {
         return this.eewPrediction;
-    }
-
-    void setEewPrediction(boolean eewPrediction) {
-        this.eewPrediction = eewPrediction;
     }
 
     public boolean isEewDecimation() {
         return this.eewDecimation;
     }
 
-    void setEewDecimation(boolean eewDecimation) {
-        this.eewDecimation = eewDecimation;
-    }
-
     public boolean isQuakeInfo() {
         return this.quakeInfo;
-    }
-
-    void setQuakeInfo(boolean quakeInfo) {
-        this.quakeInfo = quakeInfo;
     }
 
     public SeismicIntensity getMinIntensity() {
@@ -90,22 +68,6 @@ public class Channel {
 
     void setMinIntensity(SeismicIntensity minIntensity) {
         this.minIntensity = minIntensity;
-    }
-
-    public @Nullable Webhook getWebhook() {
-        return this.webhook;
-    }
-
-    void setWebhook(Webhook webhook) {
-        this.webhook = webhook;
-    }
-
-    public String getLang() {
-        return this.lang;
-    }
-
-    void setLang(String lang) {
-        this.lang = lang;
     }
 
     /*

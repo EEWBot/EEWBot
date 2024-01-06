@@ -153,10 +153,10 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
                     .forEach(consumer);
     }
 
-    public Map<Boolean, List<Map.Entry<Long, Channel>>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
+    public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
         return getElement().entrySet().stream()
                 .filter(entry -> filter.test(entry.getValue()))
-                .collect(Collectors.partitioningBy(entry -> entry.getValue().getWebhook() != null));
+                .collect(Collectors.partitioningBy(entry -> entry.getValue().getWebhook() != null, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     @Override

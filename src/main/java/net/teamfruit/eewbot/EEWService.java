@@ -9,7 +9,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import net.teamfruit.eewbot.entity.DiscordWebhook;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.ChannelBase;
 import net.teamfruit.eewbot.registry.ChannelFilter;
 import net.teamfruit.eewbot.registry.ChannelRegistry;
 import org.apache.commons.lang3.StringUtils;
@@ -93,7 +93,7 @@ public class EEWService {
         Map<String, MessageCreateSpec> msgByLang = new HashMap<>();
         I18n.INSTANCE.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang)));
 
-        Map<Boolean, List<Map.Entry<Long, Channel>>> webhookPartitioned = this.channels.getChannelsPartitionedByWebhookPresent(filter);
+        Map<Boolean, Map<Long, ChannelBase>> webhookPartitioned = this.channels.getChannelsPartitionedByWebhookPresent(filter);
 
         Map<String, String> cacheWebhook = new HashMap<>();
         I18n.INSTANCE.getLanguages().keySet().forEach(lang -> {
@@ -109,17 +109,12 @@ public class EEWService {
                     sendWebhook(cacheWebhook, channels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe()));
         }
 
-//        partitioned.get(false).forEach(entry -> {
-//            MessageCreateSpec spec = cacheMsg.get(entry.getValue().lang);
-//            directSendMessage(entry.getKey(), spec).subscribe();
-//        });
-
         sendMessageD4J(webhookPartitioned.get(false), msgByLang);
     }
 
-    private void sendMessageD4J(List<Map.Entry<Long, Channel>> channels, Map<String, MessageCreateSpec> msgByLang) {
+    private void sendMessageD4J(Map<Long, ChannelBase> channels, Map<String, MessageCreateSpec> msgByLang) {
         List<Long> erroredChannels = new ArrayList<>();
-        Flux.merge(channels.stream()
+        Flux.merge(channels.entrySet().stream()
                         .map(entry -> directSendMessagePassErrors(entry.getKey(), msgByLang.get(entry.getValue().getLang()))
                                 .doOnError(ClientException.class, err -> {
                                     if ((err.getStatus() == HttpResponseStatus.NOT_FOUND || err.getStatus() == HttpResponseStatus.FORBIDDEN)) {
@@ -152,7 +147,7 @@ public class EEWService {
                 .subscribe();
     }
 
-    private void sendWebhook(Map<String, String> webhookBodyByLang, List<Map.Entry<Long, Channel>> webhookChannels, BiFunction<Long, Channel, Disposable> onError) {
+    private void sendWebhook(Map<String, String> webhookBodyByLang, Map<Long, ChannelBase> webhookChannels, BiFunction<Long, ChannelBase, Disposable> onError) {
         HttpHost target = new HttpHost("https", "discord.com");
         Map<String, SimpleHttpRequest> cacheReq = new HashMap<>();
         I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheReq.put(lang, SimpleRequestBuilder.post()
@@ -166,34 +161,34 @@ public class EEWService {
             final AsyncClientEndpoint endpoint = leaseFuture.get(30, TimeUnit.SECONDS);
             try {
                 final CountDownLatch latch = new CountDownLatch(webhookChannels.size());
-                Map<Long, Channel> erroredChannels = new ConcurrentHashMap<>();
-                webhookChannels.forEach(entry -> {
-                    SimpleHttpRequest request = cacheReq.get(entry.getValue().getLang());
-                    request.setPath("/api/webhooks" + Objects.requireNonNull(entry.getValue().getWebhook()).getPath());
+                Map<Long, ChannelBase> erroredChannels = new ConcurrentHashMap<>();
+                webhookChannels.forEach((channelId, channel) -> {
+                    SimpleHttpRequest request = cacheReq.get(channel.getLang());
+                    request.setPath("/api/webhooks" + Objects.requireNonNull(channel.getWebhook()).getPath());
                     endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
                         @Override
                         public void completed(SimpleHttpResponse simpleHttpResponse) {
                             latch.countDown();
                             if (simpleHttpResponse.getCode() < 200 || simpleHttpResponse.getCode() >= 300) {
-                                onError.apply(entry.getKey(), entry.getValue());
+                                onError.apply(channelId, channel);
                             }
                             if (simpleHttpResponse.getCode() == 404) {
-                                erroredChannels.put(entry.getKey(), entry.getValue());
+                                erroredChannels.put(channelId, channel);
                             }
                         }
 
                         @Override
                         public void failed(Exception e) {
                             latch.countDown();
-                            Log.logger.info("Failed to send webhook: ChannelID={} Message={}", entry.getKey(), e.getMessage());
-                            onError.apply(entry.getKey(), entry.getValue());
+                            Log.logger.info("Failed to send webhook: ChannelID={} Message={}", channelId, e.getMessage());
+                            onError.apply(channelId, channel);
                         }
 
                         @Override
                         public void cancelled() {
                             latch.countDown();
-                            Log.logger.info("Cancelled to send webhook: ChannelID={}", entry.getKey());
-                            onError.apply(entry.getKey(), entry.getValue());
+                            Log.logger.info("Cancelled to send webhook: ChannelID={}", channelId);
+                            onError.apply(channelId, channel);
                         }
                     });
                 });
@@ -221,16 +216,16 @@ public class EEWService {
         }
     }
 
-    private void sendDuplicator(boolean highPriority, URI duplicator, Map<String, String> webhookByLang, List<Map.Entry<Long, Channel>> webhookChannels, Consumer<List<Map.Entry<Long, Channel>>> onError) {
+    private void sendDuplicator(boolean highPriority, URI duplicator, Map<String, String> webhookByLang, Map<Long, ChannelBase> webhookChannels, Consumer<Map<Long, ChannelBase>> onError) {
         try {
             HttpHost target = HttpHost.create(duplicator);
             Map<String, SimpleHttpRequest> requestsByLang = new HashMap<>();
             I18n.INSTANCE.getLanguages().keySet().forEach(lang -> requestsByLang.put(lang, SimpleRequestBuilder.post()
                     .setHttpHost(target)
                     .addHeader("User-Agent", "EEWBot")
-                    .addHeader("X-Duplicate-Targets", EEWBot.GSON.toJson(webhookChannels.stream()
-                            .filter(entry -> entry.getValue().getLang().equals(lang))
-                            .map(entry -> Objects.requireNonNull(entry.getValue().getWebhook()).getUrl())
+                    .addHeader("X-Duplicate-Targets", EEWBot.GSON.toJson(webhookChannels.values().stream()
+                            .filter(channel -> channel.getLang().equals(lang))
+                            .map(channel -> Objects.requireNonNull(channel.getWebhook()).getUrl())
                             .toArray(String[]::new)))
                     .setPath(highPriority ? "/duplicate/high_priority" : "/duplicate/low_priority")
                     .setBody(webhookByLang.get(lang), ContentType.APPLICATION_JSON)
@@ -245,7 +240,9 @@ public class EEWService {
                     public void completed(SimpleHttpResponse simpleHttpResponse) {
                         latch.countDown();
                         if (simpleHttpResponse.getCode() < 200 || simpleHttpResponse.getCode() >= 300) {
-                            onError.accept(webhookChannels.stream().filter(entry -> entry.getValue().getLang().equals(lang)).collect(Collectors.toList()));
+                            onError.accept(webhookChannels.entrySet().stream()
+                                    .filter(entry -> entry.getValue().getLang().equals(lang))
+                                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
                         }
                     }
 
@@ -253,14 +250,18 @@ public class EEWService {
                     public void failed(Exception e) {
                         latch.countDown();
                         Log.logger.info("Failed to connect to duplicator: {}", e.getMessage());
-                        onError.accept(webhookChannels.stream().filter(entry -> entry.getValue().getLang().equals(lang)).collect(Collectors.toList()));
+                        onError.accept(webhookChannels.entrySet().stream()
+                                .filter(entry -> entry.getValue().getLang().equals(lang))
+                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
                     }
 
                     @Override
                     public void cancelled() {
                         latch.countDown();
                         Log.logger.info("Cancelled to connect to duplicator");
-                        onError.accept(webhookChannels.stream().filter(entry -> entry.getValue().getLang().equals(lang)).collect(Collectors.toList()));
+                        onError.accept(webhookChannels.entrySet().stream()
+                                .filter(entry -> entry.getValue().getLang().equals(lang))
+                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
                     }
                 }));
                 latch.await();
