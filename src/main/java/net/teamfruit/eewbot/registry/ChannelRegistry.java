@@ -56,6 +56,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
                 Log.logger.info("Migrated to Redis");
             }
         }
+        this.jedisPool.setJsonObjectMapper(new ChannelObjectMapper(EEWBot.GSON));
         this.redisReady = true;
     }
 
@@ -76,14 +77,16 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
     public void migrationToJedis() {
         try (Connection connection = this.jedisPool.getPool().getResource()) {
             Transaction transaction = new Transaction(connection);
-            getElement().forEach((key, channel) -> transaction.jsonSet(CHANNEL_PREFIX + key, EEWBot.GSON.toJson(channel)));
+            getElement().forEach((key, channel) -> transaction.jsonSet(CHANNEL_PREFIX + key, channel));
             transaction.exec();
         }
     }
 
     public Channel get(long key) {
+//        this.jedisPool.executeCommand(this.commandObjects.jsonGet(CHANNEL_PREFIX + key, Channel.class));
+//        Log.logger.info(this.jedisPool.jsonGet(CHANNEL_PREFIX + key, Path2.ROOT_PATH).getClass().toString());
         if (this.redisReady)
-            return EEWBot.GSON.fromJson(this.jedisPool.jsonGetAsPlainString(CHANNEL_PREFIX + key, Path.ROOT_PATH), Channel.class);
+            return this.jedisPool.jsonGet(CHANNEL_PREFIX + key, Channel.class);
         return getElement().get(key);
     }
 
@@ -96,7 +99,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
 
     public void computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction) {
         if (this.redisReady)
-            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, EEWBot.GSON.toJson(mappingFunction.apply(key)), new JsonSetParams().nx());
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.ROOT_PATH, mappingFunction.apply(key), new JsonSetParams().nx());
         else
             getElement().computeIfAbsent(key, mappingFunction);
     }
@@ -117,7 +120,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
 
     public void setWebhook(long key, Webhook webhook) {
         if (this.redisReady)
-            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.webhook"), EEWBot.GSON.toJson(webhook));
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.webhook"), webhook);
         else
             getElement().get(key).setWebhook(webhook);
     }
