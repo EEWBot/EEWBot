@@ -83,7 +83,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
 
     public Channel get(long key) {
         if (this.redisReady)
-            return this.jedisPool.jsonGet(CHANNEL_PREFIX + key, Channel.class);
+            return EEWBot.GSON.fromJson(this.jedisPool.jsonGetAsPlainString(CHANNEL_PREFIX + key, Path.ROOT_PATH), Channel.class);
         return getElement().get(key);
     }
 
@@ -110,7 +110,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
 
     public void setMinIntensity(long key, SeismicIntensity intensity) {
         if (this.redisReady)
-            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.minIntensity"), intensity.getLegacySerializedName());
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.minIntensity"), intensity.ordinal());
         else
             getElement().get(key).setMinIntensity(intensity);
     }
