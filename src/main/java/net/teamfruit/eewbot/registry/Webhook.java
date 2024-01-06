@@ -72,4 +72,13 @@ public class Webhook {
     public int hashCode() {
         return Objects.hash(this.id, this.token, this.threadId);
     }
+
+    @Override
+    public String toString() {
+        return "Webhook{" +
+                "id=" + this.id +
+                ", token='" + this.token + '\'' +
+                ", threadId=" + this.threadId +
+                '}';
+    }
 }

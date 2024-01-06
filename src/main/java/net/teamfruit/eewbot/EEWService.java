@@ -158,8 +158,9 @@ public class EEWService {
                 final CountDownLatch latch = new CountDownLatch(webhookChannels.size());
                 Map<Long, ChannelBase> erroredChannels = new ConcurrentHashMap<>();
                 webhookChannels.forEach((channelId, channel) -> {
-                    SimpleHttpRequest request = cacheReq.get(channel.getLang());
-                    request.setPath("/api/webhooks" + Objects.requireNonNull(channel.getWebhook()).getPath());
+                    SimpleHttpRequest request = SimpleRequestBuilder.copy(cacheReq.get(channel.getLang()))
+                            .setPath("/api/webhooks" + Objects.requireNonNull(channel.getWebhook()).getPath())
+                            .build();
                     endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
                         @Override
                         public void completed(SimpleHttpResponse simpleHttpResponse) {

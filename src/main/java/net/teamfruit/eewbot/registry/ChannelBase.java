@@ -28,4 +28,11 @@ public class ChannelBase {
         this.lang = lang;
     }
 
+    @Override
+    public String toString() {
+        return "ChannelBase{" +
+                "webhook=" + this.webhook +
+                ", lang='" + this.lang + '\'' +
+                '}';
+    }
 }
