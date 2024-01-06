@@ -1,41 +1,31 @@
 package net.teamfruit.eewbot.entity;
 
-import com.google.gson.annotations.SerializedName;
 import discord4j.rest.util.Color;
 
-import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 public enum SeismicIntensity {
-    @SerializedName("unknown")
-    UNKNOWN("不明", "不明", Color.of(127, 140, 141)),
-    @SerializedName("1")
-    ONE("1", "1", Color.of(127, 140, 141)),
-    @SerializedName("2")
-    TWO("2", "2", Color.of(41, 128, 185)),
-    @SerializedName("3")
-    THREE("3", "3", Color.of(39, 174, 96)),
-    @SerializedName("4")
-    FOUR("4", "4", Color.of(221, 176, 0)),
-    @SerializedName("5-")
-    FIVE_MINUS("5弱", "5-", Color.of(230, 126, 34)),
-    @SerializedName("5+")
-    FIVE_PLUS("5強", "5+", Color.of(182, 72, 18)),
-    @SerializedName("6-")
-    SIX_MINUS("6弱", "6-", Color.of(255, 118, 188)),
-    @SerializedName("6+")
-    SIX_PLUS("6強", "6+", Color.of(255, 46, 18)),
-    @SerializedName("7")
-    SEVEN("7", "7", Color.of(114, 0, 172));
+    UNKNOWN("不明", "不明", "unknown", Color.of(127, 140, 141)),
+    ONE("1", "1", "1", Color.of(127, 140, 141)),
+    TWO("2", "2", "2", Color.of(41, 128, 185)),
+    THREE("3", "3", "3", Color.of(39, 174, 96)),
+    FOUR("4", "4", "4", Color.of(221, 176, 0)),
+    FIVE_MINUS("5弱", "5-", "5-", Color.of(230, 126, 34)),
+    FIVE_PLUS("5強", "5+", "5+", Color.of(182, 72, 18)),
+    SIX_MINUS("6弱", "6-", "6-", Color.of(255, 118, 188)),
+    SIX_PLUS("6強", "6+", "6+", Color.of(255, 46, 18)),
+    SEVEN("7", "7", "7", Color.of(114, 0, 172));
 
     private final String name;
     private final String symbol;
+    private final String legacySerializedName;
     private final Color color;
 
-    SeismicIntensity(final String name, final String symbol, final Color color) {
+    SeismicIntensity(final String name, final String symbol, final String legacySerializedName, final Color color) {
         this.name = name;
         this.symbol = symbol;
+        this.legacySerializedName = legacySerializedName;
         this.color = color;
     }
 
@@ -51,14 +41,8 @@ public enum SeismicIntensity {
         return this.color;
     }
 
-    public String getSerializedName() {
-        try {
-            Field field = getClass().getField(name());
-            SerializedName serializedName = field.getAnnotation(SerializedName.class);
-            return serializedName.value();
-        } catch (NoSuchFieldException e) {
-            return null;
-        }
+    public String getLegacySerializedName() {
+        return this.legacySerializedName;
     }
 
     @Override

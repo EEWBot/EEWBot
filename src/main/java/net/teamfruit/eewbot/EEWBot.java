@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
@@ -8,10 +9,9 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.IntentSet;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.ChannelRegistry;
-import net.teamfruit.eewbot.registry.Config;
-import net.teamfruit.eewbot.registry.ConfigurationRegistry;
+import net.teamfruit.eewbot.registry.*;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.JedisPooled;
@@ -26,7 +26,10 @@ import java.util.concurrent.ScheduledExecutorService;
 public class EEWBot {
     public static EEWBot instance;
 
-    public static final Gson GSON = new Gson();
+    public static final Gson GSON = new GsonBuilder()
+            .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensitySerializer())
+            .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensityDeserializer())
+            .create();
 
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
     public static final String CONDIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");

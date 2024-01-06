@@ -110,7 +110,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
 
     public void setMinIntensity(long key, SeismicIntensity intensity) {
         if (this.redisReady)
-            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.minIntensity"), intensity.getSerializedName());
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.minIntensity"), intensity.getLegacySerializedName());
         else
             getElement().get(key).setMinIntensity(intensity);
     }
