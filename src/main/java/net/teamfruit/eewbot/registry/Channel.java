@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.registry;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.i18n.I18n;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -34,16 +35,21 @@ public class Channel extends ChannelBase {
 
     private SeismicIntensity minIntensity = SeismicIntensity.ONE;
 
+    public Channel(final Webhook webhook) {
+        super(webhook, I18n.DEFAULT_LANGUAGE);
+    }
+
     public Channel() {
+        this(null);
     }
 
     public Channel(final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final SeismicIntensity minIntensity, Webhook webhook) {
+        this(webhook);
         this.eewAlert = eewAlert;
         this.eewPrediction = eewPrediction;
         this.eewDecimation = eewDecimation;
         this.quakeInfo = quakeInfo;
         this.minIntensity = minIntensity;
-        this.webhook = webhook;
     }
 
     public boolean isEewAlert() {

@@ -154,6 +154,17 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
     }
 
     public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
+        if (this.redisReady) {
+            Query query = filter.toQuery().returnFields("$.webhook", "$.lang");
+            SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
+            return searchResult.getDocuments().stream()
+                    .collect(Collectors.partitioningBy(doc -> doc.hasProperty("$.webhook"),
+                            Collectors.toMap(doc -> Long.parseLong(StringUtils.removeStart(doc.getId(), CHANNEL_PREFIX)), doc -> {
+                                if (doc.hasProperty("$.webhook"))
+                                    return new ChannelBase(EEWBot.GSON.fromJson(doc.getString("$.webhook"), Webhook.class), doc.getString("$.lang"));
+                                return new ChannelBase(null, doc.getString("$.lang"));
+                            })));
+        }
         return getElement().entrySet().stream()
                 .filter(entry -> filter.test(entry.getValue()))
                 .collect(Collectors.partitioningBy(entry -> entry.getValue().getWebhook() != null, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
