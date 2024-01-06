@@ -78,14 +78,9 @@ public class EEWService {
                 connectionManager);
         this.asyncHttpClient.start();
 
-        if (StringUtils.isNotEmpty(bot.getConfig().getDuplicatorAddress())) {
-            try {
-                this.duplicatorAddress = new URI(bot.getConfig().getDuplicatorAddress());
-            } catch (URISyntaxException e) {
-                // should not happen
-                throw new RuntimeException(e);
-            }
-        } else
+        if (StringUtils.isNotEmpty(bot.getConfig().getDuplicatorAddress()))
+            this.duplicatorAddress = URI.create(bot.getConfig().getDuplicatorAddress());
+        else
             this.duplicatorAddress = null;
     }
 
