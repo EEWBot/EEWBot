@@ -2,9 +2,6 @@ package net.teamfruit.eewbot.entity;
 
 import discord4j.rest.util.Color;
 
-import java.util.Optional;
-import java.util.stream.Stream;
-
 public enum SeismicIntensity {
     UNKNOWN("不明", "不明", "unknown", Color.of(127, 140, 141)),
     ONE("1", "1", "1", Color.of(127, 140, 141)),
@@ -50,8 +47,13 @@ public enum SeismicIntensity {
         return this.name;
     }
 
-    public static Optional<SeismicIntensity> get(final String name) {
-        return Stream.of(values()).filter(value -> value.getSimple().equals(name) || value.getSymbolIntensity().equals(name)).findAny();
+    public static SeismicIntensity get(final String name) {
+        for (final SeismicIntensity value : values()) {
+            if (value.name.equals(name) || value.symbol.equals(name)) {
+                return value;
+            }
+        }
+        return UNKNOWN;
     }
 
 }

@@ -53,11 +53,11 @@ public class KmoniEEW implements Entity {
 
     public SeismicIntensity getMaxIntensityEEW() {
         if (getIntensity().isEmpty())
-            return maxIntensityBefore;
+            return this.maxIntensityBefore;
         SeismicIntensity intensity = getIntensity().get();
-        if (intensity.compareTo(maxIntensityBefore) > 0)
+        if (intensity.compareTo(this.maxIntensityBefore) > 0)
             return intensity;
-        return maxIntensityBefore;
+        return this.maxIntensityBefore;
     }
 
     public static class Result {
@@ -115,7 +115,9 @@ public class KmoniEEW implements Entity {
     }
 
     public Optional<SeismicIntensity> getIntensity() {
-        return SeismicIntensity.get(this.calcintensity);
+        if (StringUtils.isEmpty(this.calcintensity))
+            return Optional.empty();
+        return Optional.of(SeismicIntensity.get(this.calcintensity));
     }
 
     public int getDepth() {

@@ -83,8 +83,6 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
     }
 
     public Channel get(long key) {
-//        this.jedisPool.executeCommand(this.commandObjects.jsonGet(CHANNEL_PREFIX + key, Channel.class));
-//        Log.logger.info(this.jedisPool.jsonGet(CHANNEL_PREFIX + key, Path2.ROOT_PATH).getClass().toString());
         if (this.redisReady)
             return this.jedisPool.jsonGet(CHANNEL_PREFIX + key, Channel.class);
         return getElement().get(key);

@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class SetupSlashCommand implements ISelectMenuSlashCommand {
@@ -194,10 +193,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
         Channel channel = bot.getChannels().get(channelId);
-        Optional<SeismicIntensity> intensity = SeismicIntensity.get(event.getValues().get(0));
-        if (intensity.isEmpty())
-            return Mono.empty();
-        bot.getChannels().setMinIntensity(channelId, intensity.get());
+        SeismicIntensity intensity = SeismicIntensity.get(event.getValues().get(0));
+        bot.getChannels().setMinIntensity(channelId, intensity);
         try {
             bot.getChannels().save();
         } catch (IOException e) {
