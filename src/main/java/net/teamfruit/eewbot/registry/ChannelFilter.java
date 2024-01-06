@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.registry;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import redis.clients.jedis.search.Query;
 
 public class ChannelFilter {
 
@@ -31,6 +32,23 @@ public class ChannelFilter {
         if (this.webhookIdPresent && channel.getWebhook() == null)
             return false;
         return !this.webhookIdPresent || channel.getWebhook().getId() == this.webhookId;
+    }
+
+    public Query toQuery() {
+        StringBuilder builder = new StringBuilder();
+        if (this.eewAlertPresent)
+            builder.append("@eewAlert:{").append(this.eewAlert).append("} ");
+        if (this.eewPredictionPresent)
+            builder.append("@eewPrediction:{").append(this.eewPrediction).append("} ");
+        if (this.eewDecimationPresent)
+            builder.append("@eewDecimation:{").append(this.eewDecimation).append("} ");
+        if (this.quakeInfoPresent)
+            builder.append("@quakeInfo:{").append(this.quakeInfo).append("} ");
+        if (this.intensityPresent)
+            builder.append("@minIntensity:{").append(this.intensity.getSerializedName()).append("} ");
+        if (this.webhookIdPresent)
+            builder.append("@webhookId:[").append(this.webhookId).append(" ").append(this.webhookId).append("]");
+        return new Query(builder.toString());
     }
 
     public static ChannelFilter.Builder builder() {

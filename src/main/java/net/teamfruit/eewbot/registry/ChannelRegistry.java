@@ -138,10 +138,19 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
                     .collect(Collectors.toList());
     }
 
-    public void actionOnChannels(ChannelFilter filter, Consumer<Map.Entry<Long, Channel>> consumer) {
-        getElement().entrySet().stream()
-                .filter(entry -> filter.test(entry.getValue()))
-                .forEach(consumer);
+    public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
+        if (this.redisReady) {
+            Query query = filter.toQuery().setNoContent();
+            SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
+            searchResult.getDocuments().stream()
+                    .map(doc -> StringUtils.removeStart(doc.getId(), CHANNEL_PREFIX))
+                    .map(Long::parseLong)
+                    .forEach(consumer);
+        } else
+            getElement().entrySet().stream()
+                    .filter(entry -> filter.test(entry.getValue()))
+                    .map(Map.Entry::getKey)
+                    .forEach(consumer);
     }
 
     public Map<Boolean, List<Map.Entry<Long, Channel>>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
