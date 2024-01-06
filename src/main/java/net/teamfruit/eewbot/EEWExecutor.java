@@ -12,10 +12,10 @@ import net.teamfruit.eewbot.entity.DmdataEEW;
 import net.teamfruit.eewbot.entity.KmoniEEW;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.gateway.*;
-import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.ChannelFilter;
 import net.teamfruit.eewbot.registry.ChannelRegistry;
 import net.teamfruit.eewbot.registry.Config;
+import net.teamfruit.eewbot.registry.Webhook;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
 
@@ -175,7 +175,7 @@ public class EEWExecutor {
                                                                 .build(), "Create EEWBot webhook");
                                             }).flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 boolean isThread = guildChannel instanceof ThreadChannel;
-                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
+                                                Webhook webhook = new Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
                                                 this.channels.setWebhook(channelId, webhook);
                                                 try {
                                                     this.channels.save();

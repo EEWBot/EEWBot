@@ -101,7 +101,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                             )
                                             .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 Channel botChannel = bot.getChannels().get(channelId);
-                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
+                                                net.teamfruit.eewbot.registry.Webhook webhook = new net.teamfruit.eewbot.registry.Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
                                                 if (!webhook.equals(botChannel.getWebhook())) {
                                                     bot.getChannels().setWebhook(channelId, webhook);
                                                     try {

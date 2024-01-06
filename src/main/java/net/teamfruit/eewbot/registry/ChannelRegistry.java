@@ -115,7 +115,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
             getElement().get(key).setMinIntensity(intensity);
     }
 
-    public void setWebhook(long key, Channel.Webhook webhook) {
+    public void setWebhook(long key, Webhook webhook) {
         if (this.redisReady)
             this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.webhook"), EEWBot.GSON.toJson(webhook));
         else
