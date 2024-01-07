@@ -59,8 +59,8 @@ public class DetailQuakeInfo implements Entity {
     @Override
     public String toString() {
         return "DetailQuakeInfo{" +
-                "timestamp=" + timestamp +
-                ", earthQuake=" + earthQuake +
+                "timestamp=" + this.timestamp +
+                ", earthQuake=" + this.earthQuake +
                 '}';
     }
 
@@ -201,18 +201,18 @@ public class DetailQuakeInfo implements Entity {
         @Override
         public String toString() {
             return "Earthquake{" +
-                    "id='" + id + '\'' +
-                    ", time=" + time +
-                    ", intensity=" + intensity +
-                    ", epicenter='" + epicenter + '\'' +
-                    ", lat='" + lat + '\'' +
-                    ", lon='" + lon + '\'' +
-                    ", magnitude='" + magnitude + '\'' +
-                    ", depth='" + depth + '\'' +
-                    ", detail='" + detail + '\'' +
-                    ", local='" + local + '\'' +
-                    ", global='" + global + '\'' +
-                    ", relative=" + relative +
+                    "id='" + this.id + '\'' +
+                    ", time=" + this.time +
+                    ", intensity=" + this.intensity +
+                    ", epicenter='" + this.epicenter + '\'' +
+                    ", lat='" + this.lat + '\'' +
+                    ", lon='" + this.lon + '\'' +
+                    ", magnitude='" + this.magnitude + '\'' +
+                    ", depth='" + this.depth + '\'' +
+                    ", detail='" + this.detail + '\'' +
+                    ", local='" + this.local + '\'' +
+                    ", global='" + this.global + '\'' +
+                    ", relative=" + this.relative +
                     '}';
         }
 
@@ -233,7 +233,7 @@ public class DetailQuakeInfo implements Entity {
             @Override
             public String toString() {
                 return "Relative{" +
-                        "groups=" + groups +
+                        "groups=" + this.groups +
                         '}';
             }
 
@@ -265,8 +265,8 @@ public class DetailQuakeInfo implements Entity {
                 @Override
                 public String toString() {
                     return "Group{" +
-                            "intensity='" + intensity + '\'' +
-                            ", areas=" + areas +
+                            "intensity='" + this.intensity + '\'' +
+                            ", areas=" + this.areas +
                             '}';
                 }
 
@@ -286,7 +286,7 @@ public class DetailQuakeInfo implements Entity {
                     @Override
                     public String toString() {
                         return "Area{" +
-                                "name='" + name + '\'' +
+                                "name='" + this.name + '\'' +
                                 '}';
                     }
                 }
@@ -309,7 +309,7 @@ public class DetailQuakeInfo implements Entity {
         @Override
         public LocalDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
             String date = jsonParser.getText();
-            return LocalDateTime.parse(date, formatter);
+            return LocalDateTime.parse(date, this.formatter);
         }
     }
 
@@ -326,7 +326,7 @@ public class DetailQuakeInfo implements Entity {
         @Override
         public SeismicIntensity deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
             String intensity = jsonParser.getText();
-            return SeismicIntensity.get(intensity).orElse(null);
+            return SeismicIntensity.get(intensity);
         }
     }
 

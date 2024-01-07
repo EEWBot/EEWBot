@@ -12,20 +12,19 @@ import net.teamfruit.eewbot.entity.DmdataEEW;
 import net.teamfruit.eewbot.entity.KmoniEEW;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.gateway.*;
-import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.ChannelFilter;
+import net.teamfruit.eewbot.registry.ChannelRegistry;
 import net.teamfruit.eewbot.registry.Config;
-import net.teamfruit.eewbot.registry.ConfigurationRegistry;
+import net.teamfruit.eewbot.registry.Webhook;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 public class EEWExecutor {
 
@@ -36,10 +35,9 @@ public class EEWExecutor {
     private final Config config;
     private final long applicationId;
     private final GatewayDiscordClient client;
-    private final Map<Long, Channel> channels;
-    private final ConfigurationRegistry<Map<Long, Channel>> channelRegistry;
+    private final ChannelRegistry channels;
 
-    public EEWExecutor(final EEWService service, final Config config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, Map<Long, Channel> channels, ConfigurationRegistry<Map<Long, Channel>> channelRegistry) {
+    public EEWExecutor(final EEWService service, final Config config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels) {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;
@@ -49,7 +47,6 @@ public class EEWExecutor {
         this.timeProvider = new TimeProvider(this.scheduledExecutor);
         this.client = client;
         this.channels = channels;
-        this.channelRegistry = channelRegistry;
     }
 
     public ScheduledExecutorService getScheduledExecutor() {
@@ -72,19 +69,23 @@ public class EEWExecutor {
                     KmoniEEW prev = eew.getPrev();
 
                     boolean isWarning = eew.isCancel() ? prev != null && prev.isAlert() : eew.isAlert();
-                    Predicate<Channel> warning = c -> isWarning ? c.eewAlert : c.eewPrediction;
-
                     boolean isImportant = prev == null ||
                             eew.isInitial() ||
                             eew.isFinal() ||
                             eew.isAlert() != prev.isAlert() ||
                             !eew.getIntensity().equals(prev.getIntensity()) ||
                             !eew.getRegionName().equals(prev.getRegionName());
-                    Predicate<Channel> decimation = c -> !c.eewDecimation || isImportant;
-
                     SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
-                    Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(maxIntensity) <= 0;
-                    EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew, true));
+
+                    ChannelFilter.Builder builder = ChannelFilter.builder();
+                    if (isWarning)
+                        builder.eewAlert(true);
+                    else
+                        builder.eewPrediction(true);
+                    if (!isImportant)
+                        builder.eewDecimation(false);
+                    builder.intensity(maxIntensity);
+                    EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew, true));
                 }
             }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
         } else {
@@ -100,7 +101,6 @@ public class EEWExecutor {
                     DmdataEEW.Body prevBody = eew.getPrev() != null ? eew.getPrev().getBody() : null;
 
                     boolean isWarning = currentBody.isCanceled() ? prevBody != null && prevBody.isWarning() : currentBody.isWarning();
-                    Predicate<Channel> warning = c -> isWarning ? c.eewAlert : c.eewPrediction;
 
                     DmdataEEW.Body.Intensity currentIntensity = currentBody.getIntensity();
                     DmdataEEW.Body.Intensity prevIntensity = prevBody != null ? prevBody.getIntensity() : null;
@@ -110,11 +110,18 @@ public class EEWExecutor {
                             (currentIntensity == null) != (prevIntensity == null) ||
                             currentIntensity != null && !currentIntensity.getForecastMaxInt().getFrom().equals(prevIntensity.getForecastMaxInt().getFrom()) ||
                             !currentBody.getEarthquake().getHypocenter().getName().equals(prevBody.getEarthquake().getHypocenter().getName());
-                    Predicate<Channel> decimation = c -> !c.eewDecimation || isImportant;
 
                     SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
-                    Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(maxIntensity) <= 0;
-                    EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(warning.and(decimation).and(sensitivity), eew, true));
+
+                    ChannelFilter.Builder builder = ChannelFilter.builder();
+                    if (isWarning)
+                        builder.eewAlert(true);
+                    else
+                        builder.eewPrediction(true);
+                    if (!isImportant)
+                        builder.eewDecimation(false);
+                    builder.intensity(maxIntensity);
+                    EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew, true));
                 }
             };
             this.scheduledExecutor.execute(dmdataGateway);
@@ -127,9 +134,10 @@ public class EEWExecutor {
             public void onNewData(final DetailQuakeInfo data) {
                 Log.logger.info(data.toString());
 
-                final Predicate<Channel> quakeInfo = c -> c.quakeInfo;
-                final Predicate<Channel> sensitivity = c -> c.minIntensity.compareTo(data.getEarthquake().getIntensity()) <= 0;
-                EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(quakeInfo.and(sensitivity), data, false));
+                ChannelFilter.Builder builder = ChannelFilter.builder();
+                builder.quakeInfo(true);
+                builder.intensity(data.getEarthquake().getIntensity());
+                EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
             }
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
 
@@ -141,10 +149,9 @@ public class EEWExecutor {
             this.scheduledExecutor.scheduleWithFixedDelay(() -> {
                 Thread.currentThread().setName("eewbot-webhook-migration-thread");
 
-                this.channels.entrySet().stream()
-                        .filter(entry -> entry.getValue().webhook == null)
-                        .forEach(entry -> {
-                            this.client.getChannelById(Snowflake.of(entry.getKey()))
+                this.channels.getWebhookAbsentChannels()
+                        .forEach(channelId -> {
+                            this.client.getChannelById(Snowflake.of(channelId))
                                     .filter(GuildChannel.class::isInstance)
                                     .cast(GuildChannel.class)
                                     .filterWhen(guildChannel -> guildChannel.getEffectivePermissions(this.client.getSelfId())
@@ -168,17 +175,14 @@ public class EEWExecutor {
                                                                 .build(), "Create EEWBot webhook");
                                             }).flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 boolean isThread = guildChannel instanceof ThreadChannel;
-                                                Channel botChannel = entry.getValue();
-                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asString(), webhookData.token().get(), isThread ? String.valueOf(entry.getKey()) : null);
-                                                if (!webhook.equals(botChannel.webhook)) {
-                                                    botChannel.webhook = webhook;
-                                                    try {
-                                                        this.channelRegistry.save();
-                                                    } catch (IOException e) {
-                                                        Log.logger.error("Failed to save channels during webhook creation batch", e);
-                                                    }
-                                                    Log.logger.info("Created webhook for " + entry.getKey());
+                                                Webhook webhook = new Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
+                                                this.channels.setWebhook(channelId, webhook);
+                                                try {
+                                                    this.channels.save();
+                                                } catch (IOException e) {
+                                                    Log.logger.error("Failed to save channels during webhook creation batch", e);
                                                 }
+                                                Log.logger.info("Created webhook for " + channelId);
                                             })))
                                     .subscribe();
                             try {

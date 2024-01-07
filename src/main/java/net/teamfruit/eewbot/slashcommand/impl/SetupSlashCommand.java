@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class SetupSlashCommand implements ISelectMenuSlashCommand {
@@ -73,16 +72,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
-        return Mono.fromRunnable(() -> {
-                    if (!bot.getChannels().containsKey(channelId)) {
-                        bot.getChannelsLock().writeLock().lock();
-                        try {
-                            bot.getChannels().put(channelId, new Channel(false, false, false, false, false, false, SeismicIntensity.ONE, null));
-                        } finally {
-                            bot.getChannelsLock().writeLock().unlock();
-                        }
-                    }
-                })
+        return Mono.fromRunnable(() -> bot.getChannels().computeIfAbsent(channelId, key -> new Channel(false, false, false, false, SeismicIntensity.ONE, null)))
                 .then(event.getInteraction().getChannel()
                         .flatMap(channel -> {
                             // DM channel
@@ -106,15 +96,14 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                             .flatMap(name -> event.getClient().getRestClient().getWebhookService()
                                                                     .createWebhook(webhookChannelId, WebhookCreateRequest.builder()
                                                                             .name(name)
-                                                                            .build(), "Create EEWBot webhook"))
-                                            )
+                                                                            .build(), "Create EEWBot webhook")))
                                             .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 Channel botChannel = bot.getChannels().get(channelId);
-                                                Channel.Webhook webhook = new Channel.Webhook(webhookData.id().asString(), webhookData.token().get(), isThread ? String.valueOf(channelId) : null);
-                                                if (!webhook.equals(botChannel.webhook)) {
-                                                    botChannel.webhook = webhook;
+                                                net.teamfruit.eewbot.registry.Webhook webhook = new net.teamfruit.eewbot.registry.Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
+                                                if (!webhook.equals(botChannel.getWebhook())) {
+                                                    bot.getChannels().setWebhook(channelId, webhook);
                                                     try {
-                                                        bot.getChannelRegistry().save();
+                                                        bot.getChannels().save();
                                                     } catch (IOException e) {
                                                         Log.logger.error("Failed to save channel registry during setup command", e);
                                                         throw new RuntimeException(e);
@@ -143,7 +132,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                 return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel")).withEphemeral(true);
                             return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.sendmessages")).withEphemeral(true);
                         }))
-                .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel")))
+                .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel"))
+                        .withEphemeral(true))
                 .switchIfEmpty(event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply") + (warnMessageKey != null ? "\n\n" + I18n.INSTANCE.get(lang, warnMessageKey) : ""))
                         .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)))
                 );
@@ -166,7 +156,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
         Channel channel = bot.getChannels().get(channelId);
         return SelectMenu.of("sensitivity", Arrays.stream(SeismicIntensity.values()).map(intensity -> {
                     String label = intensity == SeismicIntensity.UNKNOWN ? I18n.INSTANCE.get(lang, "eewbot.scmd.setup.sensitivity.option.unknown") : I18n.INSTANCE.format(lang, "eewbot.scmd.setup.sensitivity.option", intensity);
-                    if (channel.minIntensity == intensity)
+                    if (channel.getMinIntensity() == intensity)
                         return SelectMenu.Option.ofDefault(label, intensity.getSimple());
                     return SelectMenu.Option.of(label, intensity.getSimple());
                 }).collect(Collectors.toList()))
@@ -185,10 +175,10 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private Mono<Message> applyChannel(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
-        Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
-        channel.getCommandFields().keySet().forEach(name -> channel.set(name, event.getValues().contains(name)));
+        long channelId = event.getInteraction().getChannelId().asLong();
+        Channel.COMMAND_KEYS.forEach(name -> bot.getChannels().set(channelId, name, event.getValues().contains(name)));
         try {
-            bot.getChannelRegistry().save();
+            bot.getChannels().save();
         } catch (IOException e) {
             return Mono.error(e);
         }
@@ -200,16 +190,14 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
-        Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
-        Optional<SeismicIntensity> intensity = SeismicIntensity.get(event.getValues().get(0));
-        if (intensity.isEmpty())
-            return Mono.empty();
-        channel.minIntensity = intensity.get();
+        long channelId = event.getInteraction().getChannelId().asLong();
+        SeismicIntensity intensity = SeismicIntensity.get(event.getValues().get(0));
+        bot.getChannels().setMinIntensity(channelId, intensity);
         try {
-            bot.getChannelRegistry().save();
+            bot.getChannels().save();
         } catch (IOException e) {
             return Mono.error(e);
         }
-        return event.createFollowup(I18n.INSTANCE.format(lang, channel.minIntensity != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", channel.minIntensity.getSimple()));
+        return event.createFollowup(I18n.INSTANCE.format(lang, intensity != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", intensity.getSimple()));
     }
 }

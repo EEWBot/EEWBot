@@ -46,10 +46,10 @@ public class TestMessageSlashCommand implements ISlashCommand {
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
         Channel channel = bot.getChannels().get(channelId);
-        boolean hasWebhook = channel != null && channel.webhook != null;
+        boolean hasWebhook = channel != null && channel.getWebhook() != null;
 
         if (hasWebhook) {
-            return executeWebhook(event.getClient().getCoreResources().getRouter(), Long.parseLong(channel.webhook.id), channel.webhook.token, true, channel.webhook.threadId,
+            return executeWebhook(event.getClient().getCoreResources().getRouter(), channel.getWebhook().getId(), channel.getWebhook().getToken(), true, channel.getWebhook().getThreadId(),
                     MultipartRequest.ofRequest(WebhookExecuteRequest.builder()
                             .addEmbed(SlashCommandUtils.createEmbed(lang)
                                     .title("eewbot.scmd.testmessage.title")
@@ -102,7 +102,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
     }
 
     // Temporary solution
-    public Mono<MessageData> executeWebhook(Router router, long webhookId, String token, boolean wait, String threadId, MultipartRequest<? extends WebhookExecuteRequest> request) {
+    public Mono<MessageData> executeWebhook(Router router, long webhookId, String token, boolean wait, Long threadId, MultipartRequest<? extends WebhookExecuteRequest> request) {
         DiscordWebRequest req = Routes.WEBHOOK_EXECUTE.newRequest(webhookId, token)
                 .query("wait", wait)
                 .header("content-type", request.getFiles().isEmpty() ? "application/json" : "multipart/form-data")

@@ -107,6 +107,6 @@ public class SlashCommandHandler {
         Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
         if (channel == null)
             return bot.getConfig().getDefaultLanuage();
-        return channel.lang;
+        return channel.getLang();
     }
 }

@@ -2,8 +2,6 @@ package net.teamfruit.eewbot;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
@@ -11,44 +9,35 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.IntentSet;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.Channel;
-import net.teamfruit.eewbot.registry.Config;
-import net.teamfruit.eewbot.registry.ConfigurationRegistry;
+import net.teamfruit.eewbot.registry.*;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
+import org.apache.commons.lang3.StringUtils;
+import redis.clients.jedis.JedisPooled;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
 public class EEWBot {
     public static EEWBot instance;
 
-    @SuppressWarnings("deprecation")
     public static final Gson GSON = new GsonBuilder()
-            .registerTypeAdapter(net.teamfruit.eewbot.registry.OldChannel.class, new net.teamfruit.eewbot.registry.OldChannel.ChannelTypeAdapter())
+            .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensitySerializer())
+            .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensityDeserializer())
             .create();
 
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
     public static final String CONDIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
-    private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(CONDIG_DIRECTORY != null ? Paths.get(CONDIG_DIRECTORY, "config.json") : Paths.get("config.json"), () -> new Config(), Config.class);
-    private final ConfigurationRegistry<Map<Long, Channel>> channels = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, Channel>(), new TypeToken<Map<Long, Channel>>() {
-    }.getType());
+    private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(CONDIG_DIRECTORY != null ? Paths.get(CONDIG_DIRECTORY, "config.json") : Paths.get("config.json"), Config::new, Config.class);
+    private final ChannelRegistry channels = new ChannelRegistry(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"));
 
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
-
-    private final ReentrantReadWriteLock channelsLock = new ReentrantReadWriteLock();
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -64,7 +53,14 @@ public class EEWBot {
 
     public void initialize() throws IOException {
         this.config.init();
-        initChannels();
+
+        if (StringUtils.isNotEmpty(getConfig().getRedisAddress())) {
+            JedisPooled jedisPooled = new JedisPooled(getConfig().getRedisAddress());
+            this.channels.init(jedisPooled);
+        } else {
+            this.channels.init();
+        }
+
         I18n.INSTANCE.init();
 
         final String token = System.getenv("TOKEN");
@@ -143,7 +139,7 @@ public class EEWBot {
 //        this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: " + channel.getGuildId().asString() + " System Channel: " + channel.getId().asString()));
 
         this.service = new EEWService(this);
-        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getChannelRegistry());
+        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels());
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
@@ -151,7 +147,7 @@ public class EEWBot {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             Log.logger.info("Shutdown");
             try {
-                getChannelRegistry().save();
+                getChannels().save();
             } catch (final IOException e) {
                 Log.logger.error("Save failed", e);
             }
@@ -160,52 +156,19 @@ public class EEWBot {
         this.gateway.onDisconnect().block();
     }
 
-    @SuppressWarnings("deprecation")
-    private boolean initChannels() throws IOException {
-        try {
-            this.channels.init();
-            return false;
-        } catch (final JsonSyntaxException e) {
-            Log.logger.info("Migrating channels.json");
-
-            final ConfigurationRegistry<Map<Long, List<net.teamfruit.eewbot.registry.OldChannel>>> oldChannels = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"),
-                    () -> new ConcurrentHashMap<Long, List<net.teamfruit.eewbot.registry.OldChannel>>(),
-                    new TypeToken<Map<Long, Collection<net.teamfruit.eewbot.registry.OldChannel>>>() {
-                    }.getType());
-
-            Files.copy(oldChannels.getPath(), DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "oldchannels.json") : Paths.get("oldchannels.json"));
-            oldChannels.init();
-
-            final Map<Long, Channel> map = oldChannels.getElement().values().stream()
-                    .flatMap(List::stream)
-                    .collect(Collectors.toMap(old -> old.id, Channel::fromOldChannel));
-            this.channels.setElement(map);
-            this.channels.save();
-            return true;
-        }
-    }
-
     public Config getConfig() {
         return this.config.getElement();
-    }
-
-    public Map<Long, Channel> getChannels() {
-        return this.channels.getElement();
     }
 
     public ScheduledExecutorService getScheduledExecutor() {
         return this.scheduledExecutor;
     }
 
-    public ReentrantReadWriteLock getChannelsLock() {
-        return this.channelsLock;
-    }
-
     public ConfigurationRegistry<Config> getConfigRegistry() {
         return this.config;
     }
 
-    public ConfigurationRegistry<Map<Long, Channel>> getChannelRegistry() {
+    public ChannelRegistry getChannels() {
         return this.channels;
     }
 
