@@ -43,10 +43,11 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
 
     private void initJedis() throws IOException {
         Log.logger.info("Connecting to Redis");
+        this.jedisPool.setJsonObjectMapper(new ChannelObjectMapper(EEWBot.GSON));
         try {
             this.jedisPool.ftInfo("channel-index");
         } catch (JedisDataException e) {
-            Log.logger.info("Creating index");
+            Log.logger.info("Creating redis index");
             createJedisIndex();
             if (Files.exists(getPath())) {
                 Log.logger.info("Migrating to Redis");
@@ -56,7 +57,6 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
                 Log.logger.info("Migrated to Redis");
             }
         }
-        this.jedisPool.setJsonObjectMapper(new ChannelObjectMapper(EEWBot.GSON));
         this.redisReady = true;
     }
 
@@ -77,7 +77,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
     public void migrationToJedis() {
         try (Connection connection = this.jedisPool.getPool().getResource()) {
             Transaction transaction = new Transaction(connection);
-            getElement().forEach((key, channel) -> transaction.jsonSet(CHANNEL_PREFIX + key, channel));
+            getElement().forEach((key, channel) -> transaction.jsonSet(CHANNEL_PREFIX + key, Path.ROOT_PATH, channel));
             transaction.exec();
         }
     }
