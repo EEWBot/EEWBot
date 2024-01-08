@@ -14,6 +14,7 @@ import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.*;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPooled;
 
 import java.io.IOException;
@@ -55,7 +56,9 @@ public class EEWBot {
         this.config.init();
 
         if (StringUtils.isNotEmpty(getConfig().getRedisAddress())) {
-            JedisPooled jedisPooled = new JedisPooled(getConfig().getRedisAddress());
+            String redisAddress = getConfig().getRedisAddress();
+            HostAndPort hnp = redisAddress.lastIndexOf(":") < 0 ? new HostAndPort(redisAddress, 6379) : HostAndPort.from(redisAddress);
+            JedisPooled jedisPooled = new JedisPooled(hnp);
             this.channels.init(jedisPooled);
         } else {
             this.channels.init();
