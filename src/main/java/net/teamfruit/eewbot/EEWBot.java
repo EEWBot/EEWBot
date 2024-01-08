@@ -88,7 +88,7 @@ public class EEWBot {
 
         int shardCount = this.gateway.getGatewayClientGroup().getShardCount();
 
-        int guildCount = this.gateway.on(ReadyEvent.class)
+        this.gateway.on(ReadyEvent.class)
                 .map(event -> {
                     int count = event.getGuilds().size();
                     Log.logger.info("Connecting {} guilds...", count);
@@ -96,17 +96,20 @@ public class EEWBot {
                 })
                 .take(shardCount)
                 .reduce(0, Integer::sum)
-                .block();
+                .subscribe(sum -> Log.logger.info("Connected to {} shard(s), {} guild(s)!", shardCount, sum));
 
-        Log.logger.info("Connected to {} shard(s), {} guild(s)!", shardCount, guildCount);
-
-        this.applicationId = this.gateway.getRestClient().getApplicationId().block();
+        this.applicationId = this.gateway.getSelfId().asLong();
 
         final User self = this.gateway.getSelf().block();
-        this.userName = self.getUsername();
-        this.avatarUrl = self.getAvatarUrl();
+        if (self != null) {
+            this.userName = self.getUsername();
+            this.avatarUrl = self.getAvatarUrl();
 
-        Log.logger.info("BotUser: {}", this.userName);
+            Log.logger.info("BotUser: {}", this.userName);
+        } else {
+            Log.logger.error("Failed to get bot user");
+            return;
+        }
 
         this.service = new EEWService(this);
         this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels());
@@ -134,10 +137,6 @@ public class EEWBot {
         return this.scheduledExecutor;
     }
 
-    public ConfigurationRegistry<Config> getConfigRegistry() {
-        return this.config;
-    }
-
     public ChannelRegistry getChannels() {
         return this.channels;
     }
@@ -156,10 +155,6 @@ public class EEWBot {
 
     public EEWExecutor getExecutor() {
         return this.executor;
-    }
-
-    public SlashCommandHandler getSlashCommandHandler() {
-        return this.slashCommand;
     }
 
     public long getApplicationId() {
