@@ -62,7 +62,6 @@ public class EEWService {
         this.channels = bot.getChannels();
         this.avatarUrl = bot.getAvatarUrl();
         this.executor = bot.getScheduledExecutor();
-//        this.systemChannel = bot.getSystemChannel();
         this.httpClient = bot.getHttpClient();
         int poolingMax = bot.getConfig().getPoolingMax();
         int poolingMaxPerRoute = bot.getConfig().getPoolingMaxPerRoute();
@@ -268,19 +267,6 @@ public class EEWService {
             Log.logger.error("Failed to send message: Failed to connect to duplicator");
         }
     }
-
-//    public void sendAttachment(final String key, final Function<String, MessageCreateSpec> spec) {
-//        sendAttachment(channel -> channel.value(key), spec);
-//    }
-
-//    public void sendAttachment(final Predicate<Channel> filter, final Function<String, MessageCreateSpec> spec) {
-//        if (this.systemChannel.isPresent())
-//            directSendMessage(this.systemChannel.get().getId().asLong(), spec.apply(null))
-//                    .map(msg -> msg.getAttachments().iterator().next().getUrl())
-//                    .subscribe(url -> sendMessage(filter, lang -> MessageCreateSpec.builder().content(url).build()));
-//        else
-//            sendMessage(filter, spec);
-//    }
 
     public Mono<Message> directSendMessagePassErrors(long channelId, MessageCreateSpec spec) {
         return Mono.defer(() -> this.gateway.getRestClient().getChannelService()

@@ -23,7 +23,6 @@ public class Config {
     private String redisAddress = "";
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
-    private String systemChannel = "";
     private boolean debug = false;
 
     public Config() {
@@ -93,10 +92,6 @@ public class Config {
         return this.defaultLanuage;
     }
 
-    public String getSystemChannel() {
-        return this.systemChannel;
-    }
-
     public boolean isDebug() {
         return this.debug;
     }
@@ -154,7 +149,6 @@ public class Config {
                 ", redisAddress='" + this.redisAddress + '\'' +
                 ", nptServer='" + this.nptServer + '\'' +
                 ", defaultLanuage='" + this.defaultLanuage + '\'' +
-                ", systemChannel='" + this.systemChannel + '\'' +
                 ", debug=" + this.debug +
                 '}';
     }
