@@ -820,8 +820,8 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                     .build();
         }
 
-        if (this.getBody().isWarning()) {
-            if (this.getBody().isLastInfo()) {
+        if (getBody().isWarning()) {
+            if (getBody().isLastInfo()) {
                 if (isConcurrent())
                     builder.title("eewbot.eew.eewalert.final.concurrent", getConcurrentIndex());
                 else
@@ -834,7 +834,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
             }
             builder.color(Color.RED);
         } else {
-            if (this.getBody().isLastInfo()) {
+            if (getBody().isLastInfo()) {
                 if (isConcurrent())
                     builder.title("eewbot.eew.eewprediction.final.concurrent", getConcurrentIndex());
                 else
@@ -888,10 +888,10 @@ public class DmdataEEW extends DmdataHeader implements Entity {
             }
         }
 
-        if (hasWarningUpdate()) {
-            builder.addField("eewbot.eew.warningtext", this.getBody().getPrefectures().stream()
+        if (getBody().isWarning()) {
+            builder.addField("eewbot.eew.warningtext", this.getBody().getRegions().stream()
                     .map(Body.WarningArea::getName)
-                    .collect(Collectors.joining("　")), false);
+                    .collect(Collectors.joining(" ")), false);
         }
 
         if (!isAccurateEnough()) {
