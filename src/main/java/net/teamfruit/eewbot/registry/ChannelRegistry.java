@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.registry;
 
+import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
@@ -30,11 +31,12 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
 
     private JedisPooled jedisPool;
     private boolean redisReady = false;
-    private final ChannelObjectMapper objectMapper = new ChannelObjectMapper(EEWBot.GSON);
+    private final ChannelObjectMapper objectMapper;
 
-    public ChannelRegistry(java.nio.file.Path path) {
+    public ChannelRegistry(java.nio.file.Path path, Gson gson) {
         super(path, ConcurrentHashMap::new, new TypeToken<ConcurrentHashMap<Long, Channel>>() {
-        }.getType());
+        }.getType(), gson);
+        this.objectMapper = new ChannelObjectMapper(gson);
     }
 
     public void init(JedisPooled jedisPooled) throws IOException {
