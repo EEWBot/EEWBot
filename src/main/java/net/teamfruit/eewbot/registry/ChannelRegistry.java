@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, Channel>> {
+public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> {
 
     private static final String CHANNEL_PREFIX = "channel:";
     private static final String CHANNEL_INDEX = "channel-index";
