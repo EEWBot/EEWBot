@@ -787,6 +787,16 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                 this.getBody().getEarthquake().getHypocenter().getAccuracy().getNumberOfMagnitudeCalculation().equals("1"));
     }
 
+    public boolean hasWarningUpdate() {
+        if (!getBody().isWarning())
+            return false;
+        for (Body.WarningArea region : getBody().getRegions()) {
+            if (region.getKind().getLastKind().getCode().equals("00"))
+                return true;
+        }
+        return false;
+    }
+
     @Override
     public MessageCreateSpec createMessage(final String lang) {
         return MessageCreateSpec.builder().addEmbed(createEmbed(lang, I18nEmbedCreateSpec.builder(lang))).build();
@@ -876,6 +886,12 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                             }
                         });
             }
+        }
+
+        if (hasWarningUpdate()) {
+            builder.addField("eewbot.eew.warningtext", this.getBody().getPrefectures().stream()
+                    .map(Body.WarningArea::getName)
+                    .collect(Collectors.joining("　")), false);
         }
 
         if (!isAccurateEnough()) {
