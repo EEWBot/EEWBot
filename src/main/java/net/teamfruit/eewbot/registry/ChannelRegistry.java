@@ -30,6 +30,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
 
     private JedisPooled jedisPool;
     private boolean redisReady = false;
+    private final ChannelObjectMapper objectMapper = new ChannelObjectMapper(EEWBot.GSON);
 
     public ChannelRegistry(java.nio.file.Path path) {
         super(path, ConcurrentHashMap::new, new TypeToken<ConcurrentHashMap<Long, Channel>>() {
@@ -43,7 +44,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
 
     private void initJedis() throws IOException {
         Log.logger.info("Connecting to Redis");
-        this.jedisPool.setJsonObjectMapper(new ChannelObjectMapper(EEWBot.GSON));
+        this.jedisPool.setJsonObjectMapper(this.objectMapper);
         try {
             this.jedisPool.ftInfo("channel-index");
         } catch (JedisDataException e) {
@@ -77,6 +78,7 @@ public class ChannelRegistry extends ConfigurationRegistry<ConcurrentMap<Long, C
     public void migrationToJedis() {
         try (Connection connection = this.jedisPool.getPool().getResource()) {
             Transaction transaction = new Transaction(connection);
+            transaction.setJsonObjectMapper(this.objectMapper);
             getElement().forEach((key, channel) -> transaction.jsonSet(CHANNEL_PREFIX + key, Path.ROOT_PATH, channel));
             transaction.exec();
         }
