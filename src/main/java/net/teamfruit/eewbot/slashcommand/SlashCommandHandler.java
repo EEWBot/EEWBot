@@ -56,7 +56,7 @@ public class SlashCommandHandler {
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> cmd.on(bot, event, getLanguage(bot, event)))
                         .doOnError(err -> Log.logger.error("Error during {} command", event.getCommandName(), err))
-                        .onErrorResume(err -> event.reply()
+                        .onErrorResume(err -> event.createFollowup()
                                 .withEmbeds(SlashCommandUtils.createErrorEmbed(getLanguage(bot, event))
                                         .title("eewbot.scmd.error")
                                         .description(ExceptionUtils.getMessage(err))
@@ -65,7 +65,7 @@ public class SlashCommandHandler {
                                 .onErrorResume(e -> {
                                     Log.logger.error("Error during follow-up message", e);
                                     return Mono.empty();
-                                })))
+                                }).then()))
                 .subscribe(null, err -> Log.logger.error("Unhandled exception during ApplicationCommandInteractionEvent handling", err));
 
         bot.getClient().on(SelectMenuInteractionEvent.class)
