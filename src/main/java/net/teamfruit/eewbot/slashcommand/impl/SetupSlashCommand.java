@@ -7,7 +7,6 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.PartialMember;
-import discord4j.core.object.entity.Webhook;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.discordjson.json.ApplicationCommandRequest;
@@ -19,6 +18,7 @@ import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.Webhook;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
 import reactor.core.publisher.Mono;
 
@@ -92,7 +92,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                             return isSameChannel && isCreatedBySelf;
                                                         })
                                                         .next()
-                                                        .map(Webhook::getData)
+                                                        .map(discord4j.core.object.entity.Webhook::getData)
                                                         .switchIfEmpty(
                                                                 guild.getSelfMember().map(PartialMember::getDisplayName)
                                                                         .flatMap(name -> event.getClient().getRestClient().getWebhookService()
@@ -100,7 +100,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                                                         .name(name)
                                                                                         .build(), "Create EEWBot webhook")))
                                                         .flatMap(webhookData -> Mono.fromRunnable(() -> {
-                                                            net.teamfruit.eewbot.registry.Webhook webhook = new net.teamfruit.eewbot.registry.Webhook(webhookData.id().asLong(), webhookData.token().get(), guildChannel instanceof ThreadChannel ? channelId : null);
+                                                            Webhook webhook = new Webhook(webhookData.id().asLong(), webhookData.token().get(), guildChannel instanceof ThreadChannel ? channelId : null);
                                                             bot.getChannels().setWebhook(channelId, webhook);
                                                             try {
                                                                 bot.getChannels().save();
