@@ -73,54 +73,49 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
         return Mono.fromRunnable(() -> bot.getChannels().computeIfAbsent(channelId, key -> new Channel(false, false, false, false, SeismicIntensity.ONE, null)))
-                .then(event.getInteraction().getChannel()
-                        .flatMap(channel -> {
-                            // DM channel
-                            if (event.getInteraction().getGuildId().isEmpty()) {
-                                return Mono.just(channel);
-                            }
-
-                            boolean isThread = channel instanceof ThreadChannel;
-                            Mono<Long> webhookChannelIdMono = isThread
-                                    ? Mono.justOrEmpty(((ThreadChannel) channel).getParentId().map(Snowflake::asLong))
-                                    : Mono.just(channelId);
-
-                            return webhookChannelIdMono.flatMap(webhookChannelId ->
-                                    event.getInteraction().getGuild().flatMap(guild -> guild.getWebhooks()
-                                            .filter(webhook -> webhook.getChannelId().asLong() == webhookChannelId && webhook.getCreator().filter(user -> user.getId().equals(event.getClient().getSelfId())).isPresent())
-                                            .next()
-                                            .map(Webhook::getData)
-                                            .flatMap(Mono::justOrEmpty)
-                                            .switchIfEmpty(
-                                                    guild.getSelfMember().map(PartialMember::getDisplayName)
-                                                            .flatMap(name -> event.getClient().getRestClient().getWebhookService()
-                                                                    .createWebhook(webhookChannelId, WebhookCreateRequest.builder()
-                                                                            .name(name)
-                                                                            .build(), "Create EEWBot webhook")))
-                                            .flatMap(webhookData -> Mono.fromRunnable(() -> {
-                                                Channel botChannel = bot.getChannels().get(channelId);
-                                                net.teamfruit.eewbot.registry.Webhook webhook = new net.teamfruit.eewbot.registry.Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
-                                                if (!webhook.equals(botChannel.getWebhook())) {
-                                                    bot.getChannels().setWebhook(channelId, webhook);
-                                                    try {
-                                                        bot.getChannels().save();
-                                                    } catch (IOException e) {
-                                                        Log.logger.error("Failed to save channel registry during setup command", e);
-                                                        throw new RuntimeException(e);
-                                                    }
-                                                }
-                                            }).thenReturn(webhookData))
-                                    )
-                            );
-                        })
-                )
-                .onErrorResume(ClientException.isStatusCode(403), err -> buildReply(bot, event, lang, channelId, "eewbot.scmd.setup.permserror.managewebhooks")
-                        .then(Mono.empty()))
-                .flatMap(webhook -> buildReply(bot, event, lang, channelId, null)
-                        .then());
+                .then(Mono.justOrEmpty(event.getInteraction().getGuildId())
+                        .flatMap(guildId -> event.getInteraction().getChannel()
+                                .filter(GuildChannel.class::isInstance)
+                                .cast(GuildChannel.class)
+                                .flatMap(guildChannel -> guildChannel.getEffectivePermissions(event.getClient().getSelfId())
+                                        .filter(perms -> perms.contains(Permission.MANAGE_WEBHOOKS))
+                                        .flatMap(perms -> event.getInteraction().getGuild()
+                                                .flatMap(guild -> guild.getWebhooks()
+                                                        .filter(webhook -> {
+                                                            long targetChannelId = guildChannel instanceof ThreadChannel
+                                                                    ? ((ThreadChannel) guildChannel).getParentId().map(Snowflake::asLong).orElse(-1L)
+                                                                    : channelId;
+                                                            boolean isSameChannel = webhook.getChannelId().asLong() == targetChannelId;
+                                                            boolean isCreatedBySelf = webhook.getCreator()
+                                                                    .filter(user -> user.getId().equals(event.getClient().getSelfId()))
+                                                                    .isPresent();
+                                                            return isSameChannel && isCreatedBySelf;
+                                                        })
+                                                        .next()
+                                                        .map(Webhook::getData)
+                                                        .switchIfEmpty(
+                                                                guild.getSelfMember().map(PartialMember::getDisplayName)
+                                                                        .flatMap(name -> event.getClient().getRestClient().getWebhookService()
+                                                                                .createWebhook(channelId, WebhookCreateRequest.builder()
+                                                                                        .name(name)
+                                                                                        .build(), "Create EEWBot webhook")))
+                                                        .flatMap(webhookData -> Mono.fromRunnable(() -> {
+                                                            net.teamfruit.eewbot.registry.Webhook webhook = new net.teamfruit.eewbot.registry.Webhook(webhookData.id().asLong(), webhookData.token().get(), guildChannel instanceof ThreadChannel ? channelId : null);
+                                                            bot.getChannels().setWebhook(channelId, webhook);
+                                                            try {
+                                                                bot.getChannels().save();
+                                                            } catch (IOException e) {
+                                                                Log.logger.error("Failed to save channel registry during setup command", e);
+                                                                throw new RuntimeException(e);
+                                                            }
+                                                        })).then(buildReply(bot, event, lang, channelId, false))
+                                                ))
+                                        .switchIfEmpty(buildReply(bot, event, lang, channelId, true))) // No webhook perm
+                        ).switchIfEmpty(buildReply(bot, event, lang, channelId, false))) //DM
+                .then();
     }
 
-    private Mono<Message> buildReply(EEWBot bot, ApplicationCommandInteractionEvent event, String lang, long channelId, String warnMessageKey) {
+    private Mono<Message> buildReply(EEWBot bot, ApplicationCommandInteractionEvent event, String lang, long channelId, boolean noWebhook) {
         return event.getInteraction().getChannel()
                 .flatMap(channel -> Mono.just(channel)
                         .filter(GuildChannel.class::isInstance)
@@ -134,7 +129,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                         }))
                 .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel"))
                         .withEphemeral(true))
-                .switchIfEmpty(event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply") + (warnMessageKey != null ? "\n\n" + I18n.INSTANCE.get(lang, warnMessageKey) : ""))
+                .switchIfEmpty(event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply") + (noWebhook ? "\n\n" + I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.managewebhooks") : ""))
                         .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)))
                 );
     }
