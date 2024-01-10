@@ -14,7 +14,6 @@ import discord4j.discordjson.json.WebhookCreateRequest;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
@@ -93,26 +92,27 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                         })
                                                         .next()
                                                         .map(discord4j.core.object.entity.Webhook::getData)
-                                                        .switchIfEmpty(
-                                                                guild.getSelfMember().map(PartialMember::getDisplayName)
-                                                                        .flatMap(name -> event.getClient().getRestClient().getWebhookService()
-                                                                                .createWebhook(channelId, WebhookCreateRequest.builder()
-                                                                                        .name(name)
-                                                                                        .build(), "Create EEWBot webhook")))
+                                                        .switchIfEmpty(guild.getSelfMember().map(PartialMember::getDisplayName)
+                                                                .flatMap(name -> event.getClient().getRestClient().getWebhookService()
+                                                                        .createWebhook(channelId, WebhookCreateRequest.builder()
+                                                                                .name(name)
+                                                                                .build(), "Create EEWBot webhook")))
                                                         .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                             Webhook webhook = new Webhook(webhookData.id().asLong(), webhookData.token().get(), guildChannel instanceof ThreadChannel ? channelId : null);
                                                             bot.getChannels().setWebhook(channelId, webhook);
-                                                            try {
-                                                                bot.getChannels().save();
-                                                            } catch (IOException e) {
-                                                                Log.logger.error("Failed to save channel registry during setup command", e);
-                                                                throw new RuntimeException(e);
-                                                            }
+
                                                         })).then(buildReply(bot, event, lang, channelId, false))
                                                 ))
                                         .switchIfEmpty(buildReply(bot, event, lang, channelId, true))) // No webhook perm
                         ).switchIfEmpty(buildReply(bot, event, lang, channelId, false))) //DM
-                .then();
+                .then(Mono.create(sink -> {
+                    try {
+                        bot.getChannels().save();
+                        sink.success();
+                    } catch (IOException e) {
+                        sink.error(e);
+                    }
+                }));
     }
 
     private Mono<Message> buildReply(EEWBot bot, ApplicationCommandInteractionEvent event, String lang, long channelId, boolean noWebhook) {
