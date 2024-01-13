@@ -77,7 +77,10 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                         .filter(GuildChannel.class::isInstance)
                         .cast(GuildChannel.class)
                         .flatMap(guildChannel -> guildChannel.getEffectivePermissions(event.getClient().getSelfId())
-                                .filter(perms -> perms.contains(Permission.MANAGE_WEBHOOKS))
+                                .filterWhen(perms -> perms.contains(Permission.SEND_MESSAGES) ? Mono.just(true)
+                                        : event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.sendmessages")).thenReturn(false))
+                                .filterWhen(perms -> perms.contains(Permission.MANAGE_WEBHOOKS) ? Mono.just(true)
+                                        : buildReply(bot, event, lang, channelId, true).thenReturn(false)) // No webhook perm
                                 .flatMap(perms -> event.getInteraction().getGuild()
                                         .flatMap(guild -> guild.getWebhooks()
                                                 .filter(webhook -> {
@@ -105,11 +108,11 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                 .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                     Webhook webhook = new Webhook(webhookData.id().asLong(), webhookData.token().get(), guildChannel instanceof ThreadChannel ? channelId : null);
                                                     bot.getChannels().setWebhook(channelId, webhook);
-
                                                 })).then(buildReply(bot, event, lang, channelId, false))
-                                        ))
-                                .switchIfEmpty(buildReply(bot, event, lang, channelId, true))) // No webhook perm
-                ).switchIfEmpty(buildReply(bot, event, lang, channelId, false)) //DM
+                                        )))
+                        .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel")))
+                        .thenReturn(true))
+                .switchIfEmpty(buildReply(bot, event, lang, channelId, false).thenReturn(true)) // DM
                 .then(Mono.create(sink -> {
                     try {
                         bot.getChannels().save();
@@ -121,22 +124,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private Mono<Message> buildReply(EEWBot bot, ApplicationCommandInteractionEvent event, String lang, long channelId, boolean noWebhook) {
-        return event.getInteraction().getChannel()
-                .flatMap(channel -> Mono.just(channel)
-                        .filter(GuildChannel.class::isInstance)
-                        .cast(GuildChannel.class)
-                        .flatMap(guildChannel -> guildChannel.getEffectivePermissions(bot.getClient().getSelfId()))
-                        .filter(perms -> !perms.contains(Permission.VIEW_CHANNEL) || !perms.contains(Permission.SEND_MESSAGES))
-                        .flatMap(perms -> {
-                            if (!perms.contains(Permission.VIEW_CHANNEL))
-                                return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel")).withEphemeral(true);
-                            return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.sendmessages")).withEphemeral(true);
-                        }))
-                .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.viewchannel"))
-                        .withEphemeral(true))
-                .switchIfEmpty(event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply") + (noWebhook ? "\n\n" + I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.managewebhooks") : ""))
-                        .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)))
-                );
+        return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.setup.reply") + (noWebhook ? "\n\n" + I18n.INSTANCE.get(lang, "eewbot.scmd.setup.permserror.managewebhooks") : ""))
+                .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)));
     }
 
     private SelectMenu buildMainSelectMenu(EEWBot bot, long channelId, String lang) {
