@@ -177,14 +177,18 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
 
     public boolean isWebhookForThread(long webhookId, long threadId) {
         if (this.redisReady) {
-            Query query = new Query("@webhookId:[" + webhookId + " " + webhookId + "] -@webhookThreadId:[" + threadId + " " + threadId + "]");
+            Query query = new Query("@webhookId:[" + webhookId + " " + webhookId + "] -@webhookThreadId:[" + threadId + " " + threadId + "]").setNoContent();
             SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
             return searchResult.getDocuments().isEmpty();
         }
-        return getElement().entrySet().stream()
-                .filter(entry -> entry.getValue().getWebhook() != null && entry.getValue().getWebhook().getId() == webhookId)
-                .findAny()
-                .map(entry -> entry.getKey() == threadId).orElse(true);
+        return getElement().entrySet().stream().noneMatch(entry -> {
+            Webhook webhook = entry.getValue().getWebhook();
+            if (webhook == null || webhook.getId() != webhookId)
+                return false;
+            if (webhook.getThreadId() == null)
+                return true;
+            return webhook.getThreadId() != threadId;
+        });
     }
 
     @Override
