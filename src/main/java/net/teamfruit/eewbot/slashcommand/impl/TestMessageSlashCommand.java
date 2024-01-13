@@ -43,9 +43,8 @@ public class TestMessageSlashCommand implements ISlashCommand {
     }
 
     @Override
-    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
+    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
-        Channel channel = bot.getChannels().get(channelId);
         boolean hasWebhook = channel != null && channel.getWebhook() != null;
 
         if (hasWebhook) {

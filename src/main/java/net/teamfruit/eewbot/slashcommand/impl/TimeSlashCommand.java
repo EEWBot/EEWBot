@@ -10,6 +10,7 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.i18n.I18n;
+import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.IButtonSlashCommand;
 import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import reactor.core.publisher.Mono;
@@ -38,7 +39,7 @@ public class TimeSlashCommand implements IButtonSlashCommand {
     }
 
     @Override
-    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
+    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         return event.reply().withEmbeds(buildTimeEmbed(bot.getExecutor().getTimeProvider(), lang))
                 .withComponents(ActionRow.of(Button.primary("timesync", I18n.INSTANCE.get(lang, "eewbot.scmd.time.resync"))
                         .disabled(!bot.getConfig().isEnableKyoshin())));

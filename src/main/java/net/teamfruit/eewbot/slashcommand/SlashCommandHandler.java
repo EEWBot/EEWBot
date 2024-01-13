@@ -1,7 +1,8 @@
 package net.teamfruit.eewbot.slashcommand;
 
-import discord4j.core.event.domain.interaction.*;
-import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.spec.InteractionCallbackSpec;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.EEWBot;
@@ -12,6 +13,8 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+
+import static net.teamfruit.eewbot.slashcommand.SlashCommandUtils.*;
 
 public class SlashCommandHandler {
 
@@ -52,12 +55,16 @@ public class SlashCommandHandler {
                         .flatMap(cmd -> cmd.isDefer() ? event.deferReply(InteractionCallbackSpec.builder()
                                 .ephemeral(cmd.isEphemeral())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
-                        .flatMap(cmd -> cmd.on(bot, event, getLanguage(bot, event)))
+                        .flatMap(cmd -> {
+                            Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
+                            return cmd.on(bot, event, channel, channel != null ? channel.getLang() : bot.getConfig().getDefaultLanuage());
+                        })
                         .doOnError(err -> Log.logger.error("Error during {} command", event.getCommandName(), err))
-                        .onErrorResume(err -> replyOrFollowUp(event, commands.get(event.getCommandName()).isDefer(), SlashCommandUtils.createErrorEmbed(getLanguage(bot, event))
-                                .title("eewbot.scmd.error")
-                                .description(ExceptionUtils.getMessage(err))
-                                .build()
+                        .onErrorResume(err -> replyOrFollowUp(event, commands.get(event.getCommandName()).isDefer(),
+                                createErrorEmbed(getLanguage(bot, event))
+                                        .title("eewbot.scmd.error")
+                                        .description(ExceptionUtils.getMessage(err))
+                                        .build()
                         )))
                 .subscribe(null, err -> Log.logger.error("Unhandled exception during ApplicationCommandInteractionEvent handling", err));
 
@@ -92,23 +99,8 @@ public class SlashCommandHandler {
                 .subscribe(null, err -> Log.logger.error("Unhandled exception during ButtonInteractionEvent handling", err));
     }
 
-    public static void registerCommand(ISlashCommand command) {
+    private static void registerCommand(ISlashCommand command) {
         commands.put(command.getCommandName(), command);
     }
 
-    public static String getLanguage(EEWBot bot, InteractionCreateEvent event) {
-        Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
-        if (channel == null)
-            return bot.getConfig().getDefaultLanuage();
-        return channel.getLang();
-    }
-
-    public static Mono<Void> replyOrFollowUp(DeferrableInteractionEvent event, boolean defer, EmbedCreateSpec spec) {
-        if (defer)
-            return event.createFollowup().withEmbeds(spec)
-                    .doOnError(err -> Log.logger.error("Error during follow-up message", err))
-                    .then();
-        return event.reply().withEmbeds(spec)
-                .doOnError(err -> Log.logger.error("Error during reply", err));
-    }
 }

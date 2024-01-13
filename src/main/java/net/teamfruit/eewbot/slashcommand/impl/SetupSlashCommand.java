@@ -69,7 +69,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     @Override
-    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
+    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
         bot.getChannels().computeIfAbsent(channelId, key -> new Channel(false, false, false, false, SeismicIntensity.ONE, null));
         return Mono.justOrEmpty(event.getInteraction().getGuildId())

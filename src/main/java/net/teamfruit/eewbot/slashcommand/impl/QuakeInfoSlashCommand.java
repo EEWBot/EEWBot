@@ -8,6 +8,7 @@ import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.QuakeInfo;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.i18n.I18n;
+import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import reactor.core.publisher.Mono;
 
@@ -35,7 +36,7 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
     }
 
     @Override
-    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, String lang) {
+    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         return get(event, lang).then();
     }
 
