@@ -38,6 +38,7 @@ public class EEWBot {
 
     private final JsonRegistry<Config> config = new JsonRegistry<>(CONFIG_DIRECTORY != null ? Paths.get(CONFIG_DIRECTORY, "config.json") : Paths.get("config.json"), Config::new, Config.class, GSON_PRETTY);
     private final ChannelRegistry channels = new ChannelRegistry(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), GSON);
+    private final I18n i18n = new I18n();
 
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
 
@@ -64,7 +65,7 @@ public class EEWBot {
             this.channels.init();
         }
 
-        I18n.INSTANCE.init();
+        this.i18n.init(getConfig().getDefaultLanuage());
 
         final String token = System.getenv("TOKEN");
         if (token != null)
@@ -134,6 +135,10 @@ public class EEWBot {
 
     public Config getConfig() {
         return this.config.getElement();
+    }
+
+    public I18n getI18n() {
+        return this.i18n;
     }
 
     public ScheduledExecutorService getScheduledExecutor() {

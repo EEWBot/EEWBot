@@ -50,9 +50,9 @@ public class EEWService {
 
     private final GatewayDiscordClient gateway;
     private final String avatarUrl;
+    private final I18n i18n;
     private final ScheduledExecutorService executor;
     private final ChannelRegistry channels;
-    //    private final Optional<TextChannel> systemChannel;
     private final HttpClient httpClient;
     private final MinimalHttpAsyncClient asyncHttpClient;
     private final URI duplicatorAddress;
@@ -61,6 +61,7 @@ public class EEWService {
         this.gateway = bot.getClient();
         this.channels = bot.getChannels();
         this.avatarUrl = bot.getAvatarUrl();
+        this.i18n = bot.getI18n();
         this.executor = bot.getScheduledExecutor();
         this.httpClient = bot.getHttpClient();
         int poolingMax = bot.getConfig().getPoolingMax();
@@ -85,12 +86,12 @@ public class EEWService {
 
     public void sendMessage(final ChannelFilter filter, final Entity entity, boolean highPriority) {
         Map<String, MessageCreateSpec> msgByLang = new HashMap<>();
-        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang)));
+        this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang)));
 
         Map<Boolean, Map<Long, ChannelBase>> webhookPartitioned = this.channels.getChannelsPartitionedByWebhookPresent(filter);
 
         Map<String, String> cacheWebhook = new HashMap<>();
-        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> {
+        this.i18n.getLanguages().keySet().forEach(lang -> {
             DiscordWebhook webhook = entity.createWebhook(lang);
             webhook.avatar_url = this.avatarUrl;
             cacheWebhook.put(lang, webhook.json());
@@ -144,7 +145,7 @@ public class EEWService {
     private void sendWebhook(Map<String, String> webhookBodyByLang, Map<Long, ChannelBase> webhookChannels, BiFunction<Long, ChannelBase, Disposable> onError) {
         HttpHost target = new HttpHost("https", "discord.com");
         Map<String, SimpleHttpRequest> cacheReq = new HashMap<>();
-        I18n.INSTANCE.getLanguages().keySet().forEach(lang -> cacheReq.put(lang, SimpleRequestBuilder.post()
+        this.i18n.getLanguages().keySet().forEach(lang -> cacheReq.put(lang, SimpleRequestBuilder.post()
                 .setHttpHost(target)
                 .addHeader("User-Agent", "EEWBot")
                 .setBody(webhookBodyByLang.get(lang), ContentType.APPLICATION_JSON)
@@ -215,7 +216,7 @@ public class EEWService {
         try {
             HttpHost target = HttpHost.create(duplicator);
             Map<String, SimpleHttpRequest> requestsByLang = new HashMap<>();
-            I18n.INSTANCE.getLanguages().keySet().forEach(lang -> requestsByLang.put(lang, SimpleRequestBuilder.post()
+            this.i18n.getLanguages().keySet().forEach(lang -> requestsByLang.put(lang, SimpleRequestBuilder.post()
                     .setHttpHost(target)
                     .addHeader("User-Agent", "EEWBot")
                     .addHeader("X-Duplicate-Targets", EEWBot.GSON.toJson(webhookChannels.values().stream()
@@ -228,7 +229,7 @@ public class EEWService {
             final Future<AsyncClientEndpoint> leaseFuture = this.asyncHttpClient.lease(target, null);
             final AsyncClientEndpoint endpoint = leaseFuture.get(10, TimeUnit.SECONDS);
             try {
-                final CountDownLatch latch = new CountDownLatch(I18n.INSTANCE.getLanguages().size());
+                final CountDownLatch latch = new CountDownLatch(this.i18n.getLanguages().size());
                 requestsByLang.forEach((lang, request) -> endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
 
                     @Override

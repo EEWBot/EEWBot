@@ -1,12 +1,12 @@
 package net.teamfruit.eewbot.registry;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.i18n.I18n;
 
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("FieldMayBeFinal")
 public class Channel extends ChannelBase {
 
     public static final List<String> COMMAND_KEYS;
@@ -19,37 +19,30 @@ public class Channel extends ChannelBase {
     }
 
     @CommandName("EEW警報")
-    private boolean eewAlert = true;
+    private boolean eewAlert;
 
     @CommandName("EEW予報")
-    private boolean eewPrediction = true;
+    private boolean eewPrediction;
 
     @CommandName("EEW間引き")
-    private boolean eewDecimation = true;
+    private boolean eewDecimation;
 
     @CommandName("地震情報")
-    private boolean quakeInfo = true;
+    private boolean quakeInfo;
 
-    //    @CommandName("強震モニタ")
-//    public boolean monitor = true;
+    private SeismicIntensity minIntensity;
 
-    private SeismicIntensity minIntensity = SeismicIntensity.ONE;
-
-    public Channel(final Webhook webhook) {
-        super(webhook, I18n.DEFAULT_LANGUAGE);
-    }
-
-    public Channel() {
-        this(null);
-    }
-
-    public Channel(final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final SeismicIntensity minIntensity, Webhook webhook) {
-        this(webhook);
+    public Channel(final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final SeismicIntensity minIntensity, Webhook webhook, String lang) {
+        super(webhook, lang);
         this.eewAlert = eewAlert;
         this.eewPrediction = eewPrediction;
         this.eewDecimation = eewDecimation;
         this.quakeInfo = quakeInfo;
         this.minIntensity = minIntensity;
+    }
+
+    public static Channel createDefault(String lang) {
+        return new Channel(false, false, false, false, SeismicIntensity.ONE, null, lang);
     }
 
     public boolean isEewAlert() {

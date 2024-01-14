@@ -1,13 +1,11 @@
 package net.teamfruit.eewbot.slashcommand.impl;
 
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
-import discord4j.core.object.entity.Message;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.DetailQuakeInfo;
 import net.teamfruit.eewbot.entity.QuakeInfo;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
-import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import reactor.core.publisher.Mono;
@@ -37,10 +35,6 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
-        return get(event, lang).then();
-    }
-
-    private Mono<Message> get(ApplicationCommandInteractionEvent event, String lang) {
         try {
             QuakeInfo info = QuakeInfo.QUAKE_INFO_MAPPER.readValue(new URL(QuakeInfoGateway.REMOTE_ROOT + QuakeInfoGateway.REMOTE), QuakeInfo.class);
             Optional<String> url = info.getRecords().stream().findFirst()
@@ -48,13 +42,13 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
                     .map(QuakeInfo.Record.Item::getUrl);
 
             if (url.isEmpty())
-                return event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.error"));
+                return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.error")).then();
 
             DetailQuakeInfo detail = DetailQuakeInfo.DETAIL_QUAKE_INFO_MAPPER.readValue(new URL(url.get()), DetailQuakeInfo.class);
-            return event.createFollowup().withEmbeds(detail.createD4JEmbed(lang));
+            return event.createFollowup().withEmbeds(detail.createD4JEmbed(lang)).then();
         } catch (IOException e) {
             return Mono.error(e);
         }
-
     }
+
 }

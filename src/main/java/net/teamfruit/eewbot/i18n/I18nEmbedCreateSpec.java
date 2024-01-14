@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.i18n;
 
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import net.teamfruit.eewbot.EEWBot;
 
 import java.time.Instant;
 
@@ -23,25 +24,25 @@ public class I18nEmbedCreateSpec {
 
         @Override
         public IEmbedBuilder<EmbedCreateSpec> title(String title) {
-            this.builder.title(I18n.INSTANCE.get(this.lang, title));
+            this.builder.title(EEWBot.instance.getI18n().get(this.lang, title));
             return this;
         }
 
         @Override
         public IEmbedBuilder<EmbedCreateSpec> title(String title, Object... format) {
-            this.builder.title(I18n.INSTANCE.format(this.lang, title, format));
+            this.builder.title(EEWBot.instance.getI18n().format(this.lang, title, format));
             return this;
         }
 
         @Override
         public IEmbedBuilder<EmbedCreateSpec> description(String description) {
-            this.builder.description(I18n.INSTANCE.get(this.lang, description));
+            this.builder.description(EEWBot.instance.getI18n().get(this.lang, description));
             return this;
         }
 
         @Override
         public IEmbedBuilder<EmbedCreateSpec> description(String description, Object... format) {
-            this.builder.description(I18n.INSTANCE.format(this.lang, description, format));
+            this.builder.description(EEWBot.instance.getI18n().format(this.lang, description, format));
             return this;
         }
 
@@ -65,13 +66,13 @@ public class I18nEmbedCreateSpec {
 
         @Override
         public IEmbedBuilder<EmbedCreateSpec> footer(String text, String iconUrl) {
-            this.builder.footer(I18n.INSTANCE.get(this.lang, text), iconUrl);
+            this.builder.footer(EEWBot.instance.getI18n().get(this.lang, text), iconUrl);
             return this;
         }
 
         @Override
         public IEmbedBuilder<EmbedCreateSpec> footer(String text, String iconUrl, Object... format) {
-            this.builder.footer(I18n.INSTANCE.format(this.lang, text, format), iconUrl);
+            this.builder.footer(EEWBot.instance.getI18n().format(this.lang, text, format), iconUrl);
             return this;
         }
 
@@ -89,25 +90,25 @@ public class I18nEmbedCreateSpec {
 
         @Override
         public IEmbedBuilder<EmbedCreateSpec> author(String name, String url, String iconUrl) {
-            this.builder.author(I18n.INSTANCE.get(this.lang, name), url, iconUrl);
+            this.builder.author(EEWBot.instance.getI18n().get(this.lang, name), url, iconUrl);
             return this;
         }
 
         @Override
         public IEmbedBuilder<EmbedCreateSpec> author(String name, String url, String iconUrl, Object... format) {
-            this.builder.author(I18n.INSTANCE.format(this.lang, name, format), url, iconUrl);
+            this.builder.author(EEWBot.instance.getI18n().format(this.lang, name, format), url, iconUrl);
             return this;
         }
 
         @Override
         public IEmbedBuilder<EmbedCreateSpec> addField(String name, String value, boolean inline) {
-            this.builder.addField(I18n.INSTANCE.get(this.lang, name), I18n.INSTANCE.get(this.lang, value), inline);
+            this.builder.addField(EEWBot.instance.getI18n().get(this.lang, name), EEWBot.instance.getI18n().get(this.lang, value), inline);
             return this;
         }
 
         @Override
         public IEmbedBuilder<EmbedCreateSpec> addField(String name, String value, boolean inline, Object... format) {
-            this.builder.addField(I18n.INSTANCE.format(this.lang, name, format), I18n.INSTANCE.format(this.lang, value, format), inline);
+            this.builder.addField(EEWBot.instance.getI18n().format(this.lang, name, format), EEWBot.instance.getI18n().format(this.lang, value, format), inline);
             return this;
         }
 

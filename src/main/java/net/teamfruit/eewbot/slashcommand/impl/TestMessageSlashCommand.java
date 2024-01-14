@@ -13,7 +13,6 @@ import discord4j.rest.request.Router;
 import discord4j.rest.route.Routes;
 import discord4j.rest.util.MultipartRequest;
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
@@ -56,7 +55,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                                     .build().asRequest())
                             .avatarUrl(bot.getAvatarUrl())
                             .build()))
-                    .flatMap(message -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.testmessage.success")))
+                    .flatMap(message -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success")))
                     .onErrorResume(ClientException.isStatusCode(404), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
                                     .title("eewbot.scmd.testmessage.error.title")
@@ -77,7 +76,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                                     .description("eewbot.scmd.testmessage.normal")
                                     .build())
                             .build())
-                    .flatMap(message -> event.createFollowup(I18n.INSTANCE.get(lang, "eewbot.scmd.testmessage.success")))
+                    .flatMap(message -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success")))
                     .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
                                     .title("eewbot.scmd.testmessage.error.title")
