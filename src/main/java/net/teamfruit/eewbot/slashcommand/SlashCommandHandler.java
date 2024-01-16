@@ -31,22 +31,12 @@ public class SlashCommandHandler {
 
     public SlashCommandHandler(EEWBot bot) {
         ApplicationService service = bot.getClient().getRestClient().getApplicationService();
-        if (bot.getConfig().isDebug()) {
-            long guildId = 564550533973540885L;
-            service.getGuildApplicationCommands(bot.getApplicationId(), guildId)
-                    .filter(data -> !commands.containsKey(data.name()))
-                    .flatMap(data -> service.deleteGuildApplicationCommand(bot.getApplicationId(), guildId, data.id().asLong()))
-                    .subscribe();
 
-            commands.values().forEach(command -> service.createGuildApplicationCommand(bot.getApplicationId(), guildId, command.buildCommand()).subscribe());
-        } else {
-            service.getGlobalApplicationCommands(bot.getApplicationId())
-                    .filter(data -> !commands.containsKey(data.name()))
-                    .flatMap(data -> service.deleteGlobalApplicationCommand(bot.getApplicationId(), data.id().asLong()))
-                    .subscribe();
-
-            commands.values().forEach(command -> service.createGlobalApplicationCommand(bot.getApplicationId(), command.buildCommand()).subscribe());
-        }
+        service.getGlobalApplicationCommands(bot.getApplicationId())
+                .filter(data -> !commands.containsKey(data.name()))
+                .flatMap(data -> service.deleteGlobalApplicationCommand(bot.getApplicationId(), data.id().asLong()))
+                .subscribe();
+        commands.values().forEach(command -> service.createGlobalApplicationCommand(bot.getApplicationId(), command.buildCommand()).subscribe());
 
         bot.getClient().on(ApplicationCommandInteractionEvent.class)
                 .flatMap(event -> Mono.just(event.getCommandName())
