@@ -68,7 +68,7 @@
   "eewbot.scmd.testmessage.error.ratelimit": "メッセージを送信できませんでした。\nしばらく経ってから再度お試しください。",
   "eewbot.scmd.testmessage.error.unknownwebhook": "メッセージを送信できませんでした。\nWebhookが削除されています！\n/setup コマンドを再度実行してください。",
   "eewbot.scmd.testmessage.error.unknown": "メッセージを送信できませんでした。\n不明なエラーが発生しました。\n%s",
-  "eewbot.scmd.lang.set": "このチャンネルの言語を%sに設定しました。",
+  "eewbot.scmd.lang.set": "このチャンネルの言語を**%s**に設定しました。",
   "eewbot.scmd.help.title": "Help",
   "eewbot.scmd.help.desc": "スラッシュコマンドを使用します。\n`/`を入力してBotのアイコンを選択すると、利用可能なコマンドが一覧表示されます。",
   "eewbot.scmd.help.field.set.value": "コマンドを実行しているチャンネルに、Botが通知する情報の種類・最小震度を設定します。デフォルトでは、サーバー管理権限が必要です。",
@@ -76,6 +76,7 @@
   "eewbot.scmd.help.field.time.value": "Botの時刻同期情報の確認します。強制再同期もできます。",
   "eewbot.scmd.help.field.invite.value": "Botの招待URLを取得します。",
   "eewbot.scmd.help.field.testmessage.value": "Botからテストメッセージを送信し、現在のチャンネルで正常に動作するか確認します。",
+  "eewbot.scmd.help.field.lang.value": "Botの言語を設定します。デフォルトでは、サーバー管理権限が必要です。",
   "eewbot.scmd.help.field.help.value": "Helpを表示します。",
   "eewbot.scmd.help.field.links.name": "リンク",
   "eewbot.scmd.help.field.links.value": "[GitHub](https://github.com/Team-Fruit/EEWBot)\n[サポートサーバー](https://discord.gg/upt9n86ctG)"
