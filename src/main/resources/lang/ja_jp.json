@@ -9,7 +9,7 @@
   "eewbot.eew.eewprediction.final.concurrent": "#%s 緊急地震速報 (予報) 最終報",
   "eewbot.eew.eewcancel": "緊急地震速報 (キャンセル報)",
   "eewbot.eew.eewcancel.concurrent": "#%s 緊急地震速報 (キャンセル報)",
-  "eewbot.eew.cancel": "緊急地震速報はキャンセルされました",
+  "eewbot.eew.cancel": "先ほど発表した緊急地震速報を取り消します",
   "eewbot.eew.epicenter": "震央",
   "eewbot.eew.depth": "深さ",
   "eewbot.eew.km": "%skm",
