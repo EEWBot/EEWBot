@@ -38,7 +38,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     @Override
-    public boolean isEphemeral() {
+    public boolean isEphemeralWhenDefer() {
         return true;
     }
 
@@ -53,7 +53,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     @Override
-    public boolean isEphemeralOnSelect() {
+    public boolean isEphemeralOnSelectWhenDefer() {
         return true;
     }
 

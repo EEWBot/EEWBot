@@ -44,7 +44,7 @@ public class SlashCommandHandler {
                         .filter(name -> commands.containsKey(name))
                         .map(commands::get)
                         .flatMap(cmd -> cmd.isDefer() ? event.deferReply(InteractionCallbackSpec.builder()
-                                .ephemeral(cmd.isEphemeral())
+                                .ephemeral(cmd.isEphemeralWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> {
                             Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
@@ -66,7 +66,7 @@ public class SlashCommandHandler {
                                 .filter(cmd -> cmd.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
                         .flatMap(cmd -> cmd.isDeferOnSelect() ? event.deferReply(InteractionCallbackSpec.builder()
-                                .ephemeral(cmd.isEphemeralOnSelect())
+                                .ephemeral(cmd.isEphemeralOnSelectWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> cmd.onSelect(bot, event, getLanguage(bot, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
@@ -81,7 +81,7 @@ public class SlashCommandHandler {
                                 .filter(cmd -> cmd.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
                         .flatMap(cmd -> cmd.isDeferOnClick() ? event.deferReply(InteractionCallbackSpec.builder()
-                                .ephemeral(cmd.isEphemeralOnClick())
+                                .ephemeral(cmd.isEphemeralOnClickWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> cmd.onClick(bot, event, getLanguage(bot, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))

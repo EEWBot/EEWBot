@@ -23,11 +23,6 @@ public class LangSlashCommand implements ISelectMenuSlashCommand {
     }
 
     @Override
-    public boolean isEphemeral() {
-        return true;
-    }
-
-    @Override
     public List<String> getCustomIds() {
         return List.of("lang");
     }
@@ -45,15 +40,17 @@ public class LangSlashCommand implements ISelectMenuSlashCommand {
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         bot.getChannels().computeIfAbsent(event.getInteraction().getChannelId().asLong(), key -> Channel.createDefault(lang));
-        return event.reply().withComponents(ActionRow.of(SelectMenu.of("lang", bot.getI18n().getLanguages().entrySet().stream()
-                        .map(entry -> {
-                            if (entry.getKey().equals(lang))
-                                return SelectMenu.Option.ofDefault(entry.getValue(), entry.getKey());
-                            return SelectMenu.Option.of(entry.getValue(), entry.getKey());
-                        })
-                        .collect(Collectors.toList()))
-                .withMinValues(1)
-                .withMaxValues(1)));
+        return event.reply()
+                .withEphemeral(true)
+                .withComponents(ActionRow.of(SelectMenu.of("lang", bot.getI18n().getLanguages().entrySet().stream()
+                                .map(entry -> {
+                                    if (entry.getKey().equals(lang))
+                                        return SelectMenu.Option.ofDefault(entry.getValue(), entry.getKey());
+                                    return SelectMenu.Option.of(entry.getValue(), entry.getKey());
+                                })
+                                .collect(Collectors.toList()))
+                        .withMinValues(1)
+                        .withMaxValues(1)));
     }
 
     @Override
@@ -66,7 +63,9 @@ public class LangSlashCommand implements ISelectMenuSlashCommand {
             } catch (IOException e) {
                 return Mono.error(e);
             }
-            return event.reply().withContent(bot.getI18n().format(langKey, "eewbot.scmd.lang.set", bot.getI18n().getLanguages().get(langKey)))
+            return event.reply()
+                    .withEphemeral(true)
+                    .withContent(bot.getI18n().format(langKey, "eewbot.scmd.lang.set", bot.getI18n().getLanguages().get(langKey)))
                     .then();
         }
         return Mono.empty();

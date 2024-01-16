@@ -14,7 +14,7 @@ public interface IButtonSlashCommand extends ISlashCommand {
         return false;
     }
 
-    default boolean isEphemeralOnClick() {
+    default boolean isEphemeralOnClickWhenDefer() {
         return false;
     }
 

@@ -15,7 +15,7 @@ public interface ISlashCommand {
         return false;
     }
 
-    default boolean isEphemeral() {
+    default boolean isEphemeralWhenDefer() {
         return false;
     }
 
