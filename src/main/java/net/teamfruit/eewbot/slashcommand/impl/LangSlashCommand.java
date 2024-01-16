@@ -44,6 +44,7 @@ public class LangSlashCommand implements ISelectMenuSlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
+        bot.getChannels().computeIfAbsent(event.getInteraction().getChannelId().asLong(), key -> Channel.createDefault(lang));
         return event.reply().withComponents(ActionRow.of(SelectMenu.of("lang", bot.getI18n().getLanguages().entrySet().stream()
                         .map(entry -> {
                             if (entry.getKey().equals(lang))
@@ -58,14 +59,15 @@ public class LangSlashCommand implements ISelectMenuSlashCommand {
     @Override
     public Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         if (event.getCustomId().equals("lang")) {
-            String langKey = bot.getI18n().getLanguages().get(event.getValues().get(0));
+            String langKey = event.getValues().get(0);
             bot.getChannels().setLang(event.getInteraction().getChannelId().asLong(), langKey);
             try {
                 bot.getChannels().save();
             } catch (IOException e) {
                 return Mono.error(e);
             }
-            return event.reply().withContent(bot.getI18n().get(langKey, "eewbot.scmd.lang.set")).then();
+            return event.reply().withContent(bot.getI18n().format(langKey, "eewbot.scmd.lang.set", bot.getI18n().getLanguages().get(langKey)))
+                    .then();
         }
         return Mono.empty();
     }
