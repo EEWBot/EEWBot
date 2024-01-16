@@ -127,6 +127,13 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
             getElement().get(key).setWebhook(webhook);
     }
 
+    public void setLang(long key, String lang) {
+        if (this.redisReady)
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.lang"), lang);
+        else
+            getElement().get(key).setLang(lang);
+    }
+
     public List<Long> getWebhookAbsentChannels() {
         if (this.redisReady) {
             Query query = new Query("-@webhookId:[0 inf]").setNoContent();

@@ -26,6 +26,7 @@ public class SlashCommandHandler {
         registerCommand(new TimeSlashCommand());
         registerCommand(new InviteSlashCommand());
         registerCommand(new TestMessageSlashCommand());
+        registerCommand(new LangSlashCommand());
         registerCommand(new HelpSlashCommand());
     }
 
