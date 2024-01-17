@@ -10,9 +10,12 @@ import java.util.Objects;
 
 public class I18n {
 
+    private static final String FALLBACK_LANGUAGE = "en_us";
+
     private Map<String, String> languages;
+    public String defaultLanguage;
+
     private final Map<String, Map<String, String>> langMap = new HashMap<>();
-    public String defaultLanguage = "ja_jp";
 
     public I18n() {
     }
@@ -36,14 +39,14 @@ public class I18n {
     }
 
     public String get(final String lang, final String key) {
-        final String text = this.langMap.get(lang).getOrDefault(key, this.langMap.get(this.defaultLanguage).get(key));
+        final String text = this.langMap.get(lang).getOrDefault(key, this.langMap.get(FALLBACK_LANGUAGE).get(key));
         if (text != null)
             return text;
         return key;
     }
 
     public String format(final String lang, final String key, final Object... args) {
-        final String text = this.langMap.get(lang).getOrDefault(key, this.langMap.get(this.defaultLanguage).get(key));
+        final String text = this.langMap.get(lang).getOrDefault(key, this.langMap.get(FALLBACK_LANGUAGE).get(key));
         if (text != null)
             return String.format(text, args);
         return key;
