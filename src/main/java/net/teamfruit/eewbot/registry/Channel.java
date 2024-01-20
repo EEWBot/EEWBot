@@ -18,6 +18,10 @@ public class Channel extends ChannelBase {
                 .collect(Collectors.toUnmodifiableList());
     }
 
+    private Boolean isGuild;
+
+    private Long guildId;
+
     @CommandName("EEW警報")
     private boolean eewAlert;
 
@@ -45,6 +49,14 @@ public class Channel extends ChannelBase {
         return new Channel(false, false, false, false, SeismicIntensity.ONE, null, lang);
     }
 
+    public Boolean isGuild() {
+        return this.isGuild;
+    }
+
+    public Long getGuildId() {
+        return this.guildId;
+    }
+
     public boolean isEewAlert() {
         return this.eewAlert;
     }
@@ -63,6 +75,14 @@ public class Channel extends ChannelBase {
 
     public SeismicIntensity getMinIntensity() {
         return this.minIntensity;
+    }
+
+    void setGuild(boolean isGuild) {
+        this.isGuild = isGuild;
+    }
+
+    void setGuildId(long guildId) {
+        this.guildId = guildId;
     }
 
     void setMinIntensity(SeismicIntensity minIntensity) {
@@ -109,21 +129,6 @@ public class Channel extends ChannelBase {
                 }));
     }
 
-    @Override
-    public String toString() {
-        return Arrays.stream(getClass().getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(CommandName.class))
-                .map(field -> {
-                    try {
-                        return String.format("`%s` %s", field.getAnnotation(CommandName.class).value(), field.getBoolean(this));
-                    } catch (IllegalArgumentException | IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                // TODO
-                .collect(Collectors.joining("\n")) + "\n`最小通知震度` " + this.minIntensity.getSimple();
-    }
-
     public static Optional<String> toCommandName(String fieldName) {
         return Arrays.stream(Channel.class.getDeclaredFields())
                 .filter(field -> field.getName().equals(fieldName) && field.isAnnotationPresent(CommandName.class))
@@ -142,5 +147,18 @@ public class Channel extends ChannelBase {
     @Override
     public int hashCode() {
         return Objects.hash(this.eewAlert, this.eewPrediction, this.eewDecimation, this.quakeInfo, this.minIntensity, this.webhook, this.lang);
+    }
+
+    @Override
+    public String toString() {
+        return "Channel{" +
+                "isGuild=" + this.isGuild +
+                ", guildId=" + this.guildId +
+                ", eewAlert=" + this.eewAlert +
+                ", eewPrediction=" + this.eewPrediction +
+                ", eewDecimation=" + this.eewDecimation +
+                ", quakeInfo=" + this.quakeInfo +
+                ", minIntensity=" + this.minIntensity +
+                '}';
     }
 }

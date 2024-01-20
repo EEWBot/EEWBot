@@ -65,6 +65,8 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
 
     private void createJedisIndex() {
         Schema schema = new Schema()
+                .addTagField("$.isGuild").as("isGuild")
+                .addNumericField("$.guildId").as("guildId")
                 .addTagField("$.eewAlert").as("eewAlert")
                 .addTagField("$.eewPrediction").as("eewPrediction")
                 .addTagField("$.eewDecimation").as("eewDecimation")
