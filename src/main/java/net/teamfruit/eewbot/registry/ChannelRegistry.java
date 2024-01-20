@@ -182,7 +182,7 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
 
     public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
         if (this.redisReady) {
-            Query query = filter.toQuery().returnFields("$.webhook", "$.lang");
+            Query query = filter.toQuery().returnFields("$.isGuild", "$.webhook", "$.lang");
             SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
             return searchResult.getDocuments().stream()
                     .collect(Collectors.partitioningBy(doc -> doc.hasProperty("$.webhook"),

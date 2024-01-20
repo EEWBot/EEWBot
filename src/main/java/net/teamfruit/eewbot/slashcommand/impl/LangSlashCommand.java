@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.slashcommand.impl;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
@@ -51,7 +52,8 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
-        bot.getChannels().computeIfAbsent(event.getInteraction().getChannelId().asLong(), key -> Channel.createDefault(lang));
+        bot.getChannels().computeIfAbsent(event.getInteraction().getChannelId().asLong(), key ->
+                Channel.createDefault(event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null), lang));
         return event.reply()
                 .withEphemeral(true)
                 .withComponents(buildActionRows(bot, lang, event.getInteraction().getGuildId().isPresent()));

@@ -11,6 +11,13 @@ public class ChannelBase {
     protected Webhook webhook;
     protected String lang;
 
+    public ChannelBase(boolean isGuild, Long guildId, Webhook webhook, String lang) {
+        this.isGuild = isGuild;
+        this.guildId = guildId;
+        this.webhook = webhook;
+        this.lang = lang;
+    }
+
     public ChannelBase(Webhook webhook, String lang) {
         this.webhook = webhook;
         this.lang = lang;
@@ -55,14 +62,18 @@ public class ChannelBase {
 
         ChannelBase that = (ChannelBase) o;
 
+        if (!Objects.equals(this.isGuild, that.isGuild)) return false;
+        if (!Objects.equals(this.guildId, that.guildId)) return false;
         if (!Objects.equals(this.webhook, that.webhook)) return false;
-        return Objects.equals(this.lang, that.lang);
+        return this.lang.equals(that.lang);
     }
 
     @Override
     public int hashCode() {
-        int result = this.webhook != null ? this.webhook.hashCode() : 0;
-        result = 31 * result + (this.lang != null ? this.lang.hashCode() : 0);
+        int result = this.isGuild != null ? this.isGuild.hashCode() : 0;
+        result = 31 * result + (this.guildId != null ? this.guildId.hashCode() : 0);
+        result = 31 * result + (this.webhook != null ? this.webhook.hashCode() : 0);
+        result = 31 * result + this.lang.hashCode();
         return result;
     }
 

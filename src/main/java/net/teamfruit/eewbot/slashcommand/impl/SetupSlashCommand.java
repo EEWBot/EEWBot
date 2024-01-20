@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SetupSlashCommand implements ISelectMenuSlashCommand {
+
     @Override
     public String getCommandName() {
         return "setup";
@@ -70,7 +71,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
-        bot.getChannels().computeIfAbsent(channelId, key -> Channel.createDefault(lang));
+        bot.getChannels().computeIfAbsent(channelId, key -> Channel.createDefault(event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null), lang));
         return Mono.justOrEmpty(event.getInteraction().getGuildId())
                 .flatMap(guildId -> event.getInteraction().getChannel()
                         .filter(GuildChannel.class::isInstance)
