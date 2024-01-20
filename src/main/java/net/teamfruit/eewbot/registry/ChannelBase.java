@@ -6,6 +6,7 @@ import java.util.Objects;
 
 public class ChannelBase {
 
+    protected Boolean isGuild;
     protected Long guildId;
     protected Webhook webhook;
     protected String lang;
@@ -13,6 +14,14 @@ public class ChannelBase {
     public ChannelBase(Webhook webhook, String lang) {
         this.webhook = webhook;
         this.lang = lang;
+    }
+
+    public @Nullable Boolean isGuild() {
+        return this.isGuild;
+    }
+
+    void setGuild(boolean guild) {
+        this.isGuild = guild;
     }
 
     public @Nullable Long getGuildId() {
@@ -60,8 +69,11 @@ public class ChannelBase {
     @Override
     public String toString() {
         return "ChannelBase{" +
-                "webhook=" + this.webhook +
+                "isGuild=" + this.isGuild +
+                ", guildId=" + this.guildId +
+                ", webhook=" + this.webhook +
                 ", lang='" + this.lang + '\'' +
                 '}';
     }
+
 }

@@ -65,6 +65,7 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
 
     private void createJedisIndex() {
         Schema schema = new Schema()
+                .addTagField("$.isGuild").as("isGuild")
                 .addNumericField("$.guildId").as("guildId")
                 .addTagField("$.eewAlert").as("eewAlert")
                 .addTagField("$.eewPrediction").as("eewPrediction")
@@ -125,6 +126,13 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
             this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.minIntensity"), intensity.ordinal());
         else
             getElement().get(key).setMinIntensity(intensity);
+    }
+
+    public void setIsGuild(long key, boolean guild) {
+        if (this.redisReady)
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.isGuild"), guild);
+        else
+            getElement().get(key).setGuild(guild);
     }
 
     public void setWebhook(long key, Webhook webhook) {
@@ -207,11 +215,11 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
 
     public boolean isGuildEmpty() {
         if (this.redisReady) {
-            Query query = new Query("-@guildId:[0 inf]").setNoContent();
+            Query query = new Query("-@isGuild:{true | false}").setNoContent();
             SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
             return !searchResult.getDocuments().isEmpty();
         }
-        return getElement().entrySet().stream().noneMatch(entry -> entry.getValue().getGuildId() != null);
+        return getElement().entrySet().stream().anyMatch(entry -> entry.getValue().isGuild() == null);
     }
 
     public void setGuildId(long channelId, long guildId) {

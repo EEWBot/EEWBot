@@ -127,11 +127,15 @@ public class EEWBot {
             this.gateway.getGuilds().flatMap(Guild::getChannels)
                     .subscribe(channel -> {
                                 long channelId = channel.getId().asLong();
-                                if (this.channels.exists(channelId))
+                                if (this.channels.exists(channelId)) {
                                     this.channels.setGuildId(channel.getId().asLong(), channel.getGuildId().asLong());
+                                    this.channels.setIsGuild(channelId, true);
+                                }
                             },
                             e -> Log.logger.error("Failed to register guild ids", e),
                             () -> {
+                                this.channels.actionOnChannels(ChannelFilter.builder().isGuild(null).build(),
+                                        channelId -> this.channels.setIsGuild(channelId, false));
                                 try {
                                     this.channels.save();
                                     Log.logger.info("Registered guild ids");

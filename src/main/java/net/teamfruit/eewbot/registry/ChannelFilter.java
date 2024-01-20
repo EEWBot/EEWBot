@@ -3,8 +3,12 @@ package net.teamfruit.eewbot.registry;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import redis.clients.jedis.search.Query;
 
+import java.util.Objects;
+
 public class ChannelFilter {
 
+    private Boolean isGuild;
+    private boolean isGuildPresent;
     private boolean eewAlert;
     private boolean eewAlertPresent;
     private boolean eewPrediction;
@@ -19,6 +23,8 @@ public class ChannelFilter {
     private boolean webhookIdPresent;
 
     public boolean test(Channel channel) {
+        if (this.isGuildPresent && !Objects.equals(channel.isGuild(), this.isGuild))
+            return false;
         if (this.eewAlertPresent && channel.isEewAlert() != this.eewAlert)
             return false;
         if (this.eewPredictionPresent && channel.isEewPrediction() != this.eewPrediction)
@@ -36,6 +42,12 @@ public class ChannelFilter {
 
     public Query toQuery() {
         StringBuilder builder = new StringBuilder();
+        if (this.isGuildPresent) {
+            if (this.isGuild != null)
+                builder.append("@isGuild:{").append(this.isGuild).append("} ");
+            else
+                builder.append("-@isGuild:{true | false}");
+        }
         if (this.eewAlertPresent)
             builder.append("@eewAlert:{").append(this.eewAlert).append("} ");
         if (this.eewPredictionPresent)
@@ -58,6 +70,12 @@ public class ChannelFilter {
     public static class Builder {
 
         private final ChannelFilter filter = new ChannelFilter();
+
+        public Builder isGuild(Boolean isGuild) {
+            this.filter.isGuild = isGuild;
+            this.filter.isGuildPresent = true;
+            return this;
+        }
 
         public Builder eewAlert(boolean eewAlert) {
             this.filter.eewAlert = eewAlert;
