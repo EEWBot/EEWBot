@@ -6,12 +6,21 @@ import java.util.Objects;
 
 public class ChannelBase {
 
+    protected Long guildId;
     protected Webhook webhook;
     protected String lang;
 
     public ChannelBase(Webhook webhook, String lang) {
         this.webhook = webhook;
         this.lang = lang;
+    }
+
+    public @Nullable Long getGuildId() {
+        return this.guildId;
+    }
+
+    void setGuildId(long guildId) {
+        this.guildId = guildId;
     }
 
     public @Nullable Webhook getWebhook() {
