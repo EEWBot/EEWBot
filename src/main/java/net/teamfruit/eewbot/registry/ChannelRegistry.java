@@ -65,7 +65,6 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
 
     private void createJedisIndex() {
         Schema schema = new Schema()
-                .addTagField("$.isGuild").as("isGuild")
                 .addNumericField("$.guildId").as("guildId")
                 .addTagField("$.eewAlert").as("eewAlert")
                 .addTagField("$.eewPrediction").as("eewPrediction")
@@ -79,7 +78,7 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
         this.jedisPool.ftCreate(CHANNEL_INDEX, IndexOptions.defaultOptions().setDefinition(indexDefinition), schema);
     }
 
-    public void migrationToJedis() {
+    private void migrationToJedis() {
         try (Connection connection = this.jedisPool.getPool().getResource()) {
             Transaction transaction = new Transaction(connection);
             transaction.setJsonObjectMapper(this.objectMapper);
@@ -99,6 +98,12 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
             this.jedisPool.jsonDel(CHANNEL_PREFIX + key);
         else
             getElement().remove(key);
+    }
+
+    public boolean exists(long key) {
+        if (this.redisReady)
+            return this.jedisPool.exists(CHANNEL_PREFIX + key);
+        return getElement().containsKey(key);
     }
 
     public void computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction) {
@@ -198,6 +203,22 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
                 return true;
             return webhook.getThreadId() != threadId;
         });
+    }
+
+    public boolean isGuildEmpty() {
+        if (this.redisReady) {
+            Query query = new Query("-@guildId:[0 inf]").setNoContent();
+            SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
+            return !searchResult.getDocuments().isEmpty();
+        }
+        return getElement().entrySet().stream().noneMatch(entry -> entry.getValue().getGuildId() != null);
+    }
+
+    public void setGuildId(long channelId, long guildId) {
+        if (this.redisReady)
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + channelId, Path.of("$.guildId"), guildId);
+        else
+            getElement().get(channelId).setGuildId(guildId);
     }
 
     @Override

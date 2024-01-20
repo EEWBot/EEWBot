@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.IntentSet;
@@ -120,6 +121,25 @@ public class EEWBot {
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
+
+        if (this.channels.isGuildEmpty()) {
+            Log.logger.info("Registering guild ids");
+            this.gateway.getGuilds().flatMap(Guild::getChannels)
+                    .subscribe(channel -> {
+                                long channelId = channel.getId().asLong();
+                                if (this.channels.exists(channelId))
+                                    this.channels.setGuildId(channel.getId().asLong(), channel.getGuildId().asLong());
+                            },
+                            e -> Log.logger.error("Failed to register guild ids", e),
+                            () -> {
+                                try {
+                                    this.channels.save();
+                                    Log.logger.info("Registered guild ids");
+                                } catch (IOException e) {
+                                    Log.logger.error("Failed to save channels", e);
+                                }
+                            });
+        }
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             Log.logger.info("Shutdown");

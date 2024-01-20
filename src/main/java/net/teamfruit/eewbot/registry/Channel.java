@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.registry;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import reactor.util.annotation.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -17,8 +18,6 @@ public class Channel extends ChannelBase {
                 .map(Field::getName)
                 .collect(Collectors.toUnmodifiableList());
     }
-
-    private Boolean isGuild;
 
     private Long guildId;
 
@@ -49,11 +48,7 @@ public class Channel extends ChannelBase {
         return new Channel(false, false, false, false, SeismicIntensity.ONE, null, lang);
     }
 
-    public Boolean isGuild() {
-        return this.isGuild;
-    }
-
-    public Long getGuildId() {
+    public @Nullable Long getGuildId() {
         return this.guildId;
     }
 
@@ -75,10 +70,6 @@ public class Channel extends ChannelBase {
 
     public SeismicIntensity getMinIntensity() {
         return this.minIntensity;
-    }
-
-    void setGuild(boolean isGuild) {
-        this.isGuild = isGuild;
     }
 
     void setGuildId(long guildId) {
@@ -152,8 +143,7 @@ public class Channel extends ChannelBase {
     @Override
     public String toString() {
         return "Channel{" +
-                "isGuild=" + this.isGuild +
-                ", guildId=" + this.guildId +
+                "guildId=" + this.guildId +
                 ", eewAlert=" + this.eewAlert +
                 ", eewPrediction=" + this.eewPrediction +
                 ", eewDecimation=" + this.eewDecimation +
@@ -161,4 +151,5 @@ public class Channel extends ChannelBase {
                 ", minIntensity=" + this.minIntensity +
                 '}';
     }
+
 }
