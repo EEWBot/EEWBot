@@ -2,53 +2,50 @@ package net.teamfruit.eewbot;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
+import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
+import discord4j.core.event.domain.thread.ThreadChannelDeleteEvent;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.shard.ShardingStrategy;
+import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.Channel;
-import net.teamfruit.eewbot.registry.Config;
-import net.teamfruit.eewbot.registry.ConfigurationRegistry;
+import net.teamfruit.eewbot.registry.*;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
+import org.apache.commons.lang3.StringUtils;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisPooled;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
 public class EEWBot {
     public static EEWBot instance;
 
-    @SuppressWarnings("deprecation")
     public static final Gson GSON = new GsonBuilder()
-            .registerTypeAdapter(net.teamfruit.eewbot.registry.OldChannel.class, new net.teamfruit.eewbot.registry.OldChannel.ChannelTypeAdapter())
+            .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensitySerializer())
+            .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensityDeserializer())
+            .create();
+    public static final Gson GSON_PRETTY = new GsonBuilder()
+            .setPrettyPrinting()
             .create();
 
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
-    public static final String CONDIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
+    public static final String CONFIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
-    private final ConfigurationRegistry<Config> config = new ConfigurationRegistry<>(CONDIG_DIRECTORY != null ? Paths.get(CONDIG_DIRECTORY, "config.json") : Paths.get("config.json"), () -> new Config(), Config.class);
-    private final ConfigurationRegistry<Map<Long, Channel>> channels = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), () -> new ConcurrentHashMap<Long, Channel>(), new TypeToken<Map<Long, Channel>>() {
-    }.getType());
+    private final JsonRegistry<Config> config = new JsonRegistry<>(CONFIG_DIRECTORY != null ? Paths.get(CONFIG_DIRECTORY, "config.json") : Paths.get("config.json"), Config::new, Config.class, GSON_PRETTY);
+    private final ChannelRegistry channels = new ChannelRegistry(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), GSON);
+    private final I18n i18n = new I18n();
 
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
-
-    private final ReentrantReadWriteLock channelsLock = new ReentrantReadWriteLock();
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -60,12 +57,20 @@ public class EEWBot {
     private long applicationId;
     private String userName;
     private String avatarUrl;
-    private Optional<TextChannel> systemChannel;
 
     public void initialize() throws IOException {
         this.config.init();
-        initChannels();
-        I18n.INSTANCE.init();
+
+        if (StringUtils.isNotEmpty(getConfig().getRedisAddress())) {
+            String redisAddress = getConfig().getRedisAddress();
+            HostAndPort hnp = redisAddress.lastIndexOf(":") < 0 ? new HostAndPort(redisAddress, 6379) : HostAndPort.from(redisAddress);
+            JedisPooled jedisPooled = new JedisPooled(hnp);
+            this.channels.init(jedisPooled);
+        } else {
+            this.channels.init();
+        }
+
+        this.i18n.init(getConfig().getDefaultLanuage());
 
         final String token = System.getenv("TOKEN");
         if (token != null)
@@ -82,8 +87,7 @@ public class EEWBot {
         this.gateway = DiscordClient.create(getConfig().getToken())
                 .gateway()
                 .setSharding(ShardingStrategy.recommended())
-                .setEnabledIntents(IntentSet.none())
-//				.setInitialPresence(s -> ClientPresence.online(ClientActivity.playing("!eew help")))
+                .setEnabledIntents(IntentSet.of(Intent.GUILDS))
                 .login()
                 .block();
 
@@ -92,7 +96,7 @@ public class EEWBot {
 
         int shardCount = this.gateway.getGatewayClientGroup().getShardCount();
 
-        int guildCount = this.gateway.on(ReadyEvent.class)
+        this.gateway.on(ReadyEvent.class)
                 .map(event -> {
                     int count = event.getGuilds().size();
                     Log.logger.info("Connecting {} guilds...", count);
@@ -100,58 +104,61 @@ public class EEWBot {
                 })
                 .take(shardCount)
                 .reduce(0, Integer::sum)
-                .block();
+                .subscribe(sum -> Log.logger.info("Connected to {} shard(s), {} guild(s)!", shardCount, sum));
 
-        Log.logger.info("Connected to {} shard(s), {} guild(s)!", shardCount, guildCount);
-
-        this.applicationId = this.gateway.getRestClient().getApplicationId().block();
+        this.applicationId = this.gateway.getSelfId().asLong();
 
         final User self = this.gateway.getSelf().block();
-        this.userName = self.getUsername();
-        this.avatarUrl = self.getAvatarUrl();
+        if (self != null) {
+            this.userName = self.getUsername();
+            this.avatarUrl = self.getAvatarUrl();
 
-        Log.logger.info("BotUser: {}", this.userName);
-
-//        if (StringUtils.isEmpty(getConfig().getSystemChannel())) {
-//            this.systemChannel = Optional.ofNullable(this.gateway.getGuilds()
-//                    .filter(guild -> self.getId().equals(guild.getId()))
-//                    .next()
-//                    .flatMap(guild -> guild.getChannels()
-//                            .filter(c -> c.getName().equals("monitor"))
-//                            .next())
-//                    .cast(TextChannel.class)
-//                    .switchIfEmpty(this.gateway.getGuilds()
-//                            .count()
-//                            .filter(count -> count < 10)
-//                            .flatMap(count -> this.gateway.createGuild(spec -> spec.setName("EEWBot System")
-//                                            .setRegion(Region.Id.JAPAN)
-//                                            .addChannel("monitor", discord4j.core.object.entity.channel.Channel.Type.GUILD_TEXT))
-//                                    .flatMap(g -> g.getChannels()
-//                                            .filter(c -> c.getName().equals("monitor"))
-//                                            .next()
-//                                            .cast(TextChannel.class))))
-//                    .block());
-//        } else {
-//            this.systemChannel = Optional.ofNullable(this.gateway.getChannelById(Snowflake.of(getConfig().getSystemChannel()))
-//                    .cast(TextChannel.class)
-//                    .doOnError(err -> {
-//                        Log.logger.error("SystemChannelを正常に取得出来ませんでした: " + getConfig().getSystemChannel());
-//                    })
-//                    .block());
-//        }
-
-//        this.systemChannel.ifPresent(channel -> Log.logger.info("System Guild: " + channel.getGuildId().asString() + " System Channel: " + channel.getId().asString()));
+            Log.logger.info("BotUser: {}", this.userName);
+        } else {
+            Log.logger.error("Failed to get bot user");
+            return;
+        }
 
         this.service = new EEWService(this);
-        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getChannelRegistry());
+        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels());
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
 
+        if (this.channels.isGuildEmpty()) {
+            Log.logger.info("Registering guild ids");
+            this.gateway.getGuilds().flatMap(Guild::getChannels)
+                    .subscribe(channel -> {
+                                long channelId = channel.getId().asLong();
+                                if (this.channels.exists(channelId)) {
+                                    this.channels.setGuildId(channel.getId().asLong(), channel.getGuildId().asLong());
+                                    this.channels.setIsGuild(channelId, true);
+                                }
+                            },
+                            e -> Log.logger.error("Failed to register guild ids", e),
+                            () -> {
+                                this.channels.actionOnChannels(ChannelFilter.builder().isGuild(null).build(),
+                                        channelId -> this.channels.setIsGuild(channelId, false));
+                                try {
+                                    this.channels.save();
+                                    Log.logger.info("Registered guild ids");
+                                } catch (IOException e) {
+                                    Log.logger.error("Failed to save channels", e);
+                                }
+                            });
+        }
+
+        this.gateway.on(GuildDeleteEvent.class)
+                .subscribe(event -> handleDeletion(event.getGuildId().asLong(), true));
+        this.gateway.on(TextChannelDeleteEvent.class)
+                .subscribe(event -> handleDeletion(event.getChannel().getId().asLong(), false));
+        this.gateway.on(ThreadChannelDeleteEvent.class)
+                .subscribe(event -> handleDeletion(event.getChannel().getId().asLong(), false));
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             Log.logger.info("Shutdown");
             try {
-                getChannelRegistry().save();
+                getChannels().save();
             } catch (final IOException e) {
                 Log.logger.error("Save failed", e);
             }
@@ -160,28 +167,15 @@ public class EEWBot {
         this.gateway.onDisconnect().block();
     }
 
-    @SuppressWarnings("deprecation")
-    private boolean initChannels() throws IOException {
+    private void handleDeletion(long id, boolean isGuild) {
+        if (isGuild)
+            this.channels.actionOnChannels(ChannelFilter.builder().guildId(id).build(), this.channels::remove);
+        else
+            this.channels.remove(id);
         try {
-            this.channels.init();
-            return false;
-        } catch (final JsonSyntaxException e) {
-            Log.logger.info("Migrating channels.json");
-
-            final ConfigurationRegistry<Map<Long, List<net.teamfruit.eewbot.registry.OldChannel>>> oldChannels = new ConfigurationRegistry<>(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"),
-                    () -> new ConcurrentHashMap<Long, List<net.teamfruit.eewbot.registry.OldChannel>>(),
-                    new TypeToken<Map<Long, Collection<net.teamfruit.eewbot.registry.OldChannel>>>() {
-                    }.getType());
-
-            Files.copy(oldChannels.getPath(), DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "oldchannels.json") : Paths.get("oldchannels.json"));
-            oldChannels.init();
-
-            final Map<Long, Channel> map = oldChannels.getElement().values().stream()
-                    .flatMap(List::stream)
-                    .collect(Collectors.toMap(old -> old.id, Channel::fromOldChannel));
-            this.channels.setElement(map);
             this.channels.save();
-            return true;
+        } catch (IOException e) {
+            Log.logger.error("Failed to save channels", e);
         }
     }
 
@@ -189,23 +183,15 @@ public class EEWBot {
         return this.config.getElement();
     }
 
-    public Map<Long, Channel> getChannels() {
-        return this.channels.getElement();
+    public I18n getI18n() {
+        return this.i18n;
     }
 
     public ScheduledExecutorService getScheduledExecutor() {
         return this.scheduledExecutor;
     }
 
-    public ReentrantReadWriteLock getChannelsLock() {
-        return this.channelsLock;
-    }
-
-    public ConfigurationRegistry<Config> getConfigRegistry() {
-        return this.config;
-    }
-
-    public ConfigurationRegistry<Map<Long, Channel>> getChannelRegistry() {
+    public ChannelRegistry getChannels() {
         return this.channels;
     }
 
@@ -225,10 +211,6 @@ public class EEWBot {
         return this.executor;
     }
 
-    public SlashCommandHandler getSlashCommandHandler() {
-        return this.slashCommand;
-    }
-
     public long getApplicationId() {
         return this.applicationId;
     }
@@ -239,10 +221,6 @@ public class EEWBot {
 
     public String getAvatarUrl() {
         return this.avatarUrl;
-    }
-
-    public Optional<TextChannel> getSystemChannel() {
-        return this.systemChannel;
     }
 
     public static void main(final String[] args) throws Exception {

@@ -33,7 +33,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
     public void setPrev(DmdataEEW prev) {
         this.prev = prev;
         SeismicIntensity prevIntensity = prev.getBody().getIntensity() != null ?
-                SeismicIntensity.get(prev.getBody().getIntensity().getForecastMaxInt().getFrom()).orElse(SeismicIntensity.UNKNOWN) : SeismicIntensity.UNKNOWN;
+                SeismicIntensity.get(prev.getBody().getIntensity().getForecastMaxInt().getFrom()) : SeismicIntensity.UNKNOWN;
         if (this.maxIntensityBefore.compareTo(prevIntensity) < 0)
             this.maxIntensityBefore = prevIntensity;
     }
@@ -41,7 +41,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
     public SeismicIntensity getMaxIntensityEEW() {
         if (getBody().getIntensity() == null)
             return this.maxIntensityBefore;
-        SeismicIntensity intensity = SeismicIntensity.get(getBody().getIntensity().getForecastMaxInt().getFrom()).orElse(SeismicIntensity.UNKNOWN);
+        SeismicIntensity intensity = SeismicIntensity.get(getBody().getIntensity().getForecastMaxInt().getFrom());
         if (intensity.compareTo(this.maxIntensityBefore) > 0)
             return intensity;
         return this.maxIntensityBefore;
@@ -860,13 +860,13 @@ public class DmdataEEW extends DmdataHeader implements Entity {
             }
             if (this.getBody().getIntensity() != null) {
                 builder.addField("eewbot.eew.forecastseismicintensity",
-                        SeismicIntensity.get(this.getBody().getIntensity().getForecastMaxInt().getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"),
+                        SeismicIntensity.get(this.getBody().getIntensity().getForecastMaxInt().getFrom()).getSimple(),
                         false);
             }
         } else if (this.getBody().getIntensity() != null && this.getBody().getIntensity().getRegions() != null) {
             if (this.getBody().getIntensity().getRegions().isEmpty()) {
                 builder.addField("eewbot.eew.plumseismicintensityplus", "eewbot.eew.near", false,
-                        SeismicIntensity.get(this.getBody().getIntensity().getForecastMaxInt().getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"),
+                        SeismicIntensity.get(this.getBody().getIntensity().getForecastMaxInt().getFrom()).getSimple(),
                         getBody().getEarthquake().getHypocenter().getName());
             } else {
                 this.getBody().getIntensity().getRegions().stream()
@@ -875,14 +875,14 @@ public class DmdataEEW extends DmdataHeader implements Entity {
                                 Collectors.mapping(Body.Intensity.IntensityRegionReached::getName, Collectors.joining("　"))))
                         .entrySet()
                         .stream()
-                        .sorted(Comparator.comparing(entry -> SeismicIntensity.get(entry.getKey().getFrom()).orElse(SeismicIntensity.UNKNOWN), Comparator.reverseOrder()))
+                        .sorted(Comparator.comparing(entry -> SeismicIntensity.get(entry.getKey().getFrom()), Comparator.reverseOrder()))
                         .forEach(entry -> {
                             if (entry.getKey().getTo().equals("over")) {
                                 builder.addField("eewbot.eew.plumseismicintensityplus",
-                                        entry.getValue(), false, SeismicIntensity.get(entry.getKey().getFrom()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
+                                        entry.getValue(), false, SeismicIntensity.get(entry.getKey().getFrom()).getSimple());
                             } else {
                                 builder.addField("eewbot.eew.plumseismicintensity",
-                                        entry.getValue(), false, SeismicIntensity.get(entry.getKey().getTo()).map(SeismicIntensity::getSimple).orElse("eewbot.eew.unknown"));
+                                        entry.getValue(), false, SeismicIntensity.get(entry.getKey().getTo()).getSimple());
                             }
                         });
             }

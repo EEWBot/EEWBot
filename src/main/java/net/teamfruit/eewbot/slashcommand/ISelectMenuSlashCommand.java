@@ -14,7 +14,7 @@ public interface ISelectMenuSlashCommand extends ISlashCommand {
         return false;
     }
 
-    default boolean isEphemeralOnSelect() {
+    default boolean isEphemeralOnSelectWhenDefer() {
         return false;
     }
 

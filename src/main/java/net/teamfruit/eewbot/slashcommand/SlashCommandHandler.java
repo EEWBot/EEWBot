@@ -2,7 +2,6 @@ package net.teamfruit.eewbot.slashcommand;
 
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.spec.InteractionCallbackSpec;
 import discord4j.rest.service.ApplicationService;
@@ -15,6 +14,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 
+import static net.teamfruit.eewbot.slashcommand.SlashCommandUtils.*;
+
 public class SlashCommandHandler {
 
     public static HashMap<String, ISlashCommand> commands = new HashMap<>();
@@ -25,47 +26,37 @@ public class SlashCommandHandler {
         registerCommand(new TimeSlashCommand());
         registerCommand(new InviteSlashCommand());
         registerCommand(new TestMessageSlashCommand());
+        registerCommand(new LangSlashCommand());
         registerCommand(new HelpSlashCommand());
     }
 
     public SlashCommandHandler(EEWBot bot) {
         ApplicationService service = bot.getClient().getRestClient().getApplicationService();
-        if (bot.getConfig().isDebug()) {
-            long guildId = 564550533973540885L;
-            service.getGuildApplicationCommands(bot.getApplicationId(), guildId)
-                    .filter(data -> !commands.containsKey(data.name()))
-                    .flatMap(data -> service.deleteGuildApplicationCommand(bot.getApplicationId(), guildId, data.id().asLong()))
-                    .subscribe();
 
-            commands.values().forEach(command -> service.createGuildApplicationCommand(bot.getApplicationId(), guildId, command.buildCommand()).subscribe());
-        } else {
-            service.getGlobalApplicationCommands(bot.getApplicationId())
-                    .filter(data -> !commands.containsKey(data.name()))
-                    .flatMap(data -> service.deleteGlobalApplicationCommand(bot.getApplicationId(), data.id().asLong()))
-                    .subscribe();
-
-            commands.values().forEach(command -> service.createGlobalApplicationCommand(bot.getApplicationId(), command.buildCommand()).subscribe());
-        }
+        service.getGlobalApplicationCommands(bot.getApplicationId())
+                .filter(data -> !commands.containsKey(data.name()))
+                .flatMap(data -> service.deleteGlobalApplicationCommand(bot.getApplicationId(), data.id().asLong()))
+                .subscribe();
+        commands.values().forEach(command -> service.createGlobalApplicationCommand(bot.getApplicationId(), command.buildCommand()).subscribe());
 
         bot.getClient().on(ApplicationCommandInteractionEvent.class)
                 .flatMap(event -> Mono.just(event.getCommandName())
                         .filter(name -> commands.containsKey(name))
                         .map(commands::get)
                         .flatMap(cmd -> cmd.isDefer() ? event.deferReply(InteractionCallbackSpec.builder()
-                                .ephemeral(cmd.isEphemeral())
+                                .ephemeral(cmd.isEphemeralWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
-                        .flatMap(cmd -> cmd.on(bot, event, getLanguage(bot, event)))
+                        .flatMap(cmd -> {
+                            Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
+                            return cmd.on(bot, event, channel, channel != null ? channel.getLang() : bot.getConfig().getDefaultLanuage());
+                        })
                         .doOnError(err -> Log.logger.error("Error during {} command", event.getCommandName(), err))
-                        .onErrorResume(err -> event.reply()
-                                .withEmbeds(SlashCommandUtils.createErrorEmbed(getLanguage(bot, event))
+                        .onErrorResume(err -> replyOrFollowUp(event, commands.get(event.getCommandName()).isDefer(),
+                                createErrorEmbed(getLanguage(bot, event))
                                         .title("eewbot.scmd.error")
                                         .description(ExceptionUtils.getMessage(err))
-                                        .build())
-                                .withEphemeral(true)
-                                .onErrorResume(e -> {
-                                    Log.logger.error("Error during follow-up message", e);
-                                    return Mono.empty();
-                                })))
+                                        .build()
+                        )))
                 .subscribe(null, err -> Log.logger.error("Unhandled exception during ApplicationCommandInteractionEvent handling", err));
 
         bot.getClient().on(SelectMenuInteractionEvent.class)
@@ -75,7 +66,7 @@ public class SlashCommandHandler {
                                 .filter(cmd -> cmd.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
                         .flatMap(cmd -> cmd.isDeferOnSelect() ? event.deferReply(InteractionCallbackSpec.builder()
-                                .ephemeral(cmd.isEphemeralOnSelect())
+                                .ephemeral(cmd.isEphemeralOnSelectWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> cmd.onSelect(bot, event, getLanguage(bot, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
@@ -90,7 +81,7 @@ public class SlashCommandHandler {
                                 .filter(cmd -> cmd.getCustomIds().contains(event.getCustomId()))
                                 .findAny())
                         .flatMap(cmd -> cmd.isDeferOnClick() ? event.deferReply(InteractionCallbackSpec.builder()
-                                .ephemeral(cmd.isEphemeralOnClick())
+                                .ephemeral(cmd.isEphemeralOnClickWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> cmd.onClick(bot, event, getLanguage(bot, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
@@ -99,14 +90,8 @@ public class SlashCommandHandler {
                 .subscribe(null, err -> Log.logger.error("Unhandled exception during ButtonInteractionEvent handling", err));
     }
 
-    public static void registerCommand(ISlashCommand command) {
+    private static void registerCommand(ISlashCommand command) {
         commands.put(command.getCommandName(), command);
     }
 
-    public static String getLanguage(EEWBot bot, InteractionCreateEvent event) {
-        Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
-        if (channel == null)
-            return bot.getConfig().getDefaultLanuage();
-        return channel.lang;
-    }
 }

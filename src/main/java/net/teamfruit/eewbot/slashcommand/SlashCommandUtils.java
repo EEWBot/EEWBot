@@ -1,31 +1,32 @@
 package net.teamfruit.eewbot.slashcommand;
 
-import discord4j.common.util.Snowflake;
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.event.domain.message.ReactionAddEvent;
+import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
+import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
-
-import java.util.Optional;
+import net.teamfruit.eewbot.registry.Channel;
+import reactor.core.publisher.Mono;
 
 public class SlashCommandUtils {
 
-    public static String getLanguage(final EEWBot bot, final Optional<Snowflake> guildId) {
-//		return guildId.map(id -> bot.getGuilds().get(id.asLong()))
-//				.map(guild -> guild.getLang())
-//				.orElse(bot.getConfig().getDefaultLanuage());
-        return bot.getConfig().getDefaultLanuage();
+    public static String getLanguage(EEWBot bot, InteractionCreateEvent event) {
+        Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
+        if (channel == null)
+            return bot.getConfig().getDefaultLanuage();
+        return channel.getLang();
     }
 
-    public static String getLanguage(final EEWBot bot, final MessageCreateEvent event) {
-        return getLanguage(bot, event.getGuildId());
-    }
-
-    public static String getLanguage(final EEWBot bot, final ReactionAddEvent event) {
-        return getLanguage(bot, event.getGuildId());
+    public static Mono<Void> replyOrFollowUp(DeferrableInteractionEvent event, boolean defer, EmbedCreateSpec spec) {
+        if (defer)
+            return event.createFollowup().withEmbeds(spec)
+                    .doOnError(err -> Log.logger.error("Error during follow-up message", err))
+                    .then();
+        return event.reply().withEmbeds(spec)
+                .doOnError(err -> Log.logger.error("Error during reply", err));
     }
 
     public static IEmbedBuilder<EmbedCreateSpec> createEmbed(final String lang) {

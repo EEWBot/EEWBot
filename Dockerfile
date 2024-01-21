@@ -1,4 +1,4 @@
-FROM amazoncorretto:21.0.1-alpine as build
+FROM amazoncorretto:21.0.2-alpine as build
 
 RUN apk add --no-cache binutils
 
