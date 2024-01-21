@@ -9,6 +9,8 @@ public class ChannelFilter {
 
     private Boolean isGuild;
     private boolean isGuildPresent;
+    private long guildId;
+    private boolean guildIdPresent;
     private boolean eewAlert;
     private boolean eewAlertPresent;
     private boolean eewPrediction;
@@ -24,6 +26,8 @@ public class ChannelFilter {
 
     public boolean test(Channel channel) {
         if (this.isGuildPresent && !Objects.equals(channel.isGuild(), this.isGuild))
+            return false;
+        if (this.guildIdPresent && !Objects.equals(channel.getGuildId(), this.guildId))
             return false;
         if (this.eewAlertPresent && channel.isEewAlert() != this.eewAlert)
             return false;
@@ -48,6 +52,8 @@ public class ChannelFilter {
             else
                 builder.append("-@isGuild:{true | false}");
         }
+        if (this.guildIdPresent)
+            builder.append("@guildId:[").append(this.guildId).append(" ").append(this.guildId).append("] ");
         if (this.eewAlertPresent)
             builder.append("@eewAlert:{").append(this.eewAlert).append("} ");
         if (this.eewPredictionPresent)
@@ -74,6 +80,12 @@ public class ChannelFilter {
         public Builder isGuild(Boolean isGuild) {
             this.filter.isGuild = isGuild;
             this.filter.isGuildPresent = true;
+            return this;
+        }
+
+        public Builder guildId(long guildId) {
+            this.filter.guildId = guildId;
+            this.filter.guildIdPresent = true;
             return this;
         }
 

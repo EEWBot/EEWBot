@@ -70,6 +70,7 @@
   "eewbot.scmd.testmessage.error.unknown": "Unable to send message.\nAn unknown error has occurred.\n%s",
   "eewbot.scmd.lang.set.followup": "Language has been set to **%s** for this channel.",
   "eewbot.scmd.lang.applyall.label": "Apply to all channels in this server",
+  "eewbot.scmd.lang.applyall.followup": "Language has been set to **%s** for all channels in this server.",
   "eewbot.scmd.help.title": "Help",
   "eewbot.scmd.help.desc": "Use slash commands.\nType `/` and select the bot's avatar to display a list of available commands.",
   "eewbot.scmd.help.field.set.value": "Sets the type of information and minimum seismic intensity that the bot will notify in the current channel. By default, Manage Server permission is required.",
