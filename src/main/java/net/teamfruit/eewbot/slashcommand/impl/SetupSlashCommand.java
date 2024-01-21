@@ -82,23 +82,22 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                 .filterWhen(perms -> perms.contains(Permission.MANAGE_WEBHOOKS) ? Mono.just(true)
                                         : buildReply(bot, event, lang, channelId, true).thenReturn(false)) // No webhook perm
                                 .flatMap(perms -> event.getInteraction().getGuild()
-                                        .flatMap(guild -> guild.getWebhooks()
+                                        .flatMap(guild -> bot.getClient().getRestClient().getWebhookService().getGuildWebhooks(guildId.asLong())
                                                 .filter(webhook -> {
                                                     boolean isThreadChannel = guildChannel instanceof ThreadChannel;
                                                     long targetChannelId = isThreadChannel
                                                             ? ((ThreadChannel) guildChannel).getParentId().map(Snowflake::asLong).orElseThrow()
                                                             : channelId;
-                                                    boolean isSameChannel = webhook.getChannelId().asLong() == targetChannelId;
-                                                    boolean isCreatedBySelf = webhook.getCreator()
-                                                            .filter(user -> user.getId().equals(event.getClient().getSelfId()))
+                                                    boolean isSameChannel = webhook.channelId().isPresent() && (webhook.channelId().get().asLong() == targetChannelId);
+                                                    boolean isCreatedBySelf = webhook.user().toOptional()
+                                                            .filter(user -> user.id().asLong() == event.getClient().getSelfId().asLong())
                                                             .isPresent();
                                                     return isThreadChannel
-                                                            ? isSameChannel && isCreatedBySelf && bot.getChannels().isWebhookForThread(webhook.getId().asLong(), targetChannelId)
+                                                            ? isSameChannel && isCreatedBySelf && bot.getChannels().isWebhookForThread(webhook.id().asLong(), targetChannelId)
                                                             : isSameChannel && isCreatedBySelf;
                                                 })
                                                 .next()
-                                                .map(discord4j.core.object.entity.Webhook::getData)
-                                                .switchIfEmpty(guild.getSelfMember().map(PartialMember::getDisplayName)
+                                                .switchIfEmpty(bot.getClient().getSelfMember(guildId).map(PartialMember::getDisplayName)
                                                         .flatMap(name -> event.getClient().getRestClient().getWebhookService()
                                                                 .createWebhook(guildChannel instanceof ThreadChannel
                                                                         ? ((ThreadChannel) guildChannel).getParentId().map(Snowflake::asLong).orElseThrow()
