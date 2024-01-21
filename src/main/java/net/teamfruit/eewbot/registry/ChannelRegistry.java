@@ -149,6 +149,22 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
             getElement().get(key).setLang(lang);
     }
 
+    public boolean isGuildEmpty() {
+        if (this.redisReady) {
+            Query query = new Query("-@isGuild:{true | false}").setNoContent();
+            SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
+            return !searchResult.getDocuments().isEmpty();
+        }
+        return getElement().entrySet().stream().anyMatch(entry -> entry.getValue().isGuild() == null);
+    }
+
+    public void setGuildId(long channelId, long guildId) {
+        if (this.redisReady)
+            this.jedisPool.jsonSet(CHANNEL_PREFIX + channelId, Path.of("$.guildId"), guildId);
+        else
+            getElement().get(channelId).setGuildId(guildId);
+    }
+
     public List<Long> getWebhookAbsentChannels() {
         if (this.redisReady) {
             Query query = new Query("-@webhookId:[0 inf]").setNoContent();
@@ -211,22 +227,6 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
                 return true;
             return webhook.getThreadId() != threadId;
         });
-    }
-
-    public boolean isGuildEmpty() {
-        if (this.redisReady) {
-            Query query = new Query("-@isGuild:{true | false}").setNoContent();
-            SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
-            return !searchResult.getDocuments().isEmpty();
-        }
-        return getElement().entrySet().stream().anyMatch(entry -> entry.getValue().isGuild() == null);
-    }
-
-    public void setGuildId(long channelId, long guildId) {
-        if (this.redisReady)
-            this.jedisPool.jsonSet(CHANNEL_PREFIX + channelId, Path.of("$.guildId"), guildId);
-        else
-            getElement().get(channelId).setGuildId(guildId);
     }
 
     @Override

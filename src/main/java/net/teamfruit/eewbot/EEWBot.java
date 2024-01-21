@@ -4,10 +4,14 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
+import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
+import discord4j.core.event.domain.thread.ThreadChannelDeleteEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
 import discord4j.core.shard.ShardingStrategy;
+import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18n;
@@ -83,8 +87,7 @@ public class EEWBot {
         this.gateway = DiscordClient.create(getConfig().getToken())
                 .gateway()
                 .setSharding(ShardingStrategy.recommended())
-                .setEnabledIntents(IntentSet.none())
-//				.setInitialPresence(s -> ClientPresence.online(ClientActivity.playing("!eew help")))
+                .setEnabledIntents(IntentSet.of(Intent.GUILDS))
                 .login()
                 .block();
 
@@ -145,6 +148,13 @@ public class EEWBot {
                             });
         }
 
+        this.gateway.on(GuildDeleteEvent.class)
+                .subscribe(event -> handleDeletion(event.getGuildId().asLong(), true));
+        this.gateway.on(TextChannelDeleteEvent.class)
+                .subscribe(event -> handleDeletion(event.getChannel().getId().asLong(), false));
+        this.gateway.on(ThreadChannelDeleteEvent.class)
+                .subscribe(event -> handleDeletion(event.getChannel().getId().asLong(), false));
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             Log.logger.info("Shutdown");
             try {
@@ -155,6 +165,18 @@ public class EEWBot {
         }));
 
         this.gateway.onDisconnect().block();
+    }
+
+    private void handleDeletion(long id, boolean isGuild) {
+        if (isGuild)
+            this.channels.actionOnChannels(ChannelFilter.builder().guildId(id).build(), this.channels::remove);
+        else
+            this.channels.remove(id);
+        try {
+            this.channels.save();
+        } catch (IOException e) {
+            Log.logger.error("Failed to save channels", e);
+        }
     }
 
     public Config getConfig() {
