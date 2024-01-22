@@ -230,6 +230,13 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
     }
 
     @Override
+    public ConcurrentMap<Long, Channel> getElement() {
+        if (this.redisReady)
+            throw new IllegalStateException("Redis is connected");
+        return super.getElement();
+    }
+
+    @Override
     public void load() throws IOException {
         if (!this.redisReady)
             super.load();
