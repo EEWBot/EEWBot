@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot.registry;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import redis.clients.jedis.search.Query;
 
 import java.util.Objects;
 
@@ -44,7 +43,7 @@ public class ChannelFilter {
         return !this.webhookIdPresent || channel.getWebhook().getId() == this.webhookId;
     }
 
-    public Query toQuery() {
+    public String toQueryString() {
         StringBuilder builder = new StringBuilder();
         if (this.isGuildPresent) {
             if (this.isGuild != null)
@@ -66,7 +65,7 @@ public class ChannelFilter {
             builder.append("@minIntensity:[0 ").append(this.intensity.ordinal()).append("] ");
         if (this.webhookIdPresent)
             builder.append("@webhookId:[").append(this.webhookId).append(" ").append(this.webhookId).append("]");
-        return new Query(builder.toString());
+        return builder.toString();
     }
 
     public static ChannelFilter.Builder builder() {
