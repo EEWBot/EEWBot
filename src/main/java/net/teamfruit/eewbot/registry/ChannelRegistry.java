@@ -13,9 +13,13 @@ import redis.clients.jedis.exceptions.JedisDataException;
 import redis.clients.jedis.json.JsonSetParams;
 import redis.clients.jedis.json.Path;
 import redis.clients.jedis.search.*;
+import redis.clients.jedis.search.aggr.AggregationBuilder;
+import redis.clients.jedis.search.aggr.AggregationResult;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +32,8 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
 
     private static final String CHANNEL_PREFIX = "channel:";
     private static final String CHANNEL_INDEX = "channel-index";
+    private static final int AGGREGATION_CURSOR_COUNT = 1000;
+    private static final int AGGREGATION_CURSOR_TIMEOUT = 30000;
 
     private JedisPooled jedisPool;
     private boolean redisReady = false;
@@ -167,12 +173,18 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
 
     public List<Long> getWebhookAbsentChannels() {
         if (this.redisReady) {
-            Query query = new Query("-@webhookId:[0 inf]").setNoContent();
-            SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
-            return searchResult.getDocuments().stream()
-                    .map(doc -> StringUtils.removeStart(doc.getId(), CHANNEL_PREFIX))
-                    .map(Long::parseLong)
-                    .collect(Collectors.toList());
+            List<Long> list = new ArrayList<>();
+            AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder("-@webhookId:[0 inf]")
+                    .load("__key")
+                    .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
+            long cursorId;
+            do {
+                cursorId = aggregationResult.getCursorId();
+                aggregationResult.getRows().forEach(row -> list.add(Long.parseLong(StringUtils.removeStart(row.getString("__key"), CHANNEL_PREFIX))));
+                if (cursorId != 0)
+                    aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
+            } while (cursorId != 0);
+            return list;
         } else
             return getElement().entrySet()
                     .stream()
@@ -183,12 +195,16 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
 
     public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
         if (this.redisReady) {
-            Query query = filter.toQuery().setNoContent();
-            SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
-            searchResult.getDocuments().stream()
-                    .map(doc -> StringUtils.removeStart(doc.getId(), CHANNEL_PREFIX))
-                    .map(Long::parseLong)
-                    .forEach(consumer);
+            AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder(filter.toQueryString())
+                    .load("__key")
+                    .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
+            long cursorId;
+            do {
+                cursorId = aggregationResult.getCursorId();
+                aggregationResult.getRows().forEach(row -> consumer.accept(Long.parseLong(StringUtils.removeStart(row.getString("__key"), CHANNEL_PREFIX))));
+                if (cursorId != 0)
+                    aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
+            } while (cursorId != 0);
         } else
             getElement().entrySet().stream()
                     .filter(entry -> filter.test(entry.getValue()))
@@ -198,15 +214,29 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
 
     public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
         if (this.redisReady) {
-            Query query = filter.toQuery().returnFields("$.isGuild", "$.webhook", "$.lang");
-            SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
-            return searchResult.getDocuments().stream()
-                    .collect(Collectors.partitioningBy(doc -> doc.hasProperty("$.webhook"),
-                            Collectors.toMap(doc -> Long.parseLong(StringUtils.removeStart(doc.getId(), CHANNEL_PREFIX)), doc -> {
-                                if (doc.hasProperty("$.webhook"))
-                                    return new ChannelBase(EEWBot.GSON.fromJson(doc.getString("$.webhook"), Webhook.class), doc.getString("$.lang"));
-                                return new ChannelBase(null, doc.getString("$.lang"));
-                            })));
+            Map<Boolean, Map<Long, ChannelBase>> map = new HashMap<>();
+            Map<Long, ChannelBase> webhookPresent = new HashMap<>();
+            Map<Long, ChannelBase> webhookAbsent = new HashMap<>();
+            map.put(true, webhookPresent);
+            map.put(false, webhookAbsent);
+
+            AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder(filter.toQueryString())
+                    .load("__key", "$.isGuild", "$.webhook", "$.lang")
+                    .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
+            long cursorId;
+            do {
+                cursorId = aggregationResult.getCursorId();
+                aggregationResult.getRows().forEach(row -> {
+                    long channelId = Long.parseLong(StringUtils.removeStart(row.getString("__key"), CHANNEL_PREFIX));
+                    if (row.containsKey("$.webhook"))
+                        webhookPresent.put(channelId, new ChannelBase(EEWBot.GSON.fromJson(row.getString("$.webhook"), Webhook.class), row.getString("$.lang")));
+                    else
+                        webhookAbsent.put(channelId, new ChannelBase(null, row.getString("$.lang")));
+                });
+                if (cursorId != 0)
+                    aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
+            } while (cursorId != 0);
+            return map;
         }
         return getElement().entrySet().stream()
                 .filter(entry -> filter.test(entry.getValue()))
@@ -227,6 +257,13 @@ public class ChannelRegistry extends JsonRegistry<ConcurrentMap<Long, Channel>> 
                 return true;
             return webhook.getThreadId() != threadId;
         });
+    }
+
+    @Override
+    public ConcurrentMap<Long, Channel> getElement() {
+        if (this.redisReady)
+            throw new IllegalStateException("Redis is connected");
+        return super.getElement();
     }
 
     @Override
