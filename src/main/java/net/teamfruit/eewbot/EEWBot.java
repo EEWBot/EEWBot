@@ -23,6 +23,7 @@ import redis.clients.jedis.JedisPooled;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,14 +43,12 @@ public class EEWBot {
     public static final String CONFIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
     private final JsonRegistry<Config> config = new JsonRegistry<>(CONFIG_DIRECTORY != null ? Paths.get(CONFIG_DIRECTORY, "config.json") : Paths.get("config.json"), Config::new, Config.class, GSON_PRETTY);
-    private final ChannelRegistry channels = new ChannelRegistry(DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json"), GSON);
     private final I18n i18n = new I18n();
-
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
-
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private GatewayDiscordClient gateway;
+    private ChannelRegistry channels;
     private EEWService service;
     private EEWExecutor executor;
     private SlashCommandHandler slashCommand;
@@ -61,13 +60,18 @@ public class EEWBot {
     public void initialize() throws IOException {
         this.config.init();
 
+        Path path = DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json");
         if (StringUtils.isNotEmpty(getConfig().getRedisAddress())) {
             String redisAddress = getConfig().getRedisAddress();
             HostAndPort hnp = redisAddress.lastIndexOf(":") < 0 ? new HostAndPort(redisAddress, 6379) : HostAndPort.from(redisAddress);
             JedisPooled jedisPooled = new JedisPooled(hnp);
-            this.channels.init(jedisPooled);
+            ChannelRegistryRedis registry = new ChannelRegistryRedis(jedisPooled, GSON);
+            registry.init(() -> new ChannelRegistryJson(path, GSON));
+            this.channels = registry;
         } else {
-            this.channels.init();
+            ChannelRegistryJson registry = new ChannelRegistryJson(path, GSON);
+            registry.init();
+            this.channels = registry;
         }
 
         this.i18n.init(getConfig().getDefaultLanuage());
