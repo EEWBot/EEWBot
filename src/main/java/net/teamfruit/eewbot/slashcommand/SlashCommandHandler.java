@@ -57,7 +57,12 @@ public class SlashCommandHandler {
                                         .description(ExceptionUtils.getMessage(err))
                                         .build()
                         )))
-                .subscribe(null, err -> Log.logger.error("Unhandled exception during ApplicationCommandInteractionEvent handling", err));
+                .onErrorResume(e -> {
+                    Log.logger.error("Unhandled exception during ApplicationCommandInteractionEvent handling", e);
+                    return Mono.empty();
+                })
+                .repeat()
+                .subscribe();
 
         bot.getClient().on(SelectMenuInteractionEvent.class)
                 .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
@@ -71,8 +76,12 @@ public class SlashCommandHandler {
                         .flatMap(cmd -> cmd.onSelect(bot, event, getLanguage(bot, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
-                .onErrorResume(e -> Mono.empty())
-                .subscribe(null, err -> Log.logger.error("Unhandled exception during SelectMenuInteractionEvent handling", err));
+                .onErrorResume(e -> {
+                    Log.logger.error("Unhandled exception during SelectMenuInteractionEvent handling", e);
+                    return Mono.empty();
+                })
+                .repeat()
+                .subscribe();
 
         bot.getClient().on(ButtonInteractionEvent.class)
                 .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
@@ -86,8 +95,12 @@ public class SlashCommandHandler {
                         .flatMap(cmd -> cmd.onClick(bot, event, getLanguage(bot, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
-                .onErrorResume(e -> Mono.empty())
-                .subscribe(null, err -> Log.logger.error("Unhandled exception during ButtonInteractionEvent handling", err));
+                .onErrorResume(e -> {
+                    Log.logger.error("Unhandled exception during ButtonInteractionEvent handling", e);
+                    return Mono.empty();
+                })
+                .repeat()
+                .subscribe();
     }
 
     private static void registerCommand(ISlashCommand command) {
