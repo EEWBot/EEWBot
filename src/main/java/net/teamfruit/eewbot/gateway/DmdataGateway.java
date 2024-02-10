@@ -255,7 +255,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             WebSocket.Listener.super.onOpen(webSocket);
         }
 
-        private StringBuilder buffer = new StringBuilder();
+        private final StringBuilder buffer = new StringBuilder();
 
         @Override
         public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
@@ -264,8 +264,15 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                 return WebSocket.Listener.super.onText(webSocket, data, false);
             }
 
-            String dataString = this.buffer.append(data).toString();
-            this.buffer = new StringBuilder();
+            String dataString;
+            if (this.buffer.length() <= 0) {
+                dataString = data.toString();
+            } else {
+                this.buffer.append(data);
+                dataString = this.buffer.toString();
+                this.buffer.setLength(0);
+            }
+
             try {
                 DmdataWSMessage message = EEWBot.GSON.fromJson(dataString, DmdataWSMessage.class);
                 switch (message.getType()) {
@@ -348,7 +355,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             } catch (IOException e) {
                 Log.logger.error("DMDATA WebSocket {}: failed to decompress message: {}", this.connectionName, dataString, e);
             }
-            return WebSocket.Listener.super.onText(webSocket, data, last);
+            return WebSocket.Listener.super.onText(webSocket, data, true);
         }
 
         @Override
