@@ -10,6 +10,7 @@ import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketList;
 import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketStart;
 import net.teamfruit.eewbot.entity.dmdataapi.ws.*;
 import org.apache.commons.lang3.StringUtils;
+import reactor.util.annotation.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -19,12 +20,14 @@ import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
+// TODO: Refactor
 public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
     public static final String WS_BASE = "wss://ws.api.dmdata.jp/v2/websocket";
@@ -138,11 +141,13 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             Log.logger.info(socketStart.toString());
 
             WebSocketConnection connection = new WebSocketConnection(connectionName, wsBaseURI, hasForecastContract);
-            EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()), connection.getListener());
+            CompletableFuture<WebSocket> future = EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()), connection.getListener());
+            future.thenAccept(connection::setWebSocket);
             return connection;
         } else {
             WebSocketConnection connection = new WebSocketConnection(connectionName, wsBaseURI, hasForecastContract);
-            EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI), connection.getListener());
+            CompletableFuture<WebSocket> future = EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI), connection.getListener());
+            future.thenAccept(connection::setWebSocket);
             return connection;
         }
     }
@@ -204,15 +209,21 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             if (this.multiConnect) {
                 if (isWebSocketDead(socketList, 1)) {
                     Log.logger.warn("DMDATA WebSocket 1 is dead, reconnecting...");
+                    if (this.webSocket1.getWebSocket() != null)
+                        this.webSocket1.getWebSocket().sendClose(WebSocket.NORMAL_CLOSURE, "Reconnecting");
                     this.webSocket1 = connectWebSocket(WS_BASE_TOKYO, getWebSocketName(1), hasForecastContract);
                 }
                 if (isWebSocketDead(socketList, 2)) {
                     Log.logger.warn("DMDATA WebSocket 2 is dead, reconnecting...");
+                    if (this.webSocket2.getWebSocket() != null)
+                        this.webSocket2.getWebSocket().sendClose(WebSocket.NORMAL_CLOSURE, "Reconnecting");
                     this.webSocket2 = connectWebSocket(WS_BASE_OSAKA, getWebSocketName(2), hasForecastContract);
                 }
             } else {
                 if (isWebSocketDead(socketList, 1)) {
                     Log.logger.warn("DMDATA WebSocket is dead, reconnecting...");
+                    if (this.webSocket1.getWebSocket() != null)
+                        this.webSocket1.getWebSocket().sendClose(WebSocket.NORMAL_CLOSURE, "Reconnecting");
                     this.webSocket1 = connectWebSocket(WS_BASE, getWebSocketName(1), hasForecastContract);
                 }
             }
@@ -233,6 +244,8 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         private final String wsBaseURI;
         private final boolean hasForecastContract;
 
+        private WebSocket webSocket;
+
         private volatile boolean reconnecting;
         private volatile boolean reconnectFailed;
 
@@ -252,6 +265,14 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
         public boolean hasForecastContract() {
             return this.hasForecastContract;
+        }
+
+        public @Nullable WebSocket getWebSocket() {
+            return this.webSocket;
+        }
+
+        public void setWebSocket(WebSocket webSocket) {
+            this.webSocket = webSocket;
         }
 
         public boolean isReconnectFailed() {
