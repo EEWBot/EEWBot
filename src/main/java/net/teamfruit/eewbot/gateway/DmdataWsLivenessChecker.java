@@ -12,7 +12,7 @@ public class DmdataWsLivenessChecker implements Runnable {
 
     @Override
     public void run() {
-        Thread.currentThread().setName("eewbot-dmdata-liveness-chekcer-thread");
+        Thread.currentThread().setName("eewbot-dmdata-liveness-checker-thread");
 
         if (this.gateway.getWebSocket1() != null)
             check(this.gateway.getWebSocket1());
