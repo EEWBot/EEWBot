@@ -63,6 +63,10 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         return Base64.getEncoder().encodeToString(bytes);
     }
 
+    private String getWebSocketName(int index) {
+        return this.appName + "-" + index;
+    }
+
     @Override
     public void run() {
         try {
@@ -84,13 +88,13 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                 DmdataSocketList socketList = this.dmdataAPI.openSocketList();
                 Log.logger.info(socketList.toString());
                 if (this.multiConnect) {
-                    String ws1Name = this.appName + "-1", ws2Name = this.appName + "-2";
+                    String ws1Name = getWebSocketName(1), ws2Name = getWebSocketName(2);
                     closeWebSocketIfExist(socketList, ws1Name);
                     this.webSocket1 = connectWebSocket(WS_BASE_TOKYO, ws1Name, hasForecastContract);
                     closeWebSocketIfExist(socketList, ws2Name);
                     this.webSocket2 = connectWebSocket(WS_BASE_OSAKA, ws2Name, hasForecastContract);
                 } else {
-                    String wsName = this.appName + "-1";
+                    String wsName = getWebSocketName(1);
                     closeWebSocketIfExist(socketList, wsName);
                     this.webSocket1 = connectWebSocket(WS_BASE, wsName, hasForecastContract);
                 }
@@ -182,6 +186,45 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         } catch (IOException | InterruptedException e) {
             throw new EEWGatewayException("Failed to close DMDATA Socket", e);
         }
+    }
+
+    public void reconnectDeadWebSocketsBasedOnDmData() throws EEWGatewayException {
+        try {
+            DmdataSocketList socketList = this.dmdataAPI.openSocketList();
+            long socketCount = socketList.getItems().stream()
+                    .map(DmdataSocketList.Item::getAppName)
+                    .filter(appName -> StringUtils.startsWith(appName, this.appName))
+                    .count();
+            if (this.multiConnect ? socketCount >= 2 : socketCount >= 1) {
+                return;
+            }
+
+            DmdataContract contract = this.dmdataAPI.contract();
+            boolean hasForecastContract = contract.getItems().stream().anyMatch(item -> item.getClassification().equals("eew.forecast"));
+            if (this.multiConnect) {
+                if (isWebSocketDead(socketList, 1)) {
+                    Log.logger.warn("DMDATA WebSocket 1 is dead, reconnecting...");
+                    this.webSocket1 = connectWebSocket(WS_BASE_TOKYO, getWebSocketName(1), hasForecastContract);
+                }
+                if (isWebSocketDead(socketList, 2)) {
+                    Log.logger.warn("DMDATA WebSocket 2 is dead, reconnecting...");
+                    this.webSocket2 = connectWebSocket(WS_BASE_OSAKA, getWebSocketName(2), hasForecastContract);
+                }
+            } else {
+                if (isWebSocketDead(socketList, 1)) {
+                    Log.logger.warn("DMDATA WebSocket is dead, reconnecting...");
+                    this.webSocket1 = connectWebSocket(WS_BASE, getWebSocketName(1), hasForecastContract);
+                }
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new EEWGatewayException("Failed to reconnect to DMDATA", e);
+        }
+    }
+
+    private boolean isWebSocketDead(DmdataSocketList socketList, int index) {
+        return socketList.getItems().stream()
+                .map(DmdataSocketList.Item::getAppName)
+                .noneMatch(appName -> StringUtils.equals(appName, getWebSocketName(index)));
     }
 
     public static String decompressGZIPBase64(String compressedBase64) throws IOException {
