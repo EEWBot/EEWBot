@@ -32,7 +32,7 @@ public class DmdataWsLivenessChecker implements Runnable {
         this.counter++;
     }
 
-    private void check(DmdataGateway.WebSocketListener listener) throws EEWGatewayException {
+    private void check(DmdataGateway.WebSocketConnection listener) throws EEWGatewayException {
         if (listener.isReconnectFailed()) {
             Log.logger.warn("DMDATA WebSocket {} is not alive, reconnecting...", listener.getConnectionName());
             this.gateway.reconnectWebSocket(listener);
