@@ -196,36 +196,15 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
     public void reconnectDeadWebSocketsBasedOnDmData() throws EEWGatewayException {
         try {
             DmdataSocketList socketList = this.dmdataAPI.openSocketList();
-            long socketCount = socketList.getItems().stream()
-                    .map(DmdataSocketList.Item::getAppName)
-                    .filter(appName -> StringUtils.startsWith(appName, this.appName))
-                    .count();
-            if (this.multiConnect ? socketCount >= 2 : socketCount >= 1) {
-                return;
+            if (isWebSocketDead(socketList, 1)) {
+                Log.logger.warn("DMDATA WebSocket 1 is dead, reconnecting...");
+                if (this.webSocket1.getWebSocket() != null)
+                    this.webSocket1.getWebSocket().sendClose(1011, "Socket remains, but is not recognized by the server");
             }
-
-            DmdataContract contract = this.dmdataAPI.contract();
-            boolean hasForecastContract = contract.getItems().stream().anyMatch(item -> item.getClassification().equals("eew.forecast"));
-            if (this.multiConnect) {
-                if (isWebSocketDead(socketList, 1)) {
-                    Log.logger.warn("DMDATA WebSocket 1 is dead, reconnecting...");
-                    if (this.webSocket1.getWebSocket() != null)
-                        this.webSocket1.getWebSocket().sendClose(WebSocket.NORMAL_CLOSURE, "Reconnecting");
-                    this.webSocket1 = connectWebSocket(WS_BASE_TOKYO, getWebSocketName(1), hasForecastContract);
-                }
-                if (isWebSocketDead(socketList, 2)) {
-                    Log.logger.warn("DMDATA WebSocket 2 is dead, reconnecting...");
-                    if (this.webSocket2.getWebSocket() != null)
-                        this.webSocket2.getWebSocket().sendClose(WebSocket.NORMAL_CLOSURE, "Reconnecting");
-                    this.webSocket2 = connectWebSocket(WS_BASE_OSAKA, getWebSocketName(2), hasForecastContract);
-                }
-            } else {
-                if (isWebSocketDead(socketList, 1)) {
-                    Log.logger.warn("DMDATA WebSocket is dead, reconnecting...");
-                    if (this.webSocket1.getWebSocket() != null)
-                        this.webSocket1.getWebSocket().sendClose(WebSocket.NORMAL_CLOSURE, "Reconnecting");
-                    this.webSocket1 = connectWebSocket(WS_BASE, getWebSocketName(1), hasForecastContract);
-                }
+            if (this.multiConnect && isWebSocketDead(socketList, 2)) {
+                Log.logger.warn("DMDATA WebSocket 2 is dead, reconnecting...");
+                if (this.webSocket2.getWebSocket() != null)
+                    this.webSocket2.getWebSocket().sendClose(1011, "Socket remains, but is not recognized by the server");
             }
         } catch (IOException | InterruptedException e) {
             throw new EEWGatewayException("Failed to reconnect to DMDATA", e);
