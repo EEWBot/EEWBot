@@ -18,6 +18,7 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.registry.Webhook;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -102,7 +103,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                                 .createWebhook(guildChannel instanceof ThreadChannel
                                                                         ? ((ThreadChannel) guildChannel).getParentId().map(Snowflake::asLong).orElseThrow()
                                                                         : channelId, WebhookCreateRequest.builder()
-                                                                        .name(name)
+                                                                        .name(removeUnusableName(name, bot.getUsername()))
                                                                         .build(), "Create EEWBot webhook")))
                                                 .flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                     Webhook webhook = new Webhook(webhookData.id().asLong(), webhookData.token().get(), guildChannel instanceof ThreadChannel ? channelId : null);
@@ -187,5 +188,22 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
             return Mono.error(e);
         }
         return event.createFollowup(bot.getI18n().format(lang, intensity != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", intensity.getSimple()));
+    }
+
+    public static String removeStringsIgnoreCase(String source, String... stringsToRemove) {
+        for (String remove : stringsToRemove) {
+            source = StringUtils.removeIgnoreCase(source, remove);
+        }
+        return source;
+    }
+
+    private static String removeUnusableName(String name, String fallbackName) {
+        String removed = removeStringsIgnoreCase(name, "discord", "clyde");
+        if (StringUtils.isNotBlank(removed))
+            return removed;
+        removed = removeStringsIgnoreCase(fallbackName, "discord", "clyde");
+        if (StringUtils.isNotBlank(removed))
+            return removed;
+        return "EEWBot";
     }
 }

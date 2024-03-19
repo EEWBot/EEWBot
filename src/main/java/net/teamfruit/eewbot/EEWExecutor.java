@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 public class EEWExecutor {
 
     private final ScheduledExecutorService scheduledExecutor;
-    private final ExecutorService messageExcecutor;
+    private final ExecutorService messageExecutor;
     private final TimeProvider timeProvider;
     private final EEWService service;
     private final Config config;
@@ -43,7 +43,7 @@ public class EEWExecutor {
         this.applicationId = applicationId;
         this.scheduledExecutor = executor;
 
-        this.messageExcecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "eewbot-send-message-thread"));
+        this.messageExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "eewbot-send-message-thread"));
         this.timeProvider = new TimeProvider(this.scheduledExecutor);
         this.client = client;
         this.channels = channels;
@@ -85,7 +85,7 @@ public class EEWExecutor {
                     if (!isImportant)
                         builder.eewDecimation(false);
                     builder.intensity(maxIntensity);
-                    EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew, true));
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew, true));
                 }
             }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
         } else {
@@ -121,7 +121,7 @@ public class EEWExecutor {
                     if (!isImportant)
                         builder.eewDecimation(false);
                     builder.intensity(maxIntensity);
-                    EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew, true));
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew, true));
                 }
             };
             this.scheduledExecutor.execute(dmdataGateway);
@@ -137,7 +137,7 @@ public class EEWExecutor {
                 ChannelFilter.Builder builder = ChannelFilter.builder();
                 builder.quakeInfo(true);
                 builder.intensity(data.getEarthquake().getIntensity());
-                EEWExecutor.this.messageExcecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
+                EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
             }
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
 
