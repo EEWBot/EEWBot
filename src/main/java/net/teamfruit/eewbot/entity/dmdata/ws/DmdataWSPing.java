@@ -1,7 +1,5 @@
 package net.teamfruit.eewbot.entity.dmdata.ws;
 
-import net.teamfruit.eewbot.entity.dmdata.ws.DmdataWSMessage;
-
 public class DmdataWSPing extends DmdataWSMessage {
 
     private String pingId;

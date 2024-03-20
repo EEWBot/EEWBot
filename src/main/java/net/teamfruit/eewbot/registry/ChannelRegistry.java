@@ -42,5 +42,5 @@ public interface ChannelRegistry {
 
     default void save() throws IOException {
     }
-    
+
 }

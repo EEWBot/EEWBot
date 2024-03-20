@@ -1,7 +1,5 @@
 package net.teamfruit.eewbot.entity.dmdata.ws;
 
-import net.teamfruit.eewbot.entity.dmdata.ws.DmdataWSMessage;
-
 import java.util.List;
 
 public class DmdataWSStart extends DmdataWSMessage {

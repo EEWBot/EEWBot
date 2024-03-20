@@ -2,8 +2,8 @@ package net.teamfruit.eewbot.entity.other;
 
 import discord4j.core.spec.MessageCreateFields;
 import discord4j.core.spec.MessageCreateSpec;
-import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.Entity;
+import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 
 import java.io.ByteArrayInputStream;
 

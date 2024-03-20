@@ -4,6 +4,6 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 
 public class Log {
-	public static Logger logger = Loggers.getLogger(EEWBot.class);
+    public static Logger logger = Loggers.getLogger(EEWBot.class);
 
 }
