@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.entity.dmdataapi.ws;
+package net.teamfruit.eewbot.entity.dmdata.ws;
 
 import java.util.List;
 
@@ -20,43 +20,43 @@ public class DmdataWSData extends DmdataWSMessage {
     }
 
     public String getVersion() {
-        return version;
+        return this.version;
     }
 
     public String getClassification() {
-        return classification;
+        return this.classification;
     }
 
     public String getId() {
-        return id;
+        return this.id;
     }
 
     public List<Passing> getPassing() {
-        return passing;
+        return this.passing;
     }
 
     public Head getHead() {
-        return head;
+        return this.head;
     }
 
     public XMLReport getXmlReport() {
-        return xmlReport;
+        return this.xmlReport;
     }
 
     public String getFormat() {
-        return format;
+        return this.format;
     }
 
     public String getCompression() {
-        return compression;
+        return this.compression;
     }
 
     public String getEncoding() {
-        return encoding;
+        return this.encoding;
     }
 
     public String getBody() {
-        return body;
+        return this.body;
     }
 
     public static class Passing {
@@ -65,18 +65,18 @@ public class DmdataWSData extends DmdataWSMessage {
         private String time;
 
         public String getName() {
-            return name;
+            return this.name;
         }
 
         public String getTime() {
-            return time;
+            return this.time;
         }
 
         @Override
         public String toString() {
             return "Passing{" +
-                    "name='" + name + '\'' +
-                    ", time='" + time + '\'' +
+                    "name='" + this.name + '\'' +
+                    ", time='" + this.time + '\'' +
                     '}';
         }
     }
@@ -90,33 +90,33 @@ public class DmdataWSData extends DmdataWSMessage {
         private boolean xml;
 
         public String getType() {
-            return type;
+            return this.type;
         }
 
         public String getAuthor() {
-            return author;
+            return this.author;
         }
 
         public String getTime() {
-            return time;
+            return this.time;
         }
 
         public boolean isTest() {
-            return test;
+            return this.test;
         }
 
         public boolean isXml() {
-            return xml;
+            return this.xml;
         }
 
         @Override
         public String toString() {
             return "Head{" +
-                    "type='" + type + '\'' +
-                    ", author='" + author + '\'' +
-                    ", time='" + time + '\'' +
-                    ", test=" + test +
-                    ", xml=" + xml +
+                    "type='" + this.type + '\'' +
+                    ", author='" + this.author + '\'' +
+                    ", time='" + this.time + '\'' +
+                    ", test=" + this.test +
+                    ", xml=" + this.xml +
                     '}';
         }
     }
@@ -127,11 +127,11 @@ public class DmdataWSData extends DmdataWSMessage {
         private HeadXML head;
 
         public Control getControl() {
-            return control;
+            return this.control;
         }
 
         public HeadXML getHead() {
-            return head;
+            return this.head;
         }
 
         public static class Control {
@@ -143,33 +143,33 @@ public class DmdataWSData extends DmdataWSMessage {
             private String publishingOffice;
 
             public String getTitle() {
-                return title;
+                return this.title;
             }
 
             public String getDateTime() {
-                return dateTime;
+                return this.dateTime;
             }
 
             public String getStatus() {
-                return status;
+                return this.status;
             }
 
             public String getEditorialOffice() {
-                return editorialOffice;
+                return this.editorialOffice;
             }
 
             public String getPublishingOffice() {
-                return publishingOffice;
+                return this.publishingOffice;
             }
 
             @Override
             public String toString() {
                 return "Control{" +
-                        "title='" + title + '\'' +
-                        ", dateTime='" + dateTime + '\'' +
-                        ", status='" + status + '\'' +
-                        ", editorialOffice='" + editorialOffice + '\'' +
-                        ", publishingOffice='" + publishingOffice + '\'' +
+                        "title='" + this.title + '\'' +
+                        ", dateTime='" + this.dateTime + '\'' +
+                        ", status='" + this.status + '\'' +
+                        ", editorialOffice='" + this.editorialOffice + '\'' +
+                        ", publishingOffice='" + this.publishingOffice + '\'' +
                         '}';
             }
         }
@@ -187,53 +187,53 @@ public class DmdataWSData extends DmdataWSMessage {
             private String headline;
 
             public String getTitle() {
-                return title;
+                return this.title;
             }
 
             public String getReportDateTime() {
-                return reportDateTime;
+                return this.reportDateTime;
             }
 
             public String getTargetDateTime() {
-                return targetDateTime;
+                return this.targetDateTime;
             }
 
             public String getEventId() {
-                return eventId;
+                return this.eventId;
             }
 
             public String getSerial() {
-                return serial;
+                return this.serial;
             }
 
             public String getInfoType() {
-                return infoType;
+                return this.infoType;
             }
 
             public String getInfoKind() {
-                return infoKind;
+                return this.infoKind;
             }
 
             public String getInfoKindVersion() {
-                return infoKindVersion;
+                return this.infoKindVersion;
             }
 
             public String getHeadline() {
-                return headline;
+                return this.headline;
             }
 
             @Override
             public String toString() {
                 return "HeadXML{" +
-                        "title='" + title + '\'' +
-                        ", reportDateTime='" + reportDateTime + '\'' +
-                        ", targetDateTime='" + targetDateTime + '\'' +
-                        ", eventId='" + eventId + '\'' +
-                        ", serial='" + serial + '\'' +
-                        ", infoType='" + infoType + '\'' +
-                        ", infoKind='" + infoKind + '\'' +
-                        ", infoKindVersion='" + infoKindVersion + '\'' +
-                        ", headline='" + headline + '\'' +
+                        "title='" + this.title + '\'' +
+                        ", reportDateTime='" + this.reportDateTime + '\'' +
+                        ", targetDateTime='" + this.targetDateTime + '\'' +
+                        ", eventId='" + this.eventId + '\'' +
+                        ", serial='" + this.serial + '\'' +
+                        ", infoType='" + this.infoType + '\'' +
+                        ", infoKind='" + this.infoKind + '\'' +
+                        ", infoKindVersion='" + this.infoKindVersion + '\'' +
+                        ", headline='" + this.headline + '\'' +
                         '}';
             }
         }
@@ -241,8 +241,8 @@ public class DmdataWSData extends DmdataWSMessage {
         @Override
         public String toString() {
             return "XMLReport{" +
-                    "control=" + control +
-                    ", head=" + head +
+                    "control=" + this.control +
+                    ", head=" + this.head +
                     '}';
         }
     }
@@ -250,16 +250,16 @@ public class DmdataWSData extends DmdataWSMessage {
     @Override
     public String toString() {
         return "DmdataWSData{" +
-                "version='" + version + '\'' +
-                ", classification='" + classification + '\'' +
-                ", id='" + id + '\'' +
-                ", passing=" + passing +
-                ", head=" + head +
-                ", xmlReport=" + xmlReport +
-                ", format='" + format + '\'' +
-                ", compression='" + compression + '\'' +
-                ", encoding='" + encoding + '\'' +
-                ", body='" + body + '\'' +
+                "version='" + this.version + '\'' +
+                ", classification='" + this.classification + '\'' +
+                ", id='" + this.id + '\'' +
+                ", passing=" + this.passing +
+                ", head=" + this.head +
+                ", xmlReport=" + this.xmlReport +
+                ", format='" + this.format + '\'' +
+                ", compression='" + this.compression + '\'' +
+                ", encoding='" + this.encoding + '\'' +
+                ", body='" + this.body + '\'' +
                 '}';
     }
 }

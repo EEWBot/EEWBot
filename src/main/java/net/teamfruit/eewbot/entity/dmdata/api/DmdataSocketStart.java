@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.entity.dmdataapi;
+package net.teamfruit.eewbot.entity.dmdata.api;
 
 import java.util.List;
 
@@ -16,23 +16,23 @@ public class DmdataSocketStart {
         private String formatMode;
 
         public List<String> getClassifications() {
-            return classifications;
+            return this.classifications;
         }
 
         public List<String> getTypes() {
-            return types;
+            return this.types;
         }
 
         public String getTest() {
-            return test;
+            return this.test;
         }
 
         public String getAppName() {
-            return appName;
+            return this.appName;
         }
 
         public String getFormatMode() {
-            return formatMode;
+            return this.formatMode;
         }
 
         public static class Builder {
@@ -72,11 +72,11 @@ public class DmdataSocketStart {
         @Override
         public String toString() {
             return "Request{" +
-                    "classifications=" + classifications +
-                    ", types=" + types +
-                    ", test='" + test + '\'' +
-                    ", appName='" + appName + '\'' +
-                    ", formatMode='" + formatMode + '\'' +
+                    "classifications=" + this.classifications +
+                    ", types=" + this.types +
+                    ", test='" + this.test + '\'' +
+                    ", appName='" + this.appName + '\'' +
+                    ", formatMode='" + this.formatMode + '\'' +
                     '}';
         }
     }
@@ -95,43 +95,43 @@ public class DmdataSocketStart {
         private String appName;
 
         public String getResponseId() {
-            return responseId;
+            return this.responseId;
         }
 
         public String getResponseTime() {
-            return responseTime;
+            return this.responseTime;
         }
 
         public String getStatus() {
-            return status;
+            return this.status;
         }
 
         public String getTicket() {
-            return ticket;
+            return this.ticket;
         }
 
         public WebSocket getWebsocket() {
-            return websocket;
+            return this.websocket;
         }
 
         public List<String> getClassifications() {
-            return classifications;
+            return this.classifications;
         }
 
         public String getTest() {
-            return test;
+            return this.test;
         }
 
         public List<String> getTypes() {
-            return types;
+            return this.types;
         }
 
         public List<String> getFormats() {
-            return formats;
+            return this.formats;
         }
 
         public String getAppName() {
-            return appName;
+            return this.appName;
         }
 
         public static class WebSocket {
@@ -142,28 +142,28 @@ public class DmdataSocketStart {
             private int expiration;
 
             public int getId() {
-                return id;
+                return this.id;
             }
 
             public String getUrl() {
-                return url;
+                return this.url;
             }
 
             public List<String> getProtocol() {
-                return protocol;
+                return this.protocol;
             }
 
             public int getExpiration() {
-                return expiration;
+                return this.expiration;
             }
 
             @Override
             public String toString() {
                 return "WebSocket{" +
-                        "id=" + id +
-                        ", url='" + url + '\'' +
-                        ", protocol=" + protocol +
-                        ", expiration=" + expiration +
+                        "id=" + this.id +
+                        ", url='" + this.url + '\'' +
+                        ", protocol=" + this.protocol +
+                        ", expiration=" + this.expiration +
                         '}';
             }
         }
@@ -171,16 +171,16 @@ public class DmdataSocketStart {
         @Override
         public String toString() {
             return "Response{" +
-                    "responseId='" + responseId + '\'' +
-                    ", responseTime='" + responseTime + '\'' +
-                    ", status='" + status + '\'' +
-                    ", ticket='" + ticket + '\'' +
-                    ", websocket=" + websocket +
-                    ", classifications=" + classifications +
-                    ", test='" + test + '\'' +
-                    ", types=" + types +
-                    ", formats=" + formats +
-                    ", appName='" + appName + '\'' +
+                    "responseId='" + this.responseId + '\'' +
+                    ", responseTime='" + this.responseTime + '\'' +
+                    ", status='" + this.status + '\'' +
+                    ", ticket='" + this.ticket + '\'' +
+                    ", websocket=" + this.websocket +
+                    ", classifications=" + this.classifications +
+                    ", test='" + this.test + '\'' +
+                    ", types=" + this.types +
+                    ", formats=" + this.formats +
+                    ", appName='" + this.appName + '\'' +
                     '}';
         }
     }

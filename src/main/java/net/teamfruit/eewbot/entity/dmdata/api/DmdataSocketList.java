@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.entity.dmdataapi;
+package net.teamfruit.eewbot.entity.dmdata.api;
 
 import java.util.List;
 
@@ -10,19 +10,19 @@ public class DmdataSocketList {
     private List<Item> items;
 
     public String getResponseId() {
-        return responseId;
+        return this.responseId;
     }
 
     public String getResponseTime() {
-        return responseTime;
+        return this.responseTime;
     }
 
     public String getStatus() {
-        return status;
+        return this.status;
     }
 
     public List<Item> getItems() {
-        return items;
+        return this.items;
     }
 
     public static class Item {
@@ -41,68 +41,68 @@ public class DmdataSocketList {
         private String appName;
 
         public int getId() {
-            return id;
+            return this.id;
         }
 
         public String getTicket() {
-            return ticket;
+            return this.ticket;
         }
 
         public List<String> getTypes() {
-            return types;
+            return this.types;
         }
 
         public String getTest() {
-            return test;
+            return this.test;
         }
 
         public List<String> getClassifications() {
-            return classifications;
+            return this.classifications;
         }
 
         public String getIpAddress() {
-            return ipAddress;
+            return this.ipAddress;
         }
 
         public String getStatus() {
-            return status;
+            return this.status;
         }
 
         public String getServer() {
-            return server;
+            return this.server;
         }
 
         public String getStart() {
-            return start;
+            return this.start;
         }
 
         public String getEnd() {
-            return end;
+            return this.end;
         }
 
         public String getPing() {
-            return ping;
+            return this.ping;
         }
 
         public String getAppName() {
-            return appName;
+            return this.appName;
         }
 
         @Override
         public String toString() {
             return "Item{" +
-                    "id=" + id +
-                    ", ticket='" + ticket + '\'' +
-                    ", types=" + types +
-                    ", test='" + test + '\'' +
-                    ", classifications=" + classifications +
-                    ", ipAddress='" + ipAddress + '\'' +
-                    ", status='" + status + '\'' +
-                    ", server='" + server + '\'' +
-                    ", start='" + start + '\'' +
-                    ", end='" + end + '\'' +
-                    ", ping='" + ping + '\'' +
-                    ", appName='" + appName + '\'' +
+                    "id=" + this.id +
+                    ", ticket='" + this.ticket + '\'' +
+                    ", types=" + this.types +
+                    ", test='" + this.test + '\'' +
+                    ", classifications=" + this.classifications +
+                    ", ipAddress='" + this.ipAddress + '\'' +
+                    ", status='" + this.status + '\'' +
+                    ", server='" + this.server + '\'' +
+                    ", start='" + this.start + '\'' +
+                    ", end='" + this.end + '\'' +
+                    ", ping='" + this.ping + '\'' +
+                    ", appName='" + this.appName + '\'' +
                     '}';
         }
     }
@@ -110,10 +110,10 @@ public class DmdataSocketList {
     @Override
     public String toString() {
         return "DmdataSocketList{" +
-                "responseId='" + responseId + '\'' +
-                ", responseTime='" + responseTime + '\'' +
-                ", status='" + status + '\'' +
-                ", items=" + items +
+                "responseId='" + this.responseId + '\'' +
+                ", responseTime='" + this.responseTime + '\'' +
+                ", status='" + this.status + '\'' +
+                ", items=" + this.items +
                 '}';
     }
 }

@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.entity.dmdataapi;
+package net.teamfruit.eewbot.entity.dmdata.api;
 
 import java.util.List;
 
@@ -10,19 +10,19 @@ public class DmdataContract {
     private List<Item> items;
 
     public String getResponseId() {
-        return responseId;
+        return this.responseId;
     }
 
     public String getResponseTime() {
-        return responseTime;
+        return this.responseTime;
     }
 
     public String getStatus() {
-        return status;
+        return this.status;
     }
 
     public List<Item> getItems() {
-        return items;
+        return this.items;
     }
 
     public static class Item {
@@ -37,48 +37,48 @@ public class DmdataContract {
         private int connectionCounts;
 
         public int getId() {
-            return id;
+            return this.id;
         }
 
         public int getPlanId() {
-            return planId;
+            return this.planId;
         }
 
         public String getPlanName() {
-            return planName;
+            return this.planName;
         }
 
         public String getClassification() {
-            return classification;
+            return this.classification;
         }
 
         public Price getPrice() {
-            return price;
+            return this.price;
         }
 
         public String getStart() {
-            return start;
+            return this.start;
         }
 
         public boolean isValid() {
-            return isValid;
+            return this.isValid;
         }
 
         public int getConnectionCounts() {
-            return connectionCounts;
+            return this.connectionCounts;
         }
 
         @Override
         public String toString() {
             return "Item{" +
-                    "id=" + id +
-                    ", planId=" + planId +
-                    ", planName='" + planName + '\'' +
-                    ", classification='" + classification + '\'' +
-                    ", price=" + price +
-                    ", start='" + start + '\'' +
-                    ", isValid=" + isValid +
-                    ", connectionCounts=" + connectionCounts +
+                    "id=" + this.id +
+                    ", planId=" + this.planId +
+                    ", planName='" + this.planName + '\'' +
+                    ", classification='" + this.classification + '\'' +
+                    ", price=" + this.price +
+                    ", start='" + this.start + '\'' +
+                    ", isValid=" + this.isValid +
+                    ", connectionCounts=" + this.connectionCounts +
                     '}';
         }
     }
@@ -89,18 +89,18 @@ public class DmdataContract {
         private int month;
 
         public int getDay() {
-            return day;
+            return this.day;
         }
 
         public int getMonth() {
-            return month;
+            return this.month;
         }
 
         @Override
         public String toString() {
             return "Price{" +
-                    "day=" + day +
-                    ", month=" + month +
+                    "day=" + this.day +
+                    ", month=" + this.month +
                     '}';
         }
     }
@@ -108,10 +108,10 @@ public class DmdataContract {
     @Override
     public String toString() {
         return "DmdataContract{" +
-                "responseId='" + responseId + '\'' +
-                ", responseTime='" + responseTime + '\'' +
-                ", status='" + status + '\'' +
-                ", items=" + items +
+                "responseId='" + this.responseId + '\'' +
+                ", responseTime='" + this.responseTime + '\'' +
+                ", status='" + this.status + '\'' +
+                ", items=" + this.items +
                 '}';
     }
 }

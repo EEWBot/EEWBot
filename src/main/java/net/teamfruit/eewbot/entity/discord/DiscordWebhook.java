@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.entity;
+package net.teamfruit.eewbot.entity.discord;
 
 import net.teamfruit.eewbot.EEWBot;
 

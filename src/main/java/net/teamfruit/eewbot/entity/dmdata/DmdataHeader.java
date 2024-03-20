@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.entity;
+package net.teamfruit.eewbot.entity.dmdata;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -30,67 +30,67 @@ public class DmdataHeader {
     private String headline;
 
     public String getOriginalId() {
-        return originalId;
+        return this.originalId;
     }
 
     public Schema getSchema() {
-        return schema;
+        return this.schema;
     }
 
     public String getType() {
-        return type;
+        return this.type;
     }
 
     public String getTitle() {
-        return title;
+        return this.title;
     }
 
     public String getStatus() {
-        return status;
+        return this.status;
     }
 
     public String getInfoType() {
-        return infoType;
+        return this.infoType;
     }
 
     public String getEditorialOffice() {
-        return editorialOffice;
+        return this.editorialOffice;
     }
 
     public List<String> getPublishingOffice() {
-        return publishingOffice;
+        return this.publishingOffice;
     }
 
     public String getPressDateTime() {
-        return pressDateTime;
+        return this.pressDateTime;
     }
 
     public String getReportDateTime() {
-        return reportDateTime;
+        return this.reportDateTime;
     }
 
     public String getTargetDateTime() {
-        return targetDateTime;
+        return this.targetDateTime;
     }
 
     public String getEventId() {
-        return eventId;
+        return this.eventId;
     }
 
     public String getSerialNo() {
-        return serialNo;
+        return this.serialNo;
     }
 
     public String getInfoKind() {
-        return infoKind;
+        return this.infoKind;
     }
 
     public String getInfoKindVersion() {
-        return infoKindVersion;
+        return this.infoKindVersion;
     }
 
     public String getHeadline() {
-        return headline;
+        return this.headline;
     }
 
     public static class Schema {
@@ -99,18 +99,18 @@ public class DmdataHeader {
         private String version;
 
         public String getType() {
-            return type;
+            return this.type;
         }
 
         public String getVersion() {
-            return version;
+            return this.version;
         }
 
         @Override
         public String toString() {
             return "Schema{" +
-                    "type='" + type + '\'' +
-                    ", version='" + version + '\'' +
+                    "type='" + this.type + '\'' +
+                    ", version='" + this.version + '\'' +
                     '}';
         }
     }
@@ -118,22 +118,22 @@ public class DmdataHeader {
     @Override
     public String toString() {
         return "DmdataHeader{" +
-                "_originalId='" + originalId + '\'' +
-                ", _schema=" + schema +
-                ", type='" + type + '\'' +
-                ", title='" + title + '\'' +
-                ", status='" + status + '\'' +
-                ", infoType='" + infoType + '\'' +
-                ", editorialOffice='" + editorialOffice + '\'' +
-                ", publishingOffice=" + publishingOffice +
-                ", pressDateTime='" + pressDateTime + '\'' +
-                ", reportDateTime='" + reportDateTime + '\'' +
-                ", targetDateTime='" + targetDateTime + '\'' +
-                ", eventId='" + eventId + '\'' +
-                ", serialNo='" + serialNo + '\'' +
-                ", infoKind='" + infoKind + '\'' +
-                ", infoKindVersion='" + infoKindVersion + '\'' +
-                ", headline='" + headline + '\'' +
+                "_originalId='" + this.originalId + '\'' +
+                ", _schema=" + this.schema +
+                ", type='" + this.type + '\'' +
+                ", title='" + this.title + '\'' +
+                ", status='" + this.status + '\'' +
+                ", infoType='" + this.infoType + '\'' +
+                ", editorialOffice='" + this.editorialOffice + '\'' +
+                ", publishingOffice=" + this.publishingOffice +
+                ", pressDateTime='" + this.pressDateTime + '\'' +
+                ", reportDateTime='" + this.reportDateTime + '\'' +
+                ", targetDateTime='" + this.targetDateTime + '\'' +
+                ", eventId='" + this.eventId + '\'' +
+                ", serialNo='" + this.serialNo + '\'' +
+                ", infoKind='" + this.infoKind + '\'' +
+                ", infoKindVersion='" + this.infoKindVersion + '\'' +
+                ", headline='" + this.headline + '\'' +
                 '}';
     }
 }

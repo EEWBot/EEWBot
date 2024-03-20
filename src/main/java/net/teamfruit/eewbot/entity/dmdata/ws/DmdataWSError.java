@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.entity.dmdataapi.ws;
+package net.teamfruit.eewbot.entity.dmdata.ws;
 
 public class DmdataWSError extends DmdataWSMessage {
 
@@ -11,23 +11,23 @@ public class DmdataWSError extends DmdataWSMessage {
     }
 
     public String getError() {
-        return error;
+        return this.error;
     }
 
     public int getCode() {
-        return code;
+        return this.code;
     }
 
     public boolean isClose() {
-        return close;
+        return this.close;
     }
 
     @Override
     public String toString() {
         return "DmdataWSError{" +
-                "error='" + error + '\'' +
-                ", code=" + code +
-                ", close=" + close +
+                "error='" + this.error + '\'' +
+                ", code=" + this.code +
+                ", close=" + this.close +
                 '}';
     }
 }

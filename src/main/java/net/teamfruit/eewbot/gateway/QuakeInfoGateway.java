@@ -1,8 +1,8 @@
 package net.teamfruit.eewbot.gateway;
 
-import net.teamfruit.eewbot.entity.DetailQuakeInfo;
-import net.teamfruit.eewbot.entity.QuakeInfo;
-import net.teamfruit.eewbot.entity.QuakeInfo.Record.Item;
+import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
+import net.teamfruit.eewbot.entity.other.NHKQuakeInfo;
+import net.teamfruit.eewbot.entity.other.NHKQuakeInfo.Record.Item;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
 
-public abstract class QuakeInfoGateway implements Gateway<DetailQuakeInfo> {
+public abstract class QuakeInfoGateway implements Gateway<NHKDetailQuakeInfo> {
 
     public static final String REMOTE_ROOT = "https://www3.nhk.or.jp/sokuho/jishin/";
     public static final String REMOTE = "data/JishinReport.xml";
@@ -22,7 +22,7 @@ public abstract class QuakeInfoGateway implements Gateway<DetailQuakeInfo> {
         try {
             Thread.currentThread().setName("eewbot-quakeinfo-thread");
 
-            QuakeInfo quakeInfo = QuakeInfo.QUAKE_INFO_MAPPER.readValue(new URL(REMOTE_ROOT + REMOTE), QuakeInfo.class);
+            NHKQuakeInfo quakeInfo = NHKQuakeInfo.QUAKE_INFO_MAPPER.readValue(new URL(REMOTE_ROOT + REMOTE), NHKQuakeInfo.class);
 
             if (this.prev != null) {
                 final List<String> list = quakeInfo.getRecords().stream()
@@ -35,7 +35,7 @@ public abstract class QuakeInfoGateway implements Gateway<DetailQuakeInfo> {
 
                 for (final ListIterator<String> it = newer.listIterator(newer.size()); it.hasPrevious(); ) {
                     final String url = it.previous();
-                    final DetailQuakeInfo detailQuakeInfo = DetailQuakeInfo.DETAIL_QUAKE_INFO_MAPPER.readValue(new URL(url), DetailQuakeInfo.class);
+                    final NHKDetailQuakeInfo detailQuakeInfo = NHKDetailQuakeInfo.DETAIL_QUAKE_INFO_MAPPER.readValue(new URL(url), NHKDetailQuakeInfo.class);
                     onNewData(detailQuakeInfo);
                 }
             } else

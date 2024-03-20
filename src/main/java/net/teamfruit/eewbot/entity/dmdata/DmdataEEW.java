@@ -1,7 +1,10 @@
-package net.teamfruit.eewbot.entity;
+package net.teamfruit.eewbot.entity.dmdata;
 
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.util.Color;
+import net.teamfruit.eewbot.entity.Entity;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;

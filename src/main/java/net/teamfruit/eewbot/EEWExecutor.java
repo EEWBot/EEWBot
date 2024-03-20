@@ -7,10 +7,10 @@ import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.discordjson.json.WebhookCreateRequest;
 import discord4j.rest.util.Permission;
-import net.teamfruit.eewbot.entity.DetailQuakeInfo;
-import net.teamfruit.eewbot.entity.DmdataEEW;
-import net.teamfruit.eewbot.entity.KmoniEEW;
+import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.other.KmoniEEW;
+import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.gateway.*;
 import net.teamfruit.eewbot.registry.ChannelFilter;
 import net.teamfruit.eewbot.registry.ChannelRegistry;
@@ -131,7 +131,7 @@ public class EEWExecutor {
         this.scheduledExecutor.scheduleAtFixedRate(new QuakeInfoGateway() {
 
             @Override
-            public void onNewData(final DetailQuakeInfo data) {
+            public void onNewData(final NHKDetailQuakeInfo data) {
                 Log.logger.info(data.toString());
 
                 ChannelFilter.Builder builder = ChannelFilter.builder();

@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.entity.dmdataapi.ws;
+package net.teamfruit.eewbot.entity.dmdata.ws;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -11,13 +11,13 @@ public class DmdataWSMessage {
     }
 
     public Type getType() {
-        return type;
+        return this.type;
     }
 
     @Override
     public String toString() {
         return "DmdataWSMessage{" +
-                "type=" + type +
+                "type=" + this.type +
                 '}';
     }
 

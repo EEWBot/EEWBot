@@ -1,4 +1,6 @@
-package net.teamfruit.eewbot.entity.dmdataapi.ws;
+package net.teamfruit.eewbot.entity.dmdata.ws;
+
+import net.teamfruit.eewbot.entity.dmdata.ws.DmdataWSMessage;
 
 import java.util.List;
 
@@ -17,43 +19,43 @@ public class DmdataWSStart extends DmdataWSMessage {
     }
 
     public int getSocketId() {
-        return socketId;
+        return this.socketId;
     }
 
     public List<String> getClassifications() {
-        return classifications;
+        return this.classifications;
     }
 
     public List<String> getTypes() {
-        return types;
+        return this.types;
     }
 
     public String getTest() {
-        return test;
+        return this.test;
     }
 
     public List<String> getFormats() {
-        return formats;
+        return this.formats;
     }
 
     public String getAppName() {
-        return appName;
+        return this.appName;
     }
 
     public String getTime() {
-        return time;
+        return this.time;
     }
 
     @Override
     public String toString() {
         return "DmdataWSStart{" +
-                "socketId=" + socketId +
-                ", classifications=" + classifications +
-                ", types=" + types +
-                ", test='" + test + '\'' +
-                ", formats=" + formats +
-                ", appName='" + appName + '\'' +
-                ", time='" + time + '\'' +
+                "socketId=" + this.socketId +
+                ", classifications=" + this.classifications +
+                ", types=" + this.types +
+                ", test='" + this.test + '\'' +
+                ", formats=" + this.formats +
+                ", appName='" + this.appName + '\'' +
+                ", time='" + this.time + '\'' +
                 '}';
     }
 }

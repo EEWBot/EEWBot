@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.entity.dmdataapi;
+package net.teamfruit.eewbot.entity.dmdata.api;
 
 public class DmdataError {
 
@@ -8,19 +8,19 @@ public class DmdataError {
     private Error error;
 
     public String getResponseId() {
-        return responseId;
+        return this.responseId;
     }
 
     public String getResponseTime() {
-        return responseTime;
+        return this.responseTime;
     }
 
     public String getStatus() {
-        return status;
+        return this.status;
     }
 
     public Error getError() {
-        return error;
+        return this.error;
     }
 
     public static class Error {
@@ -29,18 +29,18 @@ public class DmdataError {
         private int code;
 
         public String getMessage() {
-            return message;
+            return this.message;
         }
 
         public int getCode() {
-            return code;
+            return this.code;
         }
 
         @Override
         public String toString() {
             return "Error{" +
-                    "message='" + message + '\'' +
-                    ", code=" + code +
+                    "message='" + this.message + '\'' +
+                    ", code=" + this.code +
                     '}';
         }
     }
@@ -48,10 +48,10 @@ public class DmdataError {
     @Override
     public String toString() {
         return "DmdataError{" +
-                "responseId='" + responseId + '\'' +
-                ", responseTime='" + responseTime + '\'' +
-                ", status='" + status + '\'' +
-                ", error=" + error +
+                "responseId='" + this.responseId + '\'' +
+                ", responseTime='" + this.responseTime + '\'' +
+                ", status='" + this.status + '\'' +
+                ", error=" + this.error +
                 '}';
     }
 }

@@ -2,7 +2,7 @@ package net.teamfruit.eewbot.gateway;
 
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.TimeProvider;
-import net.teamfruit.eewbot.entity.KmoniEEW;
+import net.teamfruit.eewbot.entity.other.KmoniEEW;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;

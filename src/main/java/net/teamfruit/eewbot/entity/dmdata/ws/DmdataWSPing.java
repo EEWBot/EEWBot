@@ -1,4 +1,6 @@
-package net.teamfruit.eewbot.entity.dmdataapi.ws;
+package net.teamfruit.eewbot.entity.dmdata.ws;
+
+import net.teamfruit.eewbot.entity.dmdata.ws.DmdataWSMessage;
 
 public class DmdataWSPing extends DmdataWSMessage {
 
@@ -9,13 +11,13 @@ public class DmdataWSPing extends DmdataWSMessage {
     }
 
     public String getPingId() {
-        return pingId;
+        return this.pingId;
     }
 
     @Override
     public String toString() {
         return "DmdataWSPing{" +
-                "pingId='" + pingId + '\'' +
+                "pingId='" + this.pingId + '\'' +
                 '}';
     }
 }
