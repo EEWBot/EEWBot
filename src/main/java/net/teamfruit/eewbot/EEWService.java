@@ -294,6 +294,10 @@ public class EEWService {
 
             List<String> notFoundList = EEWBot.GSON.fromJson(getResponse.body(), new TypeToken<List<String>>() {
             }.getType());
+            if (notFoundList.isEmpty()) {
+                return;
+            }
+            
             notFoundList.stream().map(webhook -> Long.parseLong(WEBHOOK_PATTERN.matcher(webhook).group(1)))
                     .forEach(webhookId -> this.channels.actionOnChannels(ChannelFilter.builder().webhookId(webhookId).build(), channelId -> {
                         Log.logger.info("Webhook for channel {} is deleted, unregister", channelId);
