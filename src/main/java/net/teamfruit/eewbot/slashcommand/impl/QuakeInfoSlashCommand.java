@@ -36,7 +36,7 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         try {
-            NHKQuakeInfo info = NHKQuakeInfo.QUAKE_INFO_MAPPER.readValue(new URL(QuakeInfoGateway.REMOTE_ROOT + QuakeInfoGateway.REMOTE), NHKQuakeInfo.class);
+            NHKQuakeInfo info = EEWBot.XML_MAPPER.readValue(new URL(QuakeInfoGateway.REMOTE_ROOT + QuakeInfoGateway.REMOTE), NHKQuakeInfo.class);
             Optional<String> url = info.getRecords().stream().findFirst()
                     .flatMap(record -> record.getItems().stream().findFirst())
                     .map(NHKQuakeInfo.Record.Item::getUrl);

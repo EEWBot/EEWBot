@@ -141,6 +141,13 @@ public class EEWExecutor {
             }
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
 
+        this.scheduledExecutor.scheduleAtFixedRate(new JMAEqVolGateway() {
+            @Override
+            public void onNewData(JMAEqVolGateway data) {
+                Log.logger.info(data.toString());
+            }
+        }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
+
         if (StringUtils.isNotEmpty(this.config.getDuplicatorAddress())) {
             this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorMetrics, 15, 15, TimeUnit.SECONDS);
         }

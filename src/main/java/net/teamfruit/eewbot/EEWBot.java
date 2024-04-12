@@ -1,5 +1,8 @@
 package net.teamfruit.eewbot;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import discord4j.core.DiscordClient;
@@ -38,6 +41,8 @@ public class EEWBot {
     public static final Gson GSON_PRETTY = new GsonBuilder()
             .setPrettyPrinting()
             .create();
+
+    public static final ObjectMapper XML_MAPPER = XmlMapper.builder().addModule(new JavaTimeModule()).build();
 
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
     public static final String CONFIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
