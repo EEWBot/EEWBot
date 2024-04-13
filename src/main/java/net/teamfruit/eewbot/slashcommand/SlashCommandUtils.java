@@ -32,14 +32,14 @@ public class SlashCommandUtils {
     public static IEmbedBuilder<EmbedCreateSpec> createEmbed(final String lang) {
         return I18nEmbedCreateSpec.builder(lang)
                 .color(Color.of(7506394))
-                .author(EEWBot.instance.getUsername(), "https://github.com/Team-Fruit/EEWBot", EEWBot.instance.getAvatarUrl())
-                .footer("Team-Fruit/EEWBot", "http://i.imgur.com/gFHBoZA.png");
+                .author(EEWBot.instance.getUsername(), "https://github.com/EEWBot/EEWBot", EEWBot.instance.getAvatarUrl())
+                .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png");
     }
 
     public static IEmbedBuilder<EmbedCreateSpec> createErrorEmbed(final String lang) {
         return I18nEmbedCreateSpec.builder(lang)
                 .color(Color.of(255, 64, 64))
-                .author(EEWBot.instance.getUsername(), "https://github.com/Team-Fruit/EEWBot", EEWBot.instance.getAvatarUrl())
-                .footer("Team-Fruit/EEWBot", "http://i.imgur.com/gFHBoZA.png");
+                .author(EEWBot.instance.getUsername(), "https://github.com/EEWBot/EEWBot", EEWBot.instance.getAvatarUrl())
+                .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png");
     }
 }
