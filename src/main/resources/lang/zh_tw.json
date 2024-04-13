@@ -31,7 +31,7 @@
   "eewbot.quakeinfo.field.maxintensity": "最大震度",
   "eewbot.quakeinfo.field.intensity": "震度%s",
   "eewbot.scmd.error": "發生錯誤！",
-  "eewbot.scmd.setup.reply": "已設定此頻道Bot的動作。\n[使用Bot時請詳閱免責事項。](<https://github.com/Team-Fruit/EEWBot/wiki/Bot%E3%81%AE%E5%88%A9%E7%94%A8%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8B%E5%85%8D%E8%B2%AC%E4%BA%8B%E9%A0%85>)",
+  "eewbot.scmd.setup.reply": "已設定此頻道Bot的動作。\n[使用Bot時請詳閱免責事項。](<https://github.com/EEWBot/EEWBot/wiki/Bot%E3%81%AE%E5%88%A9%E7%94%A8%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8B%E5%85%8D%E8%B2%AC%E4%BA%8B%E9%A0%85>)",
   "eewbot.scmd.setup.permserror.viewchannel": "Bot沒有檢視此頻道的權限！",
   "eewbot.scmd.setup.permserror.sendmessages": "Bot沒有發送訊息到此頻道的權限！",
   "eewbot.scmd.setup.permserror.managewebhooks": ":warning: Bot沒有Webhook的管理權限！\nWebhook可以改善訊息的延遲。",
@@ -81,5 +81,5 @@
   "eewbot.scmd.help.field.lang.value": "設定Bot的語言。需要伺服器的管理員權限才能使用。",
   "eewbot.scmd.help.field.help.value": "顯示幫助。",
   "eewbot.scmd.help.field.links.name": "網址",
-  "eewbot.scmd.help.field.links.value": "[GitHub](https://github.com/Team-Fruit/EEWBot)\n[支援伺服器](https://discord.gg/upt9n86ctG)"
+  "eewbot.scmd.help.field.links.value": "[GitHub](https://github.com/EEWBot/EEWBot)\n[支援伺服器](https://discord.gg/upt9n86ctG)"
 }
