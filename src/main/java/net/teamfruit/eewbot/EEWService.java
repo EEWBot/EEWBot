@@ -42,12 +42,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class EEWService {
-
-    private static final Pattern WEBHOOK_PATTERN = Pattern.compile("discord\\.com/api/webhooks/(\\d+)/");
 
     private final GatewayDiscordClient gateway;
     private final String avatarUrl;
@@ -297,8 +294,8 @@ public class EEWService {
             if (notFoundList.isEmpty()) {
                 return;
             }
-            
-            notFoundList.stream().map(webhook -> Long.parseLong(WEBHOOK_PATTERN.matcher(webhook).group(1)))
+
+            notFoundList.stream().map(webhook -> Long.parseLong(webhook.substring(33, webhook.lastIndexOf("/"))))
                     .forEach(webhookId -> this.channels.actionOnChannels(ChannelFilter.builder().webhookId(webhookId).build(), channelId -> {
                         Log.logger.info("Webhook for channel {} is deleted, unregister", channelId);
                         Webhook current = this.channels.get(channelId).getWebhook();
