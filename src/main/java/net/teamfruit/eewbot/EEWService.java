@@ -236,7 +236,7 @@ public class EEWService {
                 if (webhooks.isEmpty())
                     return;
 
-                int chunkSize = 2000;
+                int chunkSize = 1500;
                 IntStream.iterate(0, n -> n + chunkSize)
                         .limit((webhooks.size() + chunkSize - 1) / chunkSize)
                         .mapToObj(start -> webhooks.subList(start, Math.min(start + chunkSize, webhooks.size())))
