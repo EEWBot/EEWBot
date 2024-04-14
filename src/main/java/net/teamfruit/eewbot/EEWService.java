@@ -95,14 +95,22 @@ public class EEWService {
             cacheWebhook.put(lang, webhook.json());
         });
 
-        if (this.duplicatorAddress == null) {
-            sendWebhook(cacheWebhook, webhookPartitioned.get(true), (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe());
-        } else {
-            sendDuplicator(highPriority, this.duplicatorAddress, cacheWebhook, webhookPartitioned.get(true), channels ->
-                    sendWebhook(cacheWebhook, channels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe()));
+        Map<Long, ChannelBase> webhookChannels = webhookPartitioned.get(true);
+        if (!webhookChannels.isEmpty()) {
+            Log.logger.info("Sending webhook message to {} channels", webhookChannels.size());
+            if (this.duplicatorAddress == null) {
+                sendWebhook(cacheWebhook, webhookPartitioned.get(true), (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe());
+            } else {
+                sendDuplicator(highPriority, this.duplicatorAddress, cacheWebhook, webhookPartitioned.get(true), channels ->
+                        sendWebhook(cacheWebhook, channels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe()));
+            }
         }
 
-        sendMessageD4J(webhookPartitioned.get(false), msgByLang);
+        Map<Long, ChannelBase> channels = webhookPartitioned.get(false);
+        if (!channels.isEmpty()) {
+            Log.logger.info("Sending message to {} channels", channels.size());
+            sendMessageD4J(channels, msgByLang);
+        }
     }
 
     private void sendMessageD4J(Map<Long, ChannelBase> channels, Map<String, MessageCreateSpec> msgByLang) {
@@ -234,7 +242,9 @@ public class EEWService {
                     @Override
                     public void completed(SimpleHttpResponse simpleHttpResponse) {
                         latch.countDown();
+                        Log.logger.info("Sent message to duplicator: {}", simpleHttpResponse.getCode());
                         if (simpleHttpResponse.getCode() < 200 || simpleHttpResponse.getCode() >= 300) {
+                            Log.logger.info("Failed to send message to duplicator: {}", simpleHttpResponse.getCode());
                             onError.accept(webhookChannels.entrySet().stream()
                                     .filter(entry -> entry.getValue().getLang().equals(lang))
                                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
@@ -285,7 +295,7 @@ public class EEWService {
                     .build();
             HttpResponse<String> getResponse = this.httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString());
             if (getResponse.statusCode() != 200) {
-                Log.logger.error("Failed to fetch errors from duplicator: " + getResponse.statusCode() + " " + getResponse.body());
+                Log.logger.error("Failed to fetch negative cache from duplicator: " + getResponse.statusCode() + " " + getResponse.body());
                 return;
             }
 
