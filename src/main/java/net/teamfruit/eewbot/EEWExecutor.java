@@ -149,7 +149,7 @@ public class EEWExecutor {
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
 
         if (StringUtils.isNotEmpty(this.config.getDuplicatorAddress())) {
-            this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorMetrics, 15, 15, TimeUnit.SECONDS);
+            this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorNegativeCache, 15, 15, TimeUnit.SECONDS);
         }
 
         if (this.config.isWebhookMigration())
