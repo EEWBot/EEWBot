@@ -184,7 +184,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
             cursorId = aggregationResult.getCursorId();
             aggregationResult.getRows().forEach(row -> {
                 long channelId = Long.parseLong(StringUtils.removeStart(row.getString("__key"), CHANNEL_PREFIX));
-                if (row.containsKey("$.webhook"))
+                if (row.get("$.webhook") != null)
                     webhookPresent.put(channelId, new ChannelBase(EEWBot.GSON.fromJson(row.getString("$.webhook"), Webhook.class), row.getString("$.lang")));
                 else
                     webhookAbsent.put(channelId, new ChannelBase(null, row.getString("$.lang")));
