@@ -9,7 +9,6 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -21,25 +20,23 @@ import java.util.stream.Collectors;
 public abstract class JMAEqVolGateway implements Gateway<JMAEqVolGateway> {
 
     public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH);
-    public static final ZoneId ZONE = ZoneId.of("GMT");
     public static final String REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
     public static final String REMOTE = "eqvol.xml";
 
-    private ZonedDateTime prevTime;
-    private List<String> prev;
+    private ZonedDateTime lastModified;
+    private List<String> lastIds;
 
     @Override
     public void run() {
         try {
             Thread.currentThread().setName("eewbot-jmaxml-thread");
 
-            ZonedDateTime requestTime = ZonedDateTime.now(ZONE);
             HttpRequest.Builder request = HttpRequest.newBuilder()
                     .uri(URI.create(REMOTE_ROOT + REMOTE))
                     .header("User-Agent", "eewbot")
                     .GET();
-            if (this.prevTime != null) {
-                request.header("If-Modified-Since", this.prevTime.format(FORMAT));
+            if (this.lastModified != null) {
+                request.header("If-Modified-Since", this.lastModified.format(FORMAT));
             }
 
             HttpResponse<InputStream> response = EEWBot.instance.getHttpClient().send(request.build(), HttpResponse.BodyHandlers.ofInputStream());
@@ -53,26 +50,26 @@ public abstract class JMAEqVolGateway implements Gateway<JMAEqVolGateway> {
 
             JMAEqVol eqVol = EEWBot.XML_MAPPER.readValue(new InputStreamReader(response.body()), JMAEqVol.class);
 
-            if (this.prev != null) {
+            if (this.lastIds != null) {
                 final List<String> list = eqVol.getEntries().stream()
                         .map(JMAEqVol.Entry::getId)
                         .collect(Collectors.toList());
                 final List<String> newer = new ArrayList<>(list);
-                newer.removeAll(this.prev);
-                this.prev = list;
+                newer.removeAll(this.lastIds);
+                this.lastIds = list;
 
                 if (!newer.isEmpty()) {
                     for (final ListIterator<String> it = newer.listIterator(newer.size()); it.hasPrevious(); ) {
                         Log.logger.info("New JMA XML Activity: " + it.previous());
                     }
-                    this.prevTime = requestTime;
                 }
             } else {
-                this.prev = eqVol.getEntries().stream()
+                this.lastIds = eqVol.getEntries().stream()
                         .map(JMAEqVol.Entry::getId)
                         .collect(Collectors.toList());
-                this.prevTime = requestTime;
             }
+
+            this.lastModified = ZonedDateTime.parse(response.headers().firstValue("Last-Modified").orElseThrow(), FORMAT);
         } catch (final Exception e) {
             onError(new EEWGatewayException(e));
         }
