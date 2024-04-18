@@ -13,7 +13,6 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class JMAFeed {
 
-    @JacksonXmlText
     private String updated;
 
     @JacksonXmlProperty(localName = "entry")
