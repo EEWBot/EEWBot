@@ -9,21 +9,17 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 public abstract class JMAXmlGateway implements Gateway<JMAFeed> {
 
-    public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH);
     public static final String REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
     public static final String REMOTE = "eqvol.xml";
 
-    private ZonedDateTime lastModified;
+    private String lastModified;
     private List<String> lastIds;
 
     @Override
@@ -36,7 +32,7 @@ public abstract class JMAXmlGateway implements Gateway<JMAFeed> {
                     .header("User-Agent", "eewbot")
                     .GET();
             if (this.lastModified != null) {
-                request.header("If-Modified-Since", this.lastModified.format(FORMAT));
+                request.header("If-Modified-Since", this.lastModified);
             }
 
             HttpResponse<InputStream> response = EEWBot.instance.getHttpClient().send(request.build(), HttpResponse.BodyHandlers.ofInputStream());
@@ -69,7 +65,7 @@ public abstract class JMAXmlGateway implements Gateway<JMAFeed> {
                         .collect(Collectors.toList());
             }
 
-            this.lastModified = ZonedDateTime.parse(response.headers().firstValue("Last-Modified").orElseThrow(), FORMAT);
+            this.lastModified = response.headers().firstValue("Last-Modified").orElseThrow();
         } catch (final Exception e) {
             onError(new EEWGatewayException(e));
         }
