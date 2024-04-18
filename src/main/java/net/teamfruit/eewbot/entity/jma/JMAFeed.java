@@ -9,6 +9,7 @@ import reactor.util.annotation.Nullable;
 
 import java.util.List;
 
+@SuppressWarnings("unused")
 @JacksonXmlRootElement(localName = "feed")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class JMAFeed {
