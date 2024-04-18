@@ -5,6 +5,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
+import reactor.util.annotation.Nullable;
 
 import java.util.List;
 
@@ -29,14 +30,14 @@ public class JMAFeed {
 
     public static class Entry {
 
-        private String title;
+        private @Nullable JMAXmlType title;
         private String id;
         private String updated;
         private Author author;
         private Link link;
         private Content content;
 
-        public String getTitle() {
+        public @Nullable JMAXmlType getTitle() {
             return this.title;
         }
 
