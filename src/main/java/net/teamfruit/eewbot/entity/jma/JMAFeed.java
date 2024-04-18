@@ -10,7 +10,7 @@ import java.util.List;
 
 @JacksonXmlRootElement(localName = "feed")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class JMAEqVol {
+public class JMAFeed {
 
     @JacksonXmlText
     private String updated;

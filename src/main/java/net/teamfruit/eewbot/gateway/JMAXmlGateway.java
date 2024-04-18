@@ -2,7 +2,7 @@ package net.teamfruit.eewbot.gateway;
 
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.entity.jma.JMAEqVol;
+import net.teamfruit.eewbot.entity.jma.JMAFeed;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -17,7 +17,7 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
-public abstract class JMAEqVolGateway implements Gateway<JMAEqVolGateway> {
+public abstract class JMAXmlGateway implements Gateway<JMAFeed> {
 
     public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH);
     public static final String REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
@@ -48,11 +48,11 @@ public abstract class JMAEqVolGateway implements Gateway<JMAEqVolGateway> {
                 return;
             }
 
-            JMAEqVol eqVol = EEWBot.XML_MAPPER.readValue(new InputStreamReader(response.body()), JMAEqVol.class);
+            JMAFeed feed = EEWBot.XML_MAPPER.readValue(new InputStreamReader(response.body()), JMAFeed.class);
 
             if (this.lastIds != null) {
-                final List<String> list = eqVol.getEntries().stream()
-                        .map(JMAEqVol.Entry::getId)
+                final List<String> list = feed.getEntries().stream()
+                        .map(JMAFeed.Entry::getId)
                         .collect(Collectors.toList());
                 final List<String> newer = new ArrayList<>(list);
                 newer.removeAll(this.lastIds);
@@ -64,8 +64,8 @@ public abstract class JMAEqVolGateway implements Gateway<JMAEqVolGateway> {
                     }
                 }
             } else {
-                this.lastIds = eqVol.getEntries().stream()
-                        .map(JMAEqVol.Entry::getId)
+                this.lastIds = feed.getEntries().stream()
+                        .map(JMAFeed.Entry::getId)
                         .collect(Collectors.toList());
             }
 
