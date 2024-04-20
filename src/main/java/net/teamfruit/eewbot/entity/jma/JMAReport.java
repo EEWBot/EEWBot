@@ -1,15 +1,22 @@
 package net.teamfruit.eewbot.entity.jma;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import net.teamfruit.eewbot.entity.Entity;
+import reactor.util.annotation.Nullable;
+
+import java.util.Optional;
 
 @SuppressWarnings("unused")
 @JacksonXmlRootElement(localName = "Report")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class JMAReport implements Entity {
 
+    @JacksonXmlProperty(localName = "Control")
     private Control control;
+
+    @JacksonXmlProperty(localName = "Head")
     private Head head;
 
     public Control getControl() {
@@ -22,10 +29,19 @@ public abstract class JMAReport implements Entity {
 
     public static class Control {
 
+        @JacksonXmlProperty(localName = "Title")
         private String title;
+
+        @JacksonXmlProperty(localName = "DateTime")
         private String dateTime;
+
+        @JacksonXmlProperty(localName = "Status")
         private JMAStatus status;
+
+        @JacksonXmlProperty(localName = "EditorialOffice")
         private String editorialOffice;
+
+        @JacksonXmlProperty(localName = "PublishingOffice")
         private String publishingOffice;
 
         public String getTitle() {
@@ -51,17 +67,40 @@ public abstract class JMAReport implements Entity {
 
     public static class Head {
 
+        @JacksonXmlProperty(localName = "Title")
         private String title;
+
+        @JacksonXmlProperty(localName = "ReportDateTime")
         private String reportDateTime;
+
+        @JacksonXmlProperty(localName = "TargetDateTime")
         private String targetDateTime;
-        private String targetDTDubious;
-        private String targetDuration;
-        private String validDateTime;
+
+        @JacksonXmlProperty(localName = "TargetDTDubious")
+        private @Nullable String targetDTDubious;
+
+        @JacksonXmlProperty(localName = "TargetDuration")
+        private @Nullable String targetDuration;
+
+        @JacksonXmlProperty(localName = "ValidDateTime")
+        private @Nullable String validDateTime;
+
+        @JacksonXmlProperty(localName = "EventID")
         private String eventID;
+
+        @JacksonXmlProperty(localName = "InfoType")
         private JMAInfoType infoType;
+
+        @JacksonXmlProperty(localName = "Serial")
         private String serial;
+
+        @JacksonXmlProperty(localName = "InfoKind")
         private String infoKind;
+
+        @JacksonXmlProperty(localName = "InfoKindVersion")
         private String infoKindVersion;
+
+        @JacksonXmlProperty(localName = "Headline")
         private Headline headline;
 
         public String getTitle() {
@@ -76,16 +115,16 @@ public abstract class JMAReport implements Entity {
             return this.targetDateTime;
         }
 
-        public String getTargetDTDubious() {
-            return this.targetDTDubious;
+        public Optional<String> getTargetDTDubious() {
+            return Optional.ofNullable(this.targetDTDubious);
         }
 
-        public String getTargetDuration() {
-            return this.targetDuration;
+        public Optional<String> getTargetDuration() {
+            return Optional.ofNullable(this.targetDuration);
         }
 
-        public String getValidDateTime() {
-            return this.validDateTime;
+        public Optional<String> getValidDateTime() {
+            return Optional.ofNullable(this.validDateTime);
         }
 
         public String getEventID() {
@@ -112,10 +151,11 @@ public abstract class JMAReport implements Entity {
             return this.headline;
         }
 
+        @JsonIgnoreProperties("Information")
         public static class Headline {
 
+            @JacksonXmlProperty(localName = "Text")
             private String text;
-            // Ignore information
 
             public String getText() {
                 return this.text;
