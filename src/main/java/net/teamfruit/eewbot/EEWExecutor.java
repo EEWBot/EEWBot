@@ -9,7 +9,7 @@ import discord4j.discordjson.json.WebhookCreateRequest;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
-import net.teamfruit.eewbot.entity.jma.JMAFeed;
+import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.gateway.*;
@@ -144,7 +144,7 @@ public class EEWExecutor {
 
         this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway() {
             @Override
-            public void onNewData(JMAFeed data) {
+            public void onNewData(JMAReport data) {
                 Log.logger.info(data.toString());
             }
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);

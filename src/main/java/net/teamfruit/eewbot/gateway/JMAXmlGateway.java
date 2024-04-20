@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.gateway;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.jma.JMAFeed;
+import net.teamfruit.eewbot.entity.jma.JMAReport;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
 
-public abstract class JMAXmlGateway implements Gateway<JMAFeed> {
+public abstract class JMAXmlGateway implements Gateway<JMAReport> {
 
     public static final String REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
     public static final String REMOTE = "eqvol.xml";
@@ -54,10 +55,11 @@ public abstract class JMAXmlGateway implements Gateway<JMAFeed> {
                 newer.removeAll(this.lastIds);
                 this.lastIds = list;
 
-                if (!newer.isEmpty()) {
-                    for (final ListIterator<String> it = newer.listIterator(newer.size()); it.hasPrevious(); ) {
-                        Log.logger.info("New JMA XML Activity: " + it.previous());
-                    }
+                for (final ListIterator<String> it = newer.listIterator(newer.size()); it.hasPrevious(); ) {
+                    String id = it.previous();
+                    feed.getEntries().stream().filter(entry -> entry.getId().equals(id)).findFirst().ifPresent(entry -> {
+                        Log.logger.info("New JMA XML Activity: {}", entry);
+                    });
                 }
             } else {
                 this.lastIds = feed.getEntries().stream()

@@ -58,7 +58,7 @@ public abstract class JMAReport implements Entity {
         private String targetDuration;
         private String validDateTime;
         private String eventID;
-        private String infoType;
+        private JMAInfoType infoType;
         private String serial;
         private String infoKind;
         private String infoKindVersion;
@@ -92,7 +92,7 @@ public abstract class JMAReport implements Entity {
             return this.eventID;
         }
 
-        public String getInfoType() {
+        public JMAInfoType getInfoType() {
             return this.infoType;
         }
 
