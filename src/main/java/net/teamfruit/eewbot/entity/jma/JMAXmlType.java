@@ -2,7 +2,10 @@ package net.teamfruit.eewbot.entity.jma;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import net.teamfruit.eewbot.entity.jma.telegram.*;
 import reactor.util.annotation.Nullable;
+
+import java.util.Optional;
 
 public enum JMAXmlType {
     VGSK50("季節観測"),
@@ -94,12 +97,12 @@ public enum JMAXmlType {
     VPSG50("スモッグ気象情報"),
     VPZI50("全般天候情報"),
     VPCI50("地方天候情報"),
-    VXSE51("震度速報"),
-    VXSE52("震源に関する情報"),
-    VXSE61("顕著な地震の震源要素更新のお知らせ"),
+    VXSE51("震度速報", VXSE51.class),
+    VXSE52("震源に関する情報", VXSE52.class),
+    VXSE61("顕著な地震の震源要素更新のお知らせ", VXSE61.class),
     VXSE60("地震回数に関する情報"),
     VXSE56("地震の活動状況等に関する情報"),
-    VXSE53("震源・震度に関する情報"),
+    VXSE53("震源・震度に関する情報", VXSE53.class),
     VXSE44("緊急地震速報（予報）"),
     VXSE43("緊急地震速報（警報）"),
     VTSE51("津波情報a"),
@@ -157,13 +160,20 @@ public enum JMAXmlType {
     VPTA54("台風の暴風域に入る確率"),
     VPTA55("台風の暴風域に入る確率"),
     VXSE45("緊急地震速報（地震動予報）"),
-    VXSE62("長周期地震動に関する観測情報"),
+    VXSE62("長周期地震動に関する観測情報", VXSE62.class),
     VFVO60("推定噴煙流向報");
 
     private final String title;
+    private final Class<? extends JMAReport> reportClass;
 
     JMAXmlType(String title) {
         this.title = title;
+        this.reportClass = null;
+    }
+
+    JMAXmlType(String title, Class<? extends JMAReport> clazz) {
+        this.title = title;
+        this.reportClass = clazz;
     }
 
     @JsonValue
@@ -171,8 +181,12 @@ public enum JMAXmlType {
         return this.title;
     }
 
+    public Optional<Class<? extends JMAReport>> getReportClass() {
+        return Optional.ofNullable(this.reportClass);
+    }
+
     @JsonCreator
-    public static @Nullable JMAXmlType get(String title) {
+    public static @Nullable JMAXmlType from(String title) {
         for (JMAXmlType value : values()) {
             if (value.title.equals(title))
                 return value;

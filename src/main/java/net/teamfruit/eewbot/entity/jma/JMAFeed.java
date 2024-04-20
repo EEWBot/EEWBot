@@ -79,10 +79,10 @@ public class JMAFeed {
 
         public static class Link {
 
-            @JacksonXmlProperty(localName = "type", isAttribute = true)
+            @JacksonXmlProperty(isAttribute = true)
             private String type;
 
-            @JacksonXmlProperty(localName = "href", isAttribute = true)
+            @JacksonXmlProperty(isAttribute = true)
             private String href;
 
             public String getType() {
