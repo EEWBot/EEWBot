@@ -6,10 +6,11 @@ import reactor.util.annotation.Nullable;
 
 import java.util.Optional;
 
+@SuppressWarnings("unused")
 public class Magnitude {
 
     @JacksonXmlText
-    private String value;
+    private float value;
 
     @JacksonXmlProperty(isAttribute = true)
     private String type;
@@ -20,7 +21,7 @@ public class Magnitude {
     @JacksonXmlProperty(isAttribute = true)
     private @Nullable String description;
 
-    public String getValue() {
+    public float getRawValue() {
         return this.value;
     }
 
@@ -34,6 +35,13 @@ public class Magnitude {
 
     public Optional<String> getDescription() {
         return Optional.ofNullable(this.description);
+    }
+
+    public String getMagnitude() {
+        if (Float.isNaN(this.value)) {
+            return this.description;
+        }
+        return String.valueOf(this.value);
     }
 
     @Override

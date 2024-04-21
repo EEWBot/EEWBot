@@ -193,7 +193,7 @@ public class VXSE51 extends JMAReport {
                     .forEach(area -> {
                         StringBuilder sb = intensityMap.computeIfAbsent(area.getMaxInt(), k -> new StringBuilder());
                         if (sb.length() > 0)
-                            sb.append(" ");
+                            sb.append("  ");
                         sb.append(area.getName());
                     });
 

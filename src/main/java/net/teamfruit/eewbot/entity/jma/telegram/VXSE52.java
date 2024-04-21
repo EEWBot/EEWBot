@@ -2,14 +2,19 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.jma.JMAInfoType;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Magnitude;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
+import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
+import java.util.Optional;
 
+@SuppressWarnings("unused")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class VXSE52 extends JMAReport {
 
@@ -28,12 +33,19 @@ public class VXSE52 extends JMAReport {
         @JacksonXmlProperty(localName = "Comments")
         private Comment comments;
 
+        @JacksonXmlProperty(localName = "Text")
+        private @Nullable String text;
+
         public Earthquake getEarthquake() {
             return this.earthquake;
         }
 
         public Comment getComment() {
             return this.comments;
+        }
+
+        public Optional<String> getText() {
+            return Optional.ofNullable(this.text);
         }
 
         public static class Earthquake {
@@ -138,8 +150,21 @@ public class VXSE52 extends JMAReport {
     }
 
     @Override
+    @SuppressWarnings("NonAsciiCharacters")
     public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
-        return null;
+        builder.title("eewbot.quakeinfo.epicenter.title");
+        if (getHead().getInfoType() == JMAInfoType.取消) {
+            builder.description("eewbot.quakeinfo.epicenter.cancel");
+            builder.color(SeismicIntensity.UNKNOWN.getColor());
+        } else {
+            getHead().getTargetDateTime().ifPresent(time -> builder.description("eewbot.quakeinfo.desc", "<t:" + time.getEpochSecond() + ":f>"));
+            builder.addField("eewbot.quakeinfo.field.epicenter", getBody().getEarthquake().getHypocenter().getArea().getName(), true);
+            getBody().getEarthquake().getHypocenter().getArea().getCoordinate().getDepth().ifPresent(depth -> builder.addField("eewbot.quakeinfo.field.depth", depth, true));
+            builder.addField("eewbot.quakeinfo.field.magnitude", getBody().getEarthquake().getMagnitude().getMagnitude(), true);
+        }
+        builder.footer(getControl().getPublishingOffice(), null);
+        builder.timestamp(getHead().getReportDateTime());
+        return builder.build();
     }
 
     @Override

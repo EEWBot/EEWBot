@@ -5,11 +5,16 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 import reactor.util.annotation.Nullable;
 
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+@SuppressWarnings("unused")
 public class Coordinate {
 
+    private static final Pattern ISO6709_PATTERN = Pattern.compile("^\\s*([+-][\\d.]*)([+-][\\d.]*)([+-]\\d*)?/\\s*$");
+
     @JacksonXmlText
-    private String value;
+    private @Nullable String value;
 
     @JacksonXmlProperty(isAttribute = true)
     private @Nullable String type;
@@ -23,8 +28,13 @@ public class Coordinate {
     @JacksonXmlProperty(isAttribute = true)
     private @Nullable String description;
 
-    public String getValue() {
-        return this.value;
+    private boolean isParsed = false;
+    private float lat;
+    private float lon;
+    private @Nullable String depth;
+
+    public Optional<String> getRawValue() {
+        return Optional.ofNullable(this.value);
     }
 
     public Optional<String> getType() {
@@ -41,6 +51,53 @@ public class Coordinate {
 
     public Optional<String> getDescription() {
         return Optional.ofNullable(this.description);
+    }
+
+    public Optional<Float> getLat() {
+        if (!this.isParsed) {
+            parseCoord();
+        }
+        return Optional.of(this.lat);
+    }
+
+    public Optional<Float> getLon() {
+        if (!this.isParsed) {
+            parseCoord();
+        }
+        return Optional.of(this.lon);
+    }
+
+    public Optional<String> getDepth() {
+        if (!this.isParsed) {
+            parseCoord();
+        }
+        return Optional.ofNullable(this.depth);
+    }
+
+    private void parseCoord() {
+        if (this.value != null) {
+            Matcher matcher = ISO6709_PATTERN.matcher(this.value);
+            if (matcher.matches()) {
+                this.lat = Float.parseFloat(matcher.group(1));
+                this.lon = Float.parseFloat(matcher.group(2));
+                this.depth = parseDepth(matcher.group(3));
+            }
+        }
+        this.isParsed = true;
+    }
+
+    private String parseDepth(String depthStr) {
+        if (depthStr == null) {
+            return "不明";
+        }
+        int depth = Integer.parseInt(depthStr);
+        if (depth >= 0) {
+            return "ごく浅い";
+        }
+        if (depth <= -700000) {
+            return "700km以上";
+        }
+        return -depth / 1000 + "km";
     }
 
     @Override
