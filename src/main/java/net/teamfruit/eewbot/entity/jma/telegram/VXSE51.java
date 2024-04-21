@@ -4,12 +4,18 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.jma.JMAInfoType;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
+import reactor.util.annotation.Nullable;
 
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+@SuppressWarnings("unused")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class VXSE51 extends JMAReport {
 
@@ -28,12 +34,19 @@ public class VXSE51 extends JMAReport {
         @JacksonXmlProperty(localName = "Comments")
         private Comment comments;
 
+        @JacksonXmlProperty(localName = "Text")
+        private @Nullable String text;
+
         public Intensity getIntensity() {
             return this.intensity;
         }
 
         public Comment getComment() {
             return this.comments;
+        }
+
+        public Optional<String> getText() {
+            return Optional.ofNullable(this.text);
         }
 
         public static class Intensity {
@@ -166,8 +179,37 @@ public class VXSE51 extends JMAReport {
     }
 
     @Override
+    @SuppressWarnings("NonAsciiCharacters")
     public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
-        return null;
+        builder.title("eewbot.quakeinfo.intensity.title");
+        if (getHead().getInfoType() == JMAInfoType.取消) {
+            builder.description("eewbot.quakeinfo.intensity.cancel");
+            builder.color(SeismicIntensity.UNKNOWN.getColor());
+        } else {
+            getHead().getTargetDateTime().ifPresent(time -> builder.description("eewbot.quakeinfo.desc", "<t:" + time.getEpochSecond() + ":f>"));
+            Map<SeismicIntensity, StringBuilder> intensityMap = new EnumMap<>(SeismicIntensity.class);
+            getBody().getIntensity().getObservation().getPrefs()
+                    .stream().flatMap(pref -> pref.getAreas().stream())
+                    .forEach(area -> {
+                        StringBuilder sb = intensityMap.computeIfAbsent(area.getMaxInt(), k -> new StringBuilder());
+                        if (sb.length() > 0)
+                            sb.append(" ");
+                        sb.append(area.getName());
+                    });
+
+            SeismicIntensity[] intensities = SeismicIntensity.values();
+            for (int i = intensities.length - 1; i >= 0; i--) {
+                SeismicIntensity intensity = intensities[i];
+                StringBuilder sb = intensityMap.get(intensity);
+                if (sb != null) {
+                    builder.addField("eewbot.quakeinfo.field.intensity", sb.toString(), false, intensity.getSimple());
+                }
+            }
+            builder.color(getBody().getIntensity().getObservation().getMaxInt().getColor());
+        }
+        builder.footer(getControl().getPublishingOffice(), null);
+        builder.timestamp(getHead().getReportDateTime());
+        return builder.build();
     }
 
     @Override

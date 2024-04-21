@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @SuppressWarnings("unused")
 @JacksonXmlRootElement(localName = "Report")
-//@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class JMAReport implements Entity {
 
     @JacksonXmlProperty(localName = "Control")
