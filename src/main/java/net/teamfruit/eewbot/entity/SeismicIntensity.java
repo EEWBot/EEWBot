@@ -1,5 +1,7 @@
 package net.teamfruit.eewbot.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import discord4j.rest.util.Color;
 
 public enum SeismicIntensity {
@@ -30,6 +32,7 @@ public enum SeismicIntensity {
         return this.name;
     }
 
+    @JsonValue
     public String getSymbolIntensity() {
         return this.symbol;
     }
@@ -47,6 +50,7 @@ public enum SeismicIntensity {
         return this.name;
     }
 
+    @JsonCreator
     public static SeismicIntensity get(final String name) {
         for (final SeismicIntensity value : values()) {
             if (value.name.equals(name) || value.symbol.equals(name)) {

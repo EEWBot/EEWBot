@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
@@ -49,13 +50,13 @@ public class VXSE51 extends JMAReport {
 
                 // ignore CodeDefine
                 @JacksonXmlProperty(localName = "MaxInt")
-                private String maxInt;
+                private SeismicIntensity maxInt;
 
                 @JacksonXmlProperty(localName = "Pref")
                 @JacksonXmlElementWrapper(useWrapping = false)
                 private List<IntensityPref> prefs;
 
-                public String getMaxInt() {
+                public SeismicIntensity getMaxInt() {
                     return this.maxInt;
                 }
 
@@ -72,7 +73,7 @@ public class VXSE51 extends JMAReport {
                     private String code;
 
                     @JacksonXmlProperty(localName = "MaxInt")
-                    private String maxInt;
+                    private SeismicIntensity maxInt;
 
                     @JacksonXmlProperty(localName = "Area")
                     @JacksonXmlElementWrapper(useWrapping = false)
@@ -86,7 +87,7 @@ public class VXSE51 extends JMAReport {
                         return this.code;
                     }
 
-                    public String getMaxInt() {
+                    public SeismicIntensity getMaxInt() {
                         return this.maxInt;
                     }
 
@@ -103,7 +104,7 @@ public class VXSE51 extends JMAReport {
                         private String code;
 
                         @JacksonXmlProperty(localName = "MaxInt")
-                        private String maxInt;
+                        private SeismicIntensity maxInt;
 
                         public String getName() {
                             return this.name;
@@ -113,7 +114,7 @@ public class VXSE51 extends JMAReport {
                             return this.code;
                         }
 
-                        public String getMaxInt() {
+                        public SeismicIntensity getMaxInt() {
                             return this.maxInt;
                         }
 

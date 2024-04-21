@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
@@ -164,13 +165,13 @@ public class VXSE53 extends JMAReport {
             public static class IntensityDetail {
 
                 @JacksonXmlProperty(localName = "MaxInt")
-                private String maxInt;
+                private SeismicIntensity maxInt;
 
                 @JacksonXmlProperty(localName = "Pref")
                 @JacksonXmlElementWrapper(useWrapping = false)
                 private List<IntensityPref> prefs;
 
-                public String getMaxInt() {
+                public SeismicIntensity getMaxInt() {
                     return this.maxInt;
                 }
 
@@ -187,7 +188,7 @@ public class VXSE53 extends JMAReport {
                     private String code;
 
                     @JacksonXmlProperty(localName = "MaxInt")
-                    private String maxInt;
+                    private SeismicIntensity maxInt;
 
                     @JacksonXmlProperty(localName = "Area")
                     @JacksonXmlElementWrapper(useWrapping = false)
@@ -201,7 +202,7 @@ public class VXSE53 extends JMAReport {
                         return this.code;
                     }
 
-                    public String getMaxInt() {
+                    public SeismicIntensity getMaxInt() {
                         return this.maxInt;
                     }
 
@@ -218,7 +219,7 @@ public class VXSE53 extends JMAReport {
                         private String code;
 
                         @JacksonXmlProperty(localName = "MaxInt")
-                        private String maxInt;
+                        private SeismicIntensity maxInt;
 
                         @JacksonXmlProperty(localName = "City")
                         @JacksonXmlElementWrapper(useWrapping = false)
@@ -232,7 +233,7 @@ public class VXSE53 extends JMAReport {
                             return this.code;
                         }
 
-                        public String getMaxInt() {
+                        public SeismicIntensity getMaxInt() {
                             return this.maxInt;
                         }
 
@@ -249,7 +250,7 @@ public class VXSE53 extends JMAReport {
                             private String code;
 
                             @JacksonXmlProperty(localName = "MaxInt")
-                            private String maxInt;
+                            private SeismicIntensity maxInt;
 
                             @JacksonXmlProperty(localName = "IntensityStation")
                             @JacksonXmlElementWrapper(useWrapping = false)
@@ -263,7 +264,7 @@ public class VXSE53 extends JMAReport {
                                 return this.code;
                             }
 
-                            public String getMaxInt() {
+                            public SeismicIntensity getMaxInt() {
                                 return this.maxInt;
                             }
 
@@ -280,7 +281,7 @@ public class VXSE53 extends JMAReport {
                                 protected String code;
 
                                 @JacksonXmlProperty(localName = "Int")
-                                private String intensity;
+                                private SeismicIntensity intensity;
 
                                 @JacksonXmlProperty(localName = "Revise")
                                 protected @Nullable String revise;
@@ -293,7 +294,7 @@ public class VXSE53 extends JMAReport {
                                     return this.code;
                                 }
 
-                                public String getInt() {
+                                public SeismicIntensity getInt() {
                                     return this.intensity;
                                 }
 

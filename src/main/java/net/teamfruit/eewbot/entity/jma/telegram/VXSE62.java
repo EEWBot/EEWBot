@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
@@ -139,7 +140,7 @@ public class VXSE62 extends JMAReport {
             public static class IntensityDetail {
 
                 @JacksonXmlProperty(localName = "MaxInt")
-                private String maxInt;
+                private SeismicIntensity maxInt;
 
                 @JacksonXmlProperty(localName = "MaxLgInt")
                 private String maxLgInt;
@@ -151,7 +152,7 @@ public class VXSE62 extends JMAReport {
                 @JacksonXmlElementWrapper(useWrapping = false)
                 private List<IntensityPref> prefs;
 
-                public String getMaxInt() {
+                public SeismicIntensity getMaxInt() {
                     return this.maxInt;
                 }
 
@@ -206,7 +207,7 @@ public class VXSE62 extends JMAReport {
                         private String code;
 
                         @JacksonXmlProperty(localName = "MaxInt")
-                        private String maxInt;
+                        private SeismicIntensity maxInt;
 
                         @JacksonXmlProperty(localName = "MaxLgInt")
                         private String maxLgInt;
@@ -214,6 +215,26 @@ public class VXSE62 extends JMAReport {
                         @JacksonXmlProperty(localName = "IntensityStation")
                         @JacksonXmlElementWrapper(useWrapping = false)
                         private List<IntensityStation> stations;
+
+                        public String getName() {
+                            return this.name;
+                        }
+
+                        public String getCode() {
+                            return this.code;
+                        }
+
+                        public SeismicIntensity getMaxInt() {
+                            return this.maxInt;
+                        }
+
+                        public String getMaxLgInt() {
+                            return this.maxLgInt;
+                        }
+
+                        public List<IntensityStation> getStations() {
+                            return this.stations;
+                        }
 
                         public static class IntensityStation {
 
@@ -224,7 +245,7 @@ public class VXSE62 extends JMAReport {
                             private String code;
 
                             @JacksonXmlProperty(localName = "Int")
-                            private @Nullable String intensity;
+                            private @Nullable SeismicIntensity intensity;
 
                             @JacksonXmlProperty(localName = "LgInt")
                             private String lgInt;
@@ -248,7 +269,7 @@ public class VXSE62 extends JMAReport {
                                 return this.code;
                             }
 
-                            public Optional<String> getInt() {
+                            public Optional<SeismicIntensity> getInt() {
                                 return Optional.ofNullable(this.intensity);
                             }
 
