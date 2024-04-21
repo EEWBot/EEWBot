@@ -4,6 +4,7 @@ import discord4j.core.spec.MessageCreateFields;
 import discord4j.core.spec.MessageCreateSpec;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
+import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.io.ByteArrayInputStream;
 
@@ -27,6 +28,11 @@ public class Monitor implements Entity {
 
     public KmoniEEW getRelationEEW() {
         return this.relationEEW;
+    }
+
+    @Override
+    public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

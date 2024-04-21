@@ -1,12 +1,8 @@
 package net.teamfruit.eewbot.entity.dmdata;
 
-import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
-import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
-import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 import reactor.util.annotation.Nullable;
@@ -801,15 +797,6 @@ public class DmdataEEW extends DmdataHeader implements Entity {
     }
 
     @Override
-    public MessageCreateSpec createMessage(final String lang) {
-        return MessageCreateSpec.builder().addEmbed(createEmbed(lang, I18nEmbedCreateSpec.builder(lang))).build();
-    }
-
-    @Override
-    public DiscordWebhook createWebhook(final String lang) {
-        return DiscordWebhook.builder().addEmbed(createEmbed(lang, I18nDiscordEmbed.builder(lang))).build();
-    }
-
     public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         if (this.getBody().isCanceled()) {
             if (isConcurrent())

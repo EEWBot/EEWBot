@@ -4,12 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
-import discord4j.core.spec.MessageCreateSpec;
-import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Magnitude;
+import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import reactor.util.annotation.Nullable;
 
 import java.util.List;
@@ -427,12 +426,7 @@ public class VXSE62 extends JMAReport {
     }
 
     @Override
-    public MessageCreateSpec createMessage(String lang) {
-        return null;
-    }
-
-    @Override
-    public DiscordWebhook createWebhook(String lang) {
+    public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         return null;
     }
 

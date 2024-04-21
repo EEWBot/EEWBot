@@ -10,15 +10,10 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.core.spec.MessageCreateSpec;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
-import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
-import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 
@@ -349,20 +344,7 @@ public class NHKDetailQuakeInfo implements Entity {
     }
 
     @Override
-    public MessageCreateSpec createMessage(final String lang) {
-        return MessageCreateSpec.builder().addEmbed(createD4JEmbed(lang)).build();
-    }
-
-    @Override
-    public DiscordWebhook createWebhook(final String lang) {
-        return DiscordWebhook.builder().addEmbed(createEmbed(lang, I18nDiscordEmbed.builder(lang))).build();
-    }
-
-    public EmbedCreateSpec createD4JEmbed(String lang) {
-        return createEmbed(lang, I18nEmbedCreateSpec.builder(lang));
-    }
-
-    private <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
+    public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         Earthquake eq = getEarthquake();
         Type type = getType();
 

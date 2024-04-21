@@ -6,6 +6,7 @@ import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.entity.other.NHKQuakeInfo;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
+import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import net.teamfruit.eewbot.registry.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import reactor.core.publisher.Mono;
@@ -45,7 +46,7 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
                 return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.error")).then();
 
             NHKDetailQuakeInfo detail = NHKDetailQuakeInfo.DETAIL_QUAKE_INFO_MAPPER.readValue(new URL(url.get()), NHKDetailQuakeInfo.class);
-            return event.createFollowup().withEmbeds(detail.createD4JEmbed(lang)).then();
+            return event.createFollowup().withEmbeds(detail.createEmbed(lang, I18nEmbedCreateSpec.builder(lang))).then();
         } catch (IOException e) {
             return Mono.error(e);
         }

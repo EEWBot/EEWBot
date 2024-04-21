@@ -3,10 +3,9 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import discord4j.core.spec.MessageCreateSpec;
-import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
+import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.util.List;
 
@@ -166,12 +165,7 @@ public class VXSE51 extends JMAReport {
     }
 
     @Override
-    public MessageCreateSpec createMessage(String lang) {
-        return null;
-    }
-
-    @Override
-    public DiscordWebhook createWebhook(String lang) {
+    public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         return null;
     }
 
