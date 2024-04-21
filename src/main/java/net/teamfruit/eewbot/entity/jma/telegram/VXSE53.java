@@ -11,6 +11,7 @@ import net.teamfruit.eewbot.entity.jma.telegram.common.Magnitude;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import reactor.util.annotation.Nullable;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,10 +51,10 @@ public class VXSE53 extends JMAReport {
         public static class Earthquake {
 
             @JacksonXmlProperty(localName = "OriginTime")
-            private String originTime;
+            private Instant originTime;
 
             @JacksonXmlProperty(localName = "ArrivalTime")
-            private String arrivalTime;
+            private Instant arrivalTime;
 
             @JacksonXmlProperty(localName = "Hypocenter")
             private Hypocenter hypocenter;
@@ -61,11 +62,11 @@ public class VXSE53 extends JMAReport {
             @JacksonXmlProperty(localName = "Magnitude")
             private Magnitude magnitude;
 
-            public String getOriginTime() {
+            public Instant getOriginTime() {
                 return this.originTime;
             }
 
-            public String getArrivalTime() {
+            public Instant getArrivalTime() {
                 return this.arrivalTime;
             }
 
@@ -382,6 +383,8 @@ public class VXSE53 extends JMAReport {
     public String toString() {
         return "VXSE53{" +
                 "body=" + this.body +
+                ", control=" + this.control +
+                ", head=" + this.head +
                 '}';
     }
 }

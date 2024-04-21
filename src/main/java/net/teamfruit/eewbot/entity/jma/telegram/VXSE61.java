@@ -147,6 +147,8 @@ public class VXSE61 extends JMAReport {
     public String toString() {
         return "VXSE61{" +
                 "body=" + this.body +
+                ", control=" + this.control +
+                ", head=" + this.head +
                 '}';
     }
 }

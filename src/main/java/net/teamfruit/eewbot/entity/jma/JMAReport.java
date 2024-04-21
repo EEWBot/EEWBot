@@ -6,18 +6,19 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import net.teamfruit.eewbot.entity.Entity;
 import reactor.util.annotation.Nullable;
 
+import java.time.Instant;
 import java.util.Optional;
 
 @SuppressWarnings("unused")
 @JacksonXmlRootElement(localName = "Report")
-@JsonIgnoreProperties(ignoreUnknown = true)
+//@JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class JMAReport implements Entity {
 
     @JacksonXmlProperty(localName = "Control")
-    private Control control;
+    protected Control control;
 
     @JacksonXmlProperty(localName = "Head")
-    private Head head;
+    protected Head head;
 
     public Control getControl() {
         return this.control;
@@ -33,7 +34,7 @@ public abstract class JMAReport implements Entity {
         private String title;
 
         @JacksonXmlProperty(localName = "DateTime")
-        private String dateTime;
+        private Instant dateTime;
 
         @JacksonXmlProperty(localName = "Status")
         private JMAStatus status;
@@ -48,7 +49,7 @@ public abstract class JMAReport implements Entity {
             return this.title;
         }
 
-        public String getDateTime() {
+        public Instant getDateTime() {
             return this.dateTime;
         }
 
@@ -63,6 +64,17 @@ public abstract class JMAReport implements Entity {
         public String getPublishingOffice() {
             return this.publishingOffice;
         }
+
+        @Override
+        public String toString() {
+            return "Control{" +
+                    "title='" + this.title + '\'' +
+                    ", dateTime='" + this.dateTime + '\'' +
+                    ", status=" + this.status +
+                    ", editorialOffice='" + this.editorialOffice + '\'' +
+                    ", publishingOffice='" + this.publishingOffice + '\'' +
+                    '}';
+        }
     }
 
     public static class Head {
@@ -71,10 +83,10 @@ public abstract class JMAReport implements Entity {
         private String title;
 
         @JacksonXmlProperty(localName = "ReportDateTime")
-        private String reportDateTime;
+        private Instant reportDateTime;
 
         @JacksonXmlProperty(localName = "TargetDateTime")
-        private String targetDateTime;
+        private @Nullable Instant targetDateTime;
 
         @JacksonXmlProperty(localName = "TargetDTDubious")
         private @Nullable String targetDTDubious;
@@ -107,12 +119,12 @@ public abstract class JMAReport implements Entity {
             return this.title;
         }
 
-        public String getReportDateTime() {
+        public Instant getReportDateTime() {
             return this.reportDateTime;
         }
 
-        public String getTargetDateTime() {
-            return this.targetDateTime;
+        public Optional<Instant> getTargetDateTime() {
+            return Optional.ofNullable(this.targetDateTime);
         }
 
         public Optional<String> getTargetDTDubious() {
@@ -174,25 +186,17 @@ public abstract class JMAReport implements Entity {
             return "Head{" +
                     "title='" + this.title + '\'' +
                     ", reportDateTime='" + this.reportDateTime + '\'' +
-                    ", targetDateTime='" + this.targetDateTime + '\'' +
+                    ", targetDateTime=" + this.targetDateTime +
                     ", targetDTDubious='" + this.targetDTDubious + '\'' +
                     ", targetDuration='" + this.targetDuration + '\'' +
                     ", validDateTime='" + this.validDateTime + '\'' +
                     ", eventID='" + this.eventID + '\'' +
-                    ", infoType='" + this.infoType + '\'' +
+                    ", infoType=" + this.infoType +
                     ", serial='" + this.serial + '\'' +
                     ", infoKind='" + this.infoKind + '\'' +
                     ", infoKindVersion='" + this.infoKindVersion + '\'' +
                     ", headline=" + this.headline +
                     '}';
         }
-    }
-
-    @Override
-    public String toString() {
-        return "JMAReport{" +
-                "control=" + this.control +
-                ", head=" + this.head +
-                '}';
     }
 }
