@@ -54,27 +54,33 @@ public class Coordinate {
     }
 
     public Optional<Float> getLat() {
-        if (!this.isParsed) {
-            parseCoord();
+        if (this.value == null) {
+            return Optional.empty();
         }
+        parseCoordIfNotParsed();
         return Optional.of(this.lat);
     }
 
     public Optional<Float> getLon() {
-        if (!this.isParsed) {
-            parseCoord();
+        if (this.value == null) {
+            return Optional.empty();
         }
+        parseCoordIfNotParsed();
         return Optional.of(this.lon);
     }
 
     public Optional<String> getDepth() {
-        if (!this.isParsed) {
-            parseCoord();
+        if (this.value == null) {
+            return Optional.empty();
         }
+        parseCoordIfNotParsed();
         return Optional.ofNullable(this.depth);
     }
 
-    private void parseCoord() {
+    private void parseCoordIfNotParsed() {
+        if (this.isParsed) {
+            return;
+        }
         if (this.value != null) {
             Matcher matcher = ISO6709_PATTERN.matcher(this.value);
             if (matcher.matches()) {
