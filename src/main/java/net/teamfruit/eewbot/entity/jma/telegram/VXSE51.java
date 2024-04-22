@@ -29,20 +29,20 @@ public class VXSE51 extends JMAReport {
     public static class Body {
 
         @JacksonXmlProperty(localName = "Intensity")
-        private Intensity intensity;
+        private @Nullable Intensity intensity;
 
         @JacksonXmlProperty(localName = "Comments")
-        private Comment comments;
+        private @Nullable Comment comments;
 
         @JacksonXmlProperty(localName = "Text")
         private @Nullable String text;
 
-        public Intensity getIntensity() {
-            return this.intensity;
+        public Optional<Intensity> getIntensity() {
+            return Optional.ofNullable(this.intensity);
         }
 
-        public Comment getComment() {
-            return this.comments;
+        public Optional<Comment> getComment() {
+            return Optional.ofNullable(this.comments);
         }
 
         public Optional<String> getText() {
@@ -187,25 +187,31 @@ public class VXSE51 extends JMAReport {
             builder.color(SeismicIntensity.UNKNOWN.getColor());
         } else {
             getHead().getTargetDateTime().ifPresent(time -> builder.description("eewbot.quakeinfo.desc", "<t:" + time.getEpochSecond() + ":f>"));
-            Map<SeismicIntensity, StringBuilder> intensityMap = new EnumMap<>(SeismicIntensity.class);
-            getBody().getIntensity().getObservation().getPrefs()
-                    .stream().flatMap(pref -> pref.getAreas().stream())
-                    .forEach(area -> {
-                        StringBuilder sb = intensityMap.computeIfAbsent(area.getMaxInt(), k -> new StringBuilder());
-                        if (sb.length() > 0)
-                            sb.append("  ");
-                        sb.append(area.getName());
-                    });
+            getBody().getIntensity().ifPresent(intensity -> {
+                Map<SeismicIntensity, StringBuilder> intensityMap = new EnumMap<>(SeismicIntensity.class);
+                intensity.getObservation().getPrefs()
+                        .stream().flatMap(pref -> pref.getAreas().stream())
+                        .forEach(area -> {
+                            StringBuilder sb = intensityMap.computeIfAbsent(area.getMaxInt(), k -> new StringBuilder());
+                            if (sb.length() > 0)
+                                sb.append("  ");
+                            sb.append(area.getName());
+                        });
 
-            SeismicIntensity[] intensities = SeismicIntensity.values();
-            for (int i = intensities.length - 1; i >= 0; i--) {
-                SeismicIntensity intensity = intensities[i];
-                StringBuilder sb = intensityMap.get(intensity);
-                if (sb != null) {
-                    builder.addField("eewbot.quakeinfo.field.intensity", sb.toString(), false, intensity.getSimple());
+                SeismicIntensity[] intensities = SeismicIntensity.values();
+                for (int i = intensities.length - 1; i >= 0; i--) {
+                    SeismicIntensity line = intensities[i];
+                    StringBuilder sb = intensityMap.get(line);
+                    if (sb != null) {
+                        builder.addField("eewbot.quakeinfo.field.intensity", sb.toString(), false, line.getSimple());
+                    }
                 }
-            }
-            builder.color(getBody().getIntensity().getObservation().getMaxInt().getColor());
+                builder.color(intensity.getObservation().getMaxInt().getColor());
+            });
+            getBody().getComment().ifPresent(comment -> {
+                comment.getForecastComment().ifPresent(forecastComment -> builder.addField("", forecastComment.getText(), false));
+                comment.getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
+            });
         }
         builder.footer(getControl().getPublishingOffice(), null);
         builder.timestamp(getHead().getReportDateTime());
