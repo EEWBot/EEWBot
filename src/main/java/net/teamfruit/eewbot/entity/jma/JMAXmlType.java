@@ -193,4 +193,12 @@ public enum JMAXmlType {
         }
         return null;
     }
+
+    public static @Nullable JMAXmlType from(Class<? extends IJMAReport> clazz) {
+        for (JMAXmlType value : values()) {
+            if (value.reportClass == clazz)
+                return value;
+        }
+        return null;
+    }
 }

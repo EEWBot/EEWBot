@@ -12,7 +12,7 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @JacksonXmlRootElement(localName = "Report")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public abstract class JMAReport implements Entity {
+public abstract class JMAReport implements Entity, IJMAReport {
 
     @JacksonXmlProperty(localName = "Control")
     protected Control control;
@@ -20,10 +20,12 @@ public abstract class JMAReport implements Entity {
     @JacksonXmlProperty(localName = "Head")
     protected Head head;
 
+    @Override
     public Control getControl() {
         return this.control;
     }
 
+    @Override
     public Head getHead() {
         return this.head;
     }
@@ -98,7 +100,7 @@ public abstract class JMAReport implements Entity {
         private @Nullable String validDateTime;
 
         @JacksonXmlProperty(localName = "EventID")
-        private String eventID;
+        private long eventID;
 
         @JacksonXmlProperty(localName = "InfoType")
         private JMAInfoType infoType;
@@ -139,7 +141,7 @@ public abstract class JMAReport implements Entity {
             return Optional.ofNullable(this.validDateTime);
         }
 
-        public String getEventID() {
+        public long getEventID() {
             return this.eventID;
         }
 

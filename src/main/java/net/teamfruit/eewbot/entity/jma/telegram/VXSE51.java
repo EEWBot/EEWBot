@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAInfoType;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
+import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import reactor.util.annotation.Nullable;
@@ -17,7 +18,7 @@ import java.util.Optional;
 
 @SuppressWarnings("unused")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class VXSE51 extends JMAReport {
+public class VXSE51 extends JMAReport implements QuakeInfo {
 
     @JacksonXmlProperty(localName = "Body")
     private Body body;
@@ -176,6 +177,11 @@ public class VXSE51 extends JMAReport {
                     ", comment=" + this.comments +
                     '}';
         }
+    }
+
+    @Override
+    public Optional<SeismicIntensity> getMaxInt() {
+        return getBody().getIntensity().map(intensity -> intensity.getObservation().getMaxInt());
     }
 
     @Override

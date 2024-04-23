@@ -2,9 +2,12 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAInfoType;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
+import net.teamfruit.eewbot.entity.jma.JMAXmlType;
+import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Magnitude;
@@ -16,7 +19,7 @@ import java.util.Optional;
 
 @SuppressWarnings("unused")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class VXSE52 extends JMAReport {
+public class VXSE52 extends JMAReport implements QuakeInfo {
 
     @JacksonXmlProperty(localName = "Body")
     private Body body;
@@ -28,20 +31,20 @@ public class VXSE52 extends JMAReport {
     public static class Body {
 
         @JacksonXmlProperty(localName = "Earthquake")
-        private Earthquake earthquake;
+        private @Nullable Earthquake earthquake;
 
         @JacksonXmlProperty(localName = "Comments")
-        private Comment comments;
+        private @Nullable Comment comments;
 
         @JacksonXmlProperty(localName = "Text")
         private @Nullable String text;
 
-        public Earthquake getEarthquake() {
-            return this.earthquake;
+        public Optional<Earthquake> getEarthquake() {
+            return Optional.ofNullable(this.earthquake);
         }
 
-        public Comment getComment() {
-            return this.comments;
+        public Optional<Comment> getComment() {
+            return Optional.ofNullable(this.comments);
         }
 
         public Optional<String> getText() {
@@ -150,6 +153,11 @@ public class VXSE52 extends JMAReport {
     }
 
     @Override
+    public Optional<SeismicIntensity> getMaxInt() {
+        return Optional.empty();
+    }
+
+    @Override
     @SuppressWarnings("NonAsciiCharacters")
     public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         builder.title("eewbot.quakeinfo.epicenter.title");
@@ -158,9 +166,16 @@ public class VXSE52 extends JMAReport {
             builder.color(SeismicIntensity.UNKNOWN.getColor());
         } else {
             getHead().getTargetDateTime().ifPresent(time -> builder.description("eewbot.quakeinfo.desc", "<t:" + time.getEpochSecond() + ":f>"));
-            builder.addField("eewbot.quakeinfo.field.epicenter", getBody().getEarthquake().getHypocenter().getArea().getName(), true);
-            getBody().getEarthquake().getHypocenter().getArea().getCoordinate().getDepth().ifPresent(depth -> builder.addField("eewbot.quakeinfo.field.depth", depth, true));
-            builder.addField("eewbot.quakeinfo.field.magnitude", getBody().getEarthquake().getMagnitude().getMagnitude(), true);
+            getBody().getEarthquake().ifPresent(earthquake -> {
+                builder.addField("eewbot.quakeinfo.field.epicenter", earthquake.getHypocenter().getArea().getName(), true);
+                earthquake.getHypocenter().getArea().getCoordinate().getDepth().ifPresent(depth -> builder.addField("eewbot.quakeinfo.field.depth", depth, true));
+                builder.addField("eewbot.quakeinfo.field.magnitude", earthquake.getMagnitude().getMagnitude(), true);
+            });
+            getBody().getComment().ifPresent(comment -> {
+                comment.getForecastComment().ifPresent(forecastComment -> builder.addField("", forecastComment.getText(), false));
+                comment.getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
+            });
+            EEWBot.instance.getQuakeInfoStore().getReport(getHead().getEventID(), JMAXmlType.VXSE51).flatMap(QuakeInfo::getMaxInt).ifPresent(intensity -> builder.color(intensity.getColor()));
         }
         builder.footer(getControl().getPublishingOffice(), null);
         builder.timestamp(getHead().getReportDateTime());

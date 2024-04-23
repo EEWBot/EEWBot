@@ -54,6 +54,7 @@ public class EEWBot {
 
     private GatewayDiscordClient gateway;
     private ChannelRegistry channels;
+    private QuakeInfoStore quakeInfoStore;
     private EEWService service;
     private EEWExecutor executor;
     private SlashCommandHandler slashCommand;
@@ -128,8 +129,9 @@ public class EEWBot {
             return;
         }
 
+        this.quakeInfoStore = new QuakeInfoStore();
         this.service = new EEWService(this);
-        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels());
+        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getQuakeInfoStore());
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
@@ -210,6 +212,10 @@ public class EEWBot {
 
     public GatewayDiscordClient getClient() {
         return this.gateway;
+    }
+
+    public QuakeInfoStore getQuakeInfoStore() {
+        return this.quakeInfoStore;
     }
 
     public EEWService getService() {

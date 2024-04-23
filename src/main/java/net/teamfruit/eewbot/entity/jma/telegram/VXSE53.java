@@ -5,6 +5,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
+import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Magnitude;
@@ -15,8 +16,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+@SuppressWarnings("unused")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class VXSE53 extends JMAReport {
+public class VXSE53 extends JMAReport implements QuakeInfo {
 
     @JacksonXmlProperty(localName = "Body")
     private Body body;
@@ -28,24 +30,31 @@ public class VXSE53 extends JMAReport {
     public static class Body {
 
         @JacksonXmlProperty(localName = "Earthquake")
-        private Earthquake earthquake;
+        private @Nullable Earthquake earthquake;
 
         @JacksonXmlProperty(localName = "Intensity")
-        private Intensity intensity;
+        private @Nullable Intensity intensity;
 
         @JacksonXmlProperty(localName = "Comments")
-        private Comment comments;
+        private @Nullable Comment comments;
 
-        public Earthquake getEarthquake() {
-            return this.earthquake;
+        @JacksonXmlProperty(localName = "Text")
+        private @Nullable String text;
+
+        public Optional<Earthquake> getEarthquake() {
+            return Optional.ofNullable(this.earthquake);
         }
 
-        public Intensity getIntensity() {
-            return this.intensity;
+        public Optional<Intensity> getIntensity() {
+            return Optional.ofNullable(this.intensity);
         }
 
-        public Comment getComments() {
-            return this.comments;
+        public Optional<Comment> getComments() {
+            return Optional.ofNullable(this.comments);
+        }
+
+        public Optional<String> getText() {
+            return Optional.ofNullable(this.text);
         }
 
         public static class Earthquake {
@@ -372,6 +381,11 @@ public class VXSE53 extends JMAReport {
                     ", comment=" + this.comments +
                     '}';
         }
+    }
+
+    @Override
+    public Optional<SeismicIntensity> getMaxInt() {
+        return getBody().getIntensity().map(intensity -> intensity.getObservation().getMaxInt());
     }
 
     @Override

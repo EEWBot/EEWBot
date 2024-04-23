@@ -10,6 +10,7 @@ import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
+import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.gateway.*;
@@ -37,8 +38,9 @@ public class EEWExecutor {
     private final long applicationId;
     private final GatewayDiscordClient client;
     private final ChannelRegistry channels;
+    private final QuakeInfoStore quakeInfoStore;
 
-    public EEWExecutor(final EEWService service, final Config config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels) {
+    public EEWExecutor(final EEWService service, final Config config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels, QuakeInfoStore quakeInfoStore) {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;
@@ -48,6 +50,7 @@ public class EEWExecutor {
         this.timeProvider = new TimeProvider(this.scheduledExecutor);
         this.client = client;
         this.channels = channels;
+        this.quakeInfoStore = quakeInfoStore;
     }
 
     public ScheduledExecutorService getScheduledExecutor() {
@@ -142,10 +145,16 @@ public class EEWExecutor {
             }
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
 
-        this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway() {
+        this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.quakeInfoStore) {
             @Override
             public void onNewData(JMAReport data) {
-                Log.logger.info(data.toString());
+                ChannelFilter.Builder builder = ChannelFilter.builder();
+                if (data instanceof QuakeInfo) {
+                    builder.quakeInfo(true);
+                }
+
+                // TODO: intensity filter
+                EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
             }
         }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
 
