@@ -92,8 +92,15 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
                 @JacksonXmlProperty(localName = "Area")
                 private HypoArea area;
 
+                @JacksonXmlProperty(localName = "Source")
+                private @Nullable String source;
+
                 public HypoArea getArea() {
                     return this.area;
+                }
+
+                public Optional<String> getSource() {
+                    return Optional.ofNullable(this.source);
                 }
 
                 public static class HypoArea {
@@ -112,6 +119,18 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
 
                     @JacksonXmlProperty(localName = "DetailedCode")
                     private @Nullable String detailedCode;
+
+                    @JacksonXmlProperty(localName = "NameFromMark")
+                    private @Nullable String nameFromMark;
+
+                    @JacksonXmlProperty(localName = "MarkCode")
+                    private @Nullable String markCode;
+
+                    @JacksonXmlProperty(localName = "Direction")
+                    private @Nullable String direction;
+
+                    @JacksonXmlProperty(localName = "Distance")
+                    private @Nullable String distance;
 
                     public String getName() {
                         return this.name;
@@ -133,12 +152,34 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
                         return Optional.ofNullable(this.detailedCode);
                     }
 
+                    public Optional<String> getNameFromMark() {
+                        return Optional.ofNullable(this.nameFromMark);
+                    }
+
+                    public Optional<String> getMarkCode() {
+                        return Optional.ofNullable(this.markCode);
+                    }
+
+                    public Optional<String> getDirection() {
+                        return Optional.ofNullable(this.direction);
+                    }
+
+                    public Optional<String> getDistance() {
+                        return Optional.ofNullable(this.distance);
+                    }
+
                     @Override
                     public String toString() {
-                        return "Area{" +
+                        return "HypoArea{" +
                                 "name='" + this.name + '\'' +
                                 ", code='" + this.code + '\'' +
-                                ", coordinate='" + this.coordinate + '\'' +
+                                ", coordinate=" + this.coordinate +
+                                ", detailedName='" + this.detailedName + '\'' +
+                                ", detailedCode='" + this.detailedCode + '\'' +
+                                ", nameFromMark='" + this.nameFromMark + '\'' +
+                                ", markCode='" + this.markCode + '\'' +
+                                ", direction='" + this.direction + '\'' +
+                                ", distance='" + this.distance + '\'' +
                                 '}';
                     }
                 }
@@ -147,6 +188,7 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
                 public String toString() {
                     return "Hypocenter{" +
                             "area=" + this.area +
+                            ", source='" + this.source + '\'' +
                             '}';
                 }
             }
@@ -198,7 +240,10 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
                     private String code;
 
                     @JacksonXmlProperty(localName = "MaxInt")
-                    private SeismicIntensity maxInt;
+                    private @Nullable SeismicIntensity maxInt;
+
+                    @JacksonXmlProperty(localName = "Revise")
+                    private @Nullable String revise;
 
                     @JacksonXmlProperty(localName = "Area")
                     @JacksonXmlElementWrapper(useWrapping = false)
@@ -212,8 +257,12 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
                         return this.code;
                     }
 
-                    public SeismicIntensity getMaxInt() {
-                        return this.maxInt;
+                    public Optional<SeismicIntensity> getMaxInt() {
+                        return Optional.ofNullable(this.maxInt);
+                    }
+
+                    public Optional<String> getRevise() {
+                        return Optional.ofNullable(this.revise);
                     }
 
                     public List<IntensityArea> getAreas() {
@@ -229,7 +278,10 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
                         private String code;
 
                         @JacksonXmlProperty(localName = "MaxInt")
-                        private SeismicIntensity maxInt;
+                        private @Nullable SeismicIntensity maxInt;
+
+                        @JacksonXmlProperty(localName = "Revise")
+                        private @Nullable String revise;
 
                         @JacksonXmlProperty(localName = "City")
                         @JacksonXmlElementWrapper(useWrapping = false)
@@ -243,8 +295,12 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
                             return this.code;
                         }
 
-                        public SeismicIntensity getMaxInt() {
-                            return this.maxInt;
+                        public Optional<SeismicIntensity> getMaxInt() {
+                            return Optional.ofNullable(this.maxInt);
+                        }
+
+                        public Optional<String> getRevise() {
+                            return Optional.ofNullable(this.revise);
                         }
 
                         public List<IntensityCity> getCities() {
@@ -260,7 +316,13 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
                             private String code;
 
                             @JacksonXmlProperty(localName = "MaxInt")
-                            private SeismicIntensity maxInt;
+                            private @Nullable SeismicIntensity maxInt;
+
+                            @JacksonXmlProperty(localName = "Condition")
+                            private @Nullable String condition;
+
+                            @JacksonXmlProperty(localName = "Revise")
+                            private @Nullable String revise;
 
                             @JacksonXmlProperty(localName = "IntensityStation")
                             @JacksonXmlElementWrapper(useWrapping = false)
@@ -274,8 +336,16 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
                                 return this.code;
                             }
 
-                            public SeismicIntensity getMaxInt() {
-                                return this.maxInt;
+                            public Optional<SeismicIntensity> getMaxInt() {
+                                return Optional.ofNullable(this.maxInt);
+                            }
+
+                            public Optional<String> getCondition() {
+                                return Optional.ofNullable(this.condition);
+                            }
+
+                            public Optional<String> getRevise() {
+                                return Optional.ofNullable(this.revise);
                             }
 
                             public List<IntensityStation> getStations() {
@@ -291,7 +361,7 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
                                 protected String code;
 
                                 @JacksonXmlProperty(localName = "Int")
-                                private SeismicIntensity intensity;
+                                private String intensity;
 
                                 @JacksonXmlProperty(localName = "Revise")
                                 protected @Nullable String revise;
@@ -304,7 +374,7 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
                                     return this.code;
                                 }
 
-                                public SeismicIntensity getInt() {
+                                public String getInt() {
                                     return this.intensity;
                                 }
 
