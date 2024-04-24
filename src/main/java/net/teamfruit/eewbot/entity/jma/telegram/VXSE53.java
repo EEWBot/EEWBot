@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.jma.JMAInfoType;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
@@ -459,8 +460,27 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
     }
 
     @Override
+    @SuppressWarnings("NonAsciiCharacters")
     public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
-        return null;
+        builder.title("eewbot.quakeinfo.detail.title");
+        if (getHead().getInfoType() == JMAInfoType.取消) {
+            builder.description("eewbot.quakeinfo.detail.cancel");
+            builder.color(SeismicIntensity.UNKNOWN.getColor());
+        } else {
+            getBody().getEarthquake().ifPresent(earthquake -> {
+                builder.description("eewbot.quakeinfo.epicenter.desc", "<t:" + earthquake.getOriginTime().getEpochSecond() + ":f>");
+                builder.addField("eewbot.quakeinfo.field.epicenter", earthquake.getHypocenter().getArea().getName(), true);
+                earthquake.getHypocenter().getArea().getCoordinate().getDepth().ifPresent(depth -> builder.addField("eewbot.quakeinfo.field.depth", depth, true));
+                builder.addField("eewbot.quakeinfo.field.magnitude", earthquake.getMagnitude().getMagnitude(), true);
+            });
+            getBody().getIntensity().ifPresent(intensity -> {
+                builder.addField("eewbot.quakeinfo.field.maxintensity", intensity.getObservation().getMaxInt().getSimple(), true);
+                builder.color(intensity.getObservation().getMaxInt().getColor());
+            });
+        }
+        builder.footer(getControl().getPublishingOffice(), null);
+        builder.timestamp(getHead().getReportDateTime());
+        return builder.build();
     }
 
     @Override

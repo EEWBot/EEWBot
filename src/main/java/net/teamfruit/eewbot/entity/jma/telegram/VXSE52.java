@@ -165,8 +165,8 @@ public class VXSE52 extends JMAReport implements QuakeInfo {
             builder.description("eewbot.quakeinfo.epicenter.cancel");
             builder.color(SeismicIntensity.UNKNOWN.getColor());
         } else {
-            getHead().getTargetDateTime().ifPresent(time -> builder.description("eewbot.quakeinfo.desc", "<t:" + time.getEpochSecond() + ":f>"));
             getBody().getEarthquake().ifPresent(earthquake -> {
+                builder.description("eewbot.quakeinfo.epicenter.desc", "<t:" + earthquake.getOriginTime().getEpochSecond() + ":f>");
                 builder.addField("eewbot.quakeinfo.field.epicenter", earthquake.getHypocenter().getArea().getName(), true);
                 earthquake.getHypocenter().getArea().getCoordinate().getDepth().ifPresent(depth -> builder.addField("eewbot.quakeinfo.field.depth", depth, true));
                 builder.addField("eewbot.quakeinfo.field.magnitude", earthquake.getMagnitude().getMagnitude(), true);

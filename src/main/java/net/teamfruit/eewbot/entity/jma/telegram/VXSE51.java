@@ -192,7 +192,7 @@ public class VXSE51 extends JMAReport implements QuakeInfo {
             builder.description("eewbot.quakeinfo.intensity.cancel");
             builder.color(SeismicIntensity.UNKNOWN.getColor());
         } else {
-            getHead().getTargetDateTime().ifPresent(time -> builder.description("eewbot.quakeinfo.desc", "<t:" + time.getEpochSecond() + ":f>"));
+            getHead().getTargetDateTime().ifPresent(time -> builder.description("eewbot.quakeinfo.intensity.desc", "<t:" + time.getEpochSecond() + ":f>"));
             getBody().getIntensity().ifPresent(intensity -> {
                 Map<SeismicIntensity, StringBuilder> intensityMap = new EnumMap<>(SeismicIntensity.class);
                 intensity.getObservation().getPrefs()
