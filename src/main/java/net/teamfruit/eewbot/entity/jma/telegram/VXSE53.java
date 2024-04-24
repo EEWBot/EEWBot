@@ -11,6 +11,7 @@ import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Magnitude;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
+import org.apache.commons.lang3.StringUtils;
 import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
@@ -462,13 +463,34 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
     @Override
     @SuppressWarnings("NonAsciiCharacters")
     public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
-        builder.title("eewbot.quakeinfo.detail.title");
         if (getHead().getInfoType() == JMAInfoType.取消) {
+            builder.title("eewbot.quakeinfo.detail.title");
             builder.description("eewbot.quakeinfo.detail.cancel");
             builder.color(SeismicIntensity.UNKNOWN.getColor());
+        } else if (getHead().getTitle().equals("遠地地震に関する情報")) {
+            getBody().getComments().flatMap(Comment::getFreeFormComment).filter(text -> text.contains("噴火が発生")).ifPresentOrElse(text -> {
+                // 海外噴火
+                builder.title("eewbot.quakeinfo.detail.eruption.title");
+                getBody().getEarthquake().ifPresent(earthquake -> earthquake.getHypocenter().getArea().getDetailedName()
+                        .ifPresentOrElse(detailedName -> builder.addField("eewbot.quakeinfo.field.area", detailedName, true),
+                                () -> builder.addField("eewbot.quakeinfo.field.area", earthquake.getHypocenter().getArea().getName(), true)));
+                builder.addField("", StringUtils.substringBefore(text, "（注"), false);
+            }, () -> {
+                // 海外地震
+                builder.title("eewbot.quakeinfo.detail.overseas.title");
+                getBody().getEarthquake().ifPresent(earthquake -> {
+                    builder.description("eewbot.quakeinfo.detail.overseas.desc", "<t:" + earthquake.getOriginTime().getEpochSecond() + ":f>");
+                    earthquake.getHypocenter().getArea().getDetailedName().ifPresentOrElse(detailedName -> builder.addField("eewbot.quakeinfo.field.epicenter", detailedName, true),
+                            () -> builder.addField("eewbot.quakeinfo.field.epicenter", earthquake.getHypocenter().getArea().getName(), true));
+                    builder.addField("eewbot.quakeinfo.field.magnitude", earthquake.getMagnitude().getMagnitude(), true);
+                });
+                getBody().getComments().flatMap(Comment::getFreeFormComment).ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
+            });
+            getBody().getComments().flatMap(Comment::getForecastComment).ifPresent(forecastComment -> builder.addField("", forecastComment.getText(), false));
         } else {
+            builder.title("eewbot.quakeinfo.detail.title");
             getBody().getEarthquake().ifPresent(earthquake -> {
-                builder.description("eewbot.quakeinfo.epicenter.desc", "<t:" + earthquake.getOriginTime().getEpochSecond() + ":f>");
+                builder.description("eewbot.quakeinfo.detail.desc", "<t:" + earthquake.getOriginTime().getEpochSecond() + ":f>");
                 builder.addField("eewbot.quakeinfo.field.epicenter", earthquake.getHypocenter().getArea().getName(), true);
                 earthquake.getHypocenter().getArea().getCoordinate().getDepth().ifPresent(depth -> builder.addField("eewbot.quakeinfo.field.depth", depth, true));
                 builder.addField("eewbot.quakeinfo.field.magnitude", earthquake.getMagnitude().getMagnitude(), true);
@@ -476,6 +498,11 @@ public class VXSE53 extends JMAReport implements QuakeInfo {
             getBody().getIntensity().ifPresent(intensity -> {
                 builder.addField("eewbot.quakeinfo.field.maxintensity", intensity.getObservation().getMaxInt().getSimple(), true);
                 builder.color(intensity.getObservation().getMaxInt().getColor());
+            });
+            getBody().getComments().ifPresent(comment -> {
+                comment.getForecastComment().ifPresent(forecastComment -> builder.addField("", forecastComment.getText(), false));
+                comment.getVarComment().ifPresent(varComment -> builder.addField("", varComment.getText().replace("＊印は気象庁以外の震度観測点についての情報です。", ""), false));
+                comment.getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
             });
         }
         builder.footer(getControl().getPublishingOffice(), null);

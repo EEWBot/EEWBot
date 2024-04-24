@@ -43,7 +43,7 @@ public class VXSE52 extends JMAReport implements QuakeInfo {
             return Optional.ofNullable(this.earthquake);
         }
 
-        public Optional<Comment> getComment() {
+        public Optional<Comment> getComments() {
             return Optional.ofNullable(this.comments);
         }
 
@@ -171,7 +171,7 @@ public class VXSE52 extends JMAReport implements QuakeInfo {
                 earthquake.getHypocenter().getArea().getCoordinate().getDepth().ifPresent(depth -> builder.addField("eewbot.quakeinfo.field.depth", depth, true));
                 builder.addField("eewbot.quakeinfo.field.magnitude", earthquake.getMagnitude().getMagnitude(), true);
             });
-            getBody().getComment().ifPresent(comment -> {
+            getBody().getComments().ifPresent(comment -> {
                 comment.getForecastComment().ifPresent(forecastComment -> builder.addField("", forecastComment.getText(), false));
                 comment.getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
             });
