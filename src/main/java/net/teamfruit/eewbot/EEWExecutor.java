@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,10 +51,6 @@ public class EEWExecutor {
         this.client = client;
         this.channels = channels;
         this.quakeInfoStore = quakeInfoStore;
-    }
-
-    public ScheduledExecutorService getScheduledExecutor() {
-        return this.scheduledExecutor;
     }
 
     public TimeProvider getTimeProvider() {
@@ -131,18 +128,23 @@ public class EEWExecutor {
             this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(dmdataGateway), 30, 30, TimeUnit.SECONDS);
         }
 
+        int currentSecond = Calendar.getInstance().get(Calendar.SECOND);
+        int jmaXMLInitialDelay = 20 - currentSecond;
+        if (jmaXMLInitialDelay < 0) {
+            jmaXMLInitialDelay += 60;
+        }
+
         this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.quakeInfoStore) {
             @Override
             public void onNewData(JMAReport data) {
                 ChannelFilter.Builder builder = ChannelFilter.builder();
                 if (data instanceof QuakeInfo) {
                     builder.quakeInfo(true);
+                    builder.intensity(((QuakeInfo) data).getMaxInt().orElse(SeismicIntensity.UNKNOWN));
                 }
-
-                // TODO: intensity filter
                 EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
             }
-        }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
+        }, jmaXMLInitialDelay, 60, TimeUnit.SECONDS);
 
         if (StringUtils.isNotEmpty(this.config.getDuplicatorAddress())) {
             this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorNegativeCache, 15, 15, TimeUnit.SECONDS);
