@@ -12,7 +12,6 @@ import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
-import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.gateway.*;
 import net.teamfruit.eewbot.registry.ChannelFilter;
 import net.teamfruit.eewbot.registry.ChannelRegistry;
@@ -131,19 +130,6 @@ public class EEWExecutor {
             this.scheduledExecutor.execute(dmdataGateway);
             this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(dmdataGateway), 30, 30, TimeUnit.SECONDS);
         }
-
-        this.scheduledExecutor.scheduleAtFixedRate(new QuakeInfoGateway() {
-
-            @Override
-            public void onNewData(final NHKDetailQuakeInfo data) {
-                Log.logger.info(data.toString());
-
-                ChannelFilter.Builder builder = ChannelFilter.builder();
-                builder.quakeInfo(true);
-                builder.intensity(data.getEarthquake().getIntensity());
-                EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
-            }
-        }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
 
         this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.quakeInfoStore) {
             @Override
