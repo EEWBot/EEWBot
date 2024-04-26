@@ -4,7 +4,6 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 import reactor.util.annotation.Nullable;
 
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,48 +32,56 @@ public class Coordinate {
     private float lon;
     private @Nullable String depth;
 
-    public Optional<String> getRawValue() {
-        return Optional.ofNullable(this.value);
+    @Nullable
+    public String getRawValue() {
+        return this.value;
     }
 
-    public Optional<String> getType() {
-        return Optional.ofNullable(this.type);
+    @Nullable
+    public String getType() {
+        return this.type;
     }
 
-    public Optional<String> getDatum() {
-        return Optional.ofNullable(this.datum);
+    @Nullable
+    public String getDatum() {
+        return this.datum;
     }
 
-    public Optional<String> getCondition() {
-        return Optional.ofNullable(this.condition);
+    @Nullable
+    public String getCondition() {
+        return this.condition;
     }
 
-    public Optional<String> getDescription() {
-        return Optional.ofNullable(this.description);
+    @Nullable
+    public String getDescription() {
+        return this.description;
     }
 
-    public Optional<Float> getLat() {
+    @Nullable
+    public Float getLat() {
         if (this.value == null) {
-            return Optional.empty();
+            return null;
         }
         parseCoordIfNotParsed();
-        return Optional.of(this.lat);
+        return this.lat;
     }
 
-    public Optional<Float> getLon() {
+    @Nullable
+    public Float getLon() {
         if (this.value == null) {
-            return Optional.empty();
+            return null;
         }
         parseCoordIfNotParsed();
-        return Optional.of(this.lon);
+        return this.lon;
     }
 
-    public Optional<String> getDepth() {
+    @Nullable
+    public String getDepth() {
         if (this.value == null) {
-            return Optional.empty();
+            return null;
         }
         parseCoordIfNotParsed();
-        return Optional.ofNullable(this.depth);
+        return this.depth;
     }
 
     private void parseCoordIfNotParsed() {

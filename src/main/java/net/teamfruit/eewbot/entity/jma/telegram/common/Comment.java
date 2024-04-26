@@ -4,8 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import reactor.util.annotation.Nullable;
 
-import java.util.Optional;
-
+@SuppressWarnings("unused")
 public class Comment {
 
     @JacksonXmlProperty(localName = "WarningComment")
@@ -26,28 +25,34 @@ public class Comment {
     @JacksonXmlProperty(localName = "URI")
     private @Nullable String uri;
 
-    public Optional<CommentForm> getWarningComment() {
-        return Optional.ofNullable(this.warningComment);
+    @Nullable
+    public CommentForm getWarningComment() {
+        return this.warningComment;
     }
 
-    public Optional<CommentForm> getForecastComment() {
-        return Optional.ofNullable(this.forecastComment);
+    @Nullable
+    public CommentForm getForecastComment() {
+        return this.forecastComment;
     }
 
-    public Optional<CommentForm> getObservationComment() {
-        return Optional.ofNullable(this.observationComment);
+    @Nullable
+    public CommentForm getObservationComment() {
+        return this.observationComment;
     }
 
-    public Optional<CommentForm> getVarComment() {
-        return Optional.ofNullable(this.varComment);
+    @Nullable
+    public CommentForm getVarComment() {
+        return this.varComment;
     }
 
-    public Optional<String> getFreeFormComment() {
-        return Optional.ofNullable(this.freeFormComment);
+    @Nullable
+    public String getFreeFormComment() {
+        return this.freeFormComment;
     }
 
-    public Optional<String> getUri() {
-        return Optional.ofNullable(this.uri);
+    @Nullable
+    public String getUri() {
+        return this.uri;
     }
 
     @JsonIgnoreProperties("codeType")

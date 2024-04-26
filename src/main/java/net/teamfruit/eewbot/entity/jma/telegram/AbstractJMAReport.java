@@ -1,18 +1,19 @@
-package net.teamfruit.eewbot.entity.jma;
+package net.teamfruit.eewbot.entity.jma.telegram;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import net.teamfruit.eewbot.entity.Entity;
+import net.teamfruit.eewbot.entity.jma.telegram.common.JMAInfoType;
+import net.teamfruit.eewbot.entity.jma.telegram.common.JMAStatus;
 import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
-import java.util.Optional;
 
 @SuppressWarnings("unused")
 @JacksonXmlRootElement(localName = "Report")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public abstract class JMAReport implements Entity, IJMAReport {
+public abstract class AbstractJMAReport implements Entity, JMAReport {
 
     @JacksonXmlProperty(localName = "Control")
     protected Control control;
@@ -20,14 +21,67 @@ public abstract class JMAReport implements Entity, IJMAReport {
     @JacksonXmlProperty(localName = "Head")
     protected Head head;
 
-    @Override
     public Control getControl() {
         return this.control;
     }
 
-    @Override
     public Head getHead() {
         return this.head;
+    }
+
+    @Override
+    public String getHeadTitle() {
+        return getHead().getTitle();
+    }
+
+    @Override
+    public Instant getDateTime() {
+        return getControl().getDateTime();
+    }
+
+    @Override
+    public JMAStatus getStatus() {
+        return getControl().getStatus();
+    }
+
+    @Override
+    public String getEditorialOffice() {
+        return getControl().getEditorialOffice();
+    }
+
+    @Override
+    public String getPublishingOffice() {
+        return getControl().getPublishingOffice();
+    }
+
+    @Override
+    public Instant getReportDateTime() {
+        return getHead().getReportDateTime();
+    }
+
+    @Override
+    public long getEventId() {
+        return getHead().getEventID();
+    }
+
+    @Override
+    public JMAInfoType getInfoType() {
+        return getHead().getInfoType();
+    }
+
+    @Override
+    public String getSerial() {
+        return getHead().getSerial();
+    }
+
+    @Override
+    public String getInfoKind() {
+        return getHead().getInfoKind();
+    }
+
+    @Override
+    public String getInfoKindVersion() {
+        return getHead().getInfoKindVersion();
     }
 
     public static class Control {
@@ -125,20 +179,24 @@ public abstract class JMAReport implements Entity, IJMAReport {
             return this.reportDateTime;
         }
 
-        public Optional<Instant> getTargetDateTime() {
-            return Optional.ofNullable(this.targetDateTime);
+        @Nullable
+        public Instant getTargetDateTime() {
+            return this.targetDateTime;
         }
 
-        public Optional<String> getTargetDTDubious() {
-            return Optional.ofNullable(this.targetDTDubious);
+        @Nullable
+        public String getTargetDTDubious() {
+            return this.targetDTDubious;
         }
 
-        public Optional<String> getTargetDuration() {
-            return Optional.ofNullable(this.targetDuration);
+        @Nullable
+        public String getTargetDuration() {
+            return this.targetDuration;
         }
 
-        public Optional<String> getValidDateTime() {
-            return Optional.ofNullable(this.validDateTime);
+        @Nullable
+        public String getValidDateTime() {
+            return this.validDateTime;
         }
 
         public long getEventID() {

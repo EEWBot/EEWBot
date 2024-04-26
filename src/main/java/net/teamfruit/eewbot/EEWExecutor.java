@@ -9,8 +9,8 @@ import discord4j.discordjson.json.WebhookCreateRequest;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
-import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
+import net.teamfruit.eewbot.entity.jma.telegram.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.gateway.*;
 import net.teamfruit.eewbot.registry.ChannelFilter;
@@ -136,11 +136,11 @@ public class EEWExecutor {
 
         this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.quakeInfoStore) {
             @Override
-            public void onNewData(JMAReport data) {
+            public void onNewData(AbstractJMAReport data) {
                 ChannelFilter.Builder builder = ChannelFilter.builder();
                 if (data instanceof QuakeInfo) {
                     builder.quakeInfo(true);
-                    builder.intensity(((QuakeInfo) data).getMaxInt().orElse(SeismicIntensity.UNKNOWN));
+                    builder.intensity(((QuakeInfo) data).getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
                 }
                 EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
             }

@@ -3,16 +3,15 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
-import net.teamfruit.eewbot.entity.jma.telegram.common.Magnitude;
+import net.teamfruit.eewbot.entity.jma.telegram.seis.Magnitude;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class VXSE61 extends JMAReport {
+public class VXSE61 extends AbstractJMAReport {
 
     @JacksonXmlProperty(localName = "Body")
     private Body body;

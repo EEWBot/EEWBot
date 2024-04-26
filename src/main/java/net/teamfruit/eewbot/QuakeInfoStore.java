@@ -1,8 +1,8 @@
 package net.teamfruit.eewbot;
 
-import net.teamfruit.eewbot.entity.jma.IJMAReport;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
+import net.teamfruit.eewbot.entity.jma.telegram.JMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE53;
 import reactor.util.annotation.Nullable;
 
@@ -20,10 +20,10 @@ public class QuakeInfoStore {
         this.lastReport = report;
 
         if (report instanceof VXSE53) {
-            this.reports.remove(report.getHead().getEventID());
+            this.reports.remove(report.getEventId());
         } else {
-            this.reports.computeIfAbsent(report.getHead().getEventID(), k -> new EnumMap<>(JMAXmlType.class))
-                    .put(JMAXmlType.from(((IJMAReport) report).getClass()), report);
+            this.reports.computeIfAbsent(report.getEventId(), k -> new EnumMap<>(JMAXmlType.class))
+                    .put(JMAXmlType.from(((JMAReport) report).getClass()), report);
         }
     }
 

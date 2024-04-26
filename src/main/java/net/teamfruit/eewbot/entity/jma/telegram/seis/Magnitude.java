@@ -1,10 +1,8 @@
-package net.teamfruit.eewbot.entity.jma.telegram.common;
+package net.teamfruit.eewbot.entity.jma.telegram.seis;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 import reactor.util.annotation.Nullable;
-
-import java.util.Optional;
 
 @SuppressWarnings("unused")
 public class Magnitude {
@@ -29,12 +27,14 @@ public class Magnitude {
         return this.type;
     }
 
-    public Optional<String> getCondition() {
-        return Optional.ofNullable(this.condition);
+    @Nullable
+    public String getCondition() {
+        return this.condition;
     }
 
-    public Optional<String> getDescription() {
-        return Optional.ofNullable(this.description);
+    @Nullable
+    public String getDescription() {
+        return this.description;
     }
 
     public String getMagnitude() {

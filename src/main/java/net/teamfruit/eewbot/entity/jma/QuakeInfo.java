@@ -5,7 +5,10 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 
 import java.util.Optional;
 
-public interface QuakeInfo extends Entity, IJMAReport {
+public interface QuakeInfo extends Entity {
 
-    Optional<SeismicIntensity> getMaxInt();
+    long getEventId();
+
+    Optional<SeismicIntensity> getQuakeInfoMaxInt();
+
 }

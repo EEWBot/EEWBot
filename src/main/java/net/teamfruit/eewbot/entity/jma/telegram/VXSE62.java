@@ -5,10 +5,9 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
-import net.teamfruit.eewbot.entity.jma.telegram.common.Magnitude;
+import net.teamfruit.eewbot.entity.jma.telegram.seis.Magnitude;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import reactor.util.annotation.Nullable;
 
@@ -16,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class VXSE62 extends JMAReport {
+public class VXSE62 extends AbstractJMAReport {
 
     @JacksonXmlProperty(localName = "Body")
     private Body body;

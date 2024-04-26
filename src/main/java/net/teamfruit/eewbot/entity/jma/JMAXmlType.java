@@ -97,12 +97,12 @@ public enum JMAXmlType {
     VPSG50("スモッグ気象情報"),
     VPZI50("全般天候情報"),
     VPCI50("地方天候情報"),
-    VXSE51("震度速報", VXSE51.class),
-    VXSE52("震源に関する情報", VXSE52.class),
+    VXSE51("震度速報", VXSE51Impl.class),
+    VXSE52("震源に関する情報", VXSE52Impl.class),
     VXSE61("顕著な地震の震源要素更新のお知らせ", VXSE61.class),
     VXSE60("地震回数に関する情報"),
     VXSE56("地震の活動状況等に関する情報"),
-    VXSE53("震源・震度に関する情報", VXSE53.class),
+    VXSE53("震源・震度に関する情報", VXSE53Impl.class),
     VXSE44("緊急地震速報（予報）"),
     VXSE43("緊急地震速報（警報）"),
     VTSE51("津波情報a"),
@@ -164,14 +164,14 @@ public enum JMAXmlType {
     VFVO60("推定噴煙流向報");
 
     private final String title;
-    private final Class<? extends JMAReport> reportClass;
+    private final Class<? extends AbstractJMAReport> reportClass;
 
     JMAXmlType(String title) {
         this.title = title;
         this.reportClass = null;
     }
 
-    JMAXmlType(String title, Class<? extends JMAReport> clazz) {
+    JMAXmlType(String title, Class<? extends AbstractJMAReport> clazz) {
         this.title = title;
         this.reportClass = clazz;
     }
@@ -181,7 +181,7 @@ public enum JMAXmlType {
         return this.title;
     }
 
-    public Optional<Class<? extends JMAReport>> getReportClass() {
+    public Optional<Class<? extends AbstractJMAReport>> getReportClass() {
         return Optional.ofNullable(this.reportClass);
     }
 
@@ -194,7 +194,7 @@ public enum JMAXmlType {
         return null;
     }
 
-    public static @Nullable JMAXmlType from(Class<? extends IJMAReport> clazz) {
+    public static @Nullable JMAXmlType from(Class<? extends JMAReport> clazz) {
         for (JMAXmlType value : values()) {
             if (value.reportClass == clazz)
                 return value;
