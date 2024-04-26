@@ -1,8 +1,8 @@
 package net.teamfruit.eewbot;
 
+import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
-import net.teamfruit.eewbot.entity.jma.telegram.JMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE53;
 import reactor.util.annotation.Nullable;
 

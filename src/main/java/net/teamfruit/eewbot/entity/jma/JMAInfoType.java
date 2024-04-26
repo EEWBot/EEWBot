@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.entity.jma.telegram.common;
+package net.teamfruit.eewbot.entity.jma;
 
 @SuppressWarnings("NonAsciiCharacters")
 public enum JMAInfoType {

@@ -1,11 +1,9 @@
-package net.teamfruit.eewbot.entity.jma.telegram;
+package net.teamfruit.eewbot.entity.jma;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import net.teamfruit.eewbot.entity.Entity;
-import net.teamfruit.eewbot.entity.jma.telegram.common.JMAInfoType;
-import net.teamfruit.eewbot.entity.jma.telegram.common.JMAStatus;
 import reactor.util.annotation.Nullable;
 
 import java.time.Instant;

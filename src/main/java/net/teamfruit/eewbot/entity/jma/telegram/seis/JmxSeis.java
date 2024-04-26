@@ -2,7 +2,7 @@ package net.teamfruit.eewbot.entity.jma.telegram.seis;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import net.teamfruit.eewbot.entity.jma.telegram.AbstractJMAReport;
+import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import reactor.util.annotation.Nullable;
 
