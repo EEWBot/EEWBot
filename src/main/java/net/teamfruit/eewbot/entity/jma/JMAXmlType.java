@@ -7,8 +7,6 @@ import net.teamfruit.eewbot.entity.jma.telegram.VXSE52Impl;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE53Impl;
 import reactor.util.annotation.Nullable;
 
-import java.util.Optional;
-
 public enum JMAXmlType {
     VGSK50("季節観測"),
     VGSK55("生物季節観測"),
@@ -166,16 +164,15 @@ public enum JMAXmlType {
     VFVO60("推定噴煙流向報");
 
     private final String title;
-    private final Class<? extends AbstractJMAReport> reportClass;
+    private final @Nullable Class<? extends AbstractJMAReport> reportClass;
 
-    JMAXmlType(String title) {
-        this.title = title;
-        this.reportClass = null;
-    }
-
-    JMAXmlType(String title, Class<? extends AbstractJMAReport> clazz) {
+    JMAXmlType(String title, @Nullable Class<? extends AbstractJMAReport> clazz) {
         this.title = title;
         this.reportClass = clazz;
+    }
+
+    JMAXmlType(String title) {
+        this(title, null);
     }
 
     @JsonValue
@@ -183,12 +180,14 @@ public enum JMAXmlType {
         return this.title;
     }
 
-    public Optional<Class<? extends AbstractJMAReport>> getReportClass() {
-        return Optional.ofNullable(this.reportClass);
+    @Nullable
+    public Class<? extends AbstractJMAReport> getReportClass() {
+        return this.reportClass;
     }
 
     @JsonCreator
-    public static @Nullable JMAXmlType from(String title) {
+    @Nullable
+    public static JMAXmlType from(String title) {
         for (JMAXmlType value : values()) {
             if (value.title.equals(title))
                 return value;
@@ -196,7 +195,8 @@ public enum JMAXmlType {
         return null;
     }
 
-    public static @Nullable JMAXmlType from(Class<? extends JMAReport> clazz) {
+    @Nullable
+    public static JMAXmlType from(Class<? extends JMAReport> clazz) {
         for (JMAXmlType value : values()) {
             if (value.reportClass == clazz)
                 return value;

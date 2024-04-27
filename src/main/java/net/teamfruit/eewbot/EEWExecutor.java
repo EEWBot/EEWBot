@@ -163,6 +163,8 @@ public class EEWExecutor {
             }, jmaXMLInitialDelay, 60, TimeUnit.SECONDS);
         }
 
+        this.scheduledExecutor.execute(new JMAXmlLGateway(this.quakeInfoStore));
+
         if (StringUtils.isNotEmpty(this.config.getDuplicatorAddress())) {
             this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorNegativeCache, 15, 15, TimeUnit.SECONDS);
         }

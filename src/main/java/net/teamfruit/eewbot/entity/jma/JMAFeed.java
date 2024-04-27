@@ -8,6 +8,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 import reactor.util.annotation.Nullable;
 
 import java.util.List;
+import java.util.Optional;
 
 @SuppressWarnings("unused")
 @JacksonXmlRootElement(localName = "feed")
@@ -37,8 +38,8 @@ public class JMAFeed {
         private Link link;
         private Content content;
 
-        public @Nullable JMAXmlType getTitle() {
-            return this.title;
+        public Optional<JMAXmlType> getTitle() {
+            return Optional.ofNullable(this.title);
         }
 
         public String getId() {
