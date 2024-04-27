@@ -257,4 +257,12 @@ public abstract class AbstractJMAReport implements Entity, JMAReport {
                     '}';
         }
     }
+
+    @Override
+    public String toString() {
+        return "AbstractJMAReport{" +
+                "control=" + this.control +
+                ", head=" + this.head +
+                '}';
+    }
 }
