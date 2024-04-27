@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
 @SuppressWarnings("NonAsciiCharacters")
 public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
 
-    public static final String REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
-//    public static final String REMOTE_ROOT = "http://localhost:8000/";
+    private static final String REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
+//    private static final String REMOTE_ROOT = "http://localhost:8000/";
 
-    public static final String REMOTE = "eqvol.xml";
+    private static final String REMOTE = "eqvol.xml";
 
     private final QuakeInfoStore store;
 
@@ -69,42 +69,43 @@ public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
 
                 for (final ListIterator<String> it = newer.listIterator(newer.size()); it.hasPrevious(); ) {
                     String id = it.previous();
-                    feed.getEntries().stream().filter(entry -> entry.getId().equals(id)).findFirst().ifPresent(entry -> {
-                        if (entry.getTitle() == null) {
+                    for (JMAFeed.Entry entry : feed.getEntries()) {
+                        if (!entry.getId().equals(id)) {
+                            continue;
+                        }
+                        if (entry.getTitle().isEmpty()) {
                             Log.logger.warn("Unknown JMA XML Activity: {}", entry);
+                            break;
+                        }
+
+                        Class<? extends AbstractJMAReport> reportClass = entry.getTitle().get().getReportClass();
+                        if (reportClass == null) {
+                            break;
+                        }
+
+                        HttpRequest reportRequest = HttpRequest.newBuilder()
+                                .uri(URI.create(entry.getLink().getHref()))
+//                                        .uri(URI.create(entry.getLink().getHref().replace("https://www.data.jma.go.jp/developer/xml/data/", "http://localhost:8000/")))
+                                .header("User-Agent", "eewbot")
+                                .GET()
+                                .build();
+                        HttpResponse<InputStream> reportResponse = EEWBot.instance.getHttpClient().send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
+                        if (reportResponse.statusCode() != 200) {
+                            Log.logger.warn("Failed to fetch JMA XML Report: HTTP " + reportResponse.statusCode());
                             return;
                         }
 
-                        entry.getTitle().getReportClass().ifPresent(reportClass -> {
-                            try {
-                                HttpRequest reportRequest = HttpRequest.newBuilder()
-                                        .uri(URI.create(entry.getLink().getHref()))
-//                                        .uri(URI.create(entry.getLink().getHref().replace("https://www.data.jma.go.jp/developer/xml/data/", "http://localhost:8000/")))
-                                        .header("User-Agent", "eewbot")
-                                        .GET()
-                                        .build();
-                                HttpResponse<InputStream> reportResponse = EEWBot.instance.getHttpClient().send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
-                                if (reportResponse.statusCode() != 200) {
-                                    Log.logger.warn("Failed to fetch JMA XML Report: HTTP " + reportResponse.statusCode());
-                                    return;
-                                }
-
-                                AbstractJMAReport report = EEWBot.XML_MAPPER.readValue(new InputStreamReader(reportResponse.body()), reportClass);
-
-                                if (report.getControl().getStatus() == JMAStatus.通常) {
-                                    if (report instanceof QuakeInfo) {
-                                        this.store.putReport((QuakeInfo) report);
-                                    }
-                                    Log.logger.info("JMA XML Report: {}", report);
-                                    onNewData(report);
-                                }
-
-//                                Thread.sleep(1000L);
-                            } catch (final Exception e) {
-                                onError(new EEWGatewayException(e));
+                        AbstractJMAReport report = EEWBot.XML_MAPPER.readValue(new InputStreamReader(reportResponse.body()), reportClass);
+                        if (report.getControl().getStatus() == JMAStatus.通常) {
+                            if (report instanceof QuakeInfo) {
+                                this.store.putReport((QuakeInfo) report);
                             }
-                        });
-                    });
+                            Log.logger.info("JMA XML Report: {}", report);
+                            onNewData(report);
+                        }
+//                                Thread.sleep(1000L);
+                        break;
+                    }
                 }
             } else {
                 this.lastIds = feed.getEntries().stream()
