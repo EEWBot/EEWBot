@@ -2,7 +2,9 @@ package net.teamfruit.eewbot.entity.jma;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import net.teamfruit.eewbot.entity.jma.telegram.*;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE51Impl;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE52Impl;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE53Impl;
 import reactor.util.annotation.Nullable;
 
 import java.util.Optional;
@@ -99,7 +101,7 @@ public enum JMAXmlType {
     VPCI50("地方天候情報"),
     VXSE51("震度速報", VXSE51Impl.class),
     VXSE52("震源に関する情報", VXSE52Impl.class),
-    VXSE61("顕著な地震の震源要素更新のお知らせ", VXSE61.class),
+    VXSE61("顕著な地震の震源要素更新のお知らせ"),
     VXSE60("地震回数に関する情報"),
     VXSE56("地震の活動状況等に関する情報"),
     VXSE53("震源・震度に関する情報", VXSE53Impl.class),
@@ -160,7 +162,7 @@ public enum JMAXmlType {
     VPTA54("台風の暴風域に入る確率"),
     VPTA55("台風の暴風域に入る確率"),
     VXSE45("緊急地震速報（地震動予報）"),
-    VXSE62("長周期地震動に関する観測情報", VXSE62.class),
+    VXSE62("長周期地震動に関する観測情報"),
     VFVO60("推定噴煙流向報");
 
     private final String title;
