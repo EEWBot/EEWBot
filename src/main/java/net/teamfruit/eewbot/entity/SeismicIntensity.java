@@ -13,7 +13,7 @@ public enum SeismicIntensity {
     FIVE_MINUS("5弱", "5-", "5-", Color.of(230, 126, 34)),
     FIVE_PLUS("5強", "5+", "5+", Color.of(182, 72, 18)),
     SIX_MINUS("6弱", "6-", "6-", Color.of(255, 118, 188)),
-    SIX_PLUS("6強", "6+", "6+", Color.of(255, 46, 18)),
+    SIX_PLUS("6強", "6+", "6+", Color.of(238, 70, 128)),
     SEVEN("7", "7", "7", Color.of(114, 0, 172));
 
     private final String name;
