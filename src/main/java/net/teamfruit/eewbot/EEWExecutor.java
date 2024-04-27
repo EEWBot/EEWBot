@@ -129,36 +129,39 @@ public class EEWExecutor {
             this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(dmdataGateway), 30, 30, TimeUnit.SECONDS);
         }
 
-        this.scheduledExecutor.scheduleAtFixedRate(new QuakeInfoGateway() {
+        if (this.config.isEnableNHK()) {
+            this.scheduledExecutor.scheduleAtFixedRate(new QuakeInfoGateway() {
 
-            @Override
-            public void onNewData(final NHKDetailQuakeInfo data) {
-                Log.logger.info(data.toString());
+                @Override
+                public void onNewData(final NHKDetailQuakeInfo data) {
+                    Log.logger.info(data.toString());
 
-                ChannelFilter.Builder builder = ChannelFilter.builder();
-                builder.quakeInfo(true);
-                builder.intensity(data.getEarthquake().getIntensity());
-                EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
-            }
-        }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
-
-        int currentSecond = Calendar.getInstance().get(Calendar.SECOND);
-        int jmaXMLInitialDelay = 20 - currentSecond;
-        if (jmaXMLInitialDelay < 0) {
-            jmaXMLInitialDelay += 60;
-        }
-
-        this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.quakeInfoStore) {
-            @Override
-            public void onNewData(AbstractJMAReport data) {
-                ChannelFilter.Builder builder = ChannelFilter.builder();
-                if (data instanceof QuakeInfo) {
+                    ChannelFilter.Builder builder = ChannelFilter.builder();
                     builder.quakeInfo(true);
-                    builder.intensity(((QuakeInfo) data).getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
+                    builder.intensity(data.getEarthquake().getIntensity());
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
                 }
-                EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
+            }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
+
+        } else {
+            int currentSecond = Calendar.getInstance().get(Calendar.SECOND);
+            int jmaXMLInitialDelay = 20 - currentSecond;
+            if (jmaXMLInitialDelay < 0) {
+                jmaXMLInitialDelay += 60;
             }
-        }, jmaXMLInitialDelay, 60, TimeUnit.SECONDS);
+
+            this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.quakeInfoStore) {
+                @Override
+                public void onNewData(AbstractJMAReport data) {
+                    ChannelFilter.Builder builder = ChannelFilter.builder();
+                    if (data instanceof QuakeInfo) {
+                        builder.quakeInfo(true);
+                        builder.intensity(((QuakeInfo) data).getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
+                    }
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
+                }
+            }, jmaXMLInitialDelay, 60, TimeUnit.SECONDS);
+        }
 
         if (StringUtils.isNotEmpty(this.config.getDuplicatorAddress())) {
             this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorNegativeCache, 15, 15, TimeUnit.SECONDS);

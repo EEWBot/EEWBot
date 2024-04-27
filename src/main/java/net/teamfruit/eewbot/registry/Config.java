@@ -12,6 +12,7 @@ public class Config {
     private String token = "";
     private boolean enableKyoshin = false;
     private int kyoshinDelay = 1;
+    private boolean enableNHK = true;
     private int quakeInfoDelay = 15;
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
@@ -42,6 +43,10 @@ public class Config {
 
     public int getKyoshinDelay() {
         return Math.max(this.kyoshinDelay, 1);
+    }
+
+    public boolean isEnableNHK() {
+        return this.enableNHK;
     }
 
     public int getQuakeInfoDelay() {
