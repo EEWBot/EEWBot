@@ -12,6 +12,7 @@ public class Config {
     private String token = "";
     private boolean enableKyoshin = false;
     private int kyoshinDelay = 1;
+    private int quakeInfoDelay = 15;
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
@@ -41,6 +42,10 @@ public class Config {
 
     public int getKyoshinDelay() {
         return Math.max(this.kyoshinDelay, 1);
+    }
+
+    public int getQuakeInfoDelay() {
+        return Math.max(this.quakeInfoDelay, 10);
     }
 
     public String getDmdataAPIKey() {
@@ -133,6 +138,7 @@ public class Config {
                 "token='" + this.token + '\'' +
                 ", enableKyoshin=" + this.enableKyoshin +
                 ", kyoshinDelay=" + this.kyoshinDelay +
+                ", quakeInfoDelay=" + this.quakeInfoDelay +
                 ", dmdataAPIKey='" + this.dmdataAPIKey + '\'' +
                 ", dmdataOrigin='" + this.dmdataOrigin + '\'' +
                 ", dmdataMultiSocketConnect=" + this.dmdataMultiSocketConnect +
