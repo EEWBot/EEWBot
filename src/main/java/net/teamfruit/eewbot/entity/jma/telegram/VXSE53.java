@@ -61,7 +61,9 @@ public interface VXSE53 extends JMAReport, QuakeInfo {
             builder.addField("eewbot.quakeinfo.field.magnitude", getMagnitude(), true);
             builder.addField("eewbot.quakeinfo.field.maxintensity", getMaxInt().getSimple(), true);
             getForecastComment().ifPresent(forecastComment -> builder.addField("", forecastComment.getText(), false));
-            getVarComment().ifPresent(varComment -> builder.addField("", varComment.getText().replace("＊印は気象庁以外の震度観測点についての情報です。", ""), false));
+            getVarComment().map(varComment -> varComment.getText().replace("＊印は気象庁以外の震度観測点についての情報です。", ""))
+                    .filter(StringUtils::isNotBlank)
+                    .ifPresent(text -> builder.addField("", text, false));
             getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
             builder.color(getMaxInt().getColor());
         }

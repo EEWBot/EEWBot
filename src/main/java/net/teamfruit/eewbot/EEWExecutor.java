@@ -161,9 +161,9 @@ public class EEWExecutor {
                     EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
                 }
             }, jmaXMLInitialDelay, 60, TimeUnit.SECONDS);
-        }
 
-        this.scheduledExecutor.execute(new JMAXmlLGateway(this.quakeInfoStore));
+            this.scheduledExecutor.execute(new JMAXmlLGateway(this.quakeInfoStore));
+        }
 
         if (StringUtils.isNotEmpty(this.config.getDuplicatorAddress())) {
             this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorNegativeCache, 15, 15, TimeUnit.SECONDS);
