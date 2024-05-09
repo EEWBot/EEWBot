@@ -14,7 +14,7 @@ A Discord bot to notify Earthquake Early Warning (EEW) in Japan
 
 ## 始めよう
 
-[![image](https://github.com/EEWBot/EEWBot/assets/11992915/09994428-cc3b-4ac1-9d7e-e7f9d0ce1fd1)](https://discord.com/api/oauth2/authorize?client_id=329257498668302346&permissions=275414829120&scope=bot%20applications.commands)
+[![image](https://github.com/EEWBot/EEWBot/assets/11992915/09994428-cc3b-4ac1-9d7e-e7f9d0ce1fd1)](https://invite.eewbot.net)
 
 サーバーへ追加後、地震速報など情報を受信したいチャンネルにて `/setup` を実行してください。
 
