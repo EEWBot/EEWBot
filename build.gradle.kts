@@ -39,6 +39,10 @@ description = "EEWBot"
 java.sourceCompatibility = JavaVersion.VERSION_11
 
 tasks {
+    named("jar") {
+        enabled = false
+    }
+
     named<ShadowJar>("shadowJar") {
         manifest {
             archiveClassifier.set("")
@@ -49,6 +53,10 @@ tasks {
                 exclude(dependency("com.fasterxml.woodstox:woodstox-core:.*"))
             }
         }
+    }
+
+    build {
+        dependsOn(shadowJar)
     }
 }
 
