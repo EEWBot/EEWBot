@@ -145,3 +145,8 @@ gradle-app.setting
 
 # Discord plugin
 .idea/discord.xml
+
+# Specific
+*.log
+channels.json
+config.json
