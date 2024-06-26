@@ -9,10 +9,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import net.teamfruit.eewbot.entity.DiscordWebhook;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.ChannelBase;
-import net.teamfruit.eewbot.registry.ChannelFilter;
-import net.teamfruit.eewbot.registry.ChannelRegistry;
-import net.teamfruit.eewbot.registry.Webhook;
+import net.teamfruit.eewbot.registry.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.async.methods.*;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -54,6 +51,7 @@ public class EEWService {
     private final ScheduledExecutorService executor;
     private final ChannelRegistry channels;
     private final HttpClient httpClient;
+    private final List<Config.CustomHeader> duplicatorCustomHeaders;
     private final MinimalHttpAsyncClient asyncHttpClient;
     private final URI duplicatorAddress;
 
@@ -64,6 +62,7 @@ public class EEWService {
         this.i18n = bot.getI18n();
         this.executor = bot.getScheduledExecutor();
         this.httpClient = bot.getHttpClient();
+        this.duplicatorCustomHeaders = bot.getConfig().getDuplicatorCustomHeaders();
         int poolingMax = bot.getConfig().getPoolingMax();
         int poolingMaxPerRoute = bot.getConfig().getPoolingMaxPerRoute();
 
@@ -241,14 +240,15 @@ public class EEWService {
                         .limit((webhooks.size() + chunkSize - 1) / chunkSize)
                         .mapToObj(start -> webhooks.subList(start, Math.min(start + chunkSize, webhooks.size())))
                         .forEach(chunk -> {
-                            SimpleHttpRequest request = SimpleRequestBuilder.post()
+                            SimpleRequestBuilder requestBuilder = SimpleRequestBuilder.post()
                                     .setHttpHost(target)
                                     .addHeader("User-Agent", "EEWBot")
                                     .addHeader("X-Duplicate-Targets", EEWBot.GSON.toJson(chunk))
                                     .addHeader("X-Duplicate-Priority", highPriority ? "high" : "low")
                                     .setPath("/api/duplicate")
-                                    .setBody(webhookByLang.get(lang), ContentType.APPLICATION_JSON)
-                                    .build();
+                                    .setBody(webhookByLang.get(lang), ContentType.APPLICATION_JSON);
+                            this.duplicatorCustomHeaders.forEach(header -> requestBuilder.addHeader(header.getName(), header.getValue()));
+                            SimpleHttpRequest request = requestBuilder.build();
                             requestsByLang.get(lang).add(request);
                             requestCount.getAndIncrement();
                         });

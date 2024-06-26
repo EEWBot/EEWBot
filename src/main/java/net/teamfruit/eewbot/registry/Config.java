@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 
 @SuppressWarnings("FieldMayBeFinal")
 public class Config {
@@ -17,6 +18,7 @@ public class Config {
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
     private String duplicatorAddress = "";
+    private List<CustomHeader> duplicatorCustomHeaders = List.of();
     private int poolingMax = 20;
     private int poolingMaxPerRoute = 20;
     private boolean webhookMigration = false;
@@ -66,6 +68,10 @@ public class Config {
 
     public String getDuplicatorAddress() {
         return this.duplicatorAddress;
+    }
+
+    public List<CustomHeader> getDuplicatorCustomHeaders() {
+        return this.duplicatorCustomHeaders;
     }
 
     public int getPoolingMax() {
@@ -130,6 +136,28 @@ public class Config {
             }
         }
         return true;
+    }
+
+    public static class CustomHeader {
+
+        private String name;
+        private String value;
+
+        public String getName() {
+            return this.name;
+        }
+
+        public String getValue() {
+            return this.value;
+        }
+
+        @Override
+        public String toString() {
+            return "CustomHeader{" +
+                    "name='" + name + '\'' +
+                    ", value='" + value + '\'' +
+                    '}';
+        }
     }
 
     @Override
