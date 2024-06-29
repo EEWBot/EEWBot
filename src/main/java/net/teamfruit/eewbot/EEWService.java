@@ -297,7 +297,8 @@ public class EEWService {
             }
             Log.logger.info("Sent {} requests to duplicator in {}ms", requestCount.get(), System.currentTimeMillis() - startTime);
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
-            Log.logger.error("Failed to send message: Failed to connect to duplicator");
+            Log.logger.error("Failed to send message: Failed to connect to duplicator, using fallback method", e);
+            onError.accept(webhookChannels);
         }
     }
 
