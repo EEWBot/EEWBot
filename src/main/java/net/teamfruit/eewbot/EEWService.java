@@ -12,6 +12,7 @@ import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.async.methods.*;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.client5.http.impl.async.MinimalHttpAsyncClient;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
@@ -24,6 +25,7 @@ import org.apache.hc.core5.http.nio.AsyncClientEndpoint;
 import org.apache.hc.core5.http2.config.H2Config;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.apache.hc.core5.util.TimeValue;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -246,6 +248,7 @@ public class EEWService {
                                     .addHeader("X-Duplicate-Targets", EEWBot.GSON.toJson(chunk))
                                     .addHeader("X-Duplicate-Priority", highPriority ? "high" : "low")
                                     .setPath("/api/duplicate")
+                                    .setRequestConfig(RequestConfig.custom().setConnectionKeepAlive(TimeValue.MAX_VALUE).build())
                                     .setBody(webhookByLang.get(lang), ContentType.APPLICATION_JSON);
                             this.duplicatorCustomHeaders.forEach(header -> requestBuilder.addHeader(header.getName(), header.getValue()));
                             SimpleHttpRequest request = requestBuilder.build();
