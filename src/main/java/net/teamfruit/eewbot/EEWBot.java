@@ -80,7 +80,7 @@ public class EEWBot {
             this.channels = registry;
         }
 
-        this.i18n.init(getConfig().getDefaultLanuage());
+        this.i18n.init(getConfig().getDefaultLanguage());
 
         final String token = System.getenv("TOKEN");
         if (token != null)

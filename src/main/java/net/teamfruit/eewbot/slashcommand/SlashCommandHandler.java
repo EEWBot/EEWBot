@@ -48,7 +48,7 @@ public class SlashCommandHandler {
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> {
                             Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
-                            return cmd.on(bot, event, channel, channel != null ? channel.getLang() : bot.getConfig().getDefaultLanuage());
+                            return cmd.on(bot, event, channel, channel != null ? channel.getLang() : bot.getConfig().getDefaultLanguage());
                         })
                         .doOnError(err -> Log.logger.error("Error during {} command", event.getCommandName(), err))
                         .onErrorResume(err -> replyOrFollowUp(event, commands.get(event.getCommandName()).isDefer(),

@@ -93,7 +93,7 @@ public class Config {
         return this.nptServer;
     }
 
-    public String getDefaultLanuage() {
+    public String getDefaultLanguage() {
         return this.defaultLanuage;
     }
 
@@ -140,22 +140,22 @@ public class Config {
     @Override
     public String toString() {
         return "Config{" +
-                "token='" + token + '\'' +
-                ", enableKyoshin=" + enableKyoshin +
-                ", kyoshinDelay=" + kyoshinDelay +
-                ", enableLegacyQuakeInfo=" + enableLegacyQuakeInfo +
-                ", quakeInfoDelay=" + quakeInfoDelay +
-                ", dmdataAPIKey='" + dmdataAPIKey + '\'' +
-                ", dmdataOrigin='" + dmdataOrigin + '\'' +
-                ", dmdataMultiSocketConnect=" + dmdataMultiSocketConnect +
-                ", duplicatorAddress='" + duplicatorAddress + '\'' +
-                ", poolingMax=" + poolingMax +
-                ", poolingMaxPerRoute=" + poolingMaxPerRoute +
-                ", webhookMigration=" + webhookMigration +
-                ", redisAddress='" + redisAddress + '\'' +
-                ", nptServer='" + nptServer + '\'' +
-                ", defaultLanuage='" + defaultLanuage + '\'' +
-                ", debug=" + debug +
+                "token='" + this.token + '\'' +
+                ", enableKyoshin=" + this.enableKyoshin +
+                ", kyoshinDelay=" + this.kyoshinDelay +
+                ", enableLegacyQuakeInfo=" + this.enableLegacyQuakeInfo +
+                ", quakeInfoDelay=" + this.quakeInfoDelay +
+                ", dmdataAPIKey='" + this.dmdataAPIKey + '\'' +
+                ", dmdataOrigin='" + this.dmdataOrigin + '\'' +
+                ", dmdataMultiSocketConnect=" + this.dmdataMultiSocketConnect +
+                ", duplicatorAddress='" + this.duplicatorAddress + '\'' +
+                ", poolingMax=" + this.poolingMax +
+                ", poolingMaxPerRoute=" + this.poolingMaxPerRoute +
+                ", webhookMigration=" + this.webhookMigration +
+                ", redisAddress='" + this.redisAddress + '\'' +
+                ", nptServer='" + this.nptServer + '\'' +
+                ", defaultLanuage='" + this.defaultLanuage + '\'' +
+                ", debug=" + this.debug +
                 '}';
     }
 }

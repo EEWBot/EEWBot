@@ -12,6 +12,6 @@ public class DmdataGatewayException extends EEWGatewayException {
     }
 
     public DmdataError getDmdataError() {
-        return dmdataError;
+        return this.dmdataError;
     }
 }
