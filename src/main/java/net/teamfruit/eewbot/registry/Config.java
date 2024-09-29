@@ -12,7 +12,7 @@ public class Config {
     private String token = "";
     private boolean enableKyoshin = false;
     private int kyoshinDelay = 1;
-    private boolean enableNHK = true;
+    private boolean enableLegacyQuakeInfo = true;
     private int quakeInfoDelay = 15;
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
@@ -45,8 +45,8 @@ public class Config {
         return Math.max(this.kyoshinDelay, 1);
     }
 
-    public boolean isEnableNHK() {
-        return this.enableNHK;
+    public boolean isEnableLegacyQuakeInfo() {
+        return this.enableLegacyQuakeInfo;
     }
 
     public int getQuakeInfoDelay() {
@@ -140,22 +140,22 @@ public class Config {
     @Override
     public String toString() {
         return "Config{" +
-                "token='" + this.token + '\'' +
-                ", enableKyoshin=" + this.enableKyoshin +
-                ", kyoshinDelay=" + this.kyoshinDelay +
-                ", quakeInfoDelay=" + this.quakeInfoDelay +
-                ", dmdataAPIKey='" + this.dmdataAPIKey + '\'' +
-                ", dmdataOrigin='" + this.dmdataOrigin + '\'' +
-                ", dmdataMultiSocketConnect=" + this.dmdataMultiSocketConnect +
-                ", duplicatorAddress='" + this.duplicatorAddress + '\'' +
-                ", poolingMax=" + this.poolingMax +
-                ", poolingMaxPerRoute=" + this.poolingMaxPerRoute +
-                ", webhookMigration=" + this.webhookMigration +
-                ", redisAddress='" + this.redisAddress + '\'' +
-                ", nptServer='" + this.nptServer + '\'' +
-                ", defaultLanuage='" + this.defaultLanuage + '\'' +
-                ", debug=" + this.debug +
+                "token='" + token + '\'' +
+                ", enableKyoshin=" + enableKyoshin +
+                ", kyoshinDelay=" + kyoshinDelay +
+                ", enableLegacyQuakeInfo=" + enableLegacyQuakeInfo +
+                ", quakeInfoDelay=" + quakeInfoDelay +
+                ", dmdataAPIKey='" + dmdataAPIKey + '\'' +
+                ", dmdataOrigin='" + dmdataOrigin + '\'' +
+                ", dmdataMultiSocketConnect=" + dmdataMultiSocketConnect +
+                ", duplicatorAddress='" + duplicatorAddress + '\'' +
+                ", poolingMax=" + poolingMax +
+                ", poolingMaxPerRoute=" + poolingMaxPerRoute +
+                ", webhookMigration=" + webhookMigration +
+                ", redisAddress='" + redisAddress + '\'' +
+                ", nptServer='" + nptServer + '\'' +
+                ", defaultLanuage='" + defaultLanuage + '\'' +
+                ", debug=" + debug +
                 '}';
     }
-
 }
