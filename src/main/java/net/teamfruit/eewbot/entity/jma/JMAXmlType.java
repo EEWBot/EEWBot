@@ -161,7 +161,8 @@ public enum JMAXmlType {
     VPTA55("台風の暴風域に入る確率"),
     VXSE45("緊急地震速報（地震動予報）"),
     VXSE62("長周期地震動に関する観測情報"),
-    VFVO60("推定噴煙流向報");
+    VFVO60("推定噴煙流向報"),
+    VYSE60("北海道・三陸沖後発地震注意情報");
 
     private final String title;
     private final @Nullable Class<? extends AbstractJMAReport> reportClass;
