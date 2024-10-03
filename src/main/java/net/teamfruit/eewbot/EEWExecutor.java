@@ -177,8 +177,18 @@ public class EEWExecutor {
                             this.client.getChannelById(Snowflake.of(channelId))
                                     .filter(GuildChannel.class::isInstance)
                                     .cast(GuildChannel.class)
-                                    .filterWhen(guildChannel -> guildChannel.getEffectivePermissions(this.client.getSelfId())
-                                            .map(permissions -> permissions.contains(Permission.MANAGE_WEBHOOKS)))
+                                    .filterWhen(guildChannel -> {
+                                        Mono<GuildChannel> permissionCheckChannel;
+                                        if (guildChannel instanceof ThreadChannel) {
+                                            permissionCheckChannel = guildChannel.getClient().getChannelById(((ThreadChannel) guildChannel).getParentId().orElseThrow())
+                                                    .cast(GuildChannel.class)
+                                                    .switchIfEmpty(Mono.just(guildChannel));
+                                        } else {
+                                            permissionCheckChannel = Mono.just(guildChannel);
+                                        }
+                                        return permissionCheckChannel.flatMap(target -> target.getEffectivePermissions(this.client.getSelfId())
+                                                .map(permissions -> permissions.contains(Permission.MANAGE_WEBHOOKS)));
+                                    })
                                     .flatMap(guildChannel -> guildChannel.getGuild()
                                             .flatMap(guild -> guild.getSelfMember().map(PartialMember::getDisplayName))
                                             .flatMap(name -> {

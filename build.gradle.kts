@@ -23,6 +23,7 @@ repositories {
 
 dependencies {
     api(libs.com.discord4j.discord4j.core)
+    //    implementation("com.github.discord4j:discord4j:210116a3c3")
     api(libs.ch.qos.logback.logback.classic)
     api(libs.com.google.code.gson.gson)
     api(libs.commons.net.commons.net)
