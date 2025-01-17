@@ -14,26 +14,26 @@ public class Channel extends ChannelBase {
 
     static {
         COMMAND_KEYS = Arrays.stream(Channel.class.getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(CommandName.class))
+                .filter(field -> field.isAnnotationPresent(ChannelSetting.class))
                 .map(Field::getName)
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    @CommandName("EEW警報")
+    @ChannelSetting(ChannelSettingType.BASE)
     @I18nKey("eewbot.scmd.setup.channel.eewalert.label")
     private boolean eewAlert;
 
-    @CommandName("EEW予報")
+    @ChannelSetting(ChannelSettingType.BASE)
     @I18nKey("eewbot.scmd.setup.channel.eewprediction.label")
     private boolean eewPrediction;
 
-    @CommandName("EEW間引き")
-    @I18nKey("eewbot.scmd.setup.channel.eewdecimation.label")
-    private boolean eewDecimation;
-
-    @CommandName("地震情報")
+    @ChannelSetting(ChannelSettingType.BASE)
     @I18nKey("eewbot.scmd.setup.channel.quakeinfo.label")
     private boolean quakeInfo;
+
+    @ChannelSetting(ChannelSettingType.MODIFIER)
+    @I18nKey("eewbot.scmd.setup.channel.eewdecimation.label")
+    private boolean eewDecimation;
 
     private SeismicIntensity minIntensity;
 
@@ -79,7 +79,7 @@ public class Channel extends ChannelBase {
      */
     public boolean value(final String name) {
         return Arrays.stream(getClass().getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(CommandName.class) && field.getName().equals(name))
+                .filter(field -> field.isAnnotationPresent(ChannelSetting.class) && field.getName().equals(name))
                 .map(field -> {
                     try {
                         return field.getBoolean(this);
@@ -92,7 +92,7 @@ public class Channel extends ChannelBase {
 
     void set(final String name, final boolean bool) {
         Arrays.stream(getClass().getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(CommandName.class) && field.getName().equals(name))
+                .filter(field -> field.isAnnotationPresent(ChannelSetting.class) && field.getName().equals(name))
                 .findAny().ifPresent(field -> {
                     try {
                         field.setBoolean(this, bool);
@@ -104,7 +104,7 @@ public class Channel extends ChannelBase {
 
     public Map<String, Boolean> getCommandFields() {
         return Arrays.stream(getClass().getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(CommandName.class))
+                .filter(field -> field.isAnnotationPresent(ChannelSetting.class))
                 .collect(Collectors.toMap(Field::getName, field -> {
                     try {
                         return field.getBoolean(this);
