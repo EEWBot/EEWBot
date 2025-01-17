@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.registry;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.i18n.I18nKey;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -19,15 +20,19 @@ public class Channel extends ChannelBase {
     }
 
     @CommandName("EEW警報")
+    @I18nKey("eewbot.scmd.setup.channel.eewalert.label")
     private boolean eewAlert;
 
     @CommandName("EEW予報")
+    @I18nKey("eewbot.scmd.setup.channel.eewprediction.label")
     private boolean eewPrediction;
 
     @CommandName("EEW間引き")
+    @I18nKey("eewbot.scmd.setup.channel.eewdecimation.label")
     private boolean eewDecimation;
 
     @CommandName("地震情報")
+    @I18nKey("eewbot.scmd.setup.channel.quakeinfo.label")
     private boolean quakeInfo;
 
     private SeismicIntensity minIntensity;
@@ -109,10 +114,10 @@ public class Channel extends ChannelBase {
                 }));
     }
 
-    public static Optional<String> toCommandName(String fieldName) {
+    public static Optional<String> toI18nKey(String fieldName) {
         return Arrays.stream(Channel.class.getDeclaredFields())
-                .filter(field -> field.getName().equals(fieldName) && field.isAnnotationPresent(CommandName.class))
-                .map(field -> field.getAnnotation(CommandName.class).value())
+                .filter(field -> field.getName().equals(fieldName) && field.isAnnotationPresent(I18nKey.class))
+                .map(field -> field.getAnnotation(I18nKey.class).value())
                 .findAny();
     }
 

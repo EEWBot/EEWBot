@@ -185,7 +185,10 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
             return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.setup.channel.followup.none"));
         return event.createFollowup(bot.getI18n().format(lang, "eewbot.scmd.setup.channel.followup.any",
                 event.getValues().stream()
-                        .map(value -> Channel.toCommandName(value).orElse("")).collect(Collectors.joining(", "))));
+                        .map(value -> Channel.toI18nKey(value)
+                                .map(key -> bot.getI18n().format(lang, key))
+                                .orElse(""))
+                        .collect(Collectors.joining(", "))));
     }
 
     private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
