@@ -13,4 +13,12 @@ public enum ChannelSettingType {
     public String getCustomId() {
         return this.customId;
     }
+
+    public static boolean hasCustomId(String customId) {
+        for (ChannelSettingType value : values()) {
+            if (value.customId.equals(customId))
+                return true;
+        }
+        return false;
+    }
 }

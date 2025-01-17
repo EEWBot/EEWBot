@@ -20,19 +20,19 @@ public class Channel extends ChannelBase {
     }
 
     @ChannelSetting(ChannelSettingType.BASE)
-    @I18nKey("eewbot.scmd.setup.channel.eewalert.label")
+    @I18nKey("eewbot.scmd.setup.base.eewalert.label")
     private boolean eewAlert;
 
     @ChannelSetting(ChannelSettingType.BASE)
-    @I18nKey("eewbot.scmd.setup.channel.eewprediction.label")
+    @I18nKey("eewbot.scmd.setup.base.eewprediction.label")
     private boolean eewPrediction;
 
     @ChannelSetting(ChannelSettingType.BASE)
-    @I18nKey("eewbot.scmd.setup.channel.quakeinfo.label")
+    @I18nKey("eewbot.scmd.setup.base.quakeinfo.label")
     private boolean quakeInfo;
 
     @ChannelSetting(ChannelSettingType.MODIFIER)
-    @I18nKey("eewbot.scmd.setup.channel.eewdecimation.label")
+    @I18nKey("eewbot.scmd.setup.modifier.eewdecimation.label")
     private boolean eewDecimation;
 
     private SeismicIntensity minIntensity;
@@ -102,9 +102,9 @@ public class Channel extends ChannelBase {
                 });
     }
 
-    public Map<String, Boolean> getCommandFields() {
+    public Map<String, Boolean> getSettingsByType(ChannelSettingType type) {
         return Arrays.stream(getClass().getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(ChannelSetting.class))
+                .filter(field -> field.isAnnotationPresent(ChannelSetting.class) && field.getAnnotation(ChannelSetting.class).value() == type)
                 .collect(Collectors.toMap(Field::getName, field -> {
                     try {
                         return field.getBoolean(this);

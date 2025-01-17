@@ -16,6 +16,7 @@ import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.ChannelSettingType;
 import net.teamfruit.eewbot.registry.Webhook;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
 import org.apache.commons.lang3.StringUtils;
@@ -46,7 +47,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     @Override
     public List<String> getCustomIds() {
-        return Arrays.asList("channel", "sensitivity");
+        return Arrays.asList(ChannelSettingType.BASE.getCustomId(), ChannelSettingType.MODIFIER.getCustomId(), "sensitivity");
     }
 
     @Override
@@ -135,18 +136,20 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     private Mono<Message> buildReply(EEWBot bot, ApplicationCommandInteractionEvent event, String lang, long channelId, boolean noWebhook) {
         return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.setup.reply") + (noWebhook ? "\n\n" + bot.getI18n().get(lang, "eewbot.scmd.setup.permserror.managewebhooks") : ""))
-                .withComponents(ActionRow.of(buildMainSelectMenu(bot, channelId, lang)), ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)));
+                .withComponents(ActionRow.of(buildSelectMenu(bot, ChannelSettingType.BASE, channelId, lang)),
+                        ActionRow.of(buildSelectMenu(bot, ChannelSettingType.MODIFIER, channelId, lang)),
+                        ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)));
     }
 
-    private SelectMenu buildMainSelectMenu(EEWBot bot, long channelId, String lang) {
-        Map<String, Boolean> fields = bot.getChannels().get(channelId).getCommandFields();
-        return SelectMenu.of("channel", fields.entrySet().stream().map(entry -> {
-                    String label = bot.getI18n().get(lang, "eewbot.scmd.setup.channel." + entry.getKey().toLowerCase() + ".label");
+    private SelectMenu buildSelectMenu(EEWBot bot, ChannelSettingType type, long channelId, String lang) {
+        Map<String, Boolean> fields = bot.getChannels().get(channelId).getSettingsByType(type);
+        return SelectMenu.of(type.getCustomId(), fields.entrySet().stream().map(entry -> {
+                    String label = bot.getI18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + "." + entry.getKey().toLowerCase() + ".label");
                     SelectMenu.Option option = entry.getValue() ? SelectMenu.Option.ofDefault(label, entry.getKey()) : SelectMenu.Option.of(label, entry.getKey());
-                    option = option.withDescription(bot.getI18n().get(lang, "eewbot.scmd.setup.channel." + entry.getKey().toLowerCase() + ".desc"));
+                    option = option.withDescription(bot.getI18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + "." + entry.getKey().toLowerCase() + ".desc"));
                     return option;
                 }).collect(Collectors.toList()))
-                .withPlaceholder(bot.getI18n().get(lang, "eewbot.scmd.setup.channel.placeholder"))
+                .withPlaceholder(bot.getI18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + ".placeholder"))
                 .withMinValues(0)
                 .withMaxValues(fields.size());
     }
@@ -166,7 +169,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     @Override
     public Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
-        if (event.getCustomId().equals("channel"))
+        if (ChannelSettingType.hasCustomId(event.getCustomId()))
             return applyChannel(bot, event, lang).then();
         else if (event.getCustomId().equals("sensitivity"))
             return applySensitivity(bot, event, lang).then();
@@ -182,8 +185,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
             return Mono.error(e);
         }
         if (event.getValues().isEmpty())
-            return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.setup.channel.followup.none"));
-        return event.createFollowup(bot.getI18n().format(lang, "eewbot.scmd.setup.channel.followup.any",
+            return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.setup." + event.getCustomId() + ".followup.none"));
+        return event.createFollowup(bot.getI18n().format(lang, "eewbot.scmd.setup." + event.getCustomId() + ".followup.any",
                 event.getValues().stream()
                         .map(value -> Channel.toI18nKey(value)
                                 .map(key -> bot.getI18n().format(lang, key))
