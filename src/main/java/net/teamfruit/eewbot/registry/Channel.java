@@ -74,7 +74,7 @@ public class Channel extends ChannelBase {
      */
     public boolean value(final String name) {
         return Arrays.stream(getClass().getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(CommandName.class) && (field.getAnnotation(CommandName.class).value().equals(name) || field.getName().equals(name)))
+                .filter(field -> field.isAnnotationPresent(CommandName.class) && field.getName().equals(name))
                 .map(field -> {
                     try {
                         return field.getBoolean(this);
@@ -87,7 +87,7 @@ public class Channel extends ChannelBase {
 
     void set(final String name, final boolean bool) {
         Arrays.stream(getClass().getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(CommandName.class) && (field.getAnnotation(CommandName.class).value().equals(name) || field.getName().equals(name)))
+                .filter(field -> field.isAnnotationPresent(CommandName.class) && field.getName().equals(name))
                 .findAny().ifPresent(field -> {
                     try {
                         field.setBoolean(this, bool);
