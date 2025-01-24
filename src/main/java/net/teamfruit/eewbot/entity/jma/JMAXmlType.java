@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE51Impl;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE52Impl;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE53Impl;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE61Impl;
 import reactor.util.annotation.Nullable;
 
 public enum JMAXmlType {
@@ -99,7 +100,7 @@ public enum JMAXmlType {
     VPCI50("地方天候情報"),
     VXSE51("震度速報", VXSE51Impl.class),
     VXSE52("震源に関する情報", VXSE52Impl.class),
-    VXSE61("顕著な地震の震源要素更新のお知らせ"),
+    VXSE61("顕著な地震の震源要素更新のお知らせ", VXSE61Impl.class),
     VXSE60("地震回数に関する情報"),
     VXSE56("地震の活動状況等に関する情報"),
     VXSE53("震源・震度に関する情報", VXSE53Impl.class),

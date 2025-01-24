@@ -104,11 +104,13 @@ public class Coordinate {
             return "不明";
         }
         int depth = Integer.parseInt(depthStr);
-        if (depth >= 0) {
-            return "ごく浅い";
-        }
-        if (depth <= -700000) {
-            return "700km以上";
+        if (!"震源位置（度分）".equals(getType())) {
+            if (depth >= 0) {
+                return "ごく浅い";
+            }
+            if (depth <= -700000) {
+                return "700km以上";
+            }
         }
         return -depth / 1000 + "km";
     }

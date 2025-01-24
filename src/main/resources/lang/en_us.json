@@ -25,6 +25,8 @@
   "eewbot.quakeinfo.intensity.title": "Earthquake Information (Seismic Intensity Information)",
   "eewbot.quakeinfo.epicenter.title": "Earthquake Information (Information on Hypocenter and Seismic Intensity)",
   "eewbot.quakeinfo.detail.title": "Earthquake Information",
+  "eewbot.quakeinfo.hypocenterupdate.title": "Earthquake Information (Significant Earthquake Hypocenter Update Notification)",
+  "eewbot.quakeinfo.hypocenterupdate.desc": "Updating the location and magnitude of the earthquake that occurred around %s.",
   "eewbot.quakeinfo.field.epicenter": "Epicenter",
   "eewbot.quakeinfo.field.depth": "Depth",
   "eewbot.quakeinfo.field.magnitude": "Magnitude",
