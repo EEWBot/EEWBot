@@ -10,7 +10,7 @@ RUN jlink \
          --compress=2 \
          --output jre-slim
 
-FROM alpine:3.21.2
+FROM alpine:3.21.3
 
 ENV JAVA_HOME=/jre
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
