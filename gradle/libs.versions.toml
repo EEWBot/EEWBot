@@ -2,7 +2,7 @@
 # https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format
 
 [versions]
-ch-qos-logback-logback-classic = "1.5.17"
+ch-qos-logback-logback-classic = "1.5.18"
 com-discord4j-discord4j-core = "3.3.0-RC1"
 com-fasterxml-jackson-dataformat-jackson-dataformat-xml = "2.18.3"
 com-fasterxml-jackson-datatype-jackson-datatype-jsr310 = "2.18.3"
