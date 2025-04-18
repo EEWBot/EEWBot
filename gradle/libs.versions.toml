@@ -12,6 +12,7 @@ org-apache-commons-commons-lang3 = "3.17.0"
 org-apache-httpcomponents-client5-httpclient5 = "5.4.3"
 redis-clients-jedis = "4.4.8"
 shadow-jar = "8.1.1"
+wire = "5.4.0-SNAPSHOT"
 
 [libraries]
 ch-qos-logback-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "ch-qos-logback-logback-classic" }
@@ -23,6 +24,8 @@ commons-net-commons-net = { module = "commons-net:commons-net", version.ref = "c
 org-apache-commons-commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "org-apache-commons-commons-lang3" }
 org-apache-httpcomponents-client5-httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version.ref = "org-apache-httpcomponents-client5-httpclient5" }
 redis-clients-jedis = { module = "redis.clients:jedis", version.ref = "redis-clients-jedis" }
+wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire" }
 
 [plugins]
 shadow-jar = { id = "com.github.johnrengelman.shadow", version.ref = "shadow-jar" }
+com-squareup-wire = { id = "com.squareup.wire", version.ref = "wire" }
