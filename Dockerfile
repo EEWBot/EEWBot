@@ -17,7 +17,7 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 COPY --from=build jre-slim $JAVA_HOME
 
-COPY target/eewbot-*.jar eewbot.jar
+COPY build/libs/eewbot-*.jar eewbot.jar
 
 ENV CONFIG_DIRECTORY=/etc/eewbot \
     DATA_DIRECTORY=/var/lib/eewbot \
