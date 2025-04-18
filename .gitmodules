@@ -1,3 +1,4 @@
 [submodule "src/main/proto/net/eewbot/eew-renderer"]
 	path = src/main/proto/net/eewbot/eew-renderer
 	url = https://github.com/EEWBot/eew-renderer-proto.git
+	branch = master
