@@ -4,9 +4,14 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
+import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
+import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
+import net.teamfruit.eewbot.entity.renderer.QuakeDataFactory;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -17,6 +22,10 @@ public interface VXSE53 extends JMAReport, QuakeInfo {
     SeismicIntensity getMaxInt();
 
     String getHypocenterName();
+
+    Coordinate getCoordinate();
+
+    Intensity.IntensityDetail getObservation();
 
     Optional<String> getHypocenterDetailedName();
 
@@ -66,6 +75,12 @@ public interface VXSE53 extends JMAReport, QuakeInfo {
                     .ifPresent(text -> builder.addField("", text, false));
             getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
             builder.color(getMaxInt().getColor());
+
+            try {
+                builder.addField("Renderer Query", QuakeDataFactory.generateQuakeOrefectureData(getCoordinate(), getObservation()), false);
+            } catch (Exception e) {
+                builder.addField("Renderer Query", String.format("Failed to generate query: %s", e), false);
+            }
         }
         builder.footer(getPublishingOffice(), null);
         builder.timestamp(getReportDateTime());
