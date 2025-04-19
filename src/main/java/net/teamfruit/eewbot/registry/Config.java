@@ -18,6 +18,8 @@ public class Config {
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
     private String duplicatorAddress = "";
+    private String rendererAddress = "";
+    private String rendererKey = "";
     private int poolingMax = 20;
     private int poolingMaxPerRoute = 20;
     private boolean webhookMigration = false;
@@ -71,6 +73,14 @@ public class Config {
 
     public String getDuplicatorAddress() {
         return this.duplicatorAddress;
+    }
+
+    public String getRendererAddress() {
+        return this.rendererAddress;
+    }
+
+    public String getRendererKey() {
+        return this.rendererKey;
     }
 
     public int getPoolingMax() {
