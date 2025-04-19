@@ -44,7 +44,7 @@ public class QuakeDataFactory {
     private QuakeDataFactory() {
     }
 
-    public static String generateQuakeOrefectureData(Coordinate coordinate, Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
+    public static String generateQuakePrefectureData(Coordinate coordinate, Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
         Float lat = coordinate.getLat();
         Float lon = coordinate.getLon();
 

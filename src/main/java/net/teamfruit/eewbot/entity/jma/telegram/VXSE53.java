@@ -10,8 +10,6 @@ import net.teamfruit.eewbot.entity.renderer.QuakeDataFactory;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -77,7 +75,7 @@ public interface VXSE53 extends JMAReport, QuakeInfo {
             builder.color(getMaxInt().getColor());
 
             try {
-                builder.addField("Renderer Query", QuakeDataFactory.generateQuakeOrefectureData(getCoordinate(), getObservation()), false);
+                builder.addField("Renderer Query", QuakeDataFactory.generateQuakePrefectureData(getCoordinate(), getObservation()), false);
             } catch (Exception e) {
                 builder.addField("Renderer Query", String.format("Failed to generate query: %s", e), false);
             }
