@@ -8,6 +8,22 @@ plugins {
     alias(libs.plugins.shadow.jar)
 }
 
+repositories {
+    mavenLocal()
+    maven {
+        name = "GitHubPackages-base65536j"
+        url  = uri("https://maven.pkg.github.com/EEWBot/Base65536J")
+        credentials {
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("USERNAME")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("TOKEN")
+        }
+    }
+    maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
+    maven { url = uri("https://jcenter.bintray.com") }
+    maven { url = uri("https://jitpack.io") }
+    mavenCentral()
+}
+
 dependencies {
     api(libs.com.discord4j.discord4j.core)
     //    implementation("com.github.discord4j:discord4j:210116a3c3")
@@ -21,6 +37,7 @@ dependencies {
     api(libs.redis.clients.jedis)
 
     implementation(libs.wire.runtime)
+    implementation(libs.net.eewbot.base65536j)
 }
 
 group = "net.teamfruit"
