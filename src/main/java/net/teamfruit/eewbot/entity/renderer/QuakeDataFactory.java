@@ -44,7 +44,7 @@ public class QuakeDataFactory {
     private QuakeDataFactory() {
     }
 
-    public static String generateQuakePrefectureData(Coordinate coordinate, Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
+    public static String generateQuakePrefectureData(String hmacKey, Coordinate coordinate, Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
         Float lat = coordinate.getLat();
         Float lon = coordinate.getLon();
 
@@ -85,7 +85,7 @@ public class QuakeDataFactory {
         byte[] body = QuakePrefectureData.ADAPTER.encode(quakePrefectureData);
 
         Mac mac = Mac.getInstance(HMAC_ALGO);
-        mac.init(new SecretKeySpec(EEWBot.instance.getConfig().getRendererKey().getBytes(StandardCharsets.UTF_8), HMAC_ALGO));
+        mac.init(new SecretKeySpec(hmacKey.getBytes(StandardCharsets.UTF_8), HMAC_ALGO));
         byte[] hmac = mac.doFinal(body);
 
         ByteBuffer buffer = ByteBuffer.allocate(1 + hmac.length + body.length);

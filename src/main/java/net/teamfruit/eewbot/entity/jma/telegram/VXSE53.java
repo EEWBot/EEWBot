@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
+import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
@@ -75,7 +76,7 @@ public interface VXSE53 extends JMAReport, QuakeInfo {
             builder.color(getMaxInt().getColor());
 
             try {
-                builder.addField("Renderer Query", QuakeDataFactory.generateQuakePrefectureData(getCoordinate(), getObservation()), false);
+                builder.addField("Renderer Query", QuakeDataFactory.generateQuakePrefectureData(EEWBot.instance.getConfig().getRendererKey(), getCoordinate(), getObservation()), false);
             } catch (Exception e) {
                 builder.addField("Renderer Query", String.format("Failed to generate query: %s", e), false);
             }
