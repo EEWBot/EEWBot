@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.entity.renderer;
 
 import net.eewbot.base65536j.Base65536;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
@@ -17,10 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 
 public class QuakeDataFactory {
@@ -95,7 +93,8 @@ public class QuakeDataFactory {
         buffer.put(hmac);
         buffer.put(body);
 
-        ByteBuffer bufferBase65536 = Base65536.getEncoder().encode(buffer);
-        return bufferBase65536.toString();
+        String encoded = Base65536.getEncoder().encodeToString(buffer.array());
+        Log.logger.info(encoded);
+        return encoded;
     }
 }

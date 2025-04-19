@@ -159,6 +159,8 @@ public class Config {
                 ", dmdataOrigin='" + this.dmdataOrigin + '\'' +
                 ", dmdataMultiSocketConnect=" + this.dmdataMultiSocketConnect +
                 ", duplicatorAddress='" + this.duplicatorAddress + '\'' +
+                ", rendererAddress='" + this.rendererAddress + '\'' +
+                ", rendererKey='" + this.rendererKey + '\'' +
                 ", poolingMax=" + this.poolingMax +
                 ", poolingMaxPerRoute=" + this.poolingMaxPerRoute +
                 ", webhookMigration=" + this.webhookMigration +
