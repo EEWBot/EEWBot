@@ -17,6 +17,7 @@ import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.*;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
@@ -55,6 +56,7 @@ public class EEWBot {
     private GatewayDiscordClient gateway;
     private ChannelRegistry channels;
     private QuakeInfoStore quakeInfoStore;
+    private RendererQueryFactory rendererQueryFactory;
     private EEWService service;
     private EEWExecutor executor;
     private SlashCommandHandler slashCommand;
@@ -130,6 +132,7 @@ public class EEWBot {
         }
 
         this.quakeInfoStore = new QuakeInfoStore();
+        this.rendererQueryFactory = new RendererQueryFactory(getConfig().getRendererAddress(), getConfig().getRendererKey());
         this.service = new EEWService(this);
         this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getQuakeInfoStore());
         this.slashCommand = new SlashCommandHandler(this);
@@ -216,6 +219,10 @@ public class EEWBot {
 
     public QuakeInfoStore getQuakeInfoStore() {
         return this.quakeInfoStore;
+    }
+
+    public RendererQueryFactory getRendererQueryFactory() {
+        return this.rendererQueryFactory;
     }
 
     public EEWService getService() {

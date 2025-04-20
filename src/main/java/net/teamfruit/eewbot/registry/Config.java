@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 
 @SuppressWarnings("FieldMayBeFinal")
 public class Config {
@@ -28,8 +27,6 @@ public class Config {
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
     private boolean debug = false;
-
-    private transient byte[] rendererKeyBytes = null;
 
     public Config() {
     }
@@ -82,12 +79,8 @@ public class Config {
         return this.rendererAddress;
     }
 
-    public byte[] getRendererKey() {
-        if (this.rendererKeyBytes != null) {
-            return this.rendererKeyBytes;
-        }
-        this.rendererKeyBytes = this.rendererKey.getBytes(StandardCharsets.UTF_8);
-        return this.rendererKeyBytes;
+    public String getRendererKey() {
+        return this.rendererKey;
     }
 
     public int getPoolingMax() {
@@ -116,10 +109,6 @@ public class Config {
 
     public boolean isDebug() {
         return this.debug;
-    }
-
-    public boolean isRendererAvailable() {
-        return StringUtils.isNotEmpty(this.rendererAddress) && StringUtils.isNotEmpty(this.rendererKey);
     }
 
     public boolean validate() {

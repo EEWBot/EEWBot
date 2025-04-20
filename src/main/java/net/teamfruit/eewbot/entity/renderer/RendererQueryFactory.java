@@ -6,6 +6,7 @@ import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityArea;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
+import org.apache.commons.lang3.StringUtils;
 import quake_prefecture_v0.CodeArray;
 import quake_prefecture_v0.Epicenter;
 import quake_prefecture_v0.QuakePrefectureData;
@@ -15,6 +16,7 @@ import reactor.util.annotation.Nullable;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -24,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-public class QuakeDataFactory {
+public class RendererQueryFactory {
 
     private static final byte VERSION = 0;
     private static final String HMAC_ALGO = "HmacSHA1";
@@ -44,11 +46,29 @@ public class QuakeDataFactory {
         SETTER_MAP.put(SeismicIntensity.SEVEN, QuakePrefectureData.Builder::seven);
     }
 
-    private QuakeDataFactory() {
+    private final String baseURL;
+    private final byte[] hmacKey;
+    private final boolean isAvailable;
+
+    public RendererQueryFactory(String baseURL, String hmacKey) {
+        if (StringUtils.isEmpty(baseURL) || StringUtils.isEmpty(hmacKey)) {
+            this.baseURL = null;
+            this.hmacKey = null;
+            this.isAvailable = false;
+            return;
+        }
+
+        this.baseURL = baseURL;
+        this.hmacKey = hmacKey.getBytes(StandardCharsets.UTF_8);
+        this.isAvailable = true;
+    }
+
+    public boolean isAvailable() {
+        return this.isAvailable;
     }
 
     // TODO: Refactor
-    private static String generateQuakePrefectureData(@NonNull byte[] hmacKey, @NonNull Instant time, @Nullable Coordinate coordinate, @NonNull Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
+    private String generateQuakePrefectureData(@NonNull Instant time, @Nullable Coordinate coordinate, @NonNull Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
         QuakePrefectureData.Builder builder = new QuakePrefectureData.Builder();
         builder.time(time.getEpochSecond());
 
@@ -88,7 +108,7 @@ public class QuakeDataFactory {
         byte[] body = QuakePrefectureData.ADAPTER.encode(quakePrefectureData);
 
         Mac mac = Mac.getInstance(HMAC_ALGO);
-        mac.init(new SecretKeySpec(hmacKey, HMAC_ALGO));
+        mac.init(new SecretKeySpec(this.hmacKey, HMAC_ALGO));
         byte[] hmac = mac.doFinal(body);
 
         ByteBuffer buffer = ByteBuffer.allocate(1 + hmac.length + body.length);
@@ -99,7 +119,11 @@ public class QuakeDataFactory {
         return Base65536.getEncoder().encodeToString(buffer.array());
     }
 
-    public static String generate(byte[] hmacKey, RenderQuakePrefecture renderQuakePrefecture) throws NoSuchAlgorithmException, InvalidKeyException {
-        return generateQuakePrefectureData(hmacKey, renderQuakePrefecture.getTime(), renderQuakePrefecture.getCoordinate(), renderQuakePrefecture.getIntensityDetail());
+    public String generateURL(RenderQuakePrefecture renderQuakePrefecture) throws NoSuchAlgorithmException, InvalidKeyException {
+        if (!isAvailable()) {
+            throw new IllegalStateException("Renderer is not available");
+        }
+
+        return this.baseURL + generateQuakePrefectureData(renderQuakePrefecture.getTime(), renderQuakePrefecture.getCoordinate(), renderQuakePrefecture.getIntensityDetail());
     }
 }

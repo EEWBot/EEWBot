@@ -5,10 +5,8 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
-import net.teamfruit.eewbot.entity.renderer.QuakeDataFactory;
 import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
-import net.teamfruit.eewbot.registry.Config;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -42,10 +40,9 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture {
             getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
             getQuakeInfoMaxInt().ifPresent(intensity -> builder.color(intensity.getColor()));
 
-            Config config = EEWBot.instance.getConfig();
-            if (config.isRendererAvailable()) {
+            if (EEWBot.instance.getRendererQueryFactory().isAvailable()) {
                 try {
-                    builder.image(config.getRendererAddress() + QuakeDataFactory.generate(config.getRendererKey(), this));
+                    builder.image(EEWBot.instance.getRendererQueryFactory().generateURL( this));
                 } catch (Exception e) {
                     builder.addField("Renderer Query", String.format("Failed to generate query: %s", e), false);
                 }
