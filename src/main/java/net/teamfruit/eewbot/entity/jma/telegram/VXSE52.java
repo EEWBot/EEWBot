@@ -43,7 +43,7 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture {
 
             if (EEWBot.instance.getRendererQueryFactory().isAvailable()) {
                 try {
-                    builder.image(EEWBot.instance.getRendererQueryFactory().generateURL( this));
+                    builder.image(EEWBot.instance.getRendererQueryFactory().generateURL(this));
                 } catch (Exception e) {
                     Log.logger.error("Failed to generate renderer query", e);
                 }

@@ -32,8 +32,6 @@ public class VXSE51Impl extends JmxSeis implements VXSE51 {
         return getHead().getTargetDateTime();
     }
 
-
-
     private Comment getComments() {
         if (isCancelReport())
             throw new IllegalStateException("Cancel report");

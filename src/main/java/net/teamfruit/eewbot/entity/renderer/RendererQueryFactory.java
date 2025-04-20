@@ -65,7 +65,7 @@ public class RendererQueryFactory {
 
         this.threadLocalMac = ThreadLocal.withInitial(() -> {
             try {
-                Mac mac =Mac.getInstance(HMAC_ALGO);
+                Mac mac = Mac.getInstance(HMAC_ALGO);
                 mac.init(new SecretKeySpec(this.hmacKey, HMAC_ALGO));
                 return mac;
             } catch (GeneralSecurityException e) {
@@ -88,7 +88,7 @@ public class RendererQueryFactory {
             Float lat = coordinate.getLat();
             Float lon = coordinate.getLon();
             if (lat != null && lon != null) {
-                Epicenter  epicenter = new Epicenter.Builder()
+                Epicenter epicenter = new Epicenter.Builder()
                         .lat_x10((int) (lat * 10))
                         .lon_x10((int) (lon * 10))
                         .build();
