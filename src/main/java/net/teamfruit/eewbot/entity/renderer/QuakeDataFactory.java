@@ -4,6 +4,7 @@ import net.eewbot.base65536j.Base65536;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE53;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityArea;
@@ -18,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.BiConsumer;
 
@@ -44,7 +46,7 @@ public class QuakeDataFactory {
     private QuakeDataFactory() {
     }
 
-    public static String generateQuakePrefectureData(String hmacKey, Coordinate coordinate, Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
+    private static String generateQuakePrefectureData(String hmacKey, Instant originTime, Coordinate coordinate, Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
         Float lat = coordinate.getLat();
         Float lon = coordinate.getLon();
 
@@ -69,6 +71,7 @@ public class QuakeDataFactory {
         }
 
         QuakePrefectureData.Builder builder = new QuakePrefectureData.Builder();
+        builder.time(originTime.getEpochSecond());
         if (epicenter != null) {
             builder.epicenter(epicenter);
         }
@@ -93,8 +96,10 @@ public class QuakeDataFactory {
         buffer.put(hmac);
         buffer.put(body);
 
-        String encoded = Base65536.getEncoder().encodeToString(buffer.array());
-        Log.logger.info(encoded);
-        return encoded;
+        return Base65536.getEncoder().encodeToString(buffer.array());
+    }
+
+    public static String generate(String hmacKey, VXSE53 vxse53) throws NoSuchAlgorithmException, InvalidKeyException {
+        return generateQuakePrefectureData(hmacKey, vxse53.getOriginTime(), vxse53.getCoordinate(), vxse53.getObservation());
     }
 }
