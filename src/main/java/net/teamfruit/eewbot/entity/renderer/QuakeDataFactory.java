@@ -1,8 +1,6 @@
 package net.teamfruit.eewbot.entity.renderer;
 
 import net.eewbot.base65536j.Base65536;
-import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE53;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
@@ -16,11 +14,13 @@ import quake_prefecture_v0.QuakePrefectureData;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 public class QuakeDataFactory {
@@ -46,7 +46,7 @@ public class QuakeDataFactory {
     private QuakeDataFactory() {
     }
 
-    private static String generateQuakePrefectureData(String hmacKey, Instant originTime, Coordinate coordinate, Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
+    private static String generateQuakePrefectureData(byte[] hmacKey, Instant originTime, Coordinate coordinate, Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
         Float lat = coordinate.getLat();
         Float lon = coordinate.getLon();
 
@@ -88,7 +88,7 @@ public class QuakeDataFactory {
         byte[] body = QuakePrefectureData.ADAPTER.encode(quakePrefectureData);
 
         Mac mac = Mac.getInstance(HMAC_ALGO);
-        mac.init(new SecretKeySpec(hmacKey.getBytes(StandardCharsets.UTF_8), HMAC_ALGO));
+        mac.init(new SecretKeySpec(hmacKey, HMAC_ALGO));
         byte[] hmac = mac.doFinal(body);
 
         ByteBuffer buffer = ByteBuffer.allocate(1 + hmac.length + body.length);
@@ -99,7 +99,7 @@ public class QuakeDataFactory {
         return Base65536.getEncoder().encodeToString(buffer.array());
     }
 
-    public static String generate(String hmacKey, VXSE53 vxse53) throws NoSuchAlgorithmException, InvalidKeyException {
+    public static String generate(byte[] hmacKey, VXSE53 vxse53) throws NoSuchAlgorithmException, InvalidKeyException {
         return generateQuakePrefectureData(hmacKey, vxse53.getOriginTime(), vxse53.getCoordinate(), vxse53.getObservation());
     }
 }
