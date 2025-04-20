@@ -76,7 +76,7 @@ public interface VXSE53 extends JMAReport, QuakeInfo {
             builder.color(getMaxInt().getColor());
 
             try {
-                builder.addField("Renderer Query", QuakeDataFactory.generate(EEWBot.instance.getConfig().getRendererKey(), this), false);
+                builder.image(EEWBot.instance.getConfig().getRendererAddress() + QuakeDataFactory.generate(EEWBot.instance.getConfig().getRendererKey(), this));
             } catch (Exception e) {
                 builder.addField("Renderer Query", String.format("Failed to generate query: %s", e), false);
             }

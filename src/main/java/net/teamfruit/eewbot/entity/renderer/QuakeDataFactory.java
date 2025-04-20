@@ -2,6 +2,8 @@ package net.teamfruit.eewbot.entity.renderer;
 
 import net.eewbot.base65536j.Base65536;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE51;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE52;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE53;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
@@ -10,6 +12,8 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
 import quake_prefecture_v0.CodeArray;
 import quake_prefecture_v0.Epicenter;
 import quake_prefecture_v0.QuakePrefectureData;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -46,16 +50,20 @@ public class QuakeDataFactory {
     private QuakeDataFactory() {
     }
 
-    private static String generateQuakePrefectureData(byte[] hmacKey, Instant originTime, Coordinate coordinate, Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
-        Float lat = coordinate.getLat();
-        Float lon = coordinate.getLon();
+    private static String generateQuakePrefectureData(@NonNull byte[] hmacKey, @NonNull Instant originTime, @Nullable Coordinate coordinate, @NonNull Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
+        QuakePrefectureData.Builder builder = new QuakePrefectureData.Builder();
+        builder.time(originTime.getEpochSecond());
 
-        Epicenter epicenter = null;
-        if (lat != null && lon != null) {
-            epicenter = new Epicenter.Builder()
-                    .lat_x10((int) (lat * 10))
-                    .lon_x10((int) (lon * 10))
-                    .build();
+        if (coordinate != null) {
+            Float lat = coordinate.getLat();
+            Float lon = coordinate.getLon();
+            if (lat != null && lon != null) {
+                Epicenter  epicenter = new Epicenter.Builder()
+                        .lat_x10((int) (lat * 10))
+                        .lon_x10((int) (lon * 10))
+                        .build();
+                builder.epicenter(epicenter);
+            }
         }
 
         Map<SeismicIntensity, List<Integer>> codeMap = new EnumMap<>(SeismicIntensity.class);
@@ -68,12 +76,6 @@ public class QuakeDataFactory {
             for (IntensityArea area : pref.getAreas()) {
                 codeMap.get(area.getMaxInt()).add(Integer.valueOf(area.getCode()));
             }
-        }
-
-        QuakePrefectureData.Builder builder = new QuakePrefectureData.Builder();
-        builder.time(originTime.getEpochSecond());
-        if (epicenter != null) {
-            builder.epicenter(epicenter);
         }
 
         codeMap.forEach((intensity, codes) -> {
@@ -97,6 +99,14 @@ public class QuakeDataFactory {
         buffer.put(body);
 
         return Base65536.getEncoder().encodeToString(buffer.array());
+    }
+
+    public static String generate(byte[] hmacKey, VXSE51 vxse51) throws NoSuchAlgorithmException, InvalidKeyException {
+        return generateQuakePrefectureData(hmacKey, vxse51.getTargetDateTime(), null, vxse51.getObservation());
+    }
+
+    public static String generate(byte[] hmacKey, VXSE52 vxse52) throws NoSuchAlgorithmException, InvalidKeyException {
+        return generateQuakePrefectureData(hmacKey, vxse52.getOriginTime(), vxse52.getCoordinate(), vxse52.getObservation());
     }
 
     public static String generate(byte[] hmacKey, VXSE53 vxse53) throws NoSuchAlgorithmException, InvalidKeyException {

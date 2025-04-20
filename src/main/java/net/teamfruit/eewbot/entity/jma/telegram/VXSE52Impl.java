@@ -5,8 +5,10 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
+import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Earthquake;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Hypocenter;
+import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.JmxSeis;
 
 import java.time.Instant;
@@ -46,6 +48,19 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     @Override
     public String getHypocenterName() {
         return getHypocenter().getArea().getName();
+    }
+
+    @Override
+    public Coordinate getCoordinate() {
+        return getHypocenter().getArea().getCoordinate().getFirst();
+    }
+
+    @Override
+    public Intensity.IntensityDetail getObservation() {
+        if (isCancelReport())
+            throw new IllegalStateException("Cancel report");
+        Intensity intensity = Objects.requireNonNull(getBody().getIntensity());
+        return Objects.requireNonNull(intensity.getObservation());
     }
 
     @Override

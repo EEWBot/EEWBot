@@ -23,7 +23,8 @@ public class VXSE51Impl extends JmxSeis implements VXSE51 {
         return getHead().getTargetDateTime();
     }
 
-    private Intensity.IntensityDetail getObservation() {
+    @Override
+    public Intensity.IntensityDetail getObservation() {
         if (isCancelReport())
             throw new IllegalStateException("Cancel report");
         Intensity intensity = Objects.requireNonNull(getBody().getIntensity());
