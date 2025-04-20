@@ -2,9 +2,11 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
+import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.JmxSeis;
+import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
 import java.util.List;
@@ -12,6 +14,13 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class VXSE51Impl extends JmxSeis implements VXSE51 {
+
+    private Intensity.IntensityDetail getObservation() {
+        if (isCancelReport())
+            throw new IllegalStateException("Cancel report");
+        Intensity intensity = Objects.requireNonNull(getBody().getIntensity());
+        return Objects.requireNonNull(intensity.getObservation());
+    }
 
     @Override
     public Optional<SeismicIntensity> getQuakeInfoMaxInt() {
@@ -23,13 +32,7 @@ public class VXSE51Impl extends JmxSeis implements VXSE51 {
         return getHead().getTargetDateTime();
     }
 
-    @Override
-    public Intensity.IntensityDetail getObservation() {
-        if (isCancelReport())
-            throw new IllegalStateException("Cancel report");
-        Intensity intensity = Objects.requireNonNull(getBody().getIntensity());
-        return Objects.requireNonNull(intensity.getObservation());
-    }
+
 
     private Comment getComments() {
         if (isCancelReport())
@@ -57,4 +60,19 @@ public class VXSE51Impl extends JmxSeis implements VXSE51 {
         return Optional.ofNullable(getComments().getFreeFormComment());
     }
 
+    @Override
+    public Instant getTime() {
+        return getTargetDateTime();
+    }
+
+    @Override
+    @Nullable
+    public Coordinate getCoordinate() {
+        return null;
+    }
+
+    @Override
+    public Intensity.IntensityDetail getIntensityDetail() {
+        return getObservation();
+    }
 }

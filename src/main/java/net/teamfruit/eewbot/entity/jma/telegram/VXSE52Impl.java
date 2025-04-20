@@ -34,6 +34,13 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
         return Objects.requireNonNull(getEarthquake().getHypocenter());
     }
 
+    private Intensity.IntensityDetail getObservation() {
+        if (isCancelReport())
+            throw new IllegalStateException("Cancel report");
+        Intensity intensity = Objects.requireNonNull(getBody().getIntensity());
+        return Objects.requireNonNull(intensity.getObservation());
+    }
+
     private Comment getComments() {
         if (isCancelReport())
             throw new IllegalStateException("Cancel report");
@@ -48,19 +55,6 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     @Override
     public String getHypocenterName() {
         return getHypocenter().getArea().getName();
-    }
-
-    @Override
-    public Coordinate getCoordinate() {
-        return getHypocenter().getArea().getCoordinate().getFirst();
-    }
-
-    @Override
-    public Intensity.IntensityDetail getObservation() {
-        if (isCancelReport())
-            throw new IllegalStateException("Cancel report");
-        Intensity intensity = Objects.requireNonNull(getBody().getIntensity());
-        return Objects.requireNonNull(intensity.getObservation());
     }
 
     @Override
@@ -81,6 +75,21 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     @Override
     public Optional<String> getFreeFormComment() {
         return Optional.ofNullable(getComments().getFreeFormComment());
+    }
+
+    @Override
+    public Instant getTime() {
+        return getOriginTime();
+    }
+
+    @Override
+    public Coordinate getCoordinate() {
+        return getHypocenter().getArea().getCoordinate().getFirst();
+    }
+
+    @Override
+    public Intensity.IntensityDetail getIntensityDetail() {
+        return getObservation();
     }
 
 }

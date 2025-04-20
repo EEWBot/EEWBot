@@ -5,9 +5,8 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
-import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.renderer.QuakeDataFactory;
+import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import net.teamfruit.eewbot.registry.Config;
 import org.apache.commons.lang3.StringUtils;
@@ -15,17 +14,13 @@ import org.apache.commons.lang3.StringUtils;
 import java.time.Instant;
 import java.util.Optional;
 
-public interface VXSE53 extends JMAReport, QuakeInfo {
+public interface VXSE53 extends JMAReport, QuakeInfo, RenderQuakePrefecture {
 
     Instant getOriginTime();
 
     SeismicIntensity getMaxInt();
 
     String getHypocenterName();
-
-    Coordinate getCoordinate();
-
-    Intensity.IntensityDetail getObservation();
 
     Optional<String> getHypocenterDetailedName();
 

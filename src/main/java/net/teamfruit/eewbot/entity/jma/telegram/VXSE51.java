@@ -5,9 +5,9 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
 import net.teamfruit.eewbot.entity.renderer.QuakeDataFactory;
+import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import net.teamfruit.eewbot.registry.Config;
 
@@ -17,11 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public interface VXSE51 extends JMAReport, QuakeInfo {
+public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture {
 
     Instant getTargetDateTime();
-
-    Intensity.IntensityDetail getObservation();
 
     SeismicIntensity getMaxInt();
 
