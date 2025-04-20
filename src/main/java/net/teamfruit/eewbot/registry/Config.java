@@ -118,6 +118,10 @@ public class Config {
         return this.debug;
     }
 
+    public boolean isRendererAvailable() {
+        return StringUtils.isNotEmpty(this.rendererAddress) && StringUtils.isNotEmpty(this.rendererKey);
+    }
+
     public boolean validate() {
         if (StringUtils.isEmpty(getToken())) {
             Log.logger.info("Please set a discord token");
@@ -148,6 +152,14 @@ public class Config {
                 new URI(getRedisAddress());
             } catch (URISyntaxException e) {
                 Log.logger.info("Invalid redis address");
+                return false;
+            }
+        }
+        if (StringUtils.isNotEmpty(getRendererAddress())) {
+            try {
+                new URI(getRendererAddress());
+            } catch (URISyntaxException e) {
+                Log.logger.info("Invalid renderer address");
                 return false;
             }
         }

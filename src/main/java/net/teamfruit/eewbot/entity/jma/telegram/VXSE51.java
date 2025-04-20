@@ -9,6 +9,7 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
 import net.teamfruit.eewbot.entity.renderer.QuakeDataFactory;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
+import net.teamfruit.eewbot.registry.Config;
 
 import java.time.Instant;
 import java.util.EnumMap;
@@ -59,10 +60,13 @@ public interface VXSE51 extends JMAReport, QuakeInfo {
             getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
             builder.color(getMaxInt().getColor());
 
-            try {
-                builder.image(EEWBot.instance.getConfig().getRendererAddress() + QuakeDataFactory.generate(EEWBot.instance.getConfig().getRendererKey(), this));
-            } catch (Exception e) {
-                builder.addField("Renderer Query", String.format("Failed to generate query: %s", e), false);
+            Config config = EEWBot.instance.getConfig();
+            if (config.isRendererAvailable()) {
+                try {
+                    builder.image(config.getRendererAddress() + QuakeDataFactory.generate(config.getRendererKey(), this));
+                } catch (Exception e) {
+                    builder.addField("Renderer Query", String.format("Failed to generate query: %s", e), false);
+                }
             }
         }
         builder.footer(getPublishingOffice(), null);
