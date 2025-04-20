@@ -17,8 +17,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -50,16 +49,29 @@ public class RendererQueryFactory {
     private final byte[] hmacKey;
     private final boolean isAvailable;
 
+    private final ThreadLocal<Mac> threadLocalMac;
+
     public RendererQueryFactory(String baseURL, String hmacKey) {
         if (StringUtils.isEmpty(baseURL) || StringUtils.isEmpty(hmacKey)) {
             this.baseURL = null;
             this.hmacKey = null;
+            this.threadLocalMac = null;
             this.isAvailable = false;
             return;
         }
 
         this.baseURL = baseURL;
         this.hmacKey = hmacKey.getBytes(StandardCharsets.UTF_8);
+
+        this.threadLocalMac = ThreadLocal.withInitial(() -> {
+            try {
+                Mac mac =Mac.getInstance(HMAC_ALGO);
+                mac.init(new SecretKeySpec(this.hmacKey, HMAC_ALGO));
+                return mac;
+            } catch (GeneralSecurityException e) {
+                throw new IllegalStateException("Failed to initialize HMAC Mac", e);
+            }
+        });
         this.isAvailable = true;
     }
 
@@ -68,7 +80,7 @@ public class RendererQueryFactory {
     }
 
     // TODO: Refactor
-    private String generateQuakePrefectureData(@NonNull Instant time, @Nullable Coordinate coordinate, @NonNull Intensity.IntensityDetail observation) throws NoSuchAlgorithmException, InvalidKeyException {
+    private String generateQuakePrefectureData(@NonNull Instant time, @Nullable Coordinate coordinate, @NonNull Intensity.IntensityDetail observation) {
         QuakePrefectureData.Builder builder = new QuakePrefectureData.Builder();
         builder.time(time.getEpochSecond());
 
@@ -106,10 +118,7 @@ public class RendererQueryFactory {
 
         QuakePrefectureData quakePrefectureData = builder.build();
         byte[] body = QuakePrefectureData.ADAPTER.encode(quakePrefectureData);
-
-        Mac mac = Mac.getInstance(HMAC_ALGO);
-        mac.init(new SecretKeySpec(this.hmacKey, HMAC_ALGO));
-        byte[] hmac = mac.doFinal(body);
+        byte[] hmac = this.threadLocalMac.get().doFinal(body);
 
         ByteBuffer buffer = ByteBuffer.allocate(1 + hmac.length + body.length);
         buffer.put(VERSION);
@@ -119,7 +128,7 @@ public class RendererQueryFactory {
         return Base65536.getEncoder().encodeToString(buffer.array());
     }
 
-    public String generateURL(RenderQuakePrefecture renderQuakePrefecture) throws NoSuchAlgorithmException, InvalidKeyException {
+    public String generateURL(RenderQuakePrefecture renderQuakePrefecture) {
         if (!isAvailable()) {
             throw new IllegalStateException("Renderer is not available");
         }
