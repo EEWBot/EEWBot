@@ -122,7 +122,7 @@ public class Config {
             try {
                 new URI(getDuplicatorAddress());
             } catch (URISyntaxException e) {
-                Log.logger.info("Invalid duplicator address");
+                Log.logger.info("Invalid duplicator address: " + e.getMessage());
                 return false;
             }
         }
@@ -130,7 +130,7 @@ public class Config {
             try {
                 new URI(getRedisAddress());
             } catch (URISyntaxException e) {
-                Log.logger.info("Invalid redis address");
+                Log.logger.info("Invalid redis address: " + e.getMessage());
                 return false;
             }
         }
