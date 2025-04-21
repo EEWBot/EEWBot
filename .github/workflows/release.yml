@@ -15,6 +15,8 @@ jobs:
       # Check out the repository
       - name: Check out the repo
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # Setup Java 21
       - name: Set up JDK 21
