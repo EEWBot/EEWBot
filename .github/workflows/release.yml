@@ -8,6 +8,9 @@ on:
 jobs:
   release_and_publish:
     runs-on: ubuntu-latest
+    env:
+      GPR_USER: ${{ secrets.GPR_USER }}
+      GPR_KEY: ${{ secrets.GPR_KEY }}
     steps:
       # Check out the repository
       - name: Check out the repo
