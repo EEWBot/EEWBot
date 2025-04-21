@@ -14,8 +14,8 @@ repositories {
         name = "GitHubPackages-base65536j"
         url  = uri("https://maven.pkg.github.com/EEWBot/Base65536J")
         credentials {
-            username = project.findProperty("gpr.user") as String? ?: System.getenv("USERNAME")
-            password = project.findProperty("gpr.key") as String? ?: System.getenv("TOKEN")
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("GPR_USER")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("GPR_KEY")
         }
     }
     maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
