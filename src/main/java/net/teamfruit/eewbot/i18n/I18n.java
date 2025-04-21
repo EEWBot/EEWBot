@@ -10,7 +10,7 @@ import java.util.Objects;
 
 public class I18n {
 
-    private static final String FALLBACK_LANGUAGE = "en_us";
+    private static final String FALLBACK_LANGUAGE = "ja_JP";
 
     private Map<String, String> languages;
     public String defaultLanguage;
