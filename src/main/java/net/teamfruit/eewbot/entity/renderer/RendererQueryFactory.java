@@ -79,23 +79,19 @@ public class RendererQueryFactory {
         return this.isAvailable;
     }
 
-    // TODO: Refactor
-    private String generateQuakePrefectureData(@NonNull Instant time, @Nullable Coordinate coordinate, @NonNull Intensity.IntensityDetail observation) {
-        QuakePrefectureData.Builder builder = new QuakePrefectureData.Builder();
-        builder.time(time.getEpochSecond());
-
-        if (coordinate != null) {
-            Float lat = coordinate.getLat();
-            Float lon = coordinate.getLon();
-            if (lat != null && lon != null) {
-                Epicenter epicenter = new Epicenter.Builder()
-                        .lat_x10((int) (lat * 10))
-                        .lon_x10((int) (lon * 10))
-                        .build();
-                builder.epicenter(epicenter);
-            }
+    private Epicenter buildEpicenter(Coordinate coordinate) {
+        Float lat = coordinate.getLat(), lon = coordinate.getLon();
+        if (lat == null || lon == null) {
+            return null;
         }
 
+        return new Epicenter.Builder()
+                .lat_x10((int) (lat * 10))
+                .lon_x10((int) (lon * 10))
+                .build();
+    }
+
+    private Map<SeismicIntensity, List<Integer>> buildCodeMap(Intensity.IntensityDetail observation) {
         Map<SeismicIntensity, List<Integer>> codeMap = new EnumMap<>(SeismicIntensity.class);
         for (SeismicIntensity intensity : SeismicIntensity.values()) {
             if (intensity != SeismicIntensity.UNKNOWN) {
@@ -107,7 +103,10 @@ public class RendererQueryFactory {
                 codeMap.get(area.getMaxInt()).add(Integer.valueOf(area.getCode()));
             }
         }
+        return codeMap;
+    }
 
+    private void applyCodeMap(QuakePrefectureData.Builder builder, Map<SeismicIntensity, List<Integer>> codeMap) {
         codeMap.forEach((intensity, codes) -> {
             CodeArray codeArray = new CodeArray.Builder().codes(codes).build();
             BiConsumer<QuakePrefectureData.Builder, CodeArray> setter = SETTER_MAP.get(intensity);
@@ -115,17 +114,29 @@ public class RendererQueryFactory {
                 setter.accept(builder, codeArray);
             }
         });
+    }
 
-        QuakePrefectureData quakePrefectureData = builder.build();
-        byte[] body = QuakePrefectureData.ADAPTER.encode(quakePrefectureData);
+    private byte[] computeQuery(byte[] body) {
         byte[] hmac = this.threadLocalMac.get().doFinal(body);
-
         ByteBuffer buffer = ByteBuffer.allocate(1 + hmac.length + body.length);
-        buffer.put(VERSION);
-        buffer.put(hmac);
-        buffer.put(body);
+        buffer.put(VERSION).put(hmac).put(body);
+        return buffer.array();
+    }
 
-        return Base65536.getEncoder().encodeToString(buffer.array());
+    private String generateQuakePrefectureData(@NonNull Instant time, @Nullable Coordinate coordinate, @NonNull Intensity.IntensityDetail observation) {
+        QuakePrefectureData.Builder builder = new QuakePrefectureData.Builder();
+        builder.time(time.getEpochSecond());
+
+        if (coordinate != null) {
+            builder.epicenter(buildEpicenter(coordinate));
+        }
+
+        Map<SeismicIntensity, List<Integer>> codeMap = buildCodeMap(observation);
+        applyCodeMap(builder, codeMap);
+
+        byte[] body = QuakePrefectureData.ADAPTER.encode(builder.build());
+        byte[] query = computeQuery(body);
+        return Base65536.getEncoder().encodeToString(query);
     }
 
     public String generateURL(RenderQuakePrefecture renderQuakePrefecture) {

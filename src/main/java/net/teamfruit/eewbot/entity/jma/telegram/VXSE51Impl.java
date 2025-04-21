@@ -15,13 +15,6 @@ import java.util.Optional;
 
 public class VXSE51Impl extends JmxSeis implements VXSE51 {
 
-    private Intensity.IntensityDetail getObservation() {
-        if (isCancelReport())
-            throw new IllegalStateException("Cancel report");
-        Intensity intensity = Objects.requireNonNull(getBody().getIntensity());
-        return Objects.requireNonNull(intensity.getObservation());
-    }
-
     @Override
     public Optional<SeismicIntensity> getQuakeInfoMaxInt() {
         return Optional.ofNullable(getBody().getIntensity()).map(Intensity::getObservation).map(Intensity.IntensityDetail::getMaxInt);
@@ -30,6 +23,13 @@ public class VXSE51Impl extends JmxSeis implements VXSE51 {
     @Override
     public Instant getTargetDateTime() {
         return getHead().getTargetDateTime();
+    }
+
+    private Intensity.IntensityDetail getObservation() {
+        if (isCancelReport())
+            throw new IllegalStateException("Cancel report");
+        Intensity intensity = Objects.requireNonNull(getBody().getIntensity());
+        return Objects.requireNonNull(intensity.getObservation());
     }
 
     private Comment getComments() {
