@@ -15,7 +15,7 @@ public class RendererQueryGenerator {
         String hmacKey = args[0];
         String path = args[1];
 
-        RendererQueryFactory rendererQueryFactory = new RendererQueryFactory("https://h.eewbot.net", hmacKey);
+        RendererQueryFactory rendererQueryFactory = new RendererQueryFactory("", hmacKey);
 
         try (var inputStream = new FileInputStream(path)) {
             VXSE53 report = EEWBot.XML_MAPPER.readValue(inputStream, VXSE53Impl.class);
