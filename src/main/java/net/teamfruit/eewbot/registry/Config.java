@@ -148,7 +148,7 @@ public class Config {
             try {
                 new URI(getRendererAddress());
             } catch (URISyntaxException e) {
-                Log.logger.info("Invalid renderer address");
+                Log.logger.info("Invalid renderer address: " + e.getMessage());
                 return false;
             }
         }
