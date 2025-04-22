@@ -1,16 +1,19 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
+import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
+import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
 import java.util.Optional;
 
-public interface VXSE53 extends JMAReport, QuakeInfo {
+public interface VXSE53 extends JMAReport, QuakeInfo, RenderQuakePrefecture {
 
     Instant getOriginTime();
 
@@ -66,6 +69,14 @@ public interface VXSE53 extends JMAReport, QuakeInfo {
                     .ifPresent(text -> builder.addField("", text, false));
             getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
             builder.color(getMaxInt().getColor());
+
+            if (EEWBot.instance.getRendererQueryFactory().isAvailable()) {
+                try {
+                    builder.image(EEWBot.instance.getRendererQueryFactory().generateURL(this));
+                } catch (Exception e) {
+                    Log.logger.error("Failed to generate renderer query", e);
+                }
+            }
         }
         builder.footer(getPublishingOffice(), null);
         builder.timestamp(getReportDateTime());

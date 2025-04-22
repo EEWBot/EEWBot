@@ -1,10 +1,13 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
+import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
+import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.time.Instant;
@@ -13,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public interface VXSE51 extends JMAReport, QuakeInfo {
+public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture {
 
     Instant getTargetDateTime();
 
@@ -53,6 +56,14 @@ public interface VXSE51 extends JMAReport, QuakeInfo {
             getForecastComment().ifPresent(forecastComment -> builder.addField("", forecastComment.getText(), false));
             getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
             builder.color(getMaxInt().getColor());
+
+            if (EEWBot.instance.getRendererQueryFactory().isAvailable()) {
+                try {
+                    builder.image(EEWBot.instance.getRendererQueryFactory().generateURL(this));
+                } catch (Exception e) {
+                    Log.logger.error("Failed to generate renderer query", e);
+                }
+            }
         }
         builder.footer(getPublishingOffice(), null);
         builder.timestamp(getReportDateTime());

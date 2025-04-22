@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
+import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Earthquake;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Hypocenter;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
@@ -84,5 +85,20 @@ public class VXSE53Impl extends JmxSeis implements VXSE53 {
     @Override
     public Optional<String> getFreeFormComment() {
         return Optional.ofNullable(getComments().getFreeFormComment());
+    }
+
+    @Override
+    public Instant getTime() {
+        return getOriginTime();
+    }
+
+    @Override
+    public Coordinate getCoordinate() {
+        return getHypocenter().getArea().getCoordinate().getFirst();
+    }
+
+    @Override
+    public Intensity.IntensityDetail getIntensityDetail() {
+        return getObservation();
     }
 }

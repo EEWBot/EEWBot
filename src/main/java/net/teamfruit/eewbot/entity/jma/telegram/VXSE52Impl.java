@@ -5,8 +5,10 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
+import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Earthquake;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Hypocenter;
+import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.JmxSeis;
 
 import java.time.Instant;
@@ -30,6 +32,13 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
 
     private Hypocenter getHypocenter() {
         return Objects.requireNonNull(getEarthquake().getHypocenter());
+    }
+
+    private Intensity.IntensityDetail getObservation() {
+        if (isCancelReport())
+            throw new IllegalStateException("Cancel report");
+        Intensity intensity = Objects.requireNonNull(getBody().getIntensity());
+        return Objects.requireNonNull(intensity.getObservation());
     }
 
     private Comment getComments() {
@@ -66,6 +75,21 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     @Override
     public Optional<String> getFreeFormComment() {
         return Optional.ofNullable(getComments().getFreeFormComment());
+    }
+
+    @Override
+    public Instant getTime() {
+        return getOriginTime();
+    }
+
+    @Override
+    public Coordinate getCoordinate() {
+        return getHypocenter().getArea().getCoordinate().getFirst();
+    }
+
+    @Override
+    public Intensity.IntensityDetail getIntensityDetail() {
+        return getObservation();
     }
 
 }

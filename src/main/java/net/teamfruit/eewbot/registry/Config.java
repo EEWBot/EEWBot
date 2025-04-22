@@ -18,6 +18,8 @@ public class Config {
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
     private String duplicatorAddress = "";
+    private String rendererAddress = "";
+    private String rendererKey = "";
     private int poolingMax = 20;
     private int poolingMaxPerRoute = 20;
     private boolean webhookMigration = false;
@@ -71,6 +73,14 @@ public class Config {
 
     public String getDuplicatorAddress() {
         return this.duplicatorAddress;
+    }
+
+    public String getRendererAddress() {
+        return this.rendererAddress;
+    }
+
+    public String getRendererKey() {
+        return this.rendererKey;
     }
 
     public int getPoolingMax() {
@@ -134,6 +144,14 @@ public class Config {
                 return false;
             }
         }
+        if (StringUtils.isNotEmpty(getRendererAddress())) {
+            try {
+                new URI(getRendererAddress());
+            } catch (URISyntaxException e) {
+                Log.logger.info("Invalid renderer address: " + e.getMessage());
+                return false;
+            }
+        }
         return true;
     }
 
@@ -149,6 +167,8 @@ public class Config {
                 ", dmdataOrigin='" + this.dmdataOrigin + '\'' +
                 ", dmdataMultiSocketConnect=" + this.dmdataMultiSocketConnect +
                 ", duplicatorAddress='" + this.duplicatorAddress + '\'' +
+                ", rendererAddress='" + this.rendererAddress + '\'' +
+                ", rendererKey='" + this.rendererKey + '\'' +
                 ", poolingMax=" + this.poolingMax +
                 ", poolingMaxPerRoute=" + this.poolingMaxPerRoute +
                 ", webhookMigration=" + this.webhookMigration +
