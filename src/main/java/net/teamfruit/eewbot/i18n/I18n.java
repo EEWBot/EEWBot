@@ -10,7 +10,7 @@ import java.util.Objects;
 
 public class I18n {
 
-    private static final String FALLBACK_LANGUAGE = "ja_JP";
+    private static final String FALLBACK_LANGUAGE = "ja_jp";
 
     private Map<String, String> languages;
     public String defaultLanguage;
@@ -30,7 +30,7 @@ public class I18n {
             final Map<String, String> map = EEWBot.GSON.fromJson(new InputStreamReader(Objects.requireNonNull(I18n.class.getResourceAsStream("/lang/" + key + ".json"))), new TypeToken<Map<String, String>>() {
             }.getType());
 
-            this.langMap.put(key, map);
+            this.langMap.put(key.toLowerCase(), map);
         });
     }
 
@@ -39,10 +39,7 @@ public class I18n {
     }
 
     public String get(final String lang, final String key) {
-        final String text = this.langMap.get(lang).getOrDefault(key, this.langMap.get(FALLBACK_LANGUAGE).get(key));
-        if (text != null)
-            return text;
-        return key;
+        return this.langMap.get(lang).getOrDefault(key, this.langMap.get(FALLBACK_LANGUAGE).getOrDefault(key, key));
     }
 
     public String format(final String lang, final String key, final Object... args) {
