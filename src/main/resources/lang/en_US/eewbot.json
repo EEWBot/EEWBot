@@ -20,7 +20,7 @@
   "eewbot.eew.near": "Near %2$s",
   "eewbot.eew.unknown": "Unknown",
   "eewbot.eew.inaccurate": "*This information may be inaccurate",
-  "eewbot.eew.warningtext": "Regions Expected to Be Affected",
+  "eewbot.eew.warningtext": "Alert area",
   "eewbot.eew.newkyoshinmonitor": "Kyoshin Monitor ⚠ Please migrate to Project DM-D.S.S!",
   "eewbot.quakeinfo.intensity.title": "Earthquake Information (Seismic Intensity Information)",
   "eewbot.quakeinfo.epicenter.title": "Earthquake Information (Information on Hypocenter and Seismic Intensity)",
