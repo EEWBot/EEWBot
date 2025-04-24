@@ -49,12 +49,12 @@ public class EEWBot {
     public static final String CONFIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
     private final JsonRegistry<Config> config = new JsonRegistry<>(CONFIG_DIRECTORY != null ? Paths.get(CONFIG_DIRECTORY, "config.json") : Paths.get("config.json"), Config::new, Config.class, GSON_PRETTY);
-    private final I18n i18n = new I18n();
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private GatewayDiscordClient gateway;
     private ChannelRegistry channels;
+    private I18n i18n;
     private QuakeInfoStore quakeInfoStore;
     private RendererQueryFactory rendererQueryFactory;
     private EEWService service;
@@ -81,8 +81,6 @@ public class EEWBot {
             registry.init();
             this.channels = registry;
         }
-
-        this.i18n.init(getConfig().getDefaultLanguage());
 
         final String token = System.getenv("TOKEN");
         if (token != null)
@@ -131,6 +129,7 @@ public class EEWBot {
             return;
         }
 
+        this.i18n = new I18n(getConfig().getDefaultLanguage());
         this.quakeInfoStore = new QuakeInfoStore();
         this.rendererQueryFactory = new RendererQueryFactory(getConfig().getRendererAddress(), getConfig().getRendererKey());
         this.service = new EEWService(this);
