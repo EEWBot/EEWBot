@@ -68,6 +68,9 @@ public class EEWBot {
     public void initialize() throws IOException {
         this.config.init();
 
+        this.i18n = new I18n(getConfig().getDefaultLanguage());
+        this.rendererQueryFactory = new RendererQueryFactory(getConfig().getRendererAddress(), getConfig().getRendererKey());
+
         Path path = DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json");
         if (StringUtils.isNotEmpty(getConfig().getRedisAddress())) {
             String redisAddress = getConfig().getRedisAddress();
@@ -129,9 +132,7 @@ public class EEWBot {
             return;
         }
 
-        this.i18n = new I18n(getConfig().getDefaultLanguage());
         this.quakeInfoStore = new QuakeInfoStore();
-        this.rendererQueryFactory = new RendererQueryFactory(getConfig().getRendererAddress(), getConfig().getRendererKey());
         this.service = new EEWService(this);
         this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getQuakeInfoStore());
         this.slashCommand = new SlashCommandHandler(this);
