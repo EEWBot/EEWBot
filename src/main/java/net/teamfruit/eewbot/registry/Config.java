@@ -17,7 +17,7 @@ public class Config {
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
-    private String duplicatorAddress = "";
+    private String webhookSenderAddress = "";
     private String rendererAddress = "";
     private String rendererKey = "";
     private int poolingMax = 20;
@@ -71,8 +71,8 @@ public class Config {
         return this.dmdataMultiSocketConnect;
     }
 
-    public String getDuplicatorAddress() {
-        return this.duplicatorAddress;
+    public String getWebhookSenderAddress() {
+        return this.webhookSenderAddress;
     }
 
     public String getRendererAddress() {
@@ -128,11 +128,11 @@ public class Config {
         if (isEnableKyoshin()) {
             Log.logger.warn("Kyoshin EEW is enabled, please consider using DMDATA");
         }
-        if (StringUtils.isNotEmpty(getDuplicatorAddress())) {
+        if (StringUtils.isNotEmpty(getWebhookSenderAddress())) {
             try {
-                new URI(getDuplicatorAddress());
+                new URI(getWebhookSenderAddress());
             } catch (URISyntaxException e) {
-                Log.logger.info("Invalid duplicator address: " + e.getMessage());
+                Log.logger.info("Invalid webhook sender address: " + e.getMessage());
                 return false;
             }
         }
@@ -166,7 +166,7 @@ public class Config {
                 ", dmdataAPIKey='" + this.dmdataAPIKey + '\'' +
                 ", dmdataOrigin='" + this.dmdataOrigin + '\'' +
                 ", dmdataMultiSocketConnect=" + this.dmdataMultiSocketConnect +
-                ", duplicatorAddress='" + this.duplicatorAddress + '\'' +
+                ", webhookSenderAddress='" + this.webhookSenderAddress + '\'' +
                 ", rendererAddress='" + this.rendererAddress + '\'' +
                 ", rendererKey='" + this.rendererKey + '\'' +
                 ", poolingMax=" + this.poolingMax +

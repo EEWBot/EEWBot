@@ -164,7 +164,7 @@ public class EEWExecutor {
 
         this.scheduledExecutor.execute(new JMAXmlLGateway(this.quakeInfoStore));
 
-        if (StringUtils.isNotEmpty(this.config.getDuplicatorAddress())) {
+        if (StringUtils.isNotEmpty(this.config.getWebhookSenderAddress())) {
             this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleWebhookSenderNotFounds, 15, 15, TimeUnit.SECONDS);
         }
 

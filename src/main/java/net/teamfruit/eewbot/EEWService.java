@@ -55,7 +55,7 @@ public class EEWService {
     private final ChannelRegistry channels;
     private final HttpClient httpClient;
     private final MinimalHttpAsyncClient asyncHttpClient;
-    private final URI duplicatorAddress;
+    private final URI webhookSenderAddress;
 
     public EEWService(EEWBot bot) {
         this.gateway = bot.getClient();
@@ -78,10 +78,10 @@ public class EEWService {
                 connectionManager);
         this.asyncHttpClient.start();
 
-        if (StringUtils.isNotEmpty(bot.getConfig().getDuplicatorAddress()))
-            this.duplicatorAddress = URI.create(bot.getConfig().getDuplicatorAddress());
+        if (StringUtils.isNotEmpty(bot.getConfig().getWebhookSenderAddress()))
+            this.webhookSenderAddress = URI.create(bot.getConfig().getWebhookSenderAddress());
         else
-            this.duplicatorAddress = null;
+            this.webhookSenderAddress = null;
     }
 
     public void sendMessage(final ChannelFilter filter, final Entity entity) {
@@ -100,10 +100,10 @@ public class EEWService {
         Map<Long, ChannelBase> webhookChannels = webhookPartitioned.get(true);
         if (!webhookChannels.isEmpty()) {
             Log.logger.info("Sending webhook message to {} channels", webhookChannels.size());
-            if (this.duplicatorAddress == null) {
+            if (this.webhookSenderAddress == null) {
                 sendWebhook(cacheWebhook, webhookChannels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe());
             } else {
-                sendWebhookSender(this.duplicatorAddress, cacheWebhook, webhookChannels, channels ->
+                sendWebhookSender(this.webhookSenderAddress, cacheWebhook, webhookChannels, channels ->
                         sendWebhook(cacheWebhook, channels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe()));
             }
         }
@@ -306,7 +306,7 @@ public class EEWService {
         try {
             HttpRequest getRequest = HttpRequest.newBuilder()
                     .GET()
-                    .uri(new URIBuilder(this.duplicatorAddress).setPath("/api/notfounds").build())
+                    .uri(new URIBuilder(this.webhookSenderAddress).setPath("/api/notfounds").build())
                     .header("User-Agent", "eewbot")
                     .build();
             HttpResponse<String> getResponse = this.httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString());
