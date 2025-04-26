@@ -300,18 +300,18 @@ public class EEWService {
                 .map(data -> new Message(this.gateway, data));
     }
 
-    public void handleDuplicatorNegativeCache() {
-        Thread.currentThread().setName("eewbot-duplicator-metrics-thread");
+    public void handleWebhookSenderNotFounds() {
+        Thread.currentThread().setName("eewbot-webhook-sender-handle-not-found-thread");
 
         try {
             HttpRequest getRequest = HttpRequest.newBuilder()
                     .GET()
-                    .uri(new URIBuilder(this.duplicatorAddress).setPath("/api/negative_cache").build())
+                    .uri(new URIBuilder(this.duplicatorAddress).setPath("/api/notfounds").build())
                     .header("User-Agent", "eewbot")
                     .build();
             HttpResponse<String> getResponse = this.httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString());
             if (getResponse.statusCode() != 200) {
-                Log.logger.error("Failed to fetch negative cache from duplicator: " + getResponse.statusCode() + " " + getResponse.body());
+                Log.logger.error("Failed to fetch not founds from webhook sender: " + getResponse.statusCode() + " " + getResponse.body());
                 return;
             }
 
@@ -328,23 +328,12 @@ public class EEWService {
                         if (current != null && current.getId() == webhookId)
                             this.channels.setWebhook(channelId, null);
                     }));
-
-            HttpRequest delRequest = HttpRequest.newBuilder()
-                    .DELETE()
-                    .uri(new URIBuilder(this.duplicatorAddress).setPath("/api/negative_cache").build())
-                    .header("User-Agent", "eewbot")
-                    .header("X-Delete-Targets", EEWBot.GSON.toJson(notFoundList))
-                    .build();
-            HttpResponse<Void> delResponse = this.httpClient.send(delRequest, HttpResponse.BodyHandlers.discarding());
-            if (delResponse.statusCode() != 200) {
-                Log.logger.error("Failed to delete negative cache from duplicator: " + delResponse.statusCode());
-            }
         } catch (IOException e) {
-            Log.logger.error("Failed to fetch metrics from duplicator", e);
+            Log.logger.error("Failed to fetch not founds from webhook sender", e);
         } catch (InterruptedException e) {
-            Log.logger.error("Interrupted while fetching errors from duplicator", e);
+            Log.logger.error("Interrupted while fetching not founds from webhook sender", e);
         } catch (URISyntaxException e) {
-            Log.logger.error("Invalid duplicator metrics URI", e);
+            Log.logger.error("Invalid webhook sender not founds URI", e);
         }
     }
 }
