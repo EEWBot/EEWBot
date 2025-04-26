@@ -8,6 +8,7 @@ import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
+import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
 import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.ChannelBase;
@@ -90,21 +91,21 @@ public class EEWService {
 
         Map<Boolean, Map<Long, ChannelBase>> webhookPartitioned = this.channels.getChannelsPartitionedByWebhookPresent(filter);
 
-        Map<String, DiscordWebhook> cacheWebhook = new HashMap<>();
+        List<DiscordWebhookRequest> webhookRequests = new ArrayList<>();
         this.i18n.getLanguages().keySet().forEach(lang -> {
             DiscordWebhook webhook = entity.createWebhook(lang);
             webhook.avatar_url = this.avatarUrl;
-            cacheWebhook.put(lang, webhook);
+            webhookRequests.add(new DiscordWebhookRequest(lang, webhook));
         });
 
         Map<Long, ChannelBase> webhookChannels = webhookPartitioned.get(true);
         if (!webhookChannels.isEmpty()) {
             Log.logger.info("Sending webhook message to {} channels", webhookChannels.size());
             if (this.webhookSenderAddress == null) {
-                sendWebhook(cacheWebhook, webhookChannels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe());
+                sendWebhook(webhookRequests, webhookChannels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe());
             } else {
-                sendWebhookSender(cacheWebhook, webhookChannels, channels ->
-                        sendWebhook(cacheWebhook, channels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe()));
+                sendWebhookSender(webhookRequests, webhookChannels, channels ->
+                        sendWebhook(webhookRequests, channels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe()));
             }
         }
 
@@ -150,13 +151,13 @@ public class EEWService {
                 .subscribe();
     }
 
-    private void sendWebhook(Map<String, DiscordWebhook> webhookBodyByLang, Map<Long, ChannelBase> webhookChannels, BiFunction<Long, ChannelBase, Disposable> onError) {
+    private void sendWebhook(List<DiscordWebhookRequest> webhookRequests, Map<Long, ChannelBase> webhookChannels, BiFunction<Long, ChannelBase, Disposable> onError) {
         HttpHost target = new HttpHost("https", "discord.com");
         Map<String, SimpleHttpRequest> cacheReq = new HashMap<>();
-        this.i18n.getLanguages().keySet().forEach(lang -> cacheReq.put(lang, SimpleRequestBuilder.post()
+        webhookRequests.forEach(webhookRequest -> cacheReq.put(webhookRequest.getLang(), SimpleRequestBuilder.post()
                 .setHttpHost(target)
                 .addHeader("User-Agent", "EEWBot")
-                .setBody(EEWBot.GSON.toJson(webhookBodyByLang.get(lang)), ContentType.APPLICATION_JSON)
+                .setBody(EEWBot.GSON.toJson(webhookRequest.getWebhook()), ContentType.APPLICATION_JSON)
                 .build()));
 
         try {
@@ -220,22 +221,21 @@ public class EEWService {
         }
     }
 
-    private void sendWebhookSender(Map<String, DiscordWebhook> webhookByLang, Map<Long, ChannelBase> webhookChannels, Consumer<Map<Long, ChannelBase>> onError) {
+    private void sendWebhookSender(List<DiscordWebhookRequest> webhookRequests, Map<Long, ChannelBase> webhookChannels, Consumer<Map<Long, ChannelBase>> onError) {
         try {
             long startTime = System.currentTimeMillis();
 
             HttpHost target = HttpHost.create(this.webhookSenderAddress);
             Map<String, SimpleHttpRequest> requestsByLang = new HashMap<>();
-            Map<String, List<String>> webhooksByLang = new HashMap<>();
-            webhookChannels.forEach((channelId, channel) ->
-                    webhooksByLang.computeIfAbsent(channel.getLang(), k -> new ArrayList<>()).add(Objects.requireNonNull(channel.getWebhook()).getUrl()));
+            webhookChannels.values().forEach(channel -> {
+                // TODO: Refactor
+                DiscordWebhookRequest req = webhookRequests.stream().filter(webhook -> webhook.getLang().equals(channel.getLang())).findAny().orElseThrow();
+                req.addTarget(Objects.requireNonNull(channel.getWebhook()).getUrl());
+            });
 
             AtomicInteger requestCount = new AtomicInteger();
-            webhooksByLang.forEach((lang, webhooks) -> {
-                if (webhooks.isEmpty())
-                    return;
-
-                WebhookSenderRequest body = new WebhookSenderRequest(webhooks, webhookByLang.get(lang));
+            webhookRequests.forEach(webhookRequest -> {
+                  WebhookSenderRequest body = WebhookSenderRequest.from(webhookRequest);
 
                 SimpleHttpRequest request = SimpleRequestBuilder.post()
                         .setHttpHost(target)
@@ -243,7 +243,7 @@ public class EEWService {
                         .setPath("/api/send")
                         .setBody(EEWBot.GSON.toJson(body), ContentType.APPLICATION_JSON)
                         .build();
-                requestsByLang.put(lang, request);
+                requestsByLang.put(webhookRequest.getLang(), request);
                 requestCount.getAndIncrement();
             });
 
@@ -307,7 +307,7 @@ public class EEWService {
             HttpRequest getRequest = HttpRequest.newBuilder()
                     .GET()
                     .uri(new URIBuilder(this.webhookSenderAddress).setPath("/api/notfounds").build())
-                    .header("User-Agent", "eewbot")
+                    .header("User-Agent", "EEWBot")
                     .build();
             HttpResponse<String> getResponse = this.httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString());
             if (getResponse.statusCode() != 200) {
