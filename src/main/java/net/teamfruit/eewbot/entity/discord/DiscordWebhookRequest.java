@@ -7,7 +7,7 @@ public class DiscordWebhookRequest {
 
     private final String lang;
     private final DiscordWebhook webhook;
-    private final List<String > targets = new ArrayList<>();
+    private final List<String> targets = new ArrayList<>();
 
     public DiscordWebhookRequest(String lang, DiscordWebhook webhook) {
         this.lang = lang;
