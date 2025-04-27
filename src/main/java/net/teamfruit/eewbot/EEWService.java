@@ -42,7 +42,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -222,78 +221,39 @@ public class EEWService {
     }
 
     private void sendWebhookSender(List<DiscordWebhookRequest> webhookRequests, Map<Long, ChannelBase> webhookChannels, Consumer<Map<Long, ChannelBase>> onError) {
+        Map<String, List<String>> targetsByLang = webhookChannels.values().stream()
+                .collect(Collectors.groupingBy(
+                        ChannelBase::getLang,
+                        Collectors.mapping(map -> Objects.requireNonNull(map.getWebhook()).getUrl(), Collectors.toList())
+                ));
+
+        List<WebhookSenderRequest> senderRequests = webhookRequests.stream()
+                .peek(webhookRequest -> webhookRequest.getTargets()
+                        .addAll(targetsByLang.getOrDefault(webhookRequest.getLang(), Collections.emptyList())))
+                .filter(webhookRequest -> !webhookRequest.getTargets().isEmpty())
+                .map(WebhookSenderRequest::from)
+                .collect(Collectors.toList());
+
         try {
-            long startTime = System.currentTimeMillis();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(new URIBuilder(this.webhookSenderAddress).setPath("/api/send").build())
+                    .header("User-Agent", "EEWBot")
+                    .POST(HttpRequest.BodyPublishers.ofString(EEWBot.GSON.toJson(senderRequests)))
+                    .build();
 
-            HttpHost target = HttpHost.create(this.webhookSenderAddress);
-            Map<String, List<String>> targetsByLang = webhookChannels.values().stream()
-                    .collect(Collectors.groupingBy(
-                            ChannelBase::getLang,
-                            Collectors.mapping(map -> Objects.requireNonNull(map.getWebhook()).getUrl(), Collectors.toList())
-                    ));
-            webhookRequests.forEach(webhookRequest -> webhookRequest.getTargets().addAll(targetsByLang.getOrDefault(webhookRequest.getLang(), Collections.emptyList())));
-
-            AtomicInteger requestCount = new AtomicInteger();
-            Map<String, SimpleHttpRequest> requestsByLang = new HashMap<>();
-
-            webhookRequests.stream().filter(webhookRequest -> !webhookRequest.getTargets().isEmpty()).forEach(webhookRequest -> {
-                WebhookSenderRequest body = WebhookSenderRequest.from(webhookRequest);
-
-                Log.logger.info(EEWBot.GSON.toJson(body));
-                SimpleHttpRequest request = SimpleRequestBuilder.post()
-                        .setHttpHost(target)
-                        .addHeader("User-Agent", "EEWBot")
-                        .setPath("/api/send")
-                        .setBody(EEWBot.GSON.toJson(body), ContentType.APPLICATION_JSON)
-                        .build();
-                requestsByLang.put(webhookRequest.getLang(), request);
-                requestCount.getAndIncrement();
-            });
-
-            final Future<AsyncClientEndpoint> leaseFuture = this.asyncHttpClient.lease(target, null);
-            final AsyncClientEndpoint endpoint = leaseFuture.get(10, TimeUnit.SECONDS);
-            try {
-                final CountDownLatch latch = new CountDownLatch(requestCount.get());
-                requestsByLang.forEach((lang, request) ->
-                        endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
-
-                            @Override
-                            public void completed(SimpleHttpResponse simpleHttpResponse) {
-                                latch.countDown();
-                                Log.logger.info("Sent message to webhook sender: {}", simpleHttpResponse.getCode());
-                                if (simpleHttpResponse.getCode() < 200 || simpleHttpResponse.getCode() >= 300) {
-                                    Log.logger.info("Failed to send message to webhook sender: {}", simpleHttpResponse.getCode());
-                                    onError.accept(webhookChannels.entrySet().stream()
-                                            .filter(entry -> entry.getValue().getLang().equals(lang))
-                                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-                                }
-                            }
-
-                            @Override
-                            public void failed(Exception e) {
-                                latch.countDown();
-                                Log.logger.info("Failed to connect to webhook sender: {}", e.getMessage());
-                                onError.accept(webhookChannels.entrySet().stream()
-                                        .filter(entry -> entry.getValue().getLang().equals(lang))
-                                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-                            }
-
-                            @Override
-                            public void cancelled() {
-                                latch.countDown();
-                                Log.logger.info("Cancelled to connect to webhook sender");
-                                onError.accept(webhookChannels.entrySet().stream()
-                                        .filter(entry -> entry.getValue().getLang().equals(lang))
-                                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-                            }
-                        }));
-                latch.await();
-            } finally {
-                endpoint.releaseAndReuse();
+            HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                Log.logger.error("Failed to send message to webhook sender: {}", response.statusCode());
+                onError.accept(webhookChannels);
+                return;
             }
-            Log.logger.info("Sent {} requests to webhook sender in {}ms", requestCount.get(), System.currentTimeMillis() - startTime);
-        } catch (ExecutionException | InterruptedException | TimeoutException e) {
-            Log.logger.error("Failed to send message: Failed to connect to webhook sender");
+            Log.logger.info("Sent message to webhook sender: {}", response.body());
+        } catch (IOException e) {
+            Log.logger.error("Failed to send message to webhook sender", e);
+        } catch (InterruptedException e) {
+            Log.logger.error("Interrupted while sending messages to webhook sender", e);
+        } catch (URISyntaxException e) {
+            Log.logger.error("Invalid webhook sender send URI", e);
         }
     }
 
