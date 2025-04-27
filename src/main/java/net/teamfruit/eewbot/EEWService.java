@@ -226,17 +226,20 @@ public class EEWService {
             long startTime = System.currentTimeMillis();
 
             HttpHost target = HttpHost.create(this.webhookSenderAddress);
-            Map<String, SimpleHttpRequest> requestsByLang = new HashMap<>();
-            webhookChannels.values().forEach(channel -> {
-                // TODO: Refactor
-                DiscordWebhookRequest req = webhookRequests.stream().filter(webhook -> webhook.getLang().equals(channel.getLang())).findAny().orElseThrow();
-                req.addTarget(Objects.requireNonNull(channel.getWebhook()).getUrl());
-            });
+            Map<String, List<String>> targetsByLang = webhookChannels.values().stream()
+                    .collect(Collectors.groupingBy(
+                            ChannelBase::getLang,
+                            Collectors.mapping(map -> Objects.requireNonNull(map.getWebhook()).getUrl(), Collectors.toList())
+                    ));
+            webhookRequests.forEach(webhookRequest -> webhookRequest.getTargets().addAll(targetsByLang.getOrDefault(webhookRequest.getLang(), Collections.emptyList())));
 
             AtomicInteger requestCount = new AtomicInteger();
-            webhookRequests.forEach(webhookRequest -> {
-                  WebhookSenderRequest body = WebhookSenderRequest.from(webhookRequest);
+            Map<String, SimpleHttpRequest> requestsByLang = new HashMap<>();
 
+            webhookRequests.stream().filter(webhookRequest -> !webhookRequest.getTargets().isEmpty()).forEach(webhookRequest -> {
+                WebhookSenderRequest body = WebhookSenderRequest.from(webhookRequest);
+
+                Log.logger.info(EEWBot.GSON.toJson(body));
                 SimpleHttpRequest request = SimpleRequestBuilder.post()
                         .setHttpHost(target)
                         .addHeader("User-Agent", "EEWBot")
