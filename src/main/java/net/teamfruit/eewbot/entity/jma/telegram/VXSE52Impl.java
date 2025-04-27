@@ -17,11 +17,9 @@ import java.util.Optional;
 
 public class VXSE52Impl extends JmxSeis implements VXSE52 {
 
-    @Override
-    public Optional<SeismicIntensity> getQuakeInfoMaxInt() {
-        // なんとかしたい
-        return EEWBot.instance.getQuakeInfoStore().getReport(getHead().getEventID(), JMAXmlType.VXSE51)
-                .flatMap(QuakeInfo::getQuakeInfoMaxInt);
+    // なんとかしたい
+    private Optional<QuakeInfo> getVXSE51() {
+        return EEWBot.instance.getQuakeInfoStore().getReport(getHead().getEventID(), JMAXmlType.VXSE51);
     }
 
     private Earthquake getEarthquake() {
@@ -32,13 +30,6 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
 
     private Hypocenter getHypocenter() {
         return Objects.requireNonNull(getEarthquake().getHypocenter());
-    }
-
-    private Intensity.IntensityDetail getObservation() {
-        if (isCancelReport())
-            throw new IllegalStateException("Cancel report");
-        Intensity intensity = Objects.requireNonNull(getBody().getIntensity());
-        return Objects.requireNonNull(intensity.getObservation());
     }
 
     private Comment getComments() {
@@ -78,6 +69,11 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     }
 
     @Override
+    public Optional<SeismicIntensity> getQuakeInfoMaxInt() {
+        return getVXSE51().flatMap(QuakeInfo::getQuakeInfoMaxInt);
+    }
+
+    @Override
     public Instant getTime() {
         return getOriginTime();
     }
@@ -89,7 +85,9 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
 
     @Override
     public Intensity.IntensityDetail getIntensityDetail() {
-        return getObservation();
+        if (isCancelReport())
+            throw new IllegalStateException("Cancel report");
+        return getVXSE51().map(QuakeInfo::getIntensityDetail).orElse(null);
     }
 
 }

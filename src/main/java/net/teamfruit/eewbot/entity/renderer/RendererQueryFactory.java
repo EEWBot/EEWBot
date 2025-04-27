@@ -91,13 +91,18 @@ public class RendererQueryFactory {
                 .build();
     }
 
-    private Map<SeismicIntensity, List<Integer>> buildCodeMap(Intensity.IntensityDetail observation) {
+    private Map<SeismicIntensity, List<Integer>> buildCodeMap(@Nullable Intensity.IntensityDetail observation) {
         Map<SeismicIntensity, List<Integer>> codeMap = new EnumMap<>(SeismicIntensity.class);
         for (SeismicIntensity intensity : SeismicIntensity.values()) {
             if (intensity != SeismicIntensity.UNKNOWN) {
                 codeMap.put(intensity, new ArrayList<>());
             }
         }
+
+        if (observation == null) {
+            return codeMap;
+        }
+
         for (IntensityPref pref : observation.getIntensityPref()) {
             for (IntensityArea area : pref.getAreas()) {
                 codeMap.get(area.getMaxInt()).add(Integer.valueOf(area.getCode()));
@@ -123,7 +128,11 @@ public class RendererQueryFactory {
         return buffer.array();
     }
 
-    private String generateQuakePrefectureData(@NonNull Instant time, @Nullable Coordinate coordinate, @NonNull Intensity.IntensityDetail observation) {
+    private String generateQuakePrefectureData(@NonNull Instant time, @Nullable Coordinate coordinate, @Nullable Intensity.IntensityDetail observation) {
+        if (coordinate == null && observation == null) {
+            throw new IllegalArgumentException("Either coordinate or observation is required");
+        }
+
         QuakePrefectureData.Builder builder = new QuakePrefectureData.Builder();
         builder.time(time.getEpochSecond());
 
