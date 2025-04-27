@@ -150,4 +150,3 @@ gradle-app.setting
 *.log
 channels.json
 config.json
-gradle.properties
