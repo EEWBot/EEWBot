@@ -26,8 +26,9 @@ public class DiscordWebhookRequest {
         return this.targets;
     }
 
-    public void addTarget(String target) {
+    public DiscordWebhookRequest addTarget(String target) {
         this.targets.add(target);
+        return this;
     }
 
 }

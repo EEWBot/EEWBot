@@ -238,15 +238,17 @@ public class EEWService {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(new URIBuilder(this.webhookSenderAddress).setPath("/api/send").build())
                     .header("User-Agent", "EEWBot")
+                    .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(EEWBot.GSON.toJson(senderRequests)))
                     .build();
 
             HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                Log.logger.error("Failed to send message to webhook sender: {}", response.statusCode());
+                Log.logger.error("Failed to send message to webhook sender: {} {}", response.statusCode(), response.body());
                 onError.accept(webhookChannels);
                 return;
             }
+            Log.logger.info("Successfully sent message to webhook sender: {}", response.body());
             Log.logger.info("Sent message to webhook sender: {}", response.body());
         } catch (IOException e) {
             Log.logger.error("Failed to send message to webhook sender", e);
@@ -255,6 +257,17 @@ public class EEWService {
         } catch (URISyntaxException e) {
             Log.logger.error("Invalid webhook sender send URI", e);
         }
+    }
+
+    public int sendWebhookSenderSingle(WebhookSenderRequest senderRequest) throws URISyntaxException, IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URIBuilder(this.webhookSenderAddress).setPath("/api/send").build())
+                .header("User-Agent", "EEWBot")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(EEWBot.GSON.toJson(List.of(senderRequest))))
+                .build();
+        HttpResponse<Void> response = this.httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+        return response.statusCode();
     }
 
     public Mono<Message> directSendMessagePassErrors(long channelId, MessageCreateSpec spec) {
