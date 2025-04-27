@@ -10,14 +10,7 @@ plugins {
 
 repositories {
     mavenLocal()
-    maven {
-        name = "GitHubPackages-base65536j"
-        url  = uri("https://maven.pkg.github.com/EEWBot/Base65536J")
-        credentials {
-            username = project.findProperty("gpr.user") as String? ?: System.getenv("GPR_USER")
-            password = project.findProperty("gpr.key") as String? ?: System.getenv("GPR_KEY")
-        }
-    }
+    maven { url = uri("https://central.sonatype.com/repository/maven-snapshots/") }
     maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
     maven { url = uri("https://jcenter.bintray.com") }
     maven { url = uri("https://jitpack.io") }
