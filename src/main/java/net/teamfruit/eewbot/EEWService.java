@@ -248,7 +248,6 @@ public class EEWService {
                 onError.accept(webhookChannels);
                 return;
             }
-            Log.logger.info("Successfully sent message to webhook sender: {}", response.body());
             Log.logger.info("Sent message to webhook sender: {}", response.body());
         } catch (IOException e) {
             Log.logger.error("Failed to send message to webhook sender", e);

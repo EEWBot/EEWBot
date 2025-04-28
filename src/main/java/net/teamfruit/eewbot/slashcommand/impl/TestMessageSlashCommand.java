@@ -59,7 +59,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                 DiscordWebhook webhook = DiscordWebhook.builder()
                         .addEmbed(I18nDiscordEmbed.builder(lang)
                                 .title("eewbot.scmd.testmessage.title")
-                                .description("eewbot.scmd.testmessage.webhook")
+                                .description("eewbot.scmd.testmessage.webhooksender")
                                 .color(Color.of(7506394))
                                 .author(EEWBot.instance.getUsername(), "https://github.com/EEWBot/EEWBot", EEWBot.instance.getAvatarUrl())
                                 .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png")
@@ -69,7 +69,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                 try {
                     int statusCode = bot.getService().sendWebhookSenderSingle(WebhookSenderRequest.from(request));
                     if (statusCode >= 200 && statusCode < 300) {
-                        return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success")).then();
+                        return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success.webhooksender")).then();
                     }
                     return event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
@@ -94,7 +94,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                                     .build().asRequest())
                             .avatarUrl(bot.getAvatarUrl())
                             .build()))
-                    .flatMap(message -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success")))
+                    .flatMap(message -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success.webhook")))
                     .onErrorResume(ClientException.isStatusCode(404), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
                                     .title("eewbot.scmd.testmessage.error.title")
@@ -112,10 +112,10 @@ public class TestMessageSlashCommand implements ISlashCommand {
             return bot.getService().directSendMessagePassErrors(channelId, MessageCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createEmbed(lang)
                                     .title("eewbot.scmd.testmessage.title")
-                                    .description("eewbot.scmd.testmessage.normal")
+                                    .description("eewbot.scmd.testmessage.nowebhook")
                                     .build())
                             .build())
-                    .flatMap(message -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success")))
+                    .flatMap(message -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success.nowebhook")))
                     .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
                                     .title("eewbot.scmd.testmessage.error.title")
