@@ -10,7 +10,6 @@ plugins {
 
 repositories {
     mavenLocal()
-    maven { url = uri("https://central.sonatype.com/repository/maven-snapshots/") }
     maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
     maven { url = uri("https://jcenter.bintray.com") }
     maven { url = uri("https://jitpack.io") }
