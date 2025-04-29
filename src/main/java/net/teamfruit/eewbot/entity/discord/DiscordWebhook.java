@@ -1,7 +1,5 @@
 package net.teamfruit.eewbot.entity.discord;
 
-import net.teamfruit.eewbot.EEWBot;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,10 +58,6 @@ public class DiscordWebhook {
         public DiscordWebhook build() {
             return this.webhook;
         }
-    }
-
-    public String json() {
-        return EEWBot.GSON.toJson(this);
     }
 
 }
