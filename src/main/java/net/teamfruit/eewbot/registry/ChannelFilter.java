@@ -49,23 +49,39 @@ public class ChannelFilter {
             if (this.isGuild != null)
                 builder.append("@isGuild:{").append(this.isGuild).append("} ");
             else
-                builder.append("-@isGuild:{true | false}");
+                builder.append("-@isGuild:{true | false} ");
         }
         if (this.guildIdPresent)
             builder.append("@guildId:[").append(this.guildId).append(" ").append(this.guildId).append("] ");
-        if (this.eewAlertPresent)
-            builder.append("@eewAlert:{").append(this.eewAlert).append("} ");
-        if (this.eewPredictionPresent)
-            builder.append("@eewPrediction:{").append(this.eewPrediction).append("} ");
-        if (this.eewDecimationPresent)
-            builder.append("@eewDecimation:{").append(this.eewDecimation).append("} ");
-        if (this.quakeInfoPresent)
-            builder.append("@quakeInfo:{").append(this.quakeInfo).append("} ");
+        if (this.eewAlertPresent) {
+            if (this.eewAlert)
+                builder.append("@flags:{eewAlert} ");
+            else
+                builder.append("-@flags:{eewAlert} ");
+        }
+        if (this.eewPredictionPresent) {
+            if (this.eewPrediction)
+                builder.append("@flags:{eewPrediction} ");
+            else
+                builder.append("-@flags:{eewPrediction} ");
+        }
+        if (this.eewDecimationPresent) {
+            if (this.eewDecimation)
+                builder.append("@flags:{eewDecimation} ");
+            else
+                builder.append("-@flags:{eewDecimation} ");
+        }
+        if (this.quakeInfoPresent) {
+            if (this.quakeInfo)
+                builder.append("@flags:{quakeInfo} ");
+            else
+                builder.append("-@flags:{quakeInfo} ");
+        }
         if (this.intensityPresent)
             builder.append("@minIntensity:[0 ").append(this.intensity.ordinal()).append("] ");
         if (this.webhookIdPresent)
             builder.append("@webhookId:[").append(this.webhookId).append(" ").append(this.webhookId).append("]");
-        return builder.toString();
+        return builder.toString().trim();
     }
 
     public static ChannelFilter.Builder builder() {
