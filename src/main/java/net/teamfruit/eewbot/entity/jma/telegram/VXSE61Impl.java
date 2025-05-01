@@ -16,8 +16,8 @@ import java.util.Optional;
 public class VXSE61Impl extends JmxSeis implements VXSE61 {
 
     // なんとかしたい
-    private Optional<QuakeInfo> getVXSE51() {
-        return EEWBot.instance.getQuakeInfoStore().getReport(getHead().getEventID(), JMAXmlType.VXSE51);
+    private Optional<QuakeInfo> getVXSE53() {
+        return EEWBot.instance.getQuakeInfoStore().getReport(getHead().getEventID(), JMAXmlType.VXSE53);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class VXSE61Impl extends JmxSeis implements VXSE61 {
     public Intensity.IntensityDetail getIntensityDetail() {
         if (isCancelReport())
             throw new IllegalStateException("Cancel report");
-        return getVXSE51().map(QuakeInfo::getIntensityDetail).orElse(null);
+        return getVXSE53().map(QuakeInfo::getIntensityDetail).orElse(null);
     }
 
     private Earthquake getEarthquake() {
