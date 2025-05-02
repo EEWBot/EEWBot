@@ -102,26 +102,38 @@ public class ChannelRegistryRedis implements ChannelRegistry {
 
     private void migrateLegacyFlags() {
         Log.logger.info("Migrating legacy flags to array format");
-        Set<String> keys = jedisPool.keys(CHANNEL_PREFIX + "*");
+        Set<String> keys = this.jedisPool.keys(CHANNEL_PREFIX + "*");
+        Log.logger.info("Found " + keys.size() + " keys to migrate");
         for (String key : keys) {
             List<String> flags = new ArrayList<>();
             try {
-                Boolean a;
-                a = jedisPool.jsonGet(key, Boolean.class, Path.of("$.eewAlert"));
-                if (Boolean.TRUE.equals(a)) flags.add("eewAlert");
-                a = jedisPool.jsonGet(key, Boolean.class, Path.of("$.eewPrediction"));
-                if (Boolean.TRUE.equals(a)) flags.add("eewPrediction");
-                a = jedisPool.jsonGet(key, Boolean.class, Path.of("$.eewDecimation"));
-                if (Boolean.TRUE.equals(a)) flags.add("eewDecimation");
-                a = jedisPool.jsonGet(key, Boolean.class, Path.of("$.quakeInfo"));
-                if (Boolean.TRUE.equals(a)) flags.add("quakeInfo");
-
-                jedisPool.jsonSet(key, Path.of("$.flags"), flags, new JsonSetParams());
+                if (getFlagAsBoolean(key, "$.eewAlert")) {
+                    flags.add("eewAlert");
+                }
+                if (getFlagAsBoolean(key, "$.eewPrediction")) {
+                    flags.add("eewPrediction");
+                }
+                if (getFlagAsBoolean(key, "$.eewDecimation")) {
+                    flags.add("eewDecimation");
+                }
+                if (getFlagAsBoolean(key, "$.quakeInfo")) {
+                    flags.add("quakeInfo");
+                }
+                this.jedisPool.jsonSet(key, Path.of("$.flags"), flags, new JsonSetParams());
             } catch (Exception e) {
                 Log.logger.warn("Failed to migrate flags for " + key, e);
             }
         }
         Log.logger.info("Legacy flags migration finished");
+    }
+
+    private boolean getFlagAsBoolean(String redisKey, String jsonPath) {
+        Boolean[] arr = this.jedisPool.jsonGet(
+                redisKey,
+                Boolean[].class,
+                Path.of(jsonPath)
+        );
+        return arr != null && arr.length > 0 && Boolean.TRUE.equals(arr[0]);
     }
 
     @Override
