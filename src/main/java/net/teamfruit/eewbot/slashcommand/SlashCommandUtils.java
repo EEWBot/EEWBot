@@ -16,7 +16,7 @@ public class SlashCommandUtils {
     public static String getLanguage(EEWBot bot, InteractionCreateEvent event) {
         Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
         if (channel == null)
-            return bot.getConfig().getDefaultLanguage();
+            return bot.getConfig().getBase().getDefaultLanguage();
         return channel.getLang();
     }
 

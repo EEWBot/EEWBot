@@ -25,7 +25,7 @@ public abstract class NTPGateway implements Gateway<TimeInfo> {
             final NTPUDPClient client = new NTPUDPClient();
             client.setDefaultTimeout(10000);
             client.open();
-            final InetAddress hostAddr = InetAddress.getByName(EEWBot.instance.getConfig().getNptServer());
+            final InetAddress hostAddr = InetAddress.getByName(EEWBot.instance.getConfig().getLegacy().getNtpServer());
 
             onNewData(client.getTime(hostAddr));
         } catch (final Exception e) {

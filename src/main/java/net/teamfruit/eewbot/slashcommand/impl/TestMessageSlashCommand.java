@@ -55,7 +55,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
         boolean hasWebhook = channel != null && channel.getWebhook() != null;
 
         if (hasWebhook) {
-            if (StringUtils.isNotEmpty(bot.getConfig().getWebhookSenderAddress())) {
+            if (StringUtils.isNotEmpty(bot.getConfig().getWebhookSender().getAddress())) {
                 DiscordWebhook webhook = DiscordWebhook.builder()
                         .addEmbed(I18nDiscordEmbed.builder(lang)
                                 .title("eewbot.scmd.testmessage.title")

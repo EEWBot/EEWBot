@@ -19,9 +19,9 @@ import discord4j.gateway.intent.IntentSet;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.*;
+import net.teamfruit.eewbot.registry.JsonRegistry;
 import net.teamfruit.eewbot.registry.channel.*;
-import net.teamfruit.eewbot.registry.config.Config;
+import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.HostAndPort;
@@ -50,7 +50,7 @@ public class EEWBot {
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
     public static final String CONFIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
-    private final JsonRegistry<Config> config = new JsonRegistry<>(CONFIG_DIRECTORY != null ? Paths.get(CONFIG_DIRECTORY, "config.json") : Paths.get("config.json"), Config::new, Config.class, GSON_PRETTY);
+    private final JsonRegistry<ConfigV2> config = new JsonRegistry<>(CONFIG_DIRECTORY != null ? Paths.get(CONFIG_DIRECTORY, "config.json") : Paths.get("config.json"), ConfigV2::new, ConfigV2.class, GSON_PRETTY);
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -70,12 +70,12 @@ public class EEWBot {
     public void initialize() throws IOException {
         this.config.init();
 
-        this.i18n = new I18n(getConfig().getDefaultLanguage());
-        this.rendererQueryFactory = new RendererQueryFactory(getConfig().getRendererAddress(), getConfig().getRendererKey());
+        this.i18n = new I18n(getConfig().getBase().getDefaultLanguage());
+        this.rendererQueryFactory = new RendererQueryFactory(getConfig().getRenderer().getAddress(), getConfig().getRenderer().getKey());
 
         Path path = DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json");
-        if (StringUtils.isNotEmpty(getConfig().getRedisAddress())) {
-            String redisAddress = getConfig().getRedisAddress();
+        if (StringUtils.isNotEmpty(getConfig().getRedis().getAddress())) {
+            String redisAddress = getConfig().getRedis().getAddress();
             HostAndPort hnp = redisAddress.lastIndexOf(":") < 0 ? new HostAndPort(redisAddress, 6379) : HostAndPort.from(redisAddress);
             JedisPooled jedisPooled = new JedisPooled(hnp);
             ChannelRegistryRedis registry = new ChannelRegistryRedis(jedisPooled, GSON);
@@ -89,17 +89,17 @@ public class EEWBot {
 
         final String token = System.getenv("TOKEN");
         if (token != null)
-            getConfig().setToken(token);
+            getConfig().getBase().setDiscordToken(token);
 
         String dmdataAPIKey = System.getenv("DMDATA_API_KEY");
         if (dmdataAPIKey != null)
-            getConfig().setDmdataAPIKey(dmdataAPIKey);
+            getConfig().getDmdata().setAPIKey(dmdataAPIKey);
 
-        if (!getConfig().validate()) {
+        if (!getConfig().isValid()) {
             return;
         }
 
-        this.gateway = DiscordClient.create(getConfig().getToken())
+        this.gateway = DiscordClient.create(getConfig().getBase().getDiscordToken())
                 .gateway()
                 .setSharding(ShardingStrategy.recommended())
                 .setEnabledIntents(IntentSet.of(Intent.GUILDS))
@@ -195,7 +195,7 @@ public class EEWBot {
         }
     }
 
-    public Config getConfig() {
+    public ConfigV2 getConfig() {
         return this.config.getElement();
     }
 

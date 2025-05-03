@@ -64,8 +64,8 @@ public class EEWService {
         this.i18n = bot.getI18n();
         this.executor = bot.getScheduledExecutor();
         this.httpClient = bot.getHttpClient();
-        int poolingMax = bot.getConfig().getPoolingMax();
-        int poolingMaxPerRoute = bot.getConfig().getPoolingMaxPerRoute();
+        int poolingMax = bot.getConfig().getAdvanced().getPoolingMax();
+        int poolingMaxPerRoute = bot.getConfig().getAdvanced().getPoolingMaxPerRoute();
 
         PoolingAsyncClientConnectionManager connectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
                 .setMaxConnTotal(poolingMax)
@@ -78,8 +78,8 @@ public class EEWService {
                 connectionManager);
         this.asyncHttpClient.start();
 
-        if (StringUtils.isNotEmpty(bot.getConfig().getWebhookSenderAddress()))
-            this.webhookSenderAddress = URI.create(bot.getConfig().getWebhookSenderAddress());
+        if (StringUtils.isNotEmpty(bot.getConfig().getWebhookSender().getAddress()))
+            this.webhookSenderAddress = URI.create(bot.getConfig().getWebhookSender().getAddress());
         else
             this.webhookSenderAddress = null;
     }

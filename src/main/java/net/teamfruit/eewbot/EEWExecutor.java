@@ -16,8 +16,8 @@ import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.gateway.*;
 import net.teamfruit.eewbot.registry.channel.ChannelFilter;
 import net.teamfruit.eewbot.registry.channel.ChannelRegistry;
-import net.teamfruit.eewbot.registry.config.Config;
 import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
+import net.teamfruit.eewbot.registry.config.ConfigV2;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
 
@@ -35,13 +35,13 @@ public class EEWExecutor {
     private final ExecutorService messageExecutor;
     private final TimeProvider timeProvider;
     private final EEWService service;
-    private final Config config;
+    private final ConfigV2 config;
     private final long applicationId;
     private final GatewayDiscordClient client;
     private final ChannelRegistry channels;
     private final QuakeInfoStore quakeInfoStore;
 
-    public EEWExecutor(final EEWService service, final Config config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels, QuakeInfoStore quakeInfoStore) {
+    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels, QuakeInfoStore quakeInfoStore) {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;
@@ -59,7 +59,7 @@ public class EEWExecutor {
     }
 
     public void init() {
-        if (this.config.isEnableKyoshin()) {
+        if (this.config.getLegacy().isEnableKyoshin()) {
             this.timeProvider.init();
 
             this.scheduledExecutor.scheduleAtFixedRate(new KmoniGateway(this.timeProvider) {
@@ -88,9 +88,9 @@ public class EEWExecutor {
                     builder.intensity(maxIntensity);
                     EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew));
                 }
-            }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
+            }, 0, this.config.getLegacy().getKyoshinDelay(), TimeUnit.SECONDS);
         } else {
-            DmdataGateway dmdataGateway = new DmdataGateway(new DmdataAPI(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin()), this.applicationId, this.config.isDmdataMultiSocketConnect()) {
+            DmdataGateway dmdataGateway = new DmdataGateway(new DmdataAPI(this.config.getDmdata().getAPIKey(), this.config.getDmdata().getOrigin()), this.applicationId, this.config.getDmdata().isMultiSocketConnect()) {
                 @Override
                 public void onNewData(DmdataEEW eew) {
                     if (eew.getBody().getEarthquake() != null &&
@@ -129,7 +129,7 @@ public class EEWExecutor {
             this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(dmdataGateway), 30, 30, TimeUnit.SECONDS);
         }
 
-        if (this.config.isEnableLegacyQuakeInfo()) {
+        if (this.config.getLegacy().isEnableLegacyQuakeInfo()) {
             this.scheduledExecutor.scheduleAtFixedRate(new QuakeInfoGateway() {
 
                 @Override
@@ -141,7 +141,7 @@ public class EEWExecutor {
                     builder.intensity(data.getEarthquake().getIntensity());
                     EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data));
                 }
-            }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
+            }, 0, this.config.getLegacy().getLegacyQuakeInfoDelay(), TimeUnit.SECONDS);
         }
 
         int currentSecond = Calendar.getInstance().get(Calendar.SECOND);
@@ -153,7 +153,7 @@ public class EEWExecutor {
         this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.quakeInfoStore) {
             @Override
             public void onNewData(AbstractJMAReport data) {
-                if (!EEWExecutor.this.config.isEnableLegacyQuakeInfo() && data instanceof QuakeInfo) {
+                if (!EEWExecutor.this.config.getLegacy().isEnableLegacyQuakeInfo() && data instanceof QuakeInfo) {
                     ChannelFilter.Builder builder = ChannelFilter.builder();
                     builder.quakeInfo(true);
                     builder.intensity(((QuakeInfo) data).getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
@@ -164,11 +164,11 @@ public class EEWExecutor {
 
         this.scheduledExecutor.execute(new JMAXmlLGateway(this.quakeInfoStore));
 
-        if (StringUtils.isNotEmpty(this.config.getWebhookSenderAddress())) {
+        if (StringUtils.isNotEmpty(this.config.getWebhookSender().getAddress())) {
             this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleWebhookSenderNotFounds, 15, 15, TimeUnit.SECONDS);
         }
 
-        if (this.config.isWebhookMigration())
+        if (this.config.getAdvanced().isWebhookMigration())
             this.scheduledExecutor.scheduleWithFixedDelay(() -> {
                 Thread.currentThread().setName("eewbot-webhook-migration-thread");
 

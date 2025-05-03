@@ -17,9 +17,6 @@ public class Config {
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
-    private String webhookSenderAddress = "";
-    private String rendererAddress = "";
-    private String rendererKey = "";
     private int poolingMax = 20;
     private int poolingMaxPerRoute = 20;
     private boolean webhookMigration = false;
@@ -70,18 +67,6 @@ public class Config {
         return this.dmdataMultiSocketConnect;
     }
 
-    public String getWebhookSenderAddress() {
-        return this.webhookSenderAddress;
-    }
-
-    public String getRendererAddress() {
-        return this.rendererAddress;
-    }
-
-    public String getRendererKey() {
-        return this.rendererKey;
-    }
-
     public int getPoolingMax() {
         return this.poolingMax;
     }
@@ -123,27 +108,11 @@ public class Config {
         if (isEnableKyoshin()) {
             Log.logger.warn("Kyoshin EEW is enabled, please consider using DMDATA");
         }
-        if (StringUtils.isNotEmpty(getWebhookSenderAddress())) {
-            try {
-                new URI(getWebhookSenderAddress());
-            } catch (URISyntaxException e) {
-                Log.logger.info("Invalid webhook sender address: " + e.getMessage());
-                return false;
-            }
-        }
         if (StringUtils.isNotEmpty(getRedisAddress())) {
             try {
                 new URI(getRedisAddress());
             } catch (URISyntaxException e) {
                 Log.logger.info("Invalid redis address: " + e.getMessage());
-                return false;
-            }
-        }
-        if (StringUtils.isNotEmpty(getRendererAddress())) {
-            try {
-                new URI(getRendererAddress());
-            } catch (URISyntaxException e) {
-                Log.logger.info("Invalid renderer address: " + e.getMessage());
                 return false;
             }
         }
@@ -161,9 +130,6 @@ public class Config {
                 ", dmdataAPIKey='" + this.dmdataAPIKey + '\'' +
                 ", dmdataOrigin='" + this.dmdataOrigin + '\'' +
                 ", dmdataMultiSocketConnect=" + this.dmdataMultiSocketConnect +
-                ", webhookSenderAddress='" + this.webhookSenderAddress + '\'' +
-                ", rendererAddress='" + this.rendererAddress + '\'' +
-                ", rendererKey='" + this.rendererKey + '\'' +
                 ", poolingMax=" + this.poolingMax +
                 ", poolingMaxPerRoute=" + this.poolingMaxPerRoute +
                 ", webhookMigration=" + this.webhookMigration +

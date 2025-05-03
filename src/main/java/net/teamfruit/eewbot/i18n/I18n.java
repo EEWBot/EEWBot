@@ -32,7 +32,7 @@ public class I18n {
     private final Map<String, Map<String, String>> langMap = new HashMap<>();
 
     public I18n(String defaultLanguage) {
-        this.defaultLanguage = defaultLanguage;
+        this.defaultLanguage = defaultLanguage.toLowerCase();
         init();
     }
 
