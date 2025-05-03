@@ -52,10 +52,9 @@ public class EEWBot {
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
     public static final String CONFIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
+    private final JsonRegistry<ConfigV2> config = new JsonRegistry<>(getConfigPath(), ConfigV2::new, ConfigV2.class, GSON_PRETTY);
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
     private final HttpClient httpClient = HttpClient.newHttpClient();
-
-    private JsonRegistry<ConfigV2> config = new JsonRegistry<>(getConfigPath(), ConfigV2::new, ConfigV2.class, GSON_PRETTY);
 
     private GatewayDiscordClient gateway;
     private ChannelRegistry channels;
@@ -72,10 +71,10 @@ public class EEWBot {
 
     public void initialize() throws IOException {
         try {
-            this.config.init();
+            this.config.init(true);
         } catch (JsonParseException e) {
             JsonRegistry<Config> oldConfig = new JsonRegistry<>(getConfigPath(), Config::new, Config.class, GSON_PRETTY);
-            oldConfig.load();
+            oldConfig.load(false);
             this.config.setElement(ConfigV2.fromV1(oldConfig.getElement()));
             this.config.save();
         }
@@ -93,7 +92,7 @@ public class EEWBot {
             this.channels = registry;
         } else {
             ChannelRegistryJson registry = new ChannelRegistryJson(path, GSON);
-            registry.init();
+            registry.init(false);
             this.channels = registry;
         }
 

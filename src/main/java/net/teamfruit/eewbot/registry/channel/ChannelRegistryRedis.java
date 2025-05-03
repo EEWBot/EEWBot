@@ -53,7 +53,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
             ChannelRegistryJson registryMigrationFrom = migrationFrom.get();
             if (Files.exists(registryMigrationFrom.getPath())) {
                 Log.logger.info("Migrating to Redis");
-                registryMigrationFrom.load();
+                registryMigrationFrom.load(false);
                 try (Connection connection = this.jedisPool.getPool().getResource()) {
                     Transaction transaction = new Transaction(connection);
                     transaction.setJsonObjectMapper(this.objectMapper);
