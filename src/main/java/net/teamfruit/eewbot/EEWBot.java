@@ -5,6 +5,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
@@ -21,6 +22,7 @@ import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.JsonRegistry;
 import net.teamfruit.eewbot.registry.channel.*;
+import net.teamfruit.eewbot.registry.config.Config;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
@@ -50,9 +52,10 @@ public class EEWBot {
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
     public static final String CONFIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
-    private final JsonRegistry<ConfigV2> config = new JsonRegistry<>(CONFIG_DIRECTORY != null ? Paths.get(CONFIG_DIRECTORY, "config.json") : Paths.get("config.json"), ConfigV2::new, ConfigV2.class, GSON_PRETTY);
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
     private final HttpClient httpClient = HttpClient.newHttpClient();
+
+    private JsonRegistry<ConfigV2> config = new JsonRegistry<>(getConfigPath(), ConfigV2::new, ConfigV2.class, GSON_PRETTY);
 
     private GatewayDiscordClient gateway;
     private ChannelRegistry channels;
@@ -68,7 +71,14 @@ public class EEWBot {
     private String avatarUrl;
 
     public void initialize() throws IOException {
-        this.config.init();
+        try {
+            this.config.init();
+        } catch (JsonParseException e) {
+            JsonRegistry<Config> oldConfig = new JsonRegistry<>(getConfigPath(), Config::new, Config.class, GSON_PRETTY);
+            oldConfig.load();
+            this.config.setElement(ConfigV2.fromV1(oldConfig.getElement()));
+            this.config.save();
+        }
 
         this.i18n = new I18n(getConfig().getBase().getDefaultLanguage());
         this.rendererQueryFactory = new RendererQueryFactory(getConfig().getRenderer().getAddress(), getConfig().getRenderer().getKey());
@@ -245,6 +255,10 @@ public class EEWBot {
 
     public String getAvatarUrl() {
         return this.avatarUrl;
+    }
+
+    private static Path getConfigPath() {
+        return CONFIG_DIRECTORY != null ? Paths.get(CONFIG_DIRECTORY, "config.json") : Paths.get("config.json");
     }
 
     public static void main(final String[] args) throws Exception {
