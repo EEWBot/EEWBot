@@ -56,6 +56,7 @@ public class EEWService {
     private final HttpClient httpClient;
     private final MinimalHttpAsyncClient asyncHttpClient;
     private final URI webhookSenderAddress;
+    private final String[] webhookSenderHeader;
 
     public EEWService(EEWBot bot) {
         this.gateway = bot.getClient();
@@ -64,6 +65,8 @@ public class EEWService {
         this.i18n = bot.getI18n();
         this.executor = bot.getScheduledExecutor();
         this.httpClient = bot.getHttpClient();
+        this.webhookSenderHeader = bot.getConfig().getWebhookSender().getCustomHeader().split(":");
+
         int poolingMax = bot.getConfig().getAdvanced().getPoolingMax();
         int poolingMaxPerRoute = bot.getConfig().getAdvanced().getPoolingMaxPerRoute();
 
@@ -99,10 +102,11 @@ public class EEWService {
 
         Map<Long, ChannelBase> webhookChannels = webhookPartitioned.get(true);
         if (!webhookChannels.isEmpty()) {
-            Log.logger.info("Sending webhook message to {} channels", webhookChannels.size());
             if (this.webhookSenderAddress == null) {
+                Log.logger.info("Sending webhook message to {} channels", webhookChannels.size());
                 sendWebhook(webhookRequests, webhookChannels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe());
             } else {
+                Log.logger.info("Sending webhook message to {} channels via webhook sender", webhookChannels.size());
                 sendWebhookSender(webhookRequests, webhookChannels, channels ->
                         sendWebhook(webhookRequests, channels, (id, channel) -> directSendMessagePassErrors(id, msgByLang.get(channel.getLang())).subscribe()));
             }
@@ -239,6 +243,7 @@ public class EEWService {
                     .uri(new URIBuilder(this.webhookSenderAddress).setPath("/api/send").build())
                     .header("User-Agent", "EEWBot")
                     .header("Content-Type", "application/json")
+                    .headers(this.webhookSenderHeader)
                     .POST(HttpRequest.BodyPublishers.ofString(EEWBot.GSON.toJson(senderRequests)))
                     .build();
 
@@ -249,12 +254,12 @@ public class EEWService {
                 return;
             }
             Log.logger.info("Sent message to webhook sender: {}", response.body());
-        } catch (IOException e) {
-            Log.logger.error("Failed to send message to webhook sender", e);
         } catch (InterruptedException e) {
             Log.logger.error("Interrupted while sending messages to webhook sender", e);
         } catch (URISyntaxException e) {
             Log.logger.error("Invalid webhook sender send URI", e);
+        } catch (Exception e) {
+            Log.logger.error("Failed to send message to webhook sender", e);
         }
     }
 
@@ -283,6 +288,7 @@ public class EEWService {
                     .GET()
                     .uri(new URIBuilder(this.webhookSenderAddress).setPath("/api/notfounds").build())
                     .header("User-Agent", "EEWBot")
+                    .headers(this.webhookSenderHeader)
                     .build();
             HttpResponse<String> getResponse = this.httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString());
             if (getResponse.statusCode() != 200) {
@@ -303,12 +309,12 @@ public class EEWService {
                         if (current != null && current.getId() == webhookId)
                             this.channels.setWebhook(channelId, null);
                     }));
-        } catch (IOException e) {
-            Log.logger.error("Failed to fetch not founds from webhook sender", e);
         } catch (InterruptedException e) {
             Log.logger.error("Interrupted while fetching not founds from webhook sender", e);
         } catch (URISyntaxException e) {
             Log.logger.error("Invalid webhook sender not founds URI", e);
+        } catch (Exception e) {
+            Log.logger.error("Failed to fetch not founds from webhook sender", e);
         }
     }
 }
