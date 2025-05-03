@@ -21,6 +21,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class ChannelRegistryRedis implements ChannelRegistry {
 
@@ -43,7 +44,13 @@ public class ChannelRegistryRedis implements ChannelRegistry {
 
         boolean indexExists;
         try {
-            this.jedisPool.ftInfo(CHANNEL_INDEX);
+            Map<String, Object> index = this.jedisPool.ftInfo(CHANNEL_INDEX);
+            for (Object obj : ((List<?>) index.get("attributes"))) {
+                String attribute = ((List<?>) obj).stream().map(a -> (String) a).collect(Collectors.joining());
+                if (attribute.equals("identifier$.flags[*]attributeflagstypeTAGSEPARATOR")) {
+                    return;
+                }
+            }
             indexExists = true;
         } catch (JedisDataException e) {
             indexExists = false;
