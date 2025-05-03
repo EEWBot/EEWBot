@@ -329,22 +329,6 @@ public class ConfigV2 {
                 return false;
             }
         }
-        if (StringUtils.isNotEmpty(getRenderer().getAddress())) {
-            try {
-                new URI(getRenderer().getAddress());
-            } catch (URISyntaxException e) {
-                Log.logger.info("Invalid renderer address: " + e.getMessage());
-                errored = true;
-            }
-        }
-        if (StringUtils.isNotEmpty(getWebhookSender().getAddress())) {
-            try {
-                new URI(getWebhookSender().getAddress());
-            } catch (URISyntaxException e) {
-                Log.logger.info("Invalid webhook sender address: " + e.getMessage());
-                errored = true;
-            }
-        }
         return !errored;
     }
 

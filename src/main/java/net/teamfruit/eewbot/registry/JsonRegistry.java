@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
-import net.teamfruit.eewbot.Log;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -71,7 +70,6 @@ public class JsonRegistry<E> {
         Set<String> classFields = Arrays.stream(TypeToken.get(this.type).getRawType().getDeclaredFields())
                 .map(Field::getName)
                 .collect(Collectors.toSet());
-        Log.logger.info(classFields.toString());
 
         jsonFields.removeAll(classFields);
         if (!jsonFields.isEmpty()) {
