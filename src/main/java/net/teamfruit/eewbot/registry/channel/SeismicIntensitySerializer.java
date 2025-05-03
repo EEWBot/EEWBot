@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry;
+package net.teamfruit.eewbot.registry.channel;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;

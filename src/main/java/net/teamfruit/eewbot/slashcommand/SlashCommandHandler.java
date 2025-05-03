@@ -7,7 +7,7 @@ import discord4j.core.spec.InteractionCallbackSpec;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.channel.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import reactor.core.publisher.Mono;

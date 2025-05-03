@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry;
+package net.teamfruit.eewbot.registry.channel;
 
 import reactor.util.annotation.Nullable;
 
@@ -8,17 +8,17 @@ public class ChannelBase {
 
     protected Boolean isGuild;
     protected Long guildId;
-    protected Webhook webhook;
+    protected ChannelWebhook webhook;
     protected String lang;
 
-    public ChannelBase(boolean isGuild, Long guildId, Webhook webhook, String lang) {
+    public ChannelBase(boolean isGuild, Long guildId, ChannelWebhook webhook, String lang) {
         this.isGuild = isGuild;
         this.guildId = guildId;
         this.webhook = webhook;
         this.lang = lang;
     }
 
-    public ChannelBase(Webhook webhook, String lang) {
+    public ChannelBase(ChannelWebhook webhook, String lang) {
         this.webhook = webhook;
         this.lang = lang;
     }
@@ -39,11 +39,11 @@ public class ChannelBase {
         this.guildId = guildId;
     }
 
-    public @Nullable Webhook getWebhook() {
+    public @Nullable ChannelWebhook getWebhook() {
         return this.webhook;
     }
 
-    void setWebhook(Webhook webhook) {
+    void setWebhook(ChannelWebhook webhook) {
         this.webhook = webhook;
     }
 

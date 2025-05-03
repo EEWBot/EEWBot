@@ -15,9 +15,9 @@ import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.registry.Channel;
-import net.teamfruit.eewbot.registry.ChannelSettingType;
-import net.teamfruit.eewbot.registry.Webhook;
+import net.teamfruit.eewbot.registry.channel.Channel;
+import net.teamfruit.eewbot.registry.channel.ChannelSettingType;
+import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
@@ -116,7 +116,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                                                     .name(removeUnusableName(name, bot.getUsername()))
                                                                                     .build(), "Create EEWBot webhook")))
                                                             .flatMap(webhookData -> Mono.fromRunnable(() -> {
-                                                                Webhook webhook = new Webhook(webhookData.id().asLong(), webhookData.token().get(), guildChannel instanceof ThreadChannel ? channelId : null);
+                                                                ChannelWebhook webhook = new ChannelWebhook(webhookData.id().asLong(), webhookData.token().get(), guildChannel instanceof ThreadChannel ? channelId : null);
                                                                 bot.getChannels().setWebhook(channelId, webhook);
                                                             })).then(buildReply(bot, event, lang, channelId, false))
                                                     )))

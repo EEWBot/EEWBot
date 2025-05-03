@@ -1,8 +1,9 @@
-package net.teamfruit.eewbot.registry;
+package net.teamfruit.eewbot.registry.channel;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.JsonRegistry;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -57,7 +58,7 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
-    public void setWebhook(long key, Webhook webhook) {
+    public void setWebhook(long key, ChannelWebhook webhook) {
         getElement().get(key).setWebhook(webhook);
     }
 
@@ -103,7 +104,7 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     @Override
     public boolean isWebhookForThread(long webhookId, long threadId) {
         return getElement().entrySet().stream().noneMatch(entry -> {
-            Webhook webhook = entry.getValue().getWebhook();
+            ChannelWebhook webhook = entry.getValue().getWebhook();
             if (webhook == null || webhook.getId() != webhookId)
                 return false;
             if (webhook.getThreadId() == null)

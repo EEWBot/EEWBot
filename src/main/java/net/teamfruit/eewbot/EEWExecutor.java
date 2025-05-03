@@ -14,10 +14,10 @@ import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.gateway.*;
-import net.teamfruit.eewbot.registry.ChannelFilter;
-import net.teamfruit.eewbot.registry.ChannelRegistry;
-import net.teamfruit.eewbot.registry.Config;
-import net.teamfruit.eewbot.registry.Webhook;
+import net.teamfruit.eewbot.registry.channel.ChannelFilter;
+import net.teamfruit.eewbot.registry.channel.ChannelRegistry;
+import net.teamfruit.eewbot.registry.config.Config;
+import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
 
@@ -208,7 +208,7 @@ public class EEWExecutor {
                                                                 .build(), "Create EEWBot webhook");
                                             }).flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 boolean isThread = guildChannel instanceof ThreadChannel;
-                                                Webhook webhook = new Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
+                                                ChannelWebhook webhook = new ChannelWebhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
                                                 this.channels.setWebhook(channelId, webhook);
                                                 try {
                                                     this.channels.save();

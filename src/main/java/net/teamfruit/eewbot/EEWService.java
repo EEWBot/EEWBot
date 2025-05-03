@@ -11,10 +11,10 @@ import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
 import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.ChannelBase;
-import net.teamfruit.eewbot.registry.ChannelFilter;
-import net.teamfruit.eewbot.registry.ChannelRegistry;
-import net.teamfruit.eewbot.registry.Webhook;
+import net.teamfruit.eewbot.registry.channel.ChannelBase;
+import net.teamfruit.eewbot.registry.channel.ChannelFilter;
+import net.teamfruit.eewbot.registry.channel.ChannelRegistry;
+import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.async.methods.*;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -299,7 +299,7 @@ public class EEWService {
             notFoundList.stream().map(webhook -> Long.parseLong(webhook.substring(33, webhook.lastIndexOf("/"))))
                     .forEach(webhookId -> this.channels.actionOnChannels(ChannelFilter.builder().webhookId(webhookId).build(), channelId -> {
                         Log.logger.info("Webhook for channel {} is deleted, unregister", channelId);
-                        Webhook current = this.channels.get(channelId).getWebhook();
+                        ChannelWebhook current = this.channels.get(channelId).getWebhook();
                         if (current != null && current.getId() == webhookId)
                             this.channels.setWebhook(channelId, null);
                     }));

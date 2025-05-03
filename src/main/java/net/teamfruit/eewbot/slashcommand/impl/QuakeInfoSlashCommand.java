@@ -7,7 +7,7 @@ import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.entity.other.NHKQuakeInfo;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
-import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.channel.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import reactor.core.publisher.Mono;
 

@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry;
+package net.teamfruit.eewbot.registry.channel;
 
 import com.google.gson.*;
 import net.teamfruit.eewbot.entity.SeismicIntensity;

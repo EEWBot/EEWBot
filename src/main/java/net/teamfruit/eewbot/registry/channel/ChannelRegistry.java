@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry;
+package net.teamfruit.eewbot.registry.channel;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 
@@ -24,7 +24,7 @@ public interface ChannelRegistry {
 
     void setIsGuild(long key, boolean guild);
 
-    void setWebhook(long key, Webhook webhook);
+    void setWebhook(long key, ChannelWebhook webhook);
 
     void setLang(long key, String lang);
 

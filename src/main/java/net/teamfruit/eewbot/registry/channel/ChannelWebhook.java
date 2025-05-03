@@ -1,22 +1,22 @@
-package net.teamfruit.eewbot.registry;
+package net.teamfruit.eewbot.registry.channel;
 
 import reactor.util.annotation.Nullable;
 
 import java.util.Objects;
 
-public class Webhook {
+public class ChannelWebhook {
 
     private long id;
     private String token;
     private Long threadId;
 
-    public Webhook(long id, String token, Long threadId) {
+    public ChannelWebhook(long id, String token, Long threadId) {
         this.id = id;
         this.token = token;
         this.threadId = threadId;
     }
 
-    public Webhook(long id, String token) {
+    public ChannelWebhook(long id, String token) {
         this(id, token, null);
     }
 
@@ -64,7 +64,7 @@ public class Webhook {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Webhook webhook = (Webhook) o;
+        ChannelWebhook webhook = (ChannelWebhook) o;
         return Objects.equals(this.id, webhook.id) && Objects.equals(this.token, webhook.token) && Objects.equals(this.threadId, webhook.threadId);
     }
 

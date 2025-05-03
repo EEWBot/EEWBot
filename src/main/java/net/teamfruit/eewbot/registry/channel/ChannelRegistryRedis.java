@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry;
+package net.teamfruit.eewbot.registry.channel;
 
 import com.google.gson.Gson;
 import net.teamfruit.eewbot.EEWBot;
@@ -172,7 +172,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
-    public void setWebhook(long key, Webhook webhook) {
+    public void setWebhook(long key, ChannelWebhook webhook) {
         this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.webhook"), webhook);
     }
 
@@ -240,7 +240,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
             aggregationResult.getRows().forEach(row -> {
                 long channelId = Long.parseLong(StringUtils.removeStart(row.getString("__key"), CHANNEL_PREFIX));
                 if (row.get("$.webhook") != null)
-                    webhookPresent.put(channelId, new ChannelBase(EEWBot.GSON.fromJson(row.getString("$.webhook"), Webhook.class), row.getString("$.lang")));
+                    webhookPresent.put(channelId, new ChannelBase(EEWBot.GSON.fromJson(row.getString("$.webhook"), ChannelWebhook.class), row.getString("$.lang")));
                 else
                     webhookAbsent.put(channelId, new ChannelBase(null, row.getString("$.lang")));
             });

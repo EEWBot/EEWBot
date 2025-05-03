@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry;
+package net.teamfruit.eewbot.registry.channel;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
