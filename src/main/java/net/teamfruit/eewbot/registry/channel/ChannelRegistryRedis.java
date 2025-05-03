@@ -17,11 +17,13 @@ import redis.clients.jedis.search.aggr.AggregationResult;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class ChannelRegistryRedis implements ChannelRegistry {
 
@@ -42,31 +44,15 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     public void init(Supplier<ChannelRegistryJson> migrationFrom) throws IOException {
         Log.logger.info("Connecting to Redis");
 
-        boolean indexExists;
         try {
-            Map<String, Object> index = this.jedisPool.ftInfo(CHANNEL_INDEX);
-            for (Object obj : ((List<?>) index.get("attributes"))) {
-                String attribute = ((List<?>) obj).stream().map(a -> (String) a).collect(Collectors.joining());
-                if (attribute.equals("identifier$.flags[*]attributeflagstypeTAGSEPARATOR")) {
-                    return;
-                }
-            }
-            indexExists = true;
+            this.jedisPool.ftInfo("channel-index");
         } catch (JedisDataException e) {
-            indexExists = false;
-        }
-
-        if (indexExists) {
-            Log.logger.info("Existing index detected: migrating schema");
-            migrateIndexSchema();
-            migrateLegacyFlags();
-        } else {
             Log.logger.info("Creating redis index");
             createJedisIndex();
 
             ChannelRegistryJson registryMigrationFrom = migrationFrom.get();
             if (Files.exists(registryMigrationFrom.getPath())) {
-                Log.logger.info("Migrating to redis");
+                Log.logger.info("Migrating to Redis");
                 registryMigrationFrom.load();
                 try (Connection connection = this.jedisPool.getPool().getResource()) {
                     Transaction transaction = new Transaction(connection);
@@ -74,10 +60,8 @@ public class ChannelRegistryRedis implements ChannelRegistry {
                     registryMigrationFrom.getElement().forEach((key, channel) -> transaction.jsonSet(CHANNEL_PREFIX + key, Path.ROOT_PATH, channel));
                     transaction.exec();
                 }
-                Log.logger.info("Migrated to redis");
+                Log.logger.info("Migrated to Redis");
             }
-
-            migrateLegacyFlags();
         }
     }
 
@@ -85,62 +69,16 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         Schema schema = new Schema()
                 .addTagField("$.isGuild").as("isGuild")
                 .addNumericField("$.guildId").as("guildId")
-                .addTagField("$.flags[*]").as("flags")
+                .addTagField("$.eewAlert").as("eewAlert")
+                .addTagField("$.eewPrediction").as("eewPrediction")
+                .addTagField("$.eewDecimation").as("eewDecimation")
+                .addTagField("$.quakeInfo").as("quakeInfo")
                 .addNumericField("$.minIntensity").as("minIntensity")
                 .addNumericField("$.webhook.id").as("webhookId")
                 .addNumericField("$.webhook.threadId").as("webhookThreadId");
         IndexDefinition indexDefinition = new IndexDefinition(IndexDefinition.Type.JSON)
                 .setPrefixes(CHANNEL_PREFIX);
         this.jedisPool.ftCreate(CHANNEL_INDEX, IndexOptions.defaultOptions().setDefinition(indexDefinition), schema);
-    }
-
-    private void migrateIndexSchema() {
-        Log.logger.info("Altering existing index to include flags field");
-        Schema alterSchema = new Schema().addTagField("$.flags[*]").as("flags");
-        try {
-            this.jedisPool.ftAlter(CHANNEL_INDEX, alterSchema);
-            Log.logger.info("Index schema altered successfully");
-        } catch (Exception e) {
-            Log.logger.warn("Alter index failed, dropping and recreating index", e);
-            this.jedisPool.ftDropIndex(CHANNEL_INDEX);
-            createJedisIndex();
-        }
-    }
-
-    private void migrateLegacyFlags() {
-        Log.logger.info("Migrating legacy flags to array format");
-        Set<String> keys = this.jedisPool.keys(CHANNEL_PREFIX + "*");
-        Log.logger.info("Found " + keys.size() + " keys to migrate");
-        for (String key : keys) {
-            List<String> flags = new ArrayList<>();
-            try {
-                if (getFlagAsBoolean(key, "$.eewAlert")) {
-                    flags.add("eewAlert");
-                }
-                if (getFlagAsBoolean(key, "$.eewPrediction")) {
-                    flags.add("eewPrediction");
-                }
-                if (getFlagAsBoolean(key, "$.eewDecimation")) {
-                    flags.add("eewDecimation");
-                }
-                if (getFlagAsBoolean(key, "$.quakeInfo")) {
-                    flags.add("quakeInfo");
-                }
-                this.jedisPool.jsonSet(key, Path.of("$.flags"), flags, new JsonSetParams());
-            } catch (Exception e) {
-                Log.logger.warn("Failed to migrate flags for " + key, e);
-            }
-        }
-        Log.logger.info("Legacy flags migration finished");
-    }
-
-    private boolean getFlagAsBoolean(String redisKey, String jsonPath) {
-        Boolean[] arr = this.jedisPool.jsonGet(
-                redisKey,
-                Boolean[].class,
-                Path.of(jsonPath)
-        );
-        return arr != null && arr.length > 0 && Boolean.TRUE.equals(arr[0]);
     }
 
     @Override
