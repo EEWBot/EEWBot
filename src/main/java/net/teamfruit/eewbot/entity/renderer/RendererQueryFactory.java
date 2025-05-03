@@ -7,6 +7,7 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityArea;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.core5.net.URIBuilder;
 import quake_prefecture_v0.CodeArray;
 import quake_prefecture_v0.Epicenter;
 import quake_prefecture_v0.QuakePrefectureData;
@@ -15,6 +16,7 @@ import reactor.util.annotation.Nullable;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -148,11 +150,11 @@ public class RendererQueryFactory {
         return Base65536.getEncoder().encodeToString(query);
     }
 
-    public String generateURL(RenderQuakePrefecture renderQuakePrefecture) {
+    public String generateURL(RenderQuakePrefecture renderQuakePrefecture) throws URISyntaxException {
         if (!isAvailable()) {
             throw new IllegalStateException("Renderer is not available");
         }
 
-        return this.baseURL + generateQuakePrefectureData(renderQuakePrefecture.getTime(), renderQuakePrefecture.getCoordinate(), renderQuakePrefecture.getIntensityDetail());
+        return new URIBuilder(this.baseURL).setPath(generateQuakePrefectureData(renderQuakePrefecture.getTime(), renderQuakePrefecture.getCoordinate(), renderQuakePrefecture.getIntensityDetail())).toString();
     }
 }
