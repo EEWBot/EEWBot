@@ -26,7 +26,6 @@ public class Config {
     private String redisAddress = "";
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
-    private boolean debug = false;
 
     public Config() {
     }
@@ -107,10 +106,6 @@ public class Config {
         return this.defaultLanuage;
     }
 
-    public boolean isDebug() {
-        return this.debug;
-    }
-
     public boolean validate() {
         if (StringUtils.isEmpty(getToken())) {
             Log.logger.info("Please set a discord token");
@@ -174,8 +169,7 @@ public class Config {
                 ", webhookMigration=" + this.webhookMigration +
                 ", redisAddress='" + this.redisAddress + '\'' +
                 ", nptServer='" + this.nptServer + '\'' +
-                ", defaultLanuage='" + this.defaultLanuage + '\'' +
-                ", debug=" + this.debug +
+                ", defaultLanuage='" + this.defaultLanuage +
                 '}';
     }
 }
