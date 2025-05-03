@@ -34,7 +34,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
     public static final String WS_BASE_TOKYO = "wss://ws-tokyo.api.dmdata.jp/v2/websocket";
     public static final String WS_BASE_OSAKA = "wss://ws-osaka.api.dmdata.jp/v2/websocket";
 
-    public static final String WS_BASE_TEST = "ws://localhost:1234";
+    public static final String WS_BASE_TEST = "";
 
     private final DmdataAPI dmdataAPI;
     private final String appName;
