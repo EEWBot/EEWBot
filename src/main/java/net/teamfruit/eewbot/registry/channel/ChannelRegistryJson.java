@@ -48,6 +48,11 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
+    public void setFlag(long key, String name, boolean bool) {
+        set(key, name, bool);
+    }
+
+    @Override
     public void setMinIntensity(long key, SeismicIntensity intensity) {
         getElement().get(key).setMinIntensity(intensity);
     }

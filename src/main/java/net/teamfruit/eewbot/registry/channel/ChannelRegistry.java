@@ -20,6 +20,8 @@ public interface ChannelRegistry {
 
     void set(long key, String name, boolean bool);
 
+    void setFlag(long key, String flag, boolean bool);
+
     void setMinIntensity(long key, SeismicIntensity intensity);
 
     void setIsGuild(long key, boolean guild);

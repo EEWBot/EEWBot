@@ -178,7 +178,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     private Mono<Message> applyChannel(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
-        Channel.COMMAND_KEYS.forEach(name -> bot.getChannels().set(channelId, name, event.getValues().contains(name)));
+        Channel.COMMAND_KEYS.forEach(name -> bot.getChannels().setFlag(channelId, name, event.getValues().contains(name)));
         try {
             bot.getChannels().save();
         } catch (IOException e) {

@@ -165,7 +165,27 @@ public class ChannelRegistryRedis implements ChannelRegistry {
 
     @Override
     public void set(long key, String name, boolean bool) {
+        if (name.equals("eewAlert") || name.equals("eewPrediction") || name.equals("eewDecimation") || name.equals("quakeInfo")) {
+            throw new IllegalArgumentException("Use setFlag method instead");
+        }
         this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$." + name), bool);
+    }
+
+    @Override
+    public void setFlag(long key, String name, boolean bool) {
+        Path flagsPath = Path.of("$.flags");
+        if (bool) {
+            // Fails?
+            long idx = this.jedisPool.jsonArrIndex(CHANNEL_PREFIX + key, flagsPath, name);
+            if (idx < 0) {
+                this.jedisPool.jsonArrAppend(CHANNEL_PREFIX + key, flagsPath, name);
+            }
+        } else {
+            List<String> flags = new ArrayList<>(Arrays.asList(this.jedisPool.jsonGet(CHANNEL_PREFIX + key, String[].class, flagsPath)));
+            if (flags.remove(name)) {
+                this.jedisPool.jsonSet(CHANNEL_PREFIX + key, flagsPath, flags);
+            }
+        }
     }
 
     @Override
