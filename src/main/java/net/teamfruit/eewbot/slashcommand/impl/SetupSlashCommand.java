@@ -16,6 +16,7 @@ import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.channel.Channel;
+import net.teamfruit.eewbot.registry.channel.ChannelSetting;
 import net.teamfruit.eewbot.registry.channel.ChannelSettingType;
 import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
@@ -23,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -178,7 +180,15 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     private Mono<Message> applyChannel(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         long channelId = event.getInteraction().getChannelId().asLong();
-        Channel.COMMAND_KEYS.forEach(name -> bot.getChannels().set(channelId, name, event.getValues().contains(name)));
+        Arrays.stream(Channel.class.getDeclaredFields())
+                .filter(field -> {
+                    if (!field.isAnnotationPresent(ChannelSetting.class))
+                        return false;
+                    ChannelSetting annotation = field.getAnnotation(ChannelSetting.class);
+                    return annotation != null && annotation.value().getCustomId().equals(event.getCustomId());
+                })
+                .map(Field::getName)
+                .forEach(name -> bot.getChannels().set(channelId, name, event.getValues().contains(name)));
         try {
             bot.getChannels().save();
         } catch (IOException e) {
