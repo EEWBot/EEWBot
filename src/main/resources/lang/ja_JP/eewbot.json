@@ -59,7 +59,7 @@
   "eewbot.scmd.setup.base.followup.any": "設定しました！今後このチャンネルに以下の情報が送信されます。\n%s",
   "eewbot.scmd.setup.modifier.placeholder": "カスタマイズ（複数選択可）",
   "eewbot.scmd.setup.modifier.eewdecimation.label": "EEW重複フィルター",
-  "eewbot.scmd.setup.modifier.eewdecimation.desc": "前報と同じ内容の更新報を配信モード",
+  "eewbot.scmd.setup.modifier.eewdecimation.desc": "前報と同じ内容の更新報を配信しないモード",
   "eewbot.scmd.setup.modifier.followup.none": "すべてのカスタマイズが解除されました！",
   "eewbot.scmd.setup.modifier.followup.any": "以下のカスタマイズを設定しました。\n%s",
   "eewbot.scmd.setup.sensitivity.option": "最小通知震度 %s",
