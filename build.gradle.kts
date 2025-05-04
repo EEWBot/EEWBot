@@ -33,7 +33,7 @@ dependencies {
 }
 
 group = "net.teamfruit"
-version = "2.8.0"
+version = "2.8.1"
 description = "EEWBot"
 java.sourceCompatibility = JavaVersion.VERSION_11
 
@@ -60,10 +60,10 @@ tasks {
             archiveClassifier.set("")
             mergeServiceFiles()
             attributes(mapOf("Main-Class" to "net.teamfruit.eewbot.EEWBot"))
-            minimize {
-                exclude(dependency("ch.qos.logback:logback-classic:.*"))
-                exclude(dependency("com.fasterxml.woodstox:woodstox-core:.*"))
-            }
+//            minimize {
+//                exclude(dependency("ch.qos.logback:logback-classic:.*"))
+//                exclude(dependency("com.fasterxml.woodstox:woodstox-core:.*"))
+//            }
         }
     }
 
