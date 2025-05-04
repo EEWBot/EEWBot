@@ -44,7 +44,6 @@
   "eewbot.scmd.setup.base.quakeinfo.desc": "震度速報・各地的震度的資訊等",
   "eewbot.scmd.setup.base.followup.none": "已解除所有設定！此頻道之後不會再推送訊息。",
   "eewbot.scmd.setup.base.followup.any": "設定完成！此頻道之後會發送以下的資訊。\n%s",
-  "eewbot.scmd.setup.modifier.eewdecimation.label": "EEW間隔",
   "eewbot.scmd.setup.modifier.eewdecimation.desc": "新資訊和前一報相同時，不通知更新報",
   "eewbot.scmd.setup.sensitivity.option": "最小通知震度 %s",
   "eewbot.scmd.setup.sensitivity.option.unknown": "最小通知震度 全部（包含不明或是無預測）",
@@ -77,6 +76,5 @@
   "eewbot.scmd.help.field.testmessage.value": "從Bot發送測試訊息，確認現在的頻道是否正常運作。",
   "eewbot.scmd.help.field.lang.value": "設定Bot的語言。需要伺服器的管理員權限才能使用。",
   "eewbot.scmd.help.field.help.value": "顯示幫助。",
-  "eewbot.scmd.help.field.links.name": "網址",
-  "eewbot.scmd.help.field.links.value": "[GitHub](https://github.com/EEWBot/EEWBot)\n[支援伺服器](https://discord.gg/upt9n86ctG)"
+  "eewbot.scmd.help.field.links.name": "網址"
 }
