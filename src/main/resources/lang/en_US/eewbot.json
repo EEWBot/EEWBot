@@ -47,7 +47,6 @@
   "eewbot.scmd.setup.base.followup.none": "All settings have been cleared! Nothing will be sent to this channel from now on.",
   "eewbot.scmd.setup.base.followup.any": "Settings have been applied! The following information will be sent to this channel hereafter.\n%s",
   "eewbot.scmd.setup.modifier.placeholder": "Customize (Multiple Selections Allowed)",
-  "eewbot.scmd.setup.modifier.eewdecimation.label": "EEW Throttling",
   "eewbot.scmd.setup.modifier.eewdecimation.desc": "Repeat info silence mode",
   "eewbot.scmd.setup.modifier.followup.none": "All customizations have been cleared!",
   "eewbot.scmd.setup.modifier.followup.any": "The following customizations have been applied!\n%s",
@@ -82,6 +81,5 @@
   "eewbot.scmd.help.field.testmessage.value": "Sends a test message from the bot to verify if it works correctly in the current channel.",
   "eewbot.scmd.help.field.lang.value": "Sets the language of the bot. By default, Manage Server permission is required.",
   "eewbot.scmd.help.field.help.value": "Displays help.",
-  "eewbot.scmd.help.field.links.name": "Links",
-  "eewbot.scmd.help.field.links.value": "[GitHub](https://github.com/EEWBot/EEWBot)\n[Support Server](https://discord.gg/upt9n86ctG)"
+  "eewbot.scmd.help.field.links.name": "Links"
 }
