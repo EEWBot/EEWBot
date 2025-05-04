@@ -23,9 +23,9 @@
   "eewbot.eew.warningtext": "警報対象の地域",
   "eewbot.eew.newkyoshinmonitor": "新強震モニタ ⚠Project DM-D.S.Sに移行してください！",
   "eewbot.quakeinfo.intensity.title": "地震情報（震度速報）",
-  "eewbot.quakeinfo.intensity.desc": "%s頃、地震による強い揺れを感じました。",
+  "eewbot.quakeinfo.intensity.desc": "%s頃、震度3以上の地震がありました。",
   "eewbot.quakeinfo.epicenter.title": "地震情報（震源に関する情報）",
-  "eewbot.quakeinfo.epicenter.desc": "%s頃、地震がありました",
+  "eewbot.quakeinfo.epicenter.desc": "%s頃、地震がありました。",
   "eewbot.quakeinfo.detail.title": "地震情報",
   "eewbot.quakeinfo.detail.desc": "%s頃、地震がありました。",
   "eewbot.quakeinfo.detail.overseas.title": "地震情報（海外）",
@@ -58,7 +58,7 @@
   "eewbot.scmd.setup.base.followup.none": "すべての設定が解除されました！今後このチャンネルには何も送信されません。",
   "eewbot.scmd.setup.base.followup.any": "設定しました！今後このチャンネルに以下の情報が送信されます。\n%s",
   "eewbot.scmd.setup.modifier.placeholder": "カスタマイズ（複数選択可）",
-  "eewbot.scmd.setup.modifier.eewdecimation.label": "EEW間引き",
+  "eewbot.scmd.setup.modifier.eewdecimation.label": "EEW重複フィルター",
   "eewbot.scmd.setup.modifier.eewdecimation.desc": "情報が前報と一致する更新報を通知しない",
   "eewbot.scmd.setup.modifier.followup.none": "すべてのカスタマイズが解除されました！",
   "eewbot.scmd.setup.modifier.followup.any": "以下のカスタマイズを設定しました。\n%s",
@@ -101,5 +101,5 @@
   "eewbot.scmd.help.field.lang.value": "Botの言語を設定します。デフォルトでは、サーバー管理権限が必要です。",
   "eewbot.scmd.help.field.help.value": "Helpを表示します。",
   "eewbot.scmd.help.field.links.name": "リンク",
-  "eewbot.scmd.help.field.links.value": "[GitHub](https://github.com/EEWBot/EEWBot)\n[サポートサーバー](https://discord.gg/upt9n86ctG)"
+  "eewbot.scmd.help.field.links.value": "[コマンドリファレンス](https://github.com/EEWBot/EEWBot/wiki/%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%83%AA%E3%83%95%E3%82%A1%E3%83%AC%E3%83%B3%E3%82%B9) [GitHub](https://github.com/EEWBot/EEWBot) [サポートサーバー](https://discord.gg/upt9n86ctG)"
 }
