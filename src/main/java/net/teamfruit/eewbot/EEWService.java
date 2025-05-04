@@ -268,6 +268,7 @@ public class EEWService {
                 .uri(new URIBuilder(this.webhookSenderAddress).setPath("/api/send").build())
                 .header("User-Agent", "EEWBot")
                 .header("Content-Type", "application/json")
+                .headers(this.webhookSenderHeader)
                 .POST(HttpRequest.BodyPublishers.ofString(EEWBot.GSON.toJson(List.of(senderRequest))))
                 .build();
         HttpResponse<Void> response = this.httpClient.send(request, HttpResponse.BodyHandlers.discarding());
