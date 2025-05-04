@@ -1,4 +1,4 @@
-FROM amazoncorretto:21.0.2-alpine as build
+FROM amazoncorretto:21.0.7-alpine as build
 
 RUN apk add --no-cache binutils
 
@@ -10,14 +10,14 @@ RUN jlink \
          --compress=2 \
          --output jre-slim
 
-FROM alpine:3.19.1
+FROM alpine:3.21.3
 
 ENV JAVA_HOME=/jre
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 COPY --from=build jre-slim $JAVA_HOME
 
-COPY target/eewbot-*.jar eewbot.jar
+COPY build/libs/eewbot-*.jar eewbot.jar
 
 ENV CONFIG_DIRECTORY=/etc/eewbot \
     DATA_DIRECTORY=/var/lib/eewbot \

@@ -8,7 +8,7 @@ import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
-import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.channel.Channel;
 import reactor.core.publisher.Mono;
 
 public class SlashCommandUtils {
@@ -16,7 +16,7 @@ public class SlashCommandUtils {
     public static String getLanguage(EEWBot bot, InteractionCreateEvent event) {
         Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
         if (channel == null)
-            return bot.getConfig().getDefaultLanuage();
+            return bot.getConfig().getBase().getDefaultLanguage();
         return channel.getLang();
     }
 

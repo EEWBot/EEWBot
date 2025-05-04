@@ -1,14 +1,22 @@
 package net.teamfruit.eewbot.registry;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.Writer;
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class JsonRegistry<E> {
 
@@ -37,12 +45,11 @@ public class JsonRegistry<E> {
         this.element = element;
     }
 
-    public JsonRegistry<E> init() throws IOException {
+    public void init(boolean strict) throws IOException {
         if (!createIfNotExists()) {
-            load();
+            load(strict);
             save();
         }
-        return this;
     }
 
     private boolean createIfNotExists() throws IOException {
@@ -54,10 +61,23 @@ public class JsonRegistry<E> {
         return false;
     }
 
-    public void load() throws IOException {
-        try (Reader r = Files.newBufferedReader(this.path)) {
-            this.element = this.gson.fromJson(r, this.type);
+    public void load(boolean strict) throws IOException {
+        String s = Files.readString(this.path);
+
+        if (strict) {
+            JsonObject jsonObj = JsonParser.parseString(s).getAsJsonObject();
+            Set<String> jsonFields = new HashSet<>(jsonObj.keySet());
+            Set<String> classFields = Arrays.stream(TypeToken.get(this.type).getRawType().getDeclaredFields())
+                    .map(Field::getName)
+                    .collect(Collectors.toSet());
+
+            jsonFields.removeAll(classFields);
+            if (!jsonFields.isEmpty()) {
+                throw new JsonParseException("Unknown JSON fields: " + jsonFields);
+            }
         }
+
+        this.element = this.gson.fromJson(s, this.type);
     }
 
     public void save() throws IOException {

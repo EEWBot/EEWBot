@@ -7,19 +7,22 @@ import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.discordjson.json.WebhookCreateRequest;
 import discord4j.rest.util.Permission;
-import net.teamfruit.eewbot.entity.DetailQuakeInfo;
-import net.teamfruit.eewbot.entity.DmdataEEW;
-import net.teamfruit.eewbot.entity.KmoniEEW;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
+import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
+import net.teamfruit.eewbot.entity.jma.QuakeInfo;
+import net.teamfruit.eewbot.entity.other.KmoniEEW;
+import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.gateway.*;
-import net.teamfruit.eewbot.registry.ChannelFilter;
-import net.teamfruit.eewbot.registry.ChannelRegistry;
-import net.teamfruit.eewbot.registry.Config;
-import net.teamfruit.eewbot.registry.Webhook;
+import net.teamfruit.eewbot.registry.channel.ChannelFilter;
+import net.teamfruit.eewbot.registry.channel.ChannelRegistry;
+import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
+import net.teamfruit.eewbot.registry.config.ConfigV2;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,12 +35,13 @@ public class EEWExecutor {
     private final ExecutorService messageExecutor;
     private final TimeProvider timeProvider;
     private final EEWService service;
-    private final Config config;
+    private final ConfigV2 config;
     private final long applicationId;
     private final GatewayDiscordClient client;
     private final ChannelRegistry channels;
+    private final QuakeInfoStore quakeInfoStore;
 
-    public EEWExecutor(final EEWService service, final Config config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels) {
+    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels, QuakeInfoStore quakeInfoStore) {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;
@@ -47,10 +51,7 @@ public class EEWExecutor {
         this.timeProvider = new TimeProvider(this.scheduledExecutor);
         this.client = client;
         this.channels = channels;
-    }
-
-    public ScheduledExecutorService getScheduledExecutor() {
-        return this.scheduledExecutor;
+        this.quakeInfoStore = quakeInfoStore;
     }
 
     public TimeProvider getTimeProvider() {
@@ -58,7 +59,7 @@ public class EEWExecutor {
     }
 
     public void init() {
-        if (this.config.isEnableKyoshin()) {
+        if (this.config.getLegacy().isEnableKyoshin()) {
             this.timeProvider.init();
 
             this.scheduledExecutor.scheduleAtFixedRate(new KmoniGateway(this.timeProvider) {
@@ -85,11 +86,11 @@ public class EEWExecutor {
                     if (!isImportant)
                         builder.eewDecimation(false);
                     builder.intensity(maxIntensity);
-                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew, true));
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew));
                 }
-            }, 0, this.config.getKyoshinDelay(), TimeUnit.SECONDS);
+            }, 0, this.config.getLegacy().getKyoshinDelay(), TimeUnit.SECONDS);
         } else {
-            DmdataGateway dmdataGateway = new DmdataGateway(new DmdataAPI(this.config.getDmdataAPIKey(), this.config.getDmdataOrigin()), this.applicationId, this.config.isDmdataMultiSocketConnect(), this.config.isDebug()) {
+            DmdataGateway dmdataGateway = new DmdataGateway(new DmdataAPI(this.config.getDmdata().getAPIKey(), this.config.getDmdata().getOrigin()), this.applicationId, this.config.getDmdata().isMultiSocketConnect()) {
                 @Override
                 public void onNewData(DmdataEEW eew) {
                     if (eew.getBody().getEarthquake() != null &&
@@ -121,31 +122,53 @@ public class EEWExecutor {
                     if (!isImportant)
                         builder.eewDecimation(false);
                     builder.intensity(maxIntensity);
-                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew, true));
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew));
                 }
             };
             this.scheduledExecutor.execute(dmdataGateway);
             this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(dmdataGateway), 30, 30, TimeUnit.SECONDS);
         }
 
-        this.scheduledExecutor.scheduleAtFixedRate(new QuakeInfoGateway() {
+        if (this.config.getLegacy().isEnableLegacyQuakeInfo()) {
+            this.scheduledExecutor.scheduleAtFixedRate(new QuakeInfoGateway() {
 
-            @Override
-            public void onNewData(final DetailQuakeInfo data) {
-                Log.logger.info(data.toString());
+                @Override
+                public void onNewData(final NHKDetailQuakeInfo data) {
+                    Log.logger.info(data.toString());
 
-                ChannelFilter.Builder builder = ChannelFilter.builder();
-                builder.quakeInfo(true);
-                builder.intensity(data.getEarthquake().getIntensity());
-                EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data, false));
-            }
-        }, 0, this.config.getQuakeInfoDelay(), TimeUnit.SECONDS);
-
-        if (StringUtils.isNotEmpty(this.config.getDuplicatorAddress())) {
-            this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleDuplicatorNegativeCache, 15, 15, TimeUnit.SECONDS);
+                    ChannelFilter.Builder builder = ChannelFilter.builder();
+                    builder.quakeInfo(true);
+                    builder.intensity(data.getEarthquake().getIntensity());
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data));
+                }
+            }, 0, this.config.getLegacy().getLegacyQuakeInfoDelay(), TimeUnit.SECONDS);
         }
 
-        if (this.config.isWebhookMigration())
+        int currentSecond = Calendar.getInstance().get(Calendar.SECOND);
+        int jmaXMLInitialDelay = 20 - currentSecond;
+        if (jmaXMLInitialDelay < 0) {
+            jmaXMLInitialDelay += 60;
+        }
+
+        this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.quakeInfoStore) {
+            @Override
+            public void onNewData(AbstractJMAReport data) {
+                if (!EEWExecutor.this.config.getLegacy().isEnableLegacyQuakeInfo() && data instanceof QuakeInfo) {
+                    ChannelFilter.Builder builder = ChannelFilter.builder();
+                    builder.quakeInfo(true);
+                    builder.intensity(((QuakeInfo) data).getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data));
+                }
+            }
+        }, jmaXMLInitialDelay, 60, TimeUnit.SECONDS);
+
+        this.scheduledExecutor.execute(new JMAXmlLGateway(this.quakeInfoStore));
+
+        if (StringUtils.isNotEmpty(this.config.getWebhookSender().getAddress())) {
+            this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleWebhookSenderNotFounds, 15, 15, TimeUnit.SECONDS);
+        }
+
+        if (this.config.getAdvanced().isWebhookMigration())
             this.scheduledExecutor.scheduleWithFixedDelay(() -> {
                 Thread.currentThread().setName("eewbot-webhook-migration-thread");
 
@@ -154,8 +177,18 @@ public class EEWExecutor {
                             this.client.getChannelById(Snowflake.of(channelId))
                                     .filter(GuildChannel.class::isInstance)
                                     .cast(GuildChannel.class)
-                                    .filterWhen(guildChannel -> guildChannel.getEffectivePermissions(this.client.getSelfId())
-                                            .map(permissions -> permissions.contains(Permission.MANAGE_WEBHOOKS)))
+                                    .filterWhen(guildChannel -> {
+                                        Mono<GuildChannel> permissionCheckChannel;
+                                        if (guildChannel instanceof ThreadChannel) {
+                                            permissionCheckChannel = guildChannel.getClient().getChannelById(((ThreadChannel) guildChannel).getParentId().orElseThrow())
+                                                    .cast(GuildChannel.class)
+                                                    .switchIfEmpty(Mono.just(guildChannel));
+                                        } else {
+                                            permissionCheckChannel = Mono.just(guildChannel);
+                                        }
+                                        return permissionCheckChannel.flatMap(target -> target.getEffectivePermissions(this.client.getSelfId())
+                                                .map(permissions -> permissions.contains(Permission.MANAGE_WEBHOOKS)));
+                                    })
                                     .flatMap(guildChannel -> guildChannel.getGuild()
                                             .flatMap(guild -> guild.getSelfMember().map(PartialMember::getDisplayName))
                                             .flatMap(name -> {
@@ -175,7 +208,7 @@ public class EEWExecutor {
                                                                 .build(), "Create EEWBot webhook");
                                             }).flatMap(webhookData -> Mono.fromRunnable(() -> {
                                                 boolean isThread = guildChannel instanceof ThreadChannel;
-                                                Webhook webhook = new Webhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
+                                                ChannelWebhook webhook = new ChannelWebhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
                                                 this.channels.setWebhook(channelId, webhook);
                                                 try {
                                                     this.channels.save();

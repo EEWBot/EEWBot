@@ -12,25 +12,30 @@ jobs:
       # Check out the repository
       - name: Check out the repo
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      # Setup JDK 17
-      - name: Set up JDK 17
+      # Setup Java 21
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'corretto'
-          cache: maven
 
-      # Build with Maven
-      - name: Build with Maven
-        run: mvn -B package --file pom.xml
+      # Setup Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Build with Gradle
+      - name: Build with Gradle
+        run: ./gradlew build
 
       # Create GitHub Release
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          files: target/eewbot-*.jar
+          files: build/libs/eewbot-*.jar
 
       # Setup QEMU
       - name: Set up QEMU
@@ -71,7 +76,7 @@ jobs:
 
       # Build and push Docker image
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64

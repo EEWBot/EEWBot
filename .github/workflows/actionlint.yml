@@ -1,0 +1,22 @@
+name: actionlint
+permissions:
+  contents: read
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+
+jobs:
+  actionlint:
+    name: runner / actionlint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: actionlint
+        uses: reviewdog/action-actionlint@v1.65.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          filter_mode: nofilter
+          fail_on_error: true

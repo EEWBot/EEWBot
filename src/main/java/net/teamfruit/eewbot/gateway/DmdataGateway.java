@@ -3,12 +3,12 @@ package net.teamfruit.eewbot.gateway;
 import com.google.gson.JsonSyntaxException;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.entity.DmdataEEW;
-import net.teamfruit.eewbot.entity.dmdataapi.DmdataContract;
-import net.teamfruit.eewbot.entity.dmdataapi.DmdataError;
-import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketList;
-import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketStart;
-import net.teamfruit.eewbot.entity.dmdataapi.ws.*;
+import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
+import net.teamfruit.eewbot.entity.dmdata.api.DmdataContract;
+import net.teamfruit.eewbot.entity.dmdata.api.DmdataError;
+import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketList;
+import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketStart;
+import net.teamfruit.eewbot.entity.dmdata.ws.*;
 import org.apache.commons.lang3.StringUtils;
 import reactor.util.annotation.Nullable;
 
@@ -39,18 +39,16 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
     private final DmdataAPI dmdataAPI;
     private final String appName;
     private final boolean multiConnect;
-    private final boolean debug;
 
     private WebSocketConnection webSocket1;
     private WebSocketConnection webSocket2;
 
     private final Map<String, DmdataEEW> prev = new ConcurrentHashMap<>();
 
-    public DmdataGateway(DmdataAPI api, long appId, boolean multiConnect, boolean debug) {
+    public DmdataGateway(DmdataAPI api, long appId, boolean multiConnect) {
         this.dmdataAPI = api;
         this.appName = "eewbot" + "-" + encodeAppId(appId);
         this.multiConnect = multiConnect;
-        this.debug = debug;
     }
 
     public WebSocketConnection getWebSocket1() {
@@ -121,9 +119,6 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         } else {
             types.add("VXSE43");
         }
-        if (this.debug) {
-            types.add("VXSE42");
-        }
 
         if (StringUtils.isEmpty(WS_BASE_TEST)) {
             DmdataSocketStart.Response socketStart;
@@ -132,7 +127,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                         .setAppName(connectionName)
                         .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
                         .setTypes(types)
-                        .setTest(this.debug ? "including" : "no")
+                        .setTest("no")
                         .setFormatMode("json")
                         .build());
             } catch (IOException | InterruptedException e) {

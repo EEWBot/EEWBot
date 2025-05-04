@@ -7,7 +7,7 @@ import discord4j.core.spec.InteractionCallbackSpec;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.registry.channel.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import reactor.core.publisher.Mono;
@@ -48,7 +48,7 @@ public class SlashCommandHandler {
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> {
                             Channel channel = bot.getChannels().get(event.getInteraction().getChannelId().asLong());
-                            return cmd.on(bot, event, channel, channel != null ? channel.getLang() : bot.getConfig().getDefaultLanuage());
+                            return cmd.on(bot, event, channel, channel != null ? channel.getLang() : bot.getConfig().getBase().getDefaultLanguage());
                         })
                         .doOnError(err -> Log.logger.error("Error during {} command", event.getCommandName(), err))
                         .onErrorResume(err -> replyOrFollowUp(event, commands.get(event.getCommandName()).isDefer(),

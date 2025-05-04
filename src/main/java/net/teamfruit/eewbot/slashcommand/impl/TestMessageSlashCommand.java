@@ -11,14 +11,22 @@ import discord4j.rest.json.response.ErrorResponse;
 import discord4j.rest.request.DiscordWebRequest;
 import discord4j.rest.request.Router;
 import discord4j.rest.route.Routes;
+import discord4j.rest.util.Color;
 import discord4j.rest.util.MultipartRequest;
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.registry.Channel;
+import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
+import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
+import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
+import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
+import net.teamfruit.eewbot.registry.channel.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Objects;
 
 public class TestMessageSlashCommand implements ISlashCommand {
@@ -47,6 +55,37 @@ public class TestMessageSlashCommand implements ISlashCommand {
         boolean hasWebhook = channel != null && channel.getWebhook() != null;
 
         if (hasWebhook) {
+            if (StringUtils.isNotEmpty(bot.getConfig().getWebhookSender().getAddress())) {
+                DiscordWebhook webhook = DiscordWebhook.builder()
+                        .addEmbed(I18nDiscordEmbed.builder(lang)
+                                .title("eewbot.scmd.testmessage.title")
+                                .description("eewbot.scmd.testmessage.webhooksender")
+                                .color(Color.of(7506394))
+                                .author(EEWBot.instance.getUsername(), "https://github.com/EEWBot/EEWBot", EEWBot.instance.getAvatarUrl())
+                                .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png")
+                                .build())
+                        .build();
+                DiscordWebhookRequest request = new DiscordWebhookRequest(lang, webhook).addTarget(channel.getWebhook().getUrl());
+                try {
+                    int statusCode = bot.getService().sendWebhookSenderSingle(WebhookSenderRequest.from(request));
+                    if (statusCode >= 200 && statusCode < 300) {
+                        return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success.webhooksender")).then();
+                    }
+                    return event.createFollowup(InteractionFollowupCreateSpec.builder()
+                            .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
+                                    .title("eewbot.scmd.testmessage.error.title")
+                                    .description("eewbot.scmd.testmessage.error.unknown", "webhook-sender returned abnormal status code: " + statusCode)
+                                    .build())
+                            .build()).then();
+                } catch (URISyntaxException | IOException | InterruptedException e) {
+                    return event.createFollowup(InteractionFollowupCreateSpec.builder()
+                            .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
+                                    .title("eewbot.scmd.testmessage.error.title")
+                                    .description("eewbot.scmd.testmessage.error.unknown", e.getMessage())
+                                    .build())
+                            .build()).then();
+                }
+            }
             return executeWebhook(event.getClient().getCoreResources().getRouter(), channel.getWebhook().getId(), channel.getWebhook().getToken(), true, channel.getWebhook().getThreadId(),
                     MultipartRequest.ofRequest(WebhookExecuteRequest.builder()
                             .addEmbed(SlashCommandUtils.createEmbed(lang)
@@ -55,7 +94,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                                     .build().asRequest())
                             .avatarUrl(bot.getAvatarUrl())
                             .build()))
-                    .flatMap(message -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success")))
+                    .flatMap(message -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success.webhook")))
                     .onErrorResume(ClientException.isStatusCode(404), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
                                     .title("eewbot.scmd.testmessage.error.title")
@@ -73,10 +112,10 @@ public class TestMessageSlashCommand implements ISlashCommand {
             return bot.getService().directSendMessagePassErrors(channelId, MessageCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createEmbed(lang)
                                     .title("eewbot.scmd.testmessage.title")
-                                    .description("eewbot.scmd.testmessage.normal")
+                                    .description("eewbot.scmd.testmessage.nowebhook")
                                     .build())
                             .build())
-                    .flatMap(message -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success")))
+                    .flatMap(message -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.testmessage.success.nowebhook")))
                     .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang)
                                     .title("eewbot.scmd.testmessage.error.title")

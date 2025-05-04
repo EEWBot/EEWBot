@@ -1,7 +1,11 @@
 package net.teamfruit.eewbot;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
@@ -14,8 +18,12 @@ import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.*;
+import net.teamfruit.eewbot.registry.JsonRegistry;
+import net.teamfruit.eewbot.registry.channel.*;
+import net.teamfruit.eewbot.registry.config.Config;
+import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.HostAndPort;
@@ -39,16 +47,20 @@ public class EEWBot {
             .setPrettyPrinting()
             .create();
 
+    public static final ObjectMapper XML_MAPPER = XmlMapper.builder().addModule(new JavaTimeModule()).build();
+
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
     public static final String CONFIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
-    private final JsonRegistry<Config> config = new JsonRegistry<>(CONFIG_DIRECTORY != null ? Paths.get(CONFIG_DIRECTORY, "config.json") : Paths.get("config.json"), Config::new, Config.class, GSON_PRETTY);
-    private final I18n i18n = new I18n();
+    private final JsonRegistry<ConfigV2> config = new JsonRegistry<>(getConfigPath(), ConfigV2::new, ConfigV2.class, GSON_PRETTY);
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private GatewayDiscordClient gateway;
     private ChannelRegistry channels;
+    private I18n i18n;
+    private QuakeInfoStore quakeInfoStore;
+    private RendererQueryFactory rendererQueryFactory;
     private EEWService service;
     private EEWExecutor executor;
     private SlashCommandHandler slashCommand;
@@ -58,11 +70,21 @@ public class EEWBot {
     private String avatarUrl;
 
     public void initialize() throws IOException {
-        this.config.init();
+        try {
+            this.config.init(true);
+        } catch (JsonParseException e) {
+            JsonRegistry<Config> oldConfig = new JsonRegistry<>(getConfigPath(), Config::new, Config.class, GSON_PRETTY);
+            oldConfig.load(false);
+            this.config.setElement(ConfigV2.fromV1(oldConfig.getElement()));
+            this.config.save();
+        }
+
+        this.i18n = new I18n(getConfig().getBase().getDefaultLanguage());
+        this.rendererQueryFactory = new RendererQueryFactory(getConfig().getRenderer().getAddress(), getConfig().getRenderer().getKey());
 
         Path path = DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json");
-        if (StringUtils.isNotEmpty(getConfig().getRedisAddress())) {
-            String redisAddress = getConfig().getRedisAddress();
+        if (StringUtils.isNotEmpty(getConfig().getRedis().getAddress())) {
+            String redisAddress = getConfig().getRedis().getAddress();
             HostAndPort hnp = redisAddress.lastIndexOf(":") < 0 ? new HostAndPort(redisAddress, 6379) : HostAndPort.from(redisAddress);
             JedisPooled jedisPooled = new JedisPooled(hnp);
             ChannelRegistryRedis registry = new ChannelRegistryRedis(jedisPooled, GSON);
@@ -70,25 +92,23 @@ public class EEWBot {
             this.channels = registry;
         } else {
             ChannelRegistryJson registry = new ChannelRegistryJson(path, GSON);
-            registry.init();
+            registry.init(false);
             this.channels = registry;
         }
 
-        this.i18n.init(getConfig().getDefaultLanuage());
-
         final String token = System.getenv("TOKEN");
         if (token != null)
-            getConfig().setToken(token);
+            getConfig().getBase().setDiscordToken(token);
 
         String dmdataAPIKey = System.getenv("DMDATA_API_KEY");
         if (dmdataAPIKey != null)
-            getConfig().setDmdataAPIKey(dmdataAPIKey);
+            getConfig().getDmdata().setAPIKey(dmdataAPIKey);
 
-        if (!getConfig().validate()) {
+        if (!getConfig().isValid()) {
             return;
         }
 
-        this.gateway = DiscordClient.create(getConfig().getToken())
+        this.gateway = DiscordClient.create(getConfig().getBase().getDiscordToken())
                 .gateway()
                 .setSharding(ShardingStrategy.recommended())
                 .setEnabledIntents(IntentSet.of(Intent.GUILDS))
@@ -123,8 +143,9 @@ public class EEWBot {
             return;
         }
 
+        this.quakeInfoStore = new QuakeInfoStore();
         this.service = new EEWService(this);
-        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels());
+        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getQuakeInfoStore());
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
@@ -183,7 +204,7 @@ public class EEWBot {
         }
     }
 
-    public Config getConfig() {
+    public ConfigV2 getConfig() {
         return this.config.getElement();
     }
 
@@ -207,6 +228,14 @@ public class EEWBot {
         return this.gateway;
     }
 
+    public QuakeInfoStore getQuakeInfoStore() {
+        return this.quakeInfoStore;
+    }
+
+    public RendererQueryFactory getRendererQueryFactory() {
+        return this.rendererQueryFactory;
+    }
+
     public EEWService getService() {
         return this.service;
     }
@@ -225,6 +254,10 @@ public class EEWBot {
 
     public String getAvatarUrl() {
         return this.avatarUrl;
+    }
+
+    private static Path getConfigPath() {
+        return CONFIG_DIRECTORY != null ? Paths.get(CONFIG_DIRECTORY, "config.json") : Paths.get("config.json");
     }
 
     public static void main(final String[] args) throws Exception {

@@ -2,7 +2,7 @@ package net.teamfruit.eewbot.i18n;
 
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.entity.DiscordEmbed;
+import net.teamfruit.eewbot.entity.discord.DiscordEmbed;
 
 import java.time.Instant;
 

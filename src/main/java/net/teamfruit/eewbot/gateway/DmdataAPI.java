@@ -1,10 +1,10 @@
 package net.teamfruit.eewbot.gateway;
 
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.entity.dmdataapi.DmdataContract;
-import net.teamfruit.eewbot.entity.dmdataapi.DmdataError;
-import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketList;
-import net.teamfruit.eewbot.entity.dmdataapi.DmdataSocketStart;
+import net.teamfruit.eewbot.entity.dmdata.api.DmdataContract;
+import net.teamfruit.eewbot.entity.dmdata.api.DmdataError;
+import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketList;
+import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketStart;
 
 import java.io.IOException;
 import java.net.URI;

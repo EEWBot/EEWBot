@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
-import net.teamfruit.eewbot.entity.dmdataapi.DmdataError;
+import net.teamfruit.eewbot.entity.dmdata.api.DmdataError;
 
 public class DmdataGatewayException extends EEWGatewayException {
 
@@ -12,6 +12,6 @@ public class DmdataGatewayException extends EEWGatewayException {
     }
 
     public DmdataError getDmdataError() {
-        return dmdataError;
+        return this.dmdataError;
     }
 }

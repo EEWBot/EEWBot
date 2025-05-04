@@ -1,0 +1,14 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="512px" height="512px">
+	<circle fill="#e8ebeb" cx="50" cy="50" r="50" />
+	<g stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+		<path
+			fill="none" stroke="#00508c"
+			d="M 0,0 -12,0 -22,30 -32,-35 -42,30 -52,0 H -58"
+			transform="translate(62, 52)"
+		/>
+		<path fill="black" stroke="black"
+			d="M 0,0 25,-5 35,-4.5 35,4.5 25,5 Z"
+			transform="translate(62, 52) rotate(-45)"
+		/>
+	</g>
+</svg>
