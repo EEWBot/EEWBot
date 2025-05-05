@@ -65,7 +65,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                                 .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png")
                                 .build())
                         .build();
-                DiscordWebhookRequest request = new DiscordWebhookRequest(lang, webhook).addTarget(channel.getWebhook().getUrl());
+                DiscordWebhookRequest request = new DiscordWebhookRequest(lang, webhook).addTarget(channel.getWebhook().getUrl() + "?wait=true");
                 try {
                     int statusCode = bot.getService().sendWebhookSenderSingle(WebhookSenderRequest.from(request));
                     if (statusCode >= 200 && statusCode < 300) {
