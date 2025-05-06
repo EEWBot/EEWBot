@@ -171,7 +171,7 @@ public class EEWService {
                 Map<Long, ChannelBase> erroredChannels = new ConcurrentHashMap<>();
                 webhookChannels.forEach((channelId, channel) -> {
                     SimpleHttpRequest request = SimpleRequestBuilder.copy(cacheReq.get(channel.getLang()))
-                            .setPath("/api/webhooks" + Objects.requireNonNull(channel.getWebhook()).getPath() + "?wait=true")
+                            .setPath("/api/webhooks" + Objects.requireNonNull(channel.getWebhook()).getPath())
                             .build();
                     endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
                         @Override
@@ -228,7 +228,7 @@ public class EEWService {
         Map<String, List<String>> targetsByLang = webhookChannels.values().stream()
                 .collect(Collectors.groupingBy(
                         ChannelBase::getLang,
-                        Collectors.mapping(map -> Objects.requireNonNull(map.getWebhook()).getUrl() + "?wait=true", Collectors.toList())
+                        Collectors.mapping(map -> Objects.requireNonNull(map.getWebhook()).getUrl(), Collectors.toList())
                 ));
 
         List<WebhookSenderRequest> senderRequests = webhookRequests.stream()
