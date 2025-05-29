@@ -13,6 +13,7 @@ A Discord bot to notify Earthquake Early Warning (EEW) in Japan
 </p>
 
 [![Crowdin](https://badges.crowdin.net/eewbot/localized.svg)](https://crowdin.com/project/eewbot)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/EEWBot/EEWBot)
 
 ## 始めよう
 
