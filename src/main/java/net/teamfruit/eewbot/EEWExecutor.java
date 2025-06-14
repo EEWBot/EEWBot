@@ -126,7 +126,7 @@ public class EEWExecutor {
                     builder.intensity(maxIntensity);
                     EEWExecutor.this.messageExecutor.submit(() -> {
                         EEWExecutor.this.service.sendMessage(builder.build(), eew);
-                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(eew, "eew");
+                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(eew.getBody());
                     });
                 }
             };
@@ -164,7 +164,7 @@ public class EEWExecutor {
                     builder.intensity(((QuakeInfo) data).getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
                     EEWExecutor.this.messageExecutor.submit(() -> {
                         EEWExecutor.this.service.sendMessage(builder.build(), data);
-                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(data, "quake_info");
+                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(data);
                     });
                 }
             }

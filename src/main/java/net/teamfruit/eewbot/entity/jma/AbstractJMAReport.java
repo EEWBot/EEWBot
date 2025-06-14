@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import net.teamfruit.eewbot.entity.Entity;
+import net.teamfruit.eewbot.entity.external.ExternalData;
 import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
@@ -11,7 +12,7 @@ import java.time.Instant;
 @SuppressWarnings("unused")
 @JacksonXmlRootElement(localName = "Report")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public abstract class AbstractJMAReport implements Entity, JMAReport {
+public abstract class AbstractJMAReport implements Entity, JMAReport, ExternalData {
 
     @JacksonXmlProperty(localName = "Control")
     protected Control control;
@@ -256,6 +257,11 @@ public abstract class AbstractJMAReport implements Entity, JMAReport {
                     ", headline=" + this.headline +
                     '}';
         }
+    }
+
+    @Override
+    public String getDataType() {
+        return "quake_info";
     }
 
     @Override

@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.entity.dmdata;
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 import reactor.util.annotation.Nullable;
@@ -62,7 +63,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
         this.concurrentIndex = concurrentIndex;
     }
 
-    public static class Body {
+    public static class Body implements ExternalData {
 
         private boolean isLastInfo;
         private boolean isCanceled;
@@ -114,6 +115,11 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
         public Comments getComments() {
             return this.comments;
+        }
+
+        @Override
+        public String getDataType() {
+            return "eew";
         }
 
         public static class WarningArea {
