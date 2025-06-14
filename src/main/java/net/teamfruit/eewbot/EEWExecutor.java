@@ -40,8 +40,9 @@ public class EEWExecutor {
     private final GatewayDiscordClient client;
     private final ChannelRegistry channels;
     private final QuakeInfoStore quakeInfoStore;
+    private final ExternalWebhookService externalWebhookService;
 
-    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels, QuakeInfoStore quakeInfoStore) {
+    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels, QuakeInfoStore quakeInfoStore, ExternalWebhookService externalWebhookService) {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;
@@ -52,6 +53,7 @@ public class EEWExecutor {
         this.client = client;
         this.channels = channels;
         this.quakeInfoStore = quakeInfoStore;
+        this.externalWebhookService = externalWebhookService;
     }
 
     public TimeProvider getTimeProvider() {
@@ -86,7 +88,10 @@ public class EEWExecutor {
                     if (!isImportant)
                         builder.eewDecimation(false);
                     builder.intensity(maxIntensity);
-                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew));
+                    EEWExecutor.this.messageExecutor.submit(() -> {
+                        EEWExecutor.this.service.sendMessage(builder.build(), eew);
+                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(eew, "eew");
+                    });
                 }
             }, 0, this.config.getLegacy().getKyoshinDelay(), TimeUnit.SECONDS);
         } else {
@@ -122,7 +127,10 @@ public class EEWExecutor {
                     if (!isImportant)
                         builder.eewDecimation(false);
                     builder.intensity(maxIntensity);
-                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew));
+                    EEWExecutor.this.messageExecutor.submit(() -> {
+                        EEWExecutor.this.service.sendMessage(builder.build(), eew);
+                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(eew, "eew");
+                    });
                 }
             };
             this.scheduledExecutor.execute(dmdataGateway);
@@ -139,7 +147,10 @@ public class EEWExecutor {
                     ChannelFilter.Builder builder = ChannelFilter.builder();
                     builder.quakeInfo(true);
                     builder.intensity(data.getEarthquake().getIntensity());
-                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data));
+                    EEWExecutor.this.messageExecutor.submit(() -> {
+                        EEWExecutor.this.service.sendMessage(builder.build(), data);
+                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(data, "quake_info");
+                    });
                 }
             }, 0, this.config.getLegacy().getLegacyQuakeInfoDelay(), TimeUnit.SECONDS);
         }
@@ -157,7 +168,10 @@ public class EEWExecutor {
                     ChannelFilter.Builder builder = ChannelFilter.builder();
                     builder.quakeInfo(true);
                     builder.intensity(((QuakeInfo) data).getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
-                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data));
+                    EEWExecutor.this.messageExecutor.submit(() -> {
+                        EEWExecutor.this.service.sendMessage(builder.build(), data);
+                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(data, "quake_info");
+                    });
                 }
             }
         }, jmaXMLInitialDelay, 60, TimeUnit.SECONDS);
