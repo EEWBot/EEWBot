@@ -1,16 +1,9 @@
 package net.teamfruit.eewbot.entity.external;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class ExternalWebhookRequest {
 
-    @JsonProperty("type")
     private String type;
-
-    @JsonProperty("timestamp")
     private long timestamp;
-
-    @JsonProperty("data")
     private Object data;
 
     public ExternalWebhookRequest(String type, long timestamp, Object data) {
