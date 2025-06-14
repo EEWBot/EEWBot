@@ -88,10 +88,7 @@ public class EEWExecutor {
                     if (!isImportant)
                         builder.eewDecimation(false);
                     builder.intensity(maxIntensity);
-                    EEWExecutor.this.messageExecutor.submit(() -> {
-                        EEWExecutor.this.service.sendMessage(builder.build(), eew);
-                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(eew, "eew");
-                    });
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew));
                 }
             }, 0, this.config.getLegacy().getKyoshinDelay(), TimeUnit.SECONDS);
         } else {
@@ -147,10 +144,7 @@ public class EEWExecutor {
                     ChannelFilter.Builder builder = ChannelFilter.builder();
                     builder.quakeInfo(true);
                     builder.intensity(data.getEarthquake().getIntensity());
-                    EEWExecutor.this.messageExecutor.submit(() -> {
-                        EEWExecutor.this.service.sendMessage(builder.build(), data);
-                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(data, "quake_info");
-                    });
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data));
                 }
             }, 0, this.config.getLegacy().getLegacyQuakeInfoDelay(), TimeUnit.SECONDS);
         }
