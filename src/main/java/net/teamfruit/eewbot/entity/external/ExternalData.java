@@ -4,4 +4,8 @@ public interface ExternalData {
     
     String getDataType();
     
+    Object toExternalDto();
+    
+    String getRawData();
+    
 }

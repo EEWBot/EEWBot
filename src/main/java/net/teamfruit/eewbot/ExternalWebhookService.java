@@ -31,43 +31,54 @@ public class ExternalWebhookService {
             return;
         }
 
-        ExternalWebhookRequest request = new ExternalWebhookRequest(
-                externalData.getDataType(),
-                Instant.now().toEpochMilli(),
-                externalData
-        );
+        try {
+            Object eewbotDto = externalData.toExternalDto();
+            String rawData = externalData.getRawData();
+            
+            // Use raw data string for data field, processed DTO for eewbot field
+            ExternalWebhookRequest request = new ExternalWebhookRequest(
+                    externalData.getDataType(),
+                    Instant.now().toEpochMilli(),
+                    rawData != null ? rawData : "",  // Raw string data
+                    eewbotDto  // Processed DTO
+            );
 
-        String jsonBody = EEWBot.GSON.toJson(request);
+            String jsonBody = EEWBot.GSON.toJson(request);
 
-        this.webhookUrls.forEach(url -> this.executor.submit(() -> {
-            try {
-                HttpRequest httpRequest = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .header("Content-Type", "application/json")
-                        .header("User-Agent", "EEWBot")
-                        .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                        .build();
+            this.webhookUrls.forEach(url -> {
+                this.executor.submit(() -> {
+                    try {
+                        HttpRequest httpRequest = HttpRequest.newBuilder()
+                                .uri(URI.create(url))
+                                .header("Content-Type", "application/json")
+                                .header("User-Agent", "EEWBot")
+                                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                                .build();
 
-                CompletableFuture<HttpResponse<String>> future = this.httpClient.sendAsync(
-                        httpRequest,
-                        HttpResponse.BodyHandlers.ofString()
-                );
+                        CompletableFuture<HttpResponse<String>> future = this.httpClient.sendAsync(
+                                httpRequest,
+                                HttpResponse.BodyHandlers.ofString()
+                        );
 
-                future.thenAccept(response -> {
-                    if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                        Log.logger.info("Successfully sent external webhook to {}: status={}", url, response.statusCode());
-                    } else {
-                        Log.logger.warn("External webhook failed for {}: status={}, body={}", url, response.statusCode(), response.body());
+                        future.thenAccept(response -> {
+                            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                                Log.logger.info("Successfully sent external webhook to {}: status={}", url, response.statusCode());
+                            } else {
+                                Log.logger.warn("External webhook failed for {}: status={}, body={}", url, response.statusCode(), response.body());
+                            }
+                        }).exceptionally(throwable -> {
+                            Log.logger.error("Failed to send external webhook to {}: {}", url, throwable.getMessage());
+                            return null;
+                        });
+
+                    } catch (Exception e) {
+                        Log.logger.error("Error sending external webhook to {}: {}", url, e.getMessage());
                     }
-                }).exceptionally(throwable -> {
-                    Log.logger.error("Failed to send external webhook to {}: {}", url, throwable.getMessage());
-                    return null;
                 });
-
-            } catch (Exception e) {
-                Log.logger.error("Error sending external webhook to {}: {}", url, e.getMessage());
-            }
-        }));
+            });
+        } catch (Exception e) {
+            Log.logger.error("Failed to serialize external data to JSON: {}", e.getMessage());
+        }
     }
 
     public void shutdown() {
