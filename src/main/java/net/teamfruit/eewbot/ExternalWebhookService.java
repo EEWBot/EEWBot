@@ -44,38 +44,37 @@ public class ExternalWebhookService {
             );
 
             String jsonBody = EEWBot.GSON.toJson(request);
+            Log.logger.debug("External webhook JSON content: {}", jsonBody);
 
-            this.webhookUrls.forEach(url -> {
-                this.executor.submit(() -> {
-                    try {
-                        HttpRequest httpRequest = HttpRequest.newBuilder()
-                                .uri(URI.create(url))
-                                .header("Content-Type", "application/json")
-                                .header("User-Agent", "EEWBot")
-                                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                                .build();
+            this.webhookUrls.forEach(url -> this.executor.submit(() -> {
+                try {
+                    HttpRequest httpRequest = HttpRequest.newBuilder()
+                            .uri(URI.create(url))
+                            .header("Content-Type", "application/json")
+                            .header("User-Agent", "EEWBot")
+                            .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                            .build();
 
-                        CompletableFuture<HttpResponse<String>> future = this.httpClient.sendAsync(
-                                httpRequest,
-                                HttpResponse.BodyHandlers.ofString()
-                        );
+                    CompletableFuture<HttpResponse<String>> future = this.httpClient.sendAsync(
+                            httpRequest,
+                            HttpResponse.BodyHandlers.ofString()
+                    );
 
-                        future.thenAccept(response -> {
-                            if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                                Log.logger.info("Successfully sent external webhook to {}: status={}", url, response.statusCode());
-                            } else {
-                                Log.logger.warn("External webhook failed for {}: status={}, body={}", url, response.statusCode(), response.body());
-                            }
-                        }).exceptionally(throwable -> {
-                            Log.logger.error("Failed to send external webhook to {}: {}", url, throwable.getMessage());
-                            return null;
-                        });
+                    future.thenAccept(response -> {
+                        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                            Log.logger.info("Successfully sent external webhook to {}: status={}", url, response.statusCode());
+                        } else {
+                            Log.logger.warn("External webhook failed for {}: status={}, body={}", url, response.statusCode(), response.body());
+                        }
+                    }).exceptionally(throwable -> {
+                        Log.logger.error("Failed to send external webhook to {}: {}", url, throwable.getMessage());
+                        return null;
+                    });
 
-                    } catch (Exception e) {
-                        Log.logger.error("Error sending external webhook to {}: {}", url, e.getMessage());
-                    }
-                });
-            });
+                } catch (Exception e) {
+                    Log.logger.error("Error sending external webhook to {}: {}", url, e.getMessage());
+                }
+            }));
         } catch (Exception e) {
             Log.logger.error("Failed to serialize external data to JSON: {}", e.getMessage());
         }
