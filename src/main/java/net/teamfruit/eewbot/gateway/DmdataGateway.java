@@ -292,11 +292,11 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                             break;
                         case PING:
                             DmdataWSPing wsPing = EEWBot.GSON.fromJson(dataString, DmdataWSPing.class);
-                            Log.logger.debug("DMDATA WebSocket {}: ping: {}", WebSocketConnection.this.connectionName, wsPing.getPingId());
+                            Log.logger.trace("DMDATA WebSocket {}: ping: {}", WebSocketConnection.this.connectionName, wsPing.getPingId());
 
                             DmdataWSPong wsPong = new DmdataWSPong(wsPing.getPingId());
                             webSocket.sendText(EEWBot.GSON.toJson(wsPong), true);
-                            Log.logger.debug("DMDATA WebSocket {}: pong: {}", WebSocketConnection.this.connectionName, wsPong.getPingId());
+                            Log.logger.trace("DMDATA WebSocket {}: pong: {}", WebSocketConnection.this.connectionName, wsPong.getPingId());
                             break;
                         case DATA:
                             DmdataWSData wsData = EEWBot.GSON.fromJson(dataString, DmdataWSData.class);
