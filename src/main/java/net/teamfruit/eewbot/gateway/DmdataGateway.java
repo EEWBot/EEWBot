@@ -317,6 +317,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                             Log.logger.debug("DMDATA WebSocket {}: data body: {}", WebSocketConnection.this.connectionName, bodyString);
 
                             DmdataEEW eew = EEWBot.GSON.fromJson(bodyString, DmdataEEW.class);
+                            eew.setRawData(bodyString);
                             boolean isTest = wsData.getHead().isTest() || !eew.getStatus().equals("通常");
                             Log.logger.info(isTest ? "DMDATA WebSocket {}: test EEW: {}" : "DMDATA WebSocket {}:  EEW: {}", WebSocketConnection.this.connectionName, eew);
 
