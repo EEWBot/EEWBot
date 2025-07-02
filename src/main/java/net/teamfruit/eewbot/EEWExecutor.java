@@ -8,7 +8,6 @@ import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.discordjson.json.WebhookCreateRequest;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.external.EEWDataWrapper;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
@@ -127,7 +126,7 @@ public class EEWExecutor {
                     builder.intensity(maxIntensity);
                     EEWExecutor.this.messageExecutor.submit(() -> {
                         EEWExecutor.this.service.sendMessage(builder.build(), eew);
-                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(new EEWDataWrapper(eew));
+                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(eew);
                     });
                 }
             };

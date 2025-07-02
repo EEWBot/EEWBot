@@ -14,7 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DmdataEEW extends DmdataHeader implements Entity {
+public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
 
     private Body body;
     private DmdataEEW prev;
@@ -73,7 +73,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
         this.rawData = rawData;
     }
 
-    public static class Body implements ExternalData {
+    public static class Body {
 
         private boolean isLastInfo;
         private boolean isCanceled;
@@ -127,87 +127,6 @@ public class DmdataEEW extends DmdataHeader implements Entity {
             return this.comments;
         }
 
-        @Override
-        public String getDataType() {
-            return "eew";
-        }
-
-        @Override
-        public String getRawData() {
-            // Return empty string as Body doesn't have access to raw data
-            // Use DmdataEEW.getRawData() for actual raw data
-            return "";
-        }
-
-        @Override
-        public Object toExternalDto() {
-            // Note: This is a basic implementation without parent data
-            // For full data, use DmdataEEW.toExternalDto() method instead
-            String reportDateTime = null;
-            String serialNo = null;
-            boolean concurrent = false;
-            int concurrentIndex = 0;
-            
-            String epicenter = null;
-            String depth = null;
-            String magnitude = null;
-            String condition = null;
-            
-            if (this.getEarthquake() != null) {
-                condition = this.getEarthquake().getCondition();
-                if (this.getEarthquake().getHypocenter() != null) {
-                    epicenter = this.getEarthquake().getHypocenter().getName();
-                    if (this.getEarthquake().getHypocenter().getDepth() != null) {
-                        if (this.getEarthquake().getHypocenter().getDepth().getCondition() != null) {
-                            depth = this.getEarthquake().getHypocenter().getDepth().getCondition();
-                        } else {
-                            depth = this.getEarthquake().getHypocenter().getDepth().getValue() + "km";
-                        }
-                    }
-                }
-                if (this.getEarthquake().getMagnitude() != null) {
-                    magnitude = String.valueOf(this.getEarthquake().getMagnitude().getValue());
-                }
-            }
-            
-            String maxIntensity = null;
-            java.util.List<String> regions = new java.util.ArrayList<>();
-            
-            if (this.getIntensity() != null) {
-                if (this.getIntensity().getForecastMaxInt() != null) {
-                    maxIntensity = SeismicIntensity.get(this.getIntensity().getForecastMaxInt().getFrom()).getSimple();
-                }
-                
-                if (this.getIntensity().getRegions() != null) {
-                    regions = this.getIntensity().getRegions().stream()
-                            .filter(Intensity.IntensityRegionReached::isPlum)
-                            .collect(Collectors.groupingBy(Intensity.IntensityRegionReached::getForecastMaxInt,
-                                    Collectors.mapping(Intensity.IntensityRegionReached::getName, Collectors.joining("　"))))
-                            .entrySet()
-                            .stream()
-                            .sorted(Comparator.comparing(entry -> SeismicIntensity.get(entry.getKey().getFrom()), Comparator.reverseOrder()))
-                            .map(java.util.Map.Entry::getValue)
-                            .collect(Collectors.toList());
-                }
-            }
-            
-            return new EEWExternalData(
-                    this.isWarning(),
-                    this.isLastInfo(),
-                    this.isCanceled(),
-                    serialNo,
-                    reportDateTime,
-                    epicenter,
-                    depth,
-                    magnitude,
-                    maxIntensity,
-                    regions,
-                    this.getText(),
-                    condition,
-                    concurrent,
-                    concurrentIndex
-            );
-        }
 
         public static class WarningArea {
 
@@ -984,7 +903,13 @@ public class DmdataEEW extends DmdataHeader implements Entity {
         return builder.build();
     }
 
-    public EEWExternalData toExternalDto() {
+    @Override
+    public String getDataType() {
+        return "eew";
+    }
+
+    @Override
+    public Object toExternalDto() {
         String reportDateTime = this.getReportDateTime();
         String serialNo = this.getSerialNo();
         boolean concurrent = this.isConcurrent();
