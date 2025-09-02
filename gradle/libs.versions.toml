@@ -3,7 +3,7 @@
 
 [versions]
 ch-qos-logback-logback-classic = "1.5.18"
-com-discord4j-discord4j-core = "3.3.0-RC2"
+com-discord4j-discord4j-core = "3.3.0-RC3"
 com-fasterxml-jackson-dataformat-jackson-dataformat-xml = "2.20.0"
 com-fasterxml-jackson-datatype-jackson-datatype-jsr310 = "2.20.0"
 com-google-code-gson-gson = "2.13.1"
