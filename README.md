@@ -7,7 +7,7 @@ A Discord bot to notify Earthquake Early Warning (EEW) in Japan
 緊急地震速報(EEW)をDiscordに通知するBotです。
 
 <p>
-  <img src="https://img.shields.io/badge/Java->=11-orange?style=for-the-badge" alt="Java Version">
+  <img src="https://img.shields.io/badge/Java->=17-orange?style=for-the-badge" alt="Java Version">
   <a href="https://github.com/EEWBot/EEWBot/blob/master/LICENSE.md"><img src="https://img.shields.io/github/license/EEWBot/EEWbot?style=for-the-badge" alt="License"></a> 
   <a href="https://discord.gg/upt9n86ctG"><img src="https://img.shields.io/discord/564550533973540885?color=5464ec&label=Discord&style=for-the-badge" alt="Discord"></a>
 </p>
