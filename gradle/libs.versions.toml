@@ -12,7 +12,7 @@ org-apache-commons-commons-lang3 = "3.18.0"
 org-apache-httpcomponents-client5-httpclient5 = "5.5"
 redis-clients-jedis = "4.4.8"
 net-eewbot-base65536j = "0.1.0"
-shadow-jar = "8.1.1"
+shadow-jar = "9.3.0"
 wire = "5.4.0"
 
 [libraries]
@@ -29,5 +29,5 @@ net-eewbot-base65536j = { module = "net.eewbot:base65536j", version.ref = "net-e
 wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire" }
 
 [plugins]
-shadow-jar = { id = "com.github.johnrengelman.shadow", version.ref = "shadow-jar" }
+shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar" }
 com-squareup-wire = { id = "com.squareup.wire", version.ref = "wire" }
