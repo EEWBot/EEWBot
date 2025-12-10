@@ -20,11 +20,11 @@ jobs:
         with:
           submodules: recursive
 
-      # Setup Java 21
-      - name: Set up JDK 21
+      # Setup Java 25
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'corretto'
 
       # Setup Gradle
