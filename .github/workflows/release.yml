@@ -2,6 +2,7 @@ name: Release and Publish Docker image
 
 permissions:
   contents: read
+  packages: write
 
 on:
   push:
@@ -12,6 +13,7 @@ jobs:
   release_and_publish:
     permissions:
       contents: write
+      packages: write
     runs-on: ubuntu-latest
     steps:
       # Check out the repository
