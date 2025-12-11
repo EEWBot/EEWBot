@@ -1,5 +1,8 @@
 name: Release and Publish Docker image
 
+permissions:
+  contents: read
+
 on:
   push:
     tags:
@@ -7,24 +10,26 @@ on:
 
 jobs:
   release_and_publish:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       # Check out the repository
       - name: Check out the repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
-      # Setup Java 21
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      # Setup Java 25
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'corretto'
 
       # Setup Gradle
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       # Build with Gradle
       - name: Build with Gradle
