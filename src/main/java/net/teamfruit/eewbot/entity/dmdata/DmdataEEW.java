@@ -3,6 +3,8 @@ package net.teamfruit.eewbot.entity.dmdata;
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.external.ExternalData;
+import net.teamfruit.eewbot.entity.external.EEWExternalData;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 import reactor.util.annotation.Nullable;
@@ -12,13 +14,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DmdataEEW extends DmdataHeader implements Entity {
+public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
 
     private Body body;
     private DmdataEEW prev;
     private SeismicIntensity maxIntensityBefore = SeismicIntensity.UNKNOWN;
     private boolean concurrent;
     private int concurrentIndex;
+    private String rawData;
 
     public Body getBody() {
         return this.body;
@@ -60,6 +63,14 @@ public class DmdataEEW extends DmdataHeader implements Entity {
 
     public void setConcurrentIndex(int concurrentIndex) {
         this.concurrentIndex = concurrentIndex;
+    }
+
+    public String getRawData() {
+        return this.rawData;
+    }
+
+    public void setRawData(String rawData) {
+        this.rawData = rawData;
     }
 
     public static class Body {
@@ -115,6 +126,7 @@ public class DmdataEEW extends DmdataHeader implements Entity {
         public Comments getComments() {
             return this.comments;
         }
+
 
         public static class WarningArea {
 
@@ -889,6 +901,79 @@ public class DmdataEEW extends DmdataHeader implements Entity {
         }
         builder.footer(String.join(" ", this.getPublishingOffice()), null);
         return builder.build();
+    }
+
+    @Override
+    public String getDataType() {
+        return "eew";
+    }
+
+    @Override
+    public Object toExternalDto() {
+        String reportDateTime = this.getReportDateTime();
+        String serialNo = this.getSerialNo();
+        boolean concurrent = this.isConcurrent();
+        int concurrentIndex = this.getConcurrentIndex();
+        
+        String epicenter = null;
+        String depth = null;
+        String magnitude = null;
+        String condition = null;
+        
+        if (this.getBody().getEarthquake() != null) {
+            condition = this.getBody().getEarthquake().getCondition();
+            if (this.getBody().getEarthquake().getHypocenter() != null) {
+                epicenter = this.getBody().getEarthquake().getHypocenter().getName();
+                if (this.getBody().getEarthquake().getHypocenter().getDepth() != null) {
+                    if (this.getBody().getEarthquake().getHypocenter().getDepth().getCondition() != null) {
+                        depth = this.getBody().getEarthquake().getHypocenter().getDepth().getCondition();
+                    } else {
+                        depth = this.getBody().getEarthquake().getHypocenter().getDepth().getValue() + "km";
+                    }
+                }
+            }
+            if (this.getBody().getEarthquake().getMagnitude() != null) {
+                magnitude = String.valueOf(this.getBody().getEarthquake().getMagnitude().getValue());
+            }
+        }
+        
+        String maxIntensity = null;
+        java.util.List<String> regions = new java.util.ArrayList<>();
+        
+        if (this.getBody().getIntensity() != null) {
+            if (this.getBody().getIntensity().getForecastMaxInt() != null) {
+                maxIntensity = SeismicIntensity.get(this.getBody().getIntensity().getForecastMaxInt().getFrom()).getSimple();
+            }
+            
+            if (this.getBody().getIntensity().getRegions() != null) {
+                regions = this.getBody().getIntensity().getRegions().stream()
+                        .filter(Body.Intensity.IntensityRegionReached::isPlum)
+                        .collect(Collectors.groupingBy(Body.Intensity.IntensityRegionReached::getForecastMaxInt,
+                                Collectors.mapping(Body.Intensity.IntensityRegionReached::getName, Collectors.joining("　"))))
+                        .entrySet()
+                        .stream()
+                        .sorted(Comparator.comparing(entry -> SeismicIntensity.get(entry.getKey().getFrom()), Comparator.reverseOrder()))
+                        .map(java.util.Map.Entry::getValue)
+                        .collect(Collectors.toList());
+            }
+        }
+        
+        return new EEWExternalData(
+                this.getBody().isWarning(),
+                this.getBody().isLastInfo(),
+                this.getBody().isCanceled(),
+                serialNo,
+                reportDateTime,
+                epicenter,
+                depth,
+                magnitude,
+                maxIntensity,
+                regions,
+                this.getBody().getText(),
+                condition,
+                concurrent,
+                concurrentIndex
+        );
     }
 
     @Override

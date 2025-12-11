@@ -14,6 +14,7 @@ public class ConfigV2 {
     private DMData dmdata = new DMData();
     private Renderer renderer = new Renderer();
     private WebhookSender webhookSender = new WebhookSender();
+    private ExternalWebhook externalWebhook = new ExternalWebhook();
     private Advanced advanced = new Advanced();
     private Legacy legacy = new Legacy();
 
@@ -35,6 +36,10 @@ public class ConfigV2 {
 
     public WebhookSender getWebhookSender() {
         return this.webhookSender;
+    }
+
+    public ExternalWebhook getExternalWebhook() {
+        return this.externalWebhook;
     }
 
     public Advanced getAdvanced() {
@@ -292,6 +297,26 @@ public class ConfigV2 {
         }
     }
 
+    public static class ExternalWebhook {
+
+        private java.util.List<String> urls = new java.util.ArrayList<>();
+
+        public java.util.List<String> getUrls() {
+            return this.urls;
+        }
+
+        public void setUrls(java.util.List<String> urls) {
+            this.urls = urls;
+        }
+
+        @Override
+        public String toString() {
+            return "ExternalWebhook{" +
+                    "urls=" + this.urls +
+                    '}';
+        }
+    }
+
     @Override
     public String toString() {
         return "ConfigV2{" +
@@ -299,6 +324,7 @@ public class ConfigV2 {
                 ", dmdata=" + this.dmdata +
                 ", renderer=" + this.renderer +
                 ", webhookSender=" + this.webhookSender +
+                ", externalWebhook=" + this.externalWebhook +
                 ", advanced=" + this.advanced +
                 ", legacy=" + this.legacy +
                 '}';

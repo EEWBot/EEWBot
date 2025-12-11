@@ -64,6 +64,7 @@ public class EEWBot {
     private EEWService service;
     private EEWExecutor executor;
     private SlashCommandHandler slashCommand;
+    private ExternalWebhookService externalWebhookService;
 
     private long applicationId;
     private String userName;
@@ -145,7 +146,8 @@ public class EEWBot {
 
         this.quakeInfoStore = new QuakeInfoStore();
         this.service = new EEWService(this);
-        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getQuakeInfoStore());
+        this.externalWebhookService = new ExternalWebhookService(getConfig(), getHttpClient());
+        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getQuakeInfoStore(), getExternalWebhookService());
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
@@ -186,6 +188,9 @@ public class EEWBot {
                 getChannels().save();
             } catch (final IOException e) {
                 Log.logger.error("Save failed", e);
+            }
+            if (this.externalWebhookService != null) {
+                this.externalWebhookService.shutdown();
             }
         }));
 
@@ -254,6 +259,10 @@ public class EEWBot {
 
     public String getAvatarUrl() {
         return this.avatarUrl;
+    }
+
+    public ExternalWebhookService getExternalWebhookService() {
+        return this.externalWebhookService;
     }
 
     private static Path getConfigPath() {

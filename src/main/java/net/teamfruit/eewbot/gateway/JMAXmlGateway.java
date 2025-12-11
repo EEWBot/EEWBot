@@ -57,7 +57,7 @@ public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                 return;
             }
 
-            JMAFeed feed = EEWBot.XML_MAPPER.readValue(new InputStreamReader(feedResponse.body()), JMAFeed.class);
+        JMAFeed feed = EEWBot.XML_MAPPER.readValue(new InputStreamReader(feedResponse.body()), JMAFeed.class);
 
             if (this.lastIds != null) {
                 final List<String> list = feed.getEntries().stream()
@@ -95,7 +95,12 @@ public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                             return;
                         }
 
-                        AbstractJMAReport report = EEWBot.XML_MAPPER.readValue(new InputStreamReader(reportResponse.body()), reportClass);
+                        String xmlContent;
+                        try (InputStream inputStream = reportResponse.body()) {
+                            xmlContent = new String(inputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                        }
+                        AbstractJMAReport report = EEWBot.XML_MAPPER.readValue(xmlContent, reportClass);
+                        report.setRawData(xmlContent);
                         if (report.getControl().getStatus() == JMAStatus.通常) {
                             if (report instanceof QuakeInfo) {
                                 this.store.putReport((QuakeInfo) report);
