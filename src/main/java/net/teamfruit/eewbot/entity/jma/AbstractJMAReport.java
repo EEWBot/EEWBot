@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import net.teamfruit.eewbot.entity.Entity;
+import net.teamfruit.eewbot.entity.external.ExternalData;
+import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
@@ -11,13 +13,15 @@ import java.time.Instant;
 @SuppressWarnings("unused")
 @JacksonXmlRootElement(localName = "Report")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public abstract class AbstractJMAReport implements Entity, JMAReport {
+public abstract class AbstractJMAReport implements Entity, JMAReport, ExternalData {
 
     @JacksonXmlProperty(localName = "Control")
     protected Control control;
 
     @JacksonXmlProperty(localName = "Head")
     protected Head head;
+    
+    protected String rawData;
 
     public Control getControl() {
         return this.control;
@@ -25,6 +29,14 @@ public abstract class AbstractJMAReport implements Entity, JMAReport {
 
     public Head getHead() {
         return this.head;
+    }
+
+    public String getRawData() {
+        return this.rawData;
+    }
+
+    public void setRawData(String rawData) {
+        this.rawData = rawData;
     }
 
     @Override
@@ -256,6 +268,57 @@ public abstract class AbstractJMAReport implements Entity, JMAReport {
                     ", headline=" + this.headline +
                     '}';
         }
+    }
+
+    @Override
+    public String getDataType() {
+        return "quake_info";
+    }
+
+    @Override
+    public Object toExternalDto() {
+        String reportDateTime = null;
+        String title = null;
+        String infoType = null;
+        String serial = null;
+        String status = null;
+        long eventId = 0;
+        
+        if (this.control != null) {
+            if (this.control.getDateTime() != null) {
+                reportDateTime = this.control.getDateTime().toString();
+            }
+            title = this.control.getTitle();
+            if (this.control.getStatus() != null) {
+                status = this.control.getStatus().toString();
+            }
+        }
+        
+        if (this.head != null) {
+            if (this.head.getInfoType() != null) {
+                infoType = this.head.getInfoType().toString();
+            }
+            serial = this.head.getSerial();
+            eventId = this.head.getEventID();
+        }
+        
+        // Basic implementation - subclasses should override for specific data
+        return new QuakeInfoExternalData(
+                eventId,
+                reportDateTime,
+                title,
+                infoType,
+                serial,
+                status,
+                null, // epicenter - to be filled by subclasses
+                null, // originTime - to be filled by subclasses
+                null, // depth - to be filled by subclasses
+                null, // magnitude - to be filled by subclasses
+                null, // maxIntensity - to be filled by subclasses
+                new java.util.ArrayList<>(), // intensityAreas - to be filled by subclasses
+                null, // text - to be filled by subclasses
+                null  // comments - to be filled by subclasses
+        );
     }
 
     @Override
