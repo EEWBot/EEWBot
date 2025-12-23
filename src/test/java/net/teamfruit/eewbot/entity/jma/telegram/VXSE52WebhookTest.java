@@ -29,6 +29,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,19 +90,20 @@ class VXSE52WebhookTest {
                 .sorted();
     }
 
-    /**
-     * 期待値JSONを生成するヘルパーメソッド
-     * 一度実行したら@Disabledを付けて無効化してください
-     */
-    @Test
-    @Disabled("期待値JSONを生成したら無効化してください")
-    void generateExpectedJson_case1() throws IOException {
-        generateExpectedJsonFiles("case1");
-    }
-
-    private void generateExpectedJsonFiles(String caseName) throws IOException {
+    private void generateExpectedJsonFiles(String caseName, boolean overwrite) throws IOException {
         String xmlPath = "jmaxml/" + TELEGRAM_TYPE + "/" + caseName + ".xml";
         String baseOutputPath = "src/test/resources/jmaxml/" + TELEGRAM_TYPE + "/" + caseName;
+
+        Path discordPath = Paths.get(baseOutputPath + "_discord_expected.json");
+        Path externalPath = Paths.get(baseOutputPath + "_external_expected.json");
+
+        // 上書き保護チェック
+        if (!overwrite && Files.exists(discordPath) && Files.exists(externalPath)) {
+            System.out.printf("[%s] スキップ: 期待値JSONファイルが既に存在します%n", caseName);
+            System.out.println("  - Discord: " + discordPath);
+            System.out.println("  - External: " + externalPath);
+            return;
+        }
 
         // XMLを読み込み
         InputStream xmlStream = getClass().getClassLoader().getResourceAsStream(xmlPath);
@@ -114,25 +118,87 @@ class VXSE52WebhookTest {
         assertThat(report).isNotNull();
 
         // 1. Discord Webhook用JSON生成
-        DiscordWebhook webhook = report.createWebhook("ja_jp");
-        String discordJson = gson.toJson(webhook);
-        Path discordPath = Paths.get(baseOutputPath + "_discord_expected.json");
-        Files.writeString(discordPath, discordJson, StandardCharsets.UTF_8);
-        System.out.println("✓ Discord Webhook JSON生成: " + discordPath);
+        if (!overwrite && Files.exists(discordPath)) {
+            System.out.printf("[%s] Discord Webhook JSON: 既に存在（スキップ）%n", caseName);
+        } else {
+            DiscordWebhook webhook = report.createWebhook("ja_jp");
+            String discordJson = gson.toJson(webhook);
+            Files.writeString(discordPath, discordJson, StandardCharsets.UTF_8);
+            System.out.printf("[%s] Discord Webhook JSON生成: %s%n", caseName, discordPath);
+        }
 
         // 2. ExternalWebhook用JSON生成
-        report.setRawData(rawXml);
-        Object externalDto = report.toExternalDto();
-        ExternalWebhookRequest request = new ExternalWebhookRequest(
-                report.getDataType(),
-                1234567890000L,  // 固定値
-                report.getRawData(),
-                externalDto
-        );
-        String externalJson = gson.toJson(request);
-        Path externalPath = Paths.get(baseOutputPath + "_external_expected.json");
-        Files.writeString(externalPath, externalJson, StandardCharsets.UTF_8);
-        System.out.println("✓ External Webhook JSON生成: " + externalPath);
+        if (!overwrite && Files.exists(externalPath)) {
+            System.out.printf("[%s] External Webhook JSON: 既に存在（スキップ）%n", caseName);
+        } else {
+            report.setRawData(rawXml);
+            Object externalDto = report.toExternalDto();
+            ExternalWebhookRequest request = new ExternalWebhookRequest(
+                    report.getDataType(),
+                    1234567890000L,  // 固定値
+                    report.getRawData(),
+                    externalDto
+            );
+            String externalJson = gson.toJson(request);
+            Files.writeString(externalPath, externalJson, StandardCharsets.UTF_8);
+            System.out.printf("[%s] External Webhook JSON生成: %s%n", caseName, externalPath);
+        }
+    }
+
+    /**
+     * すべてのXMLファイルに対して、欠落している期待値JSONファイルを生成
+     * 既存のJSONファイルは上書きしない（冪等性を保証）
+     */
+    @Test
+    @Disabled("必要に応じて手動実行してください。実行後は再度@Disabledを付けることを推奨します。")
+    void generateAllMissingExpectedJsonFiles() throws IOException {
+        System.out.println("========================================");
+        System.out.println("期待値JSON生成処理を開始します");
+        System.out.println("テレグラムタイプ: " + TELEGRAM_TYPE);
+        System.out.println("========================================");
+
+        List<String> xmlFileNames = provideXmlFileNames().collect(Collectors.toList());
+
+        int totalCount = xmlFileNames.size();
+        List<String> generatedCases = new ArrayList<>();
+        List<String> skippedCases = new ArrayList<>();
+        List<String> errorCases = new ArrayList<>();
+
+        for (String caseName : xmlFileNames) {
+            try {
+                Path discordPath = Paths.get("src/test/resources/jmaxml/" + TELEGRAM_TYPE + "/"
+                        + caseName + "_discord_expected.json");
+                Path externalPath = Paths.get("src/test/resources/jmaxml/" + TELEGRAM_TYPE + "/"
+                        + caseName + "_external_expected.json");
+
+                boolean discordExists = Files.exists(discordPath);
+                boolean externalExists = Files.exists(externalPath);
+
+                if (discordExists && externalExists) {
+                    skippedCases.add(caseName);
+                } else {
+                    generateExpectedJsonFiles(caseName, false);
+                    generatedCases.add(caseName);
+                }
+            } catch (Exception e) {
+                errorCases.add(caseName);
+                System.err.printf("[%s] エラー: %s%n", caseName, e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        // サマリー出力
+        System.out.println("========================================");
+        System.out.println("期待値JSON生成処理が完了しました");
+        System.out.println("----------------------------------------");
+        System.out.println("総XMLファイル数: " + totalCount);
+        System.out.println("新規生成: " + generatedCases.size() + "件 "
+                + (generatedCases.isEmpty() ? "" : generatedCases));
+        System.out.println("スキップ: " + skippedCases.size() + "件 "
+                + (skippedCases.isEmpty() ? "" : skippedCases));
+        System.out.println("エラー: " + errorCases.size() + "件 "
+                + (errorCases.isEmpty() ? "" : errorCases));
+        System.out.println("========================================");
     }
 
     @ParameterizedTest(name = "{0} - Discord Webhook JSON")
