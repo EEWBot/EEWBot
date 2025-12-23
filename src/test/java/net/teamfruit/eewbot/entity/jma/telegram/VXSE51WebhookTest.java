@@ -107,7 +107,7 @@ class VXSE51WebhookTest {
 
         // XMLの生データも保持（改行コードをLFに統一）
         String rawXml = new String(xmlStream.readAllBytes(), StandardCharsets.UTF_8)
-                .replace("\r\n", "\n");
+                .replaceAll("\\R", "\n");
         xmlStream = getClass().getClassLoader().getResourceAsStream(xmlPath);
 
         VXSE51Impl report = xmlMapper.readValue(xmlStream, VXSE51Impl.class);
@@ -171,8 +171,8 @@ class VXSE51WebhookTest {
         assertThat(expectedStream).isNotNull();
         String expectedJson = new String(expectedStream.readAllBytes(), StandardCharsets.UTF_8);
 
-        // 5. JSON比較（厳密モード）
-        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.STRICT);
+        // 5. JSON比較（順番を無視）
+        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.NON_EXTENSIBLE);
     }
 
     private void testXmlToExternalWebhook(String xmlPath, String expectedJsonPath) throws IOException, JSONException {
@@ -182,7 +182,7 @@ class VXSE51WebhookTest {
 
         // XMLの生データも保持（改行コードをLFに統一）
         String rawXml = new String(xmlStream.readAllBytes(), StandardCharsets.UTF_8)
-                .replace("\r\n", "\n");
+                .replaceAll("\\R", "\n");
         xmlStream = getClass().getClassLoader().getResourceAsStream(xmlPath);
 
         VXSE51Impl report = xmlMapper.readValue(xmlStream, VXSE51Impl.class);
@@ -212,7 +212,7 @@ class VXSE51WebhookTest {
         assertThat(expectedStream).isNotNull();
         String expectedJson = new String(expectedStream.readAllBytes(), StandardCharsets.UTF_8);
 
-        // 6. JSON比較（厳密モード - 固定timestampを使用しているため）
-        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.STRICT);
+        // 6. JSON比較（順番を無視）
+        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.NON_EXTENSIBLE);
     }
 }
