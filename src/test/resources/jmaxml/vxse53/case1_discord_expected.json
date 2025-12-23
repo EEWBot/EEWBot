@@ -1,0 +1,45 @@
+{
+  "embeds": [
+    {
+      "title": "地震情報",
+      "description": "\u003ct:1704093000:f\u003e頃、地震がありました。",
+      "timestamp": "2024-01-01T07:24:00Z",
+      "color": 7471276,
+      "footer": {
+        "text": "気象庁"
+      },
+      "fields": [
+        {
+          "name": "震央",
+          "value": "石川県能登地方",
+          "inline": true
+        },
+        {
+          "name": "深さ",
+          "value": "ごく浅い",
+          "inline": true
+        },
+        {
+          "name": "マグニチュード",
+          "value": "7.6",
+          "inline": true
+        },
+        {
+          "name": "最大震度",
+          "value": "7",
+          "inline": true
+        },
+        {
+          "name": "",
+          "value": "津波警報等（大津波警報・津波警報あるいは津波注意報）を発表中です。\nこの地震について、緊急地震速報を発表しています。",
+          "inline": false
+        },
+        {
+          "name": "",
+          "value": "震源要素を訂正します。\n",
+          "inline": false
+        }
+      ]
+    }
+  ]
+}
