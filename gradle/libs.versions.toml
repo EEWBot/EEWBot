@@ -16,7 +16,7 @@ shadow-jar = "9.3.0"
 wire = "5.4.0"
 junit-jupiter = "5.10.1"
 assertj-core = "3.24.2"
-jsonassert = "1.5.1"
+jsonassert = "1.5.3"
 
 [libraries]
 ch-qos-logback-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "ch-qos-logback-logback-classic" }
