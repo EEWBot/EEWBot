@@ -105,8 +105,9 @@ class VXSE51WebhookTest {
         InputStream xmlStream = getClass().getClassLoader().getResourceAsStream(xmlPath);
         assertThat(xmlStream).isNotNull();
 
-        // XMLの生データも保持
-        String rawXml = new String(xmlStream.readAllBytes(), StandardCharsets.UTF_8);
+        // XMLの生データも保持（改行コードをLFに統一）
+        String rawXml = new String(xmlStream.readAllBytes(), StandardCharsets.UTF_8)
+                .replace("\r\n", "\n");
         xmlStream = getClass().getClassLoader().getResourceAsStream(xmlPath);
 
         VXSE51Impl report = xmlMapper.readValue(xmlStream, VXSE51Impl.class);
@@ -179,8 +180,9 @@ class VXSE51WebhookTest {
         InputStream xmlStream = getClass().getClassLoader().getResourceAsStream(xmlPath);
         assertThat(xmlStream).isNotNull();
 
-        // XMLの生データも保持
-        String rawXml = new String(xmlStream.readAllBytes(), StandardCharsets.UTF_8);
+        // XMLの生データも保持（改行コードをLFに統一）
+        String rawXml = new String(xmlStream.readAllBytes(), StandardCharsets.UTF_8)
+                .replace("\r\n", "\n");
         xmlStream = getClass().getClassLoader().getResourceAsStream(xmlPath);
 
         VXSE51Impl report = xmlMapper.readValue(xmlStream, VXSE51Impl.class);
