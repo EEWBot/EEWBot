@@ -14,6 +14,9 @@ redis-clients-jedis = "4.4.8"
 net-eewbot-base65536j = "0.1.0"
 shadow-jar = "9.3.0"
 wire = "5.4.0"
+junit-jupiter = "5.10.1"
+assertj-core = "3.24.2"
+jsonassert = "1.5.1"
 
 [libraries]
 ch-qos-logback-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "ch-qos-logback-logback-classic" }
@@ -27,6 +30,10 @@ org-apache-httpcomponents-client5-httpclient5 = { module = "org.apache.httpcompo
 redis-clients-jedis = { module = "redis.clients:jedis", version.ref = "redis-clients-jedis" }
 net-eewbot-base65536j = { module = "net.eewbot:base65536j", version.ref = "net-eewbot-base65536j" }
 wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-core" }
+jsonassert = { module = "org.skyscreamer:jsonassert", version.ref = "jsonassert" }
 
 [plugins]
 shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar" }

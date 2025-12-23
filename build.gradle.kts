@@ -30,6 +30,12 @@ dependencies {
 
     implementation(libs.wire.runtime)
     implementation(libs.net.eewbot.base65536j)
+
+    // Test dependencies
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation(libs.assertj.core)
+    testImplementation(libs.jsonassert)
 }
 
 group = "net.teamfruit"
@@ -69,6 +75,10 @@ tasks {
 
     build {
         dependsOn(shadowJar)
+    }
+
+    test {
+        useJUnitPlatform()
     }
 }
 
