@@ -12,6 +12,7 @@ import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.external.ExternalWebhookRequest;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
+import net.teamfruit.eewbot.registry.channel.SeismicIntensityDeserializer;
 import net.teamfruit.eewbot.registry.channel.SeismicIntensitySerializer;
 import net.teamfruit.eewbot.testutil.JsonAssertTestHelper;
 import org.json.JSONException;
@@ -61,15 +62,14 @@ class VXSE53WebhookTest {
             throw new RuntimeException("Failed to initialize EEWBot for test", e);
         }
 
-        // XML Mapperの初期化
         xmlMapper = XmlMapper.builder()
                 .addModule(new JavaTimeModule())
                 .build();
 
-        // GSONの初期化（EEWBot.GSONと同じ設定）
         gson = new GsonBuilder()
-                .setPrettyPrinting()  // 読みやすいように整形
+                .setPrettyPrinting()
                 .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensitySerializer())
+                .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensityDeserializer())
                 .create();
     }
 
