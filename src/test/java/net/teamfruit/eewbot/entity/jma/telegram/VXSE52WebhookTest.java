@@ -13,13 +13,13 @@ import net.teamfruit.eewbot.entity.external.ExternalWebhookRequest;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.channel.SeismicIntensitySerializer;
+import net.teamfruit.eewbot.testutil.JsonAssertTestHelper;
 import org.json.JSONException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import java.io.IOException;
@@ -140,7 +140,7 @@ class VXSE52WebhookTest {
     void testDiscordWebhookJson(String baseName) throws IOException, JSONException {
         String xmlPath = "jmaxml/" + TELEGRAM_TYPE + "/" + baseName + ".xml";
         String expectedJsonPath = "jmaxml/" + TELEGRAM_TYPE + "/" + baseName + "_discord_expected.json";
-        testXmlToDiscordWebhook(xmlPath, expectedJsonPath);
+        testXmlToDiscordWebhook(xmlPath, expectedJsonPath, baseName);
     }
 
     @ParameterizedTest(name = "{0} - External Webhook JSON")
@@ -148,10 +148,10 @@ class VXSE52WebhookTest {
     void testExternalWebhookJson(String baseName) throws IOException, JSONException {
         String xmlPath = "jmaxml/" + TELEGRAM_TYPE + "/" + baseName + ".xml";
         String expectedJsonPath = "jmaxml/" + TELEGRAM_TYPE + "/" + baseName + "_external_expected.json";
-        testXmlToExternalWebhook(xmlPath, expectedJsonPath);
+        testXmlToExternalWebhook(xmlPath, expectedJsonPath, baseName);
     }
 
-    private void testXmlToDiscordWebhook(String xmlPath, String expectedJsonPath) throws IOException, JSONException {
+    private void testXmlToDiscordWebhook(String xmlPath, String expectedJsonPath, String baseName) throws IOException, JSONException {
         // 1. XMLを読み込んでデシリアライズ
         InputStream xmlStream = getClass().getClassLoader().getResourceAsStream(xmlPath);
         assertThat(xmlStream).isNotNull();
@@ -172,10 +172,17 @@ class VXSE52WebhookTest {
         String expectedJson = new String(expectedStream.readAllBytes(), StandardCharsets.UTF_8);
 
         // 5. JSON比較（順番を無視）
-        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.NON_EXTENSIBLE);
+        JsonAssertTestHelper.assertJsonWithDump(
+                expectedJson,
+                actualJson,
+                JSONCompareMode.NON_EXTENSIBLE,
+                this.getClass().getSimpleName(),
+                "testDiscordWebhookJson",
+                baseName
+        );
     }
 
-    private void testXmlToExternalWebhook(String xmlPath, String expectedJsonPath) throws IOException, JSONException {
+    private void testXmlToExternalWebhook(String xmlPath, String expectedJsonPath, String baseName) throws IOException, JSONException {
         // 1. XMLを読み込んでデシリアライズ
         InputStream xmlStream = getClass().getClassLoader().getResourceAsStream(xmlPath);
         assertThat(xmlStream).isNotNull();
@@ -213,6 +220,13 @@ class VXSE52WebhookTest {
         String expectedJson = new String(expectedStream.readAllBytes(), StandardCharsets.UTF_8);
 
         // 6. JSON比較（順番を無視）
-        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.NON_EXTENSIBLE);
+        JsonAssertTestHelper.assertJsonWithDump(
+                expectedJson,
+                actualJson,
+                JSONCompareMode.NON_EXTENSIBLE,
+                this.getClass().getSimpleName(),
+                "testExternalWebhookJson",
+                baseName
+        );
     }
 }
