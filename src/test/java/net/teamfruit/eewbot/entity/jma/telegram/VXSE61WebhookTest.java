@@ -6,6 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.QuakeInfoStore;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.external.ExternalWebhookRequest;
@@ -51,8 +52,13 @@ class VXSE61WebhookTest {
             java.lang.reflect.Field rendererField = EEWBot.class.getDeclaredField("rendererQueryFactory");
             rendererField.setAccessible(true);
             rendererField.set(eewBot, new RendererQueryFactory(null, null));
+
+            // QuakeInfoStoreを初期化（空のストアでOK）
+            java.lang.reflect.Field quakeInfoStoreField = EEWBot.class.getDeclaredField("quakeInfoStore");
+            quakeInfoStoreField.setAccessible(true);
+            quakeInfoStoreField.set(eewBot, new QuakeInfoStore());
         } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize I18n for test", e);
+            throw new RuntimeException("Failed to initialize EEWBot for test", e);
         }
 
         // XML Mapperの初期化

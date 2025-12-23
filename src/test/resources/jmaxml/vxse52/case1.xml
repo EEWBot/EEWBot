@@ -1,0 +1,42 @@
+<Report xmlns="http://xml.kishou.go.jp/jmaxml1/" xmlns:jmx="http://xml.kishou.go.jp/jmaxml1/">
+    <Control>
+        <Title>震源に関する情報</Title>
+        <DateTime>2025-12-08T21:57:41Z</DateTime>
+        <Status>通常</Status>
+        <EditorialOffice>気象庁本庁</EditorialOffice>
+        <PublishingOffice>気象庁</PublishingOffice>
+    </Control>
+    <Head xmlns="http://xml.kishou.go.jp/jmaxml1/informationBasis1/">
+        <Title>震源に関する情報</Title>
+        <ReportDateTime>2025-12-09T06:57:00+09:00</ReportDateTime>
+        <TargetDateTime>2025-12-09T06:57:00+09:00</TargetDateTime>
+        <EventID>20251209065247</EventID>
+        <InfoType>発表</InfoType>
+        <Serial/>
+        <InfoKind>震源速報</InfoKind>
+        <InfoKindVersion>1.0_1</InfoKindVersion>
+        <Headline>
+            <Text>きょう　９日０６時５２分ころ、地震がありました。</Text>
+        </Headline>
+    </Head>
+    <Body xmlns="http://xml.kishou.go.jp/jmaxml1/body/seismology1/" xmlns:jmx_eb="http://xml.kishou.go.jp/jmaxml1/elementBasis1/">
+        <Earthquake>
+            <OriginTime>2025-12-09T06:52:00+09:00</OriginTime>
+            <ArrivalTime>2025-12-09T06:52:00+09:00</ArrivalTime>
+            <Hypocenter>
+                <Area>
+                    <Name>青森県東方沖</Name>
+                    <Code type="震央地名">285</Code>
+                    <jmx_eb:Coordinate description="北緯４１．１度　東経１４３．３度　深さ　１０ｋｍ">+41.1+143.3-10000/</jmx_eb:Coordinate>
+                </Area>
+            </Hypocenter>
+            <jmx_eb:Magnitude type="Mj" description="Ｍ６．４">6.4</jmx_eb:Magnitude>
+        </Earthquake>
+        <Comments>
+            <ForecastComment codeType="固定付加文">
+                <Text>この地震により、日本の沿岸では若干の海面変動があるかもしれませんが、被害の心配はありません。</Text>
+                <Code>0212</Code>
+            </ForecastComment>
+        </Comments>
+    </Body>
+</Report>
