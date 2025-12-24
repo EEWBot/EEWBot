@@ -277,48 +277,59 @@ public abstract class AbstractJMAReport implements Entity, JMAReport, ExternalDa
 
     @Override
     public Object toExternalDto() {
-        String reportDateTime = null;
-        String title = null;
-        String infoType = null;
-        String serial = null;
-        String status = null;
-        long eventId = 0;
-        
+        QuakeInfoExternalData data = new QuakeInfoExternalData();
+
+        // Populate ControlData from control
         if (this.control != null) {
+            QuakeInfoExternalData.ControlData controlData = new QuakeInfoExternalData.ControlData();
+            controlData.setTitle(this.control.getTitle());
             if (this.control.getDateTime() != null) {
-                reportDateTime = this.control.getDateTime().toString();
+                controlData.setDateTime(this.control.getDateTime().toString());
             }
-            title = this.control.getTitle();
             if (this.control.getStatus() != null) {
-                status = this.control.getStatus().toString();
+                controlData.setStatus(this.control.getStatus().toString());
             }
+            controlData.setEditorialOffice(this.control.getEditorialOffice());
+            controlData.setPublishingOffice(this.control.getPublishingOffice());
+            data.setControl(controlData);
         }
-        
+
+        // Populate HeadData from head
         if (this.head != null) {
-            if (this.head.getInfoType() != null) {
-                infoType = this.head.getInfoType().toString();
+            QuakeInfoExternalData.HeadData headData = new QuakeInfoExternalData.HeadData();
+            headData.setTitle(this.head.getTitle());
+            if (this.head.getReportDateTime() != null) {
+                headData.setReportDateTime(this.head.getReportDateTime()
+                        .atZone(java.time.ZoneId.of("Asia/Tokyo"))
+                        .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME));
             }
-            serial = this.head.getSerial();
-            eventId = this.head.getEventID();
+            if (this.head.getTargetDateTime() != null) {
+                headData.setTargetDateTime(this.head.getTargetDateTime()
+                        .atZone(java.time.ZoneId.of("Asia/Tokyo"))
+                        .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            }
+            headData.setEventId(this.head.getEventID());
+            if (this.head.getInfoType() != null) {
+                headData.setInfoType(this.head.getInfoType().toString());
+            }
+            headData.setSerial(this.head.getSerial());
+            headData.setInfoKind(this.head.getInfoKind());
+            headData.setInfoKindVersion(this.head.getInfoKindVersion());
+
+            // Extract headline text if present
+            if (this.head.getHeadline() != null) {
+                QuakeInfoExternalData.HeadLineData headLine = new QuakeInfoExternalData.HeadLineData();
+                headLine.setText(this.head.getHeadline().getText());
+                headData.setHeadLine(headLine);
+            }
+
+            data.setHead(headData);
         }
-        
-        // Basic implementation - subclasses should override for specific data
-        return new QuakeInfoExternalData(
-                eventId,
-                reportDateTime,
-                title,
-                infoType,
-                serial,
-                status,
-                null, // epicenter - to be filled by subclasses
-                null, // originTime - to be filled by subclasses
-                null, // depth - to be filled by subclasses
-                null, // magnitude - to be filled by subclasses
-                null, // maxIntensity - to be filled by subclasses
-                new java.util.ArrayList<>(), // intensityAreas - to be filled by subclasses
-                null, // text - to be filled by subclasses
-                null  // comments - to be filled by subclasses
-        );
+
+        // Initialize empty intensityAreas list
+        data.setIntensityAreas(new java.util.ArrayList<>());
+
+        return data;
     }
 
     @Override

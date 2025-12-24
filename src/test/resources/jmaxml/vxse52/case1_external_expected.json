@@ -3,12 +3,26 @@
   "timestamp": 1234567890000,
   "data": "\u003cReport xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/\" xmlns:jmx\u003d\"http://xml.kishou.go.jp/jmaxml1/\"\u003e\n    \u003cControl\u003e\n        \u003cTitle\u003e震源に関する情報\u003c/Title\u003e\n        \u003cDateTime\u003e2025-12-08T21:57:41Z\u003c/DateTime\u003e\n        \u003cStatus\u003e通常\u003c/Status\u003e\n        \u003cEditorialOffice\u003e気象庁本庁\u003c/EditorialOffice\u003e\n        \u003cPublishingOffice\u003e気象庁\u003c/PublishingOffice\u003e\n    \u003c/Control\u003e\n    \u003cHead xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/informationBasis1/\"\u003e\n        \u003cTitle\u003e震源に関する情報\u003c/Title\u003e\n        \u003cReportDateTime\u003e2025-12-09T06:57:00+09:00\u003c/ReportDateTime\u003e\n        \u003cTargetDateTime\u003e2025-12-09T06:57:00+09:00\u003c/TargetDateTime\u003e\n        \u003cEventID\u003e20251209065247\u003c/EventID\u003e\n        \u003cInfoType\u003e発表\u003c/InfoType\u003e\n        \u003cSerial/\u003e\n        \u003cInfoKind\u003e震源速報\u003c/InfoKind\u003e\n        \u003cInfoKindVersion\u003e1.0_1\u003c/InfoKindVersion\u003e\n        \u003cHeadline\u003e\n            \u003cText\u003eきょう　９日０６時５２分ころ、地震がありました。\u003c/Text\u003e\n        \u003c/Headline\u003e\n    \u003c/Head\u003e\n    \u003cBody xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/body/seismology1/\" xmlns:jmx_eb\u003d\"http://xml.kishou.go.jp/jmaxml1/elementBasis1/\"\u003e\n        \u003cEarthquake\u003e\n            \u003cOriginTime\u003e2025-12-09T06:52:00+09:00\u003c/OriginTime\u003e\n            \u003cArrivalTime\u003e2025-12-09T06:52:00+09:00\u003c/ArrivalTime\u003e\n            \u003cHypocenter\u003e\n                \u003cArea\u003e\n                    \u003cName\u003e青森県東方沖\u003c/Name\u003e\n                    \u003cCode type\u003d\"震央地名\"\u003e285\u003c/Code\u003e\n                    \u003cjmx_eb:Coordinate description\u003d\"北緯４１．１度　東経１４３．３度　深さ　１０ｋｍ\"\u003e+41.1+143.3-10000/\u003c/jmx_eb:Coordinate\u003e\n                \u003c/Area\u003e\n            \u003c/Hypocenter\u003e\n            \u003cjmx_eb:Magnitude type\u003d\"Mj\" description\u003d\"Ｍ６．４\"\u003e6.4\u003c/jmx_eb:Magnitude\u003e\n        \u003c/Earthquake\u003e\n        \u003cComments\u003e\n            \u003cForecastComment codeType\u003d\"固定付加文\"\u003e\n                \u003cText\u003eこの地震により、日本の沿岸では若干の海面変動があるかもしれませんが、被害の心配はありません。\u003c/Text\u003e\n                \u003cCode\u003e0212\u003c/Code\u003e\n            \u003c/ForecastComment\u003e\n        \u003c/Comments\u003e\n    \u003c/Body\u003e\n\u003c/Report\u003e",
   "eewbot": {
-    "eventId": 20251209065247,
-    "reportDateTime": "2025-12-08T21:57:41Z",
-    "title": "震源に関する情報",
-    "infoType": "発表",
-    "serial": "",
-    "status": "通常",
+    "control": {
+      "title": "震源に関する情報",
+      "dateTime": "2025-12-08T21:57:41Z",
+      "status": "通常",
+      "editorialOffice": "気象庁本庁",
+      "publishingOffice": "気象庁"
+    },
+    "head": {
+      "title": "震源に関する情報",
+      "reportDateTime": "2025-12-09T06:57:00+09:00",
+      "targetDateTime": "2025-12-09T06:57:00+09:00",
+      "eventId": 20251209065247,
+      "infoType": "発表",
+      "serial": "",
+      "infoKind": "震源速報",
+      "infoKindVersion": "1.0_1",
+      "headLine": {
+        "text": "きょう　９日０６時５２分ころ、地震がありました。"
+      }
+    },
     "intensityAreas": []
   }
 }
