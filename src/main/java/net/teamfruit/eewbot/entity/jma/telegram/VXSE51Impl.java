@@ -77,58 +77,10 @@ public class VXSE51Impl extends JmxSeis implements VXSE51 {
 
     @Override
     public Object toExternalDto() {
-        QuakeInfoExternalData data = new QuakeInfoExternalData();
-
-        // Populate ControlData from control
-        if (this.control != null) {
-            QuakeInfoExternalData.ControlData controlData = new QuakeInfoExternalData.ControlData();
-            controlData.setTitle(this.control.getTitle());
-            if (this.control.getDateTime() != null) {
-                controlData.setDateTime(this.control.getDateTime().toString());
-            }
-            if (this.control.getStatus() != null) {
-                controlData.setStatus(this.control.getStatus().toString());
-            }
-            controlData.setEditorialOffice(this.control.getEditorialOffice());
-            controlData.setPublishingOffice(this.control.getPublishingOffice());
-            data.setControl(controlData);
-        }
-
-        // Populate HeadData from head
-        if (this.head != null) {
-            QuakeInfoExternalData.HeadData headData = new QuakeInfoExternalData.HeadData();
-            headData.setTitle(this.head.getTitle());
-            if (this.head.getReportDateTime() != null) {
-                headData.setReportDateTime(this.head.getReportDateTime()
-                        .atZone(java.time.ZoneId.of("Asia/Tokyo"))
-                        .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-            }
-            if (this.head.getTargetDateTime() != null) {
-                headData.setTargetDateTime(this.head.getTargetDateTime()
-                        .atZone(java.time.ZoneId.of("Asia/Tokyo"))
-                        .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-            }
-            headData.setEventId(this.head.getEventID());
-            if (this.head.getInfoType() != null) {
-                headData.setInfoType(this.head.getInfoType().toString());
-            }
-            headData.setSerial(this.head.getSerial());
-            headData.setInfoKind(this.head.getInfoKind());
-            headData.setInfoKindVersion(this.head.getInfoKindVersion());
-
-            // Extract headline text if present
-            if (this.head.getHeadline() != null) {
-                QuakeInfoExternalData.HeadLineData headLine = new QuakeInfoExternalData.HeadLineData();
-                headLine.setText(this.head.getHeadline().getText());
-                headData.setHeadLine(headLine);
-            }
-
-            data.setHead(headData);
-        }
-
-        // Initialize empty intensityAreas list
-        data.setIntensityAreas(new java.util.ArrayList<>());
-
-        return data;
+        return QuakeInfoExternalData.builder()
+                .control(this.control)
+                .head(this.head)
+                .intensityAreas(new java.util.ArrayList<>())
+                .build();
     }
 }
