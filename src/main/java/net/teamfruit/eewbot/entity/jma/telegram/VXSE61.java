@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
@@ -8,7 +9,7 @@ import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import java.time.Instant;
 import java.util.Optional;
 
-public interface VXSE61 extends JMAReport, QuakeInfo {
+public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
 
     Instant getOriginTime();
 
@@ -33,5 +34,10 @@ public interface VXSE61 extends JMAReport, QuakeInfo {
         builder.footer(getPublishingOffice(), null);
         builder.timestamp(getReportDateTime());
         return builder.build();
+    }
+
+    @Override
+    default String getDataType() {
+        return "quake_info";
     }
 }

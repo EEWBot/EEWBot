@@ -9,6 +9,7 @@ import discord4j.discordjson.json.WebhookCreateRequest;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
+import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
@@ -19,6 +20,7 @@ import net.teamfruit.eewbot.registry.channel.ChannelRegistry;
 import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -96,7 +98,7 @@ public class EEWExecutor {
                 @Override
                 public void onNewData(DmdataEEW eew) {
                     if (eew.getBody().getEarthquake() != null &&
-                            StringUtils.equals(eew.getBody().getEarthquake().getCondition(), "仮定震源要素") &&
+                            Strings.CS.equals(eew.getBody().getEarthquake().getCondition(), "仮定震源要素") &&
                             eew.getBody().getIntensity() == null)
                         return;
 
@@ -158,14 +160,17 @@ public class EEWExecutor {
         this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.quakeInfoStore) {
             @Override
             public void onNewData(AbstractJMAReport data) {
-                if (!EEWExecutor.this.config.getLegacy().isEnableLegacyQuakeInfo() && data instanceof QuakeInfo) {
-                    ChannelFilter.Builder builder = ChannelFilter.builder();
-                    builder.quakeInfo(true);
-                    builder.intensity(((QuakeInfo) data).getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
-                    EEWExecutor.this.messageExecutor.submit(() -> {
-                        EEWExecutor.this.service.sendMessage(builder.build(), data);
-                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(data);
-                    });
+                if (!EEWExecutor.this.config.getLegacy().isEnableLegacyQuakeInfo()) {
+                    if (data instanceof QuakeInfo quakeInfo) {
+                        ChannelFilter filter = ChannelFilter.builder()
+                                .quakeInfo(true)
+                                .intensity(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN))
+                                .build();
+                        EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(filter, data));
+                    }
+                }
+                if (data instanceof ExternalData externalData) {
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.externalWebhookService.sendExternalWebhook(externalData));
                 }
             }
         }, jmaXMLInitialDelay, 60, TimeUnit.SECONDS);
@@ -200,8 +205,7 @@ public class EEWExecutor {
                                     .flatMap(guildChannel -> guildChannel.getGuild()
                                             .flatMap(guild -> guild.getSelfMember().map(PartialMember::getDisplayName))
                                             .flatMap(name -> {
-                                                if (guildChannel instanceof ThreadChannel) {
-                                                    ThreadChannel threadChannel = (ThreadChannel) guildChannel;
+                                                if (guildChannel instanceof ThreadChannel threadChannel) {
                                                     Optional<Snowflake> parentId = threadChannel.getParentId();
                                                     if (parentId.isEmpty())
                                                         return Mono.empty();
