@@ -2,7 +2,6 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
@@ -89,14 +88,5 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
         if (isCancelReport())
             throw new IllegalStateException("Cancel report");
         return getVXSE51().map(QuakeInfo::getIntensityDetail).orElse(null);
-    }
-
-    @Override
-    public Object toExternalDto() {
-        return QuakeInfoExternalData.builder()
-                .control(this.control)
-                .head(this.head)
-                .intensityAreas(new java.util.ArrayList<>())
-                .build();
     }
 }

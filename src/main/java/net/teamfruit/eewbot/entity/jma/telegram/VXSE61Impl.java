@@ -2,7 +2,6 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Earthquake;
@@ -63,14 +62,5 @@ public class VXSE61Impl extends JmxSeis implements VXSE61 {
 
     private Hypocenter getHypocenter() {
         return Objects.requireNonNull(getEarthquake().getHypocenter());
-    }
-
-    @Override
-    public Object toExternalDto() {
-        return QuakeInfoExternalData.builder()
-                .control(this.control)
-                .head(this.head)
-                .intensityAreas(new java.util.ArrayList<>())
-                .build();
     }
 }

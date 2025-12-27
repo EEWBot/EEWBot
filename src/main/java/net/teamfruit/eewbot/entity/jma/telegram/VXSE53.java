@@ -4,6 +4,7 @@ import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.external.ExternalData;
+import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
@@ -87,5 +88,24 @@ public interface VXSE53 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
     @Override
     default String getDataType() {
         return "quake_info";
+    }
+
+    @Override
+    default Object toExternalDto() {
+        return QuakeInfoExternalData.builder()
+                .title(getHeadTitle())
+                .dateTime(getDateTime() != null ? getDateTime().getEpochSecond() : 0)
+                .status(getStatus() != null ? getStatus().toString() : null)
+                .editorialOffice(getEditorialOffice())
+                .publishingOffice(getPublishingOffice())
+                .headTitle(getHeadTitle())
+                .reportDateTime(getReportDateTime() != null ? getReportDateTime().getEpochSecond() : 0)
+                .eventId(getEventId())
+                .infoType(getInfoType() != null ? getInfoType().toString() : null)
+                .serial(getSerial())
+                .infoKind(getInfoKind())
+                .infoKindVersion(getInfoKindVersion())
+                .intensityAreas(new java.util.ArrayList<>())
+                .build();
     }
 }

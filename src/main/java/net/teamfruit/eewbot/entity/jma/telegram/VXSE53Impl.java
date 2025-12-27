@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Earthquake;
@@ -101,14 +100,5 @@ public class VXSE53Impl extends JmxSeis implements VXSE53 {
     @Override
     public Intensity.IntensityDetail getIntensityDetail() {
         return getObservation();
-    }
-
-    @Override
-    public Object toExternalDto() {
-        return QuakeInfoExternalData.builder()
-                .control(this.control)
-                .head(this.head)
-                .intensityAreas(new java.util.ArrayList<>())
-                .build();
     }
 }
