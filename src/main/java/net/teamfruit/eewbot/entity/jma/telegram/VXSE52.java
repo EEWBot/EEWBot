@@ -69,14 +69,10 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
                 .status(getStatus() != null ? getStatus().toString() : null)
                 .editorialOffice(getEditorialOffice())
                 .publishingOffice(getPublishingOffice())
-                .headTitle(getHeadTitle())
                 .reportDateTime(getReportDateTime() != null ? getReportDateTime().getEpochSecond() : 0)
                 .eventId(getEventId())
                 .infoType(getInfoType() != null ? getInfoType().toString() : null)
                 .serial(getSerial())
-                .infoKind(getInfoKind())
-                .infoKindVersion(getInfoKindVersion())
-                .intensityAreas(new java.util.ArrayList<>())
                 .build();
     }
 }
