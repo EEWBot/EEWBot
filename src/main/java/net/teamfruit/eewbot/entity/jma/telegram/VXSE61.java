@@ -5,6 +5,7 @@ import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
+import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.time.Instant;
@@ -19,6 +20,8 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
     Optional<String> getDepth();
 
     String getMagnitude();
+
+    Coordinate getCoordinate();
 
     default <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         builder.title("eewbot.quakeinfo.hypocenterupdate.title");
@@ -44,16 +47,34 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
 
     @Override
     default Object toExternalDto() {
+        Coordinate coord = !isCancelReport() ? getCoordinate() : null;
+
         return QuakeInfoExternalData.builder()
+                // Control
                 .title(getHeadTitle())
                 .dateTime(getDateTime() != null ? getDateTime().getEpochSecond() : 0)
                 .status(getStatus() != null ? getStatus().toString() : null)
                 .editorialOffice(getEditorialOffice())
                 .publishingOffice(getPublishingOffice())
+                // Head
                 .reportDateTime(getReportDateTime() != null ? getReportDateTime().getEpochSecond() : 0)
                 .eventId(getEventId())
                 .infoType(getInfoType() != null ? getInfoType().toString() : null)
                 .serial(getSerial())
+                // 震度情報（VXSE61にはない）
+                .maxInt(null)
+                .intensities(null)
+                // 震源情報
+                .originTime(!isCancelReport() ? getOriginTime().getEpochSecond() : null)
+                .hypocenterName(!isCancelReport() ? getHypocenterName() : null)
+                .hypocenterDetailedName(null)
+                .latitude(coord != null ? coord.getLat() : null)
+                .longitude(coord != null ? coord.getLon() : null)
+                .depth(getDepth().orElse(null))
+                .magnitude(!isCancelReport() ? getMagnitude() : null)
+                // コメント（VXSE61にはない）
+                .forecastComment(null)
+                .freeFormComment(null)
                 .build();
     }
 }
