@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import redis.clients.jedis.Connection;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Transaction;
@@ -147,7 +147,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         long cursorId;
         do {
             cursorId = aggregationResult.getCursorId();
-            aggregationResult.getRows().forEach(row -> list.add(Long.parseLong(StringUtils.removeStart(row.getString("__key"), CHANNEL_PREFIX))));
+            aggregationResult.getRows().forEach(row -> list.add(Long.parseLong(Strings.CS.removeStart(row.getString("__key"), CHANNEL_PREFIX))));
             if (cursorId != 0)
                 aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
         } while (cursorId != 0);
@@ -162,7 +162,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         long cursorId;
         do {
             cursorId = aggregationResult.getCursorId();
-            aggregationResult.getRows().forEach(row -> consumer.accept(Long.parseLong(StringUtils.removeStart(row.getString("__key"), CHANNEL_PREFIX))));
+            aggregationResult.getRows().forEach(row -> consumer.accept(Long.parseLong(Strings.CS.removeStart(row.getString("__key"), CHANNEL_PREFIX))));
             if (cursorId != 0)
                 aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
         } while (cursorId != 0);
@@ -183,7 +183,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         do {
             cursorId = aggregationResult.getCursorId();
             aggregationResult.getRows().forEach(row -> {
-                long channelId = Long.parseLong(StringUtils.removeStart(row.getString("__key"), CHANNEL_PREFIX));
+                long channelId = Long.parseLong(Strings.CS.removeStart(row.getString("__key"), CHANNEL_PREFIX));
                 if (row.get("$.webhook") != null)
                     webhookPresent.put(channelId, new ChannelBase(EEWBot.GSON.fromJson(row.getString("$.webhook"), ChannelWebhook.class), row.getString("$.lang")));
                 else
