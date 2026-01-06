@@ -23,6 +23,8 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
 
     Coordinate getCoordinate();
 
+    Optional<String> getFreeFormComment();
+
     default <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         builder.title("eewbot.quakeinfo.hypocenterupdate.title");
         if (isCancelReport()) {
@@ -72,9 +74,9 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
                 .longitude(coord != null ? coord.getLon() : null)
                 .depth(getDepth().orElse(null))
                 .magnitude(!isCancelReport() ? getMagnitude() : null)
-                // コメント（VXSE61にはない）
+                // コメント
                 .forecastComment(null)
-                .freeFormComment(null)
+                .freeFormComment(getFreeFormComment().orElse(null))
                 .build();
     }
 }
