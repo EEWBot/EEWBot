@@ -14,7 +14,7 @@ redis-clients-jedis = "4.4.8"
 net-eewbot-base65536j = "0.1.0"
 shadow-jar = "9.3.1"
 wire = "5.4.0"
-junit-jupiter = "6.0.1"
+junit-jupiter = "6.0.2"
 assertj-core = "3.27.6"
 jsonassert = "1.5.3"
 
