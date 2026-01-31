@@ -78,40 +78,41 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public Channel get(long key) {
-        Table<?> channels = table(name("channels"));
-        Table<?> channelWebhooks = table(name("channel_webhooks"));
+        Table<?> c = table(name("channels")).as("c");
+        Table<?> w = table(name("channel_webhooks")).as("w");
 
-        Field<Long> channelId = field(name("channel_id"), Long.class);
-        Field<Integer> isGuild = field(name("is_guild"), Integer.class);
-        Field<Long> guildId = field(name("guild_id"), Long.class);
-        Field<Integer> eewAlert = field(name("eew_alert"), Integer.class);
-        Field<Integer> eewPrediction = field(name("eew_prediction"), Integer.class);
-        Field<Integer> eewDecimation = field(name("eew_decimation"), Integer.class);
-        Field<Integer> quakeInfo = field(name("quake_info"), Integer.class);
-        Field<Integer> minIntensity = field(name("min_intensity"), Integer.class);
-        Field<String> lang = field(name("lang"), String.class);
-        Field<Long> webhookId = field(name("webhook_id"), Long.class);
-        Field<String> token = field(name("token"), String.class);
-        Field<Long> threadId = field(name("thread_id"), Long.class);
+        Field<Long> cChannelId = field(name("c", "channel_id"), Long.class);
+        Field<Long> wChannelId = field(name("w", "channel_id"), Long.class);
+        Field<Integer> cIsGuild = field(name("c", "is_guild"), Integer.class);
+        Field<Long> cGuildId = field(name("c", "guild_id"), Long.class);
+        Field<Integer> cEewAlert = field(name("c", "eew_alert"), Integer.class);
+        Field<Integer> cEewPrediction = field(name("c", "eew_prediction"), Integer.class);
+        Field<Integer> cEewDecimation = field(name("c", "eew_decimation"), Integer.class);
+        Field<Integer> cQuakeInfo = field(name("c", "quake_info"), Integer.class);
+        Field<Integer> cMinIntensity = field(name("c", "min_intensity"), Integer.class);
+        Field<String> cLang = field(name("c", "lang"), String.class);
+        Field<Long> wWebhookId = field(name("w", "webhook_id"), Long.class);
+        Field<String> wToken = field(name("w", "token"), String.class);
+        Field<Long> wThreadId = field(name("w", "thread_id"), Long.class);
 
         return this.dsl.select(
-                        channelId,
-                        isGuild,
-                        guildId,
-                        eewAlert,
-                        eewPrediction,
-                        eewDecimation,
-                        quakeInfo,
-                        minIntensity,
-                        lang,
-                        webhookId,
-                        token,
-                        threadId
+                        cChannelId,
+                        cIsGuild,
+                        cGuildId,
+                        cEewAlert,
+                        cEewPrediction,
+                        cEewDecimation,
+                        cQuakeInfo,
+                        cMinIntensity,
+                        cLang,
+                        wWebhookId,
+                        wToken,
+                        wThreadId
                 )
-                .from(channels)
-                .leftJoin(channelWebhooks).on(field(name(channels.getName(), "channel_id")).eq(field(name(channelWebhooks.getName(), "channel_id"))))
-                .where(field(name(channels.getName(), "channel_id")).eq(key))
-                .fetchOne(r -> mapToChannel(r, isGuild, guildId, eewAlert, eewPrediction, eewDecimation, quakeInfo, minIntensity, lang, webhookId, token, threadId));
+                .from(c)
+                .leftJoin(w).on(cChannelId.eq(wChannelId))
+                .where(cChannelId.eq(key))
+                .fetchOne(r -> mapToChannel(r, cIsGuild, cGuildId, cEewAlert, cEewPrediction, cEewDecimation, cQuakeInfo, cMinIntensity, cLang, wWebhookId, wToken, wThreadId));
     }
 
     @Override
@@ -286,14 +287,16 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public List<Long> getWebhookAbsentChannels() {
-        Table<?> channels = table(name("channels"));
-        Table<?> channelWebhooks = table(name("channel_webhooks"));
-        Field<Long> channelId = field(name("channel_id"), Long.class);
+        Table<?> c = table(name("channels")).as("c");
+        Table<?> w = table(name("channel_webhooks")).as("w");
 
-        return this.dsl.select(field(name(channels.getName(), "channel_id"), Long.class))
-                .from(channels)
-                .leftJoin(channelWebhooks).on(field(name(channels.getName(), "channel_id")).eq(field(name(channelWebhooks.getName(), "channel_id"))))
-                .where(field(name(channelWebhooks.getName(), "channel_id")).isNull())
+        Field<Long> cChannelId = field(name("c", "channel_id"), Long.class);
+        Field<Long> wChannelId = field(name("w", "channel_id"), Long.class);
+
+        return this.dsl.select(cChannelId)
+                .from(c)
+                .leftJoin(w).on(cChannelId.eq(wChannelId))
+                .where(wChannelId.isNull())
                 .fetch(0, Long.class);
     }
 
@@ -313,35 +316,31 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
-        Table<?> channels = table(name("channels"));
-        Table<?> channelWebhooks = table(name("channel_webhooks"));
+        Table<?> c = table(name("channels")).as("c");
+        Table<?> w = table(name("channel_webhooks")).as("w");
 
-        Field<Long> channelId = field(name("channel_id"), Long.class);
-        Field<Integer> isGuild = field(name("is_guild"), Integer.class);
-        Field<Long> guildId = field(name("guild_id"), Long.class);
-        Field<Integer> eewAlert = field(name("eew_alert"), Integer.class);
-        Field<Integer> eewPrediction = field(name("eew_prediction"), Integer.class);
-        Field<Integer> eewDecimation = field(name("eew_decimation"), Integer.class);
-        Field<Integer> quakeInfo = field(name("quake_info"), Integer.class);
-        Field<Integer> minIntensity = field(name("min_intensity"), Integer.class);
-        Field<String> lang = field(name("lang"), String.class);
-        Field<Long> webhookId = field(name("webhook_id"), Long.class);
-        Field<String> token = field(name("token"), String.class);
-        Field<Long> threadId = field(name("thread_id"), Long.class);
+        Field<Long> cChannelId = field(name("c", "channel_id"), Long.class);
+        Field<Long> wChannelId = field(name("w", "channel_id"), Long.class);
+        Field<Integer> cIsGuild = field(name("c", "is_guild"), Integer.class);
+        Field<Long> cGuildId = field(name("c", "guild_id"), Long.class);
+        Field<String> cLang = field(name("c", "lang"), String.class);
+        Field<Long> wWebhookId = field(name("w", "webhook_id"), Long.class);
+        Field<String> wToken = field(name("w", "token"), String.class);
+        Field<Long> wThreadId = field(name("w", "thread_id"), Long.class);
 
         Condition condition = buildCondition(filter);
 
         Result<Record7<Long, Integer, Long, String, Long, String, Long>> records = this.dsl.select(
-                        field(name(channels.getName(), "channel_id"), Long.class),
-                        field(name(channels.getName(), "is_guild"), Integer.class),
-                        field(name(channels.getName(), "guild_id"), Long.class),
-                        field(name(channels.getName(), "lang"), String.class),
-                        field(name(channelWebhooks.getName(), "webhook_id"), Long.class),
-                        field(name(channelWebhooks.getName(), "token"), String.class),
-                        field(name(channelWebhooks.getName(), "thread_id"), Long.class)
+                        cChannelId,
+                        cIsGuild,
+                        cGuildId,
+                        cLang,
+                        wWebhookId,
+                        wToken,
+                        wThreadId
                 )
-                .from(channels)
-                .leftJoin(channelWebhooks).on(field(name(channels.getName(), "channel_id")).eq(field(name(channelWebhooks.getName(), "channel_id"))))
+                .from(c)
+                .leftJoin(w).on(cChannelId.eq(wChannelId))
                 .where(condition)
                 .fetch();
 
