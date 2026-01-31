@@ -171,11 +171,11 @@ public class ChannelRegistrySql implements ChannelRegistry {
                 .execute();
 
         if (inserted > 0 && channel.getWebhook() != null) {
-            insertWebhook(channelId, channel.getWebhook());
+            upsertWebhook(channelId, channel.getWebhook());
         }
     }
 
-    private void insertWebhook(long channelId, ChannelWebhook webhook) {
+    private void upsertWebhook(long channelId, ChannelWebhook webhook) {
         Table<?> channelWebhooks = table(name("channel_webhooks"));
 
         this.dsl.insertInto(channelWebhooks)
@@ -191,6 +191,11 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         webhook.getToken(),
                         webhook.getThreadId()
                 )
+                .onConflict(field(name("channel_id")))
+                .doUpdate()
+                .set(field(name("webhook_id")), webhook.getId())
+                .set(field(name("token")), webhook.getToken())
+                .set(field(name("thread_id")), webhook.getThreadId())
                 .execute();
     }
 
@@ -234,15 +239,15 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public void setWebhook(long key, ChannelWebhook webhook) {
-        Table<?> channelWebhooks = table(name("channel_webhooks"));
-        Field<Long> channelId = field(name("channel_id"), Long.class);
-
-        this.dsl.deleteFrom(channelWebhooks)
-                .where(channelId.eq(key))
-                .execute();
-
         if (webhook != null) {
-            insertWebhook(key, webhook);
+            upsertWebhook(key, webhook);
+        } else {
+            Table<?> channelWebhooks = table(name("channel_webhooks"));
+            Field<Long> channelId = field(name("channel_id"), Long.class);
+
+            this.dsl.deleteFrom(channelWebhooks)
+                    .where(channelId.eq(key))
+                    .execute();
         }
     }
 
