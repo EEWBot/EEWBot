@@ -12,7 +12,6 @@ import org.sqlite.SQLiteDataSource;
 
 import javax.sql.DataSource;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -380,103 +379,16 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     private Condition buildCondition(ChannelFilter filter) {
-        List<Condition> conditions = new ArrayList<>();
-
         if (filter == null) {
             return noCondition();
         }
-
-        Table<?> channels = table(name("channels"));
-        Field<Boolean> isGuild = field(name("is_guild"), Boolean.class);
-        Field<Long> guildId = field(name("guild_id"), Long.class);
-        Field<Boolean> eewAlert = field(name("eew_alert"), Boolean.class);
-        Field<Boolean> eewPrediction = field(name("eew_prediction"), Boolean.class);
-        Field<Boolean> eewDecimation = field(name("eew_decimation"), Boolean.class);
-        Field<Boolean> quakeInfo = field(name("quake_info"), Boolean.class);
-        Field<Integer> minIntensity = field(name("min_intensity"), Integer.class);
 
         Channel testChannel = new Channel(false, null, false, false, false, false, SeismicIntensity.ONE, null, "");
         if (filter.test(testChannel)) {
             return noCondition();
         }
 
-        try {
-            java.lang.reflect.Field isGuildPresentField = filter.getClass().getDeclaredField("isGuildPresent");
-            isGuildPresentField.setAccessible(true);
-            if ((boolean) isGuildPresentField.get(filter)) {
-                java.lang.reflect.Field isGuildField = filter.getClass().getDeclaredField("isGuild");
-                isGuildField.setAccessible(true);
-                Boolean isGuildValue = (Boolean) isGuildField.get(filter);
-                if (isGuildValue != null) {
-                    conditions.add(isGuild.eq(isGuildValue));
-                } else {
-                    conditions.add(isGuild.isNull());
-                }
-            }
-
-            java.lang.reflect.Field guildIdPresentField = filter.getClass().getDeclaredField("guildIdPresent");
-            guildIdPresentField.setAccessible(true);
-            if ((boolean) guildIdPresentField.get(filter)) {
-                java.lang.reflect.Field guildIdField = filter.getClass().getDeclaredField("guildId");
-                guildIdField.setAccessible(true);
-                long guildIdValue = (long) guildIdField.get(filter);
-                conditions.add(guildId.eq(guildIdValue));
-            }
-
-            java.lang.reflect.Field eewAlertPresentField = filter.getClass().getDeclaredField("eewAlertPresent");
-            eewAlertPresentField.setAccessible(true);
-            if ((boolean) eewAlertPresentField.get(filter)) {
-                java.lang.reflect.Field eewAlertField = filter.getClass().getDeclaredField("eewAlert");
-                eewAlertField.setAccessible(true);
-                boolean eewAlertValue = (boolean) eewAlertField.get(filter);
-                conditions.add(eewAlert.eq(eewAlertValue));
-            }
-
-            java.lang.reflect.Field eewPredictionPresentField = filter.getClass().getDeclaredField("eewPredictionPresent");
-            eewPredictionPresentField.setAccessible(true);
-            if ((boolean) eewPredictionPresentField.get(filter)) {
-                java.lang.reflect.Field eewPredictionField = filter.getClass().getDeclaredField("eewPrediction");
-                eewPredictionField.setAccessible(true);
-                boolean eewPredictionValue = (boolean) eewPredictionField.get(filter);
-                conditions.add(eewPrediction.eq(eewPredictionValue));
-            }
-
-            java.lang.reflect.Field eewDecimationPresentField = filter.getClass().getDeclaredField("eewDecimationPresent");
-            eewDecimationPresentField.setAccessible(true);
-            if ((boolean) eewDecimationPresentField.get(filter)) {
-                java.lang.reflect.Field eewDecimationField = filter.getClass().getDeclaredField("eewDecimation");
-                eewDecimationField.setAccessible(true);
-                boolean eewDecimationValue = (boolean) eewDecimationField.get(filter);
-                conditions.add(eewDecimation.eq(eewDecimationValue));
-            }
-
-            java.lang.reflect.Field quakeInfoPresentField = filter.getClass().getDeclaredField("quakeInfoPresent");
-            quakeInfoPresentField.setAccessible(true);
-            if ((boolean) quakeInfoPresentField.get(filter)) {
-                java.lang.reflect.Field quakeInfoField = filter.getClass().getDeclaredField("quakeInfo");
-                quakeInfoField.setAccessible(true);
-                boolean quakeInfoValue = (boolean) quakeInfoField.get(filter);
-                conditions.add(quakeInfo.eq(quakeInfoValue));
-            }
-
-            java.lang.reflect.Field intensityPresentField = filter.getClass().getDeclaredField("intensityPresent");
-            intensityPresentField.setAccessible(true);
-            if ((boolean) intensityPresentField.get(filter)) {
-                java.lang.reflect.Field intensityField = filter.getClass().getDeclaredField("intensity");
-                intensityField.setAccessible(true);
-                SeismicIntensity intensityValue = (SeismicIntensity) intensityField.get(filter);
-                conditions.add(minIntensity.le(intensityValue.ordinal()));
-            }
-
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to build SQL condition from ChannelFilter", e);
-        }
-
-        if (conditions.isEmpty()) {
-            return noCondition();
-        }
-
-        return conditions.stream().reduce(Condition::and).orElse(noCondition());
+        return filter.toCondition();
     }
 
     private Channel mapToChannel(Record r,
