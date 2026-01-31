@@ -1,14 +1,14 @@
--- PostgreSQL: Native BOOLEAN and BIGINT
+-- PostgreSQL: Using INTEGER for booleans (0/1) to maintain consistency with SQLite
 
 -- Main channels table
 CREATE TABLE IF NOT EXISTS channels (
     channel_id BIGINT PRIMARY KEY,
-    is_guild BOOLEAN,
+    is_guild INTEGER,
     guild_id BIGINT,
-    eew_alert BOOLEAN NOT NULL DEFAULT FALSE,
-    eew_prediction BOOLEAN NOT NULL DEFAULT FALSE,
-    eew_decimation BOOLEAN NOT NULL DEFAULT FALSE,
-    quake_info BOOLEAN NOT NULL DEFAULT FALSE,
+    eew_alert INTEGER NOT NULL DEFAULT 0,
+    eew_prediction INTEGER NOT NULL DEFAULT 0,
+    eew_decimation INTEGER NOT NULL DEFAULT 0,
+    quake_info INTEGER NOT NULL DEFAULT 0,
     min_intensity INTEGER NOT NULL DEFAULT 1,
     lang VARCHAR(10)
 );

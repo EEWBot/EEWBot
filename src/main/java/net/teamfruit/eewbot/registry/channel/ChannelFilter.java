@@ -95,6 +95,7 @@ public class ChannelFilter {
 
     /**
      * Converts this filter into a jOOQ Condition for SQL queries.
+     * Boolean fields are stored as INTEGER (0/1) in the database for both SQLite and PostgreSQL.
      *
      * @return jOOQ Condition representing the filter criteria
      */
@@ -102,9 +103,9 @@ public class ChannelFilter {
         List<Condition> conditions = new ArrayList<>();
 
         if (this.isGuildPresent) {
-            Field<Boolean> f = field(name("is_guild"), Boolean.class);
+            Field<Integer> f = field(name("is_guild"), Integer.class);
             if (this.isGuild != null) {
-                conditions.add(f.eq(this.isGuild));
+                conditions.add(f.eq(this.isGuild ? 1 : 0));
             } else {
                 conditions.add(f.isNull());
             }
@@ -113,16 +114,16 @@ public class ChannelFilter {
             conditions.add(field(name("guild_id"), Long.class).eq(this.guildId));
         }
         if (this.eewAlertPresent) {
-            conditions.add(field(name("eew_alert"), Boolean.class).eq(this.eewAlert));
+            conditions.add(field(name("eew_alert"), Integer.class).eq(this.eewAlert ? 1 : 0));
         }
         if (this.eewPredictionPresent) {
-            conditions.add(field(name("eew_prediction"), Boolean.class).eq(this.eewPrediction));
+            conditions.add(field(name("eew_prediction"), Integer.class).eq(this.eewPrediction ? 1 : 0));
         }
         if (this.eewDecimationPresent) {
-            conditions.add(field(name("eew_decimation"), Boolean.class).eq(this.eewDecimation));
+            conditions.add(field(name("eew_decimation"), Integer.class).eq(this.eewDecimation ? 1 : 0));
         }
         if (this.quakeInfoPresent) {
-            conditions.add(field(name("quake_info"), Boolean.class).eq(this.quakeInfo));
+            conditions.add(field(name("quake_info"), Integer.class).eq(this.quakeInfo ? 1 : 0));
         }
         if (this.intensityPresent) {
             conditions.add(field(name("min_intensity"), Integer.class).le(this.intensity.ordinal()));

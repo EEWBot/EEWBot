@@ -75,12 +75,12 @@ public class ChannelRegistrySql implements ChannelRegistry {
         Table<?> channelWebhooks = table(name("channel_webhooks"));
 
         Field<Long> channelId = field(name("channel_id"), Long.class);
-        Field<Boolean> isGuild = field(name("is_guild"), Boolean.class);
+        Field<Integer> isGuild = field(name("is_guild"), Integer.class);
         Field<Long> guildId = field(name("guild_id"), Long.class);
-        Field<Boolean> eewAlert = field(name("eew_alert"), Boolean.class);
-        Field<Boolean> eewPrediction = field(name("eew_prediction"), Boolean.class);
-        Field<Boolean> eewDecimation = field(name("eew_decimation"), Boolean.class);
-        Field<Boolean> quakeInfo = field(name("quake_info"), Boolean.class);
+        Field<Integer> eewAlert = field(name("eew_alert"), Integer.class);
+        Field<Integer> eewPrediction = field(name("eew_prediction"), Integer.class);
+        Field<Integer> eewDecimation = field(name("eew_decimation"), Integer.class);
+        Field<Integer> quakeInfo = field(name("quake_info"), Integer.class);
         Field<Integer> minIntensity = field(name("min_intensity"), Integer.class);
         Field<String> lang = field(name("lang"), String.class);
         Field<Long> webhookId = field(name("webhook_id"), Long.class);
@@ -153,12 +153,12 @@ public class ChannelRegistrySql implements ChannelRegistry {
                 )
                 .values(
                         channelId,
-                        channel.isGuild(),
+                        channel.isGuild() ? 1 : 0,
                         channel.getGuildId(),
-                        channel.isEewAlert(),
-                        channel.isEewPrediction(),
-                        channel.isEewDecimation(),
-                        channel.isQuakeInfo(),
+                        channel.isEewAlert() ? 1 : 0,
+                        channel.isEewPrediction() ? 1 : 0,
+                        channel.isEewDecimation() ? 1 : 0,
+                        channel.isQuakeInfo() ? 1 : 0,
                         channel.getMinIntensity() != null ? channel.getMinIntensity().ordinal() : SeismicIntensity.ONE.ordinal(),
                         channel.getLang()
                 )
@@ -194,7 +194,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
         Field<Long> channelId = field(name("channel_id"), Long.class);
 
         this.dsl.update(channels)
-                .set(field(name(name)), bool)
+                .set(field(name(name)), bool ? 1 : 0)
                 .where(channelId.eq(key))
                 .execute();
     }
@@ -216,7 +216,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
         Field<Long> channelId = field(name("channel_id"), Long.class);
 
         this.dsl.update(channels)
-                .set(field(name("is_guild")), guild)
+                .set(field(name("is_guild")), guild ? 1 : 0)
                 .where(channelId.eq(key))
                 .execute();
     }
@@ -249,7 +249,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
     @Override
     public boolean isGuildEmpty() {
         Table<?> channels = table(name("channels"));
-        Field<Boolean> isGuild = field(name("is_guild"), Boolean.class);
+        Field<Integer> isGuild = field(name("is_guild"), Integer.class);
 
         return this.dsl.fetchExists(
                 this.dsl.selectFrom(channels)
@@ -301,12 +301,12 @@ public class ChannelRegistrySql implements ChannelRegistry {
         Table<?> channelWebhooks = table(name("channel_webhooks"));
 
         Field<Long> channelId = field(name("channel_id"), Long.class);
-        Field<Boolean> isGuild = field(name("is_guild"), Boolean.class);
+        Field<Integer> isGuild = field(name("is_guild"), Integer.class);
         Field<Long> guildId = field(name("guild_id"), Long.class);
-        Field<Boolean> eewAlert = field(name("eew_alert"), Boolean.class);
-        Field<Boolean> eewPrediction = field(name("eew_prediction"), Boolean.class);
-        Field<Boolean> eewDecimation = field(name("eew_decimation"), Boolean.class);
-        Field<Boolean> quakeInfo = field(name("quake_info"), Boolean.class);
+        Field<Integer> eewAlert = field(name("eew_alert"), Integer.class);
+        Field<Integer> eewPrediction = field(name("eew_prediction"), Integer.class);
+        Field<Integer> eewDecimation = field(name("eew_decimation"), Integer.class);
+        Field<Integer> quakeInfo = field(name("quake_info"), Integer.class);
         Field<Integer> minIntensity = field(name("min_intensity"), Integer.class);
         Field<String> lang = field(name("lang"), String.class);
         Field<Long> webhookId = field(name("webhook_id"), Long.class);
@@ -315,9 +315,9 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
         Condition condition = buildCondition(filter);
 
-        Result<Record7<Long, Boolean, Long, String, Long, String, Long>> records = this.dsl.select(
+        Result<Record7<Long, Integer, Long, String, Long, String, Long>> records = this.dsl.select(
                         field(name(channels.getName(), "channel_id"), Long.class),
-                        field(name(channels.getName(), "is_guild"), Boolean.class),
+                        field(name(channels.getName(), "is_guild"), Integer.class),
                         field(name(channels.getName(), "guild_id"), Long.class),
                         field(name(channels.getName(), "lang"), String.class),
                         field(name(channelWebhooks.getName(), "webhook_id"), Long.class),
@@ -329,7 +329,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
                 .where(condition)
                 .fetch();
 
-        Map<Boolean, List<Record7<Long, Boolean, Long, String, Long, String, Long>>> partitioned = records.stream()
+        Map<Boolean, List<Record7<Long, Integer, Long, String, Long, String, Long>>> partitioned = records.stream()
                 .collect(Collectors.partitioningBy(r -> r.value5() != null));
 
         return Map.of(
@@ -337,7 +337,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         .collect(Collectors.toMap(
                                 r -> r.value1(),
                                 r -> new ChannelBase(
-                                        r.value2(),
+                                        r.value2() != null && r.value2() == 1,
                                         r.value3(),
                                         new ChannelWebhook(r.value5(), r.value6(), r.value7()),
                                         r.value4()
@@ -347,7 +347,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         .collect(Collectors.toMap(
                                 r -> r.value1(),
                                 r -> new ChannelBase(
-                                        r.value2(),
+                                        r.value2() != null && r.value2() == 1,
                                         r.value3(),
                                         null,
                                         r.value4()
@@ -382,22 +382,16 @@ public class ChannelRegistrySql implements ChannelRegistry {
         if (filter == null) {
             return noCondition();
         }
-
-        Channel testChannel = new Channel(false, null, false, false, false, false, SeismicIntensity.ONE, null, "");
-        if (filter.test(testChannel)) {
-            return noCondition();
-        }
-
         return filter.toCondition();
     }
 
     private Channel mapToChannel(Record r,
-                                  Field<Boolean> isGuild,
+                                  Field<Integer> isGuild,
                                   Field<Long> guildId,
-                                  Field<Boolean> eewAlert,
-                                  Field<Boolean> eewPrediction,
-                                  Field<Boolean> eewDecimation,
-                                  Field<Boolean> quakeInfo,
+                                  Field<Integer> eewAlert,
+                                  Field<Integer> eewPrediction,
+                                  Field<Integer> eewDecimation,
+                                  Field<Integer> quakeInfo,
                                   Field<Integer> minIntensity,
                                   Field<String> lang,
                                   Field<Long> webhookId,
@@ -413,12 +407,12 @@ public class ChannelRegistrySql implements ChannelRegistry {
         }
 
         return new Channel(
-                r.get(isGuild) != null && r.get(isGuild),
+                r.get(isGuild) != null && r.get(isGuild) == 1,
                 r.get(guildId),
-                r.get(eewAlert) != null && r.get(eewAlert),
-                r.get(eewPrediction) != null && r.get(eewPrediction),
-                r.get(eewDecimation) != null && r.get(eewDecimation),
-                r.get(quakeInfo) != null && r.get(quakeInfo),
+                r.get(eewAlert) != null && r.get(eewAlert) == 1,
+                r.get(eewPrediction) != null && r.get(eewPrediction) == 1,
+                r.get(eewDecimation) != null && r.get(eewDecimation) == 1,
+                r.get(quakeInfo) != null && r.get(quakeInfo) == 1,
                 r.get(minIntensity) != null ? SeismicIntensity.values()[r.get(minIntensity)] : SeismicIntensity.ONE,
                 webhook,
                 r.get(lang)
