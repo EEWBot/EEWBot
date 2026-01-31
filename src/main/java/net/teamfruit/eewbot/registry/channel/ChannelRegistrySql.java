@@ -1,0 +1,515 @@
+package net.teamfruit.eewbot.registry.channel;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.config.ConfigV2;
+import org.jooq.*;
+import org.jooq.Record;
+import org.jooq.impl.DSL;
+import org.sqlite.SQLiteDataSource;
+
+import javax.sql.DataSource;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static org.jooq.impl.DSL.*;
+
+public class ChannelRegistrySql implements ChannelRegistry {
+
+    private final DSLContext dsl;
+    private final DataSource dataSource;
+    private final SQLDialect dialect;
+
+    private ChannelRegistrySql(DSLContext dsl, DataSource dataSource, SQLDialect dialect) {
+        this.dsl = dsl;
+        this.dataSource = dataSource;
+        this.dialect = dialect;
+    }
+
+    public static ChannelRegistrySql forSQLite(Path dbPath) {
+        SQLiteDataSource ds = new SQLiteDataSource();
+        ds.setUrl("jdbc:sqlite:" + dbPath);
+        DSLContext dsl = DSL.using(ds, SQLDialect.SQLITE);
+        Log.logger.info("Initialized SQLite channel registry at: {}", dbPath);
+        return new ChannelRegistrySql(dsl, ds, SQLDialect.SQLITE);
+    }
+
+    public static ChannelRegistrySql forPostgreSQL(ConfigV2.PostgreSQL config) {
+        HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setJdbcUrl(config.getJdbcUrl());
+        hikariConfig.setUsername(config.getUsername());
+        hikariConfig.setPassword(config.getPassword());
+        hikariConfig.setMaximumPoolSize(config.getMaxPoolSize());
+        hikariConfig.setMinimumIdle(config.getMinIdle());
+        hikariConfig.setConnectionTimeout(30000);
+        hikariConfig.setIdleTimeout(600000);
+        hikariConfig.setMaxLifetime(1800000);
+
+        HikariDataSource ds = new HikariDataSource(hikariConfig);
+        DSLContext dsl = DSL.using(ds, SQLDialect.POSTGRES);
+        Log.logger.info("Initialized PostgreSQL channel registry at: {}", config.getJdbcUrl());
+        return new ChannelRegistrySql(dsl, ds, SQLDialect.POSTGRES);
+    }
+
+    public DataSource getDataSource() {
+        return this.dataSource;
+    }
+
+    public SQLDialect getDialect() {
+        return this.dialect;
+    }
+
+    public DSLContext getDsl() {
+        return this.dsl;
+    }
+
+    @Override
+    public Channel get(long key) {
+        Table<?> channels = table(name("channels"));
+        Table<?> channelWebhooks = table(name("channel_webhooks"));
+
+        Field<Long> channelId = field(name("channel_id"), Long.class);
+        Field<Boolean> isGuild = field(name("is_guild"), Boolean.class);
+        Field<Long> guildId = field(name("guild_id"), Long.class);
+        Field<Boolean> eewAlert = field(name("eew_alert"), Boolean.class);
+        Field<Boolean> eewPrediction = field(name("eew_prediction"), Boolean.class);
+        Field<Boolean> eewDecimation = field(name("eew_decimation"), Boolean.class);
+        Field<Boolean> quakeInfo = field(name("quake_info"), Boolean.class);
+        Field<Integer> minIntensity = field(name("min_intensity"), Integer.class);
+        Field<String> lang = field(name("lang"), String.class);
+        Field<Long> webhookId = field(name("webhook_id"), Long.class);
+        Field<String> token = field(name("token"), String.class);
+        Field<Long> threadId = field(name("thread_id"), Long.class);
+
+        return this.dsl.select(
+                        channelId,
+                        isGuild,
+                        guildId,
+                        eewAlert,
+                        eewPrediction,
+                        eewDecimation,
+                        quakeInfo,
+                        minIntensity,
+                        lang,
+                        webhookId,
+                        token,
+                        threadId
+                )
+                .from(channels)
+                .leftJoin(channelWebhooks).on(field(name(channels.getName(), "channel_id")).eq(field(name(channelWebhooks.getName(), "channel_id"))))
+                .where(field(name(channels.getName(), "channel_id")).eq(key))
+                .fetchOne(r -> mapToChannel(r, isGuild, guildId, eewAlert, eewPrediction, eewDecimation, quakeInfo, minIntensity, lang, webhookId, token, threadId));
+    }
+
+    @Override
+    public void remove(long key) {
+        Table<?> channels = table(name("channels"));
+        Field<Long> channelId = field(name("channel_id"), Long.class);
+
+        this.dsl.deleteFrom(channels)
+                .where(channelId.eq(key))
+                .execute();
+    }
+
+    @Override
+    public boolean exists(long key) {
+        Table<?> channels = table(name("channels"));
+        Field<Long> channelId = field(name("channel_id"), Long.class);
+
+        return this.dsl.fetchExists(
+                this.dsl.selectFrom(channels)
+                        .where(channelId.eq(key))
+        );
+    }
+
+    @Override
+    public void computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction) {
+        if (!exists(key)) {
+            Channel channel = mappingFunction.apply(key);
+            insertChannel(key, channel);
+        }
+    }
+
+    private void insertChannel(long channelId, Channel channel) {
+        Table<?> channels = table(name("channels"));
+
+        this.dsl.insertInto(channels)
+                .columns(
+                        field(name("channel_id")),
+                        field(name("is_guild")),
+                        field(name("guild_id")),
+                        field(name("eew_alert")),
+                        field(name("eew_prediction")),
+                        field(name("eew_decimation")),
+                        field(name("quake_info")),
+                        field(name("min_intensity")),
+                        field(name("lang"))
+                )
+                .values(
+                        channelId,
+                        channel.isGuild(),
+                        channel.getGuildId(),
+                        channel.isEewAlert(),
+                        channel.isEewPrediction(),
+                        channel.isEewDecimation(),
+                        channel.isQuakeInfo(),
+                        channel.getMinIntensity() != null ? channel.getMinIntensity().ordinal() : SeismicIntensity.ONE.ordinal(),
+                        channel.getLang()
+                )
+                .execute();
+
+        if (channel.getWebhook() != null) {
+            insertWebhook(channelId, channel.getWebhook());
+        }
+    }
+
+    private void insertWebhook(long channelId, ChannelWebhook webhook) {
+        Table<?> channelWebhooks = table(name("channel_webhooks"));
+
+        this.dsl.insertInto(channelWebhooks)
+                .columns(
+                        field(name("channel_id")),
+                        field(name("webhook_id")),
+                        field(name("token")),
+                        field(name("thread_id"))
+                )
+                .values(
+                        channelId,
+                        webhook.getId(),
+                        webhook.getToken(),
+                        webhook.getThreadId()
+                )
+                .execute();
+    }
+
+    @Override
+    public void set(long key, String name, boolean bool) {
+        Table<?> channels = table(name("channels"));
+        Field<Long> channelId = field(name("channel_id"), Long.class);
+
+        this.dsl.update(channels)
+                .set(field(name(name)), bool)
+                .where(channelId.eq(key))
+                .execute();
+    }
+
+    @Override
+    public void setMinIntensity(long key, SeismicIntensity intensity) {
+        Table<?> channels = table(name("channels"));
+        Field<Long> channelId = field(name("channel_id"), Long.class);
+
+        this.dsl.update(channels)
+                .set(field(name("min_intensity")), intensity.ordinal())
+                .where(channelId.eq(key))
+                .execute();
+    }
+
+    @Override
+    public void setIsGuild(long key, boolean guild) {
+        Table<?> channels = table(name("channels"));
+        Field<Long> channelId = field(name("channel_id"), Long.class);
+
+        this.dsl.update(channels)
+                .set(field(name("is_guild")), guild)
+                .where(channelId.eq(key))
+                .execute();
+    }
+
+    @Override
+    public void setWebhook(long key, ChannelWebhook webhook) {
+        Table<?> channelWebhooks = table(name("channel_webhooks"));
+        Field<Long> channelId = field(name("channel_id"), Long.class);
+
+        this.dsl.deleteFrom(channelWebhooks)
+                .where(channelId.eq(key))
+                .execute();
+
+        if (webhook != null) {
+            insertWebhook(key, webhook);
+        }
+    }
+
+    @Override
+    public void setLang(long key, String lang) {
+        Table<?> channels = table(name("channels"));
+        Field<Long> channelId = field(name("channel_id"), Long.class);
+
+        this.dsl.update(channels)
+                .set(field(name("lang")), lang)
+                .where(channelId.eq(key))
+                .execute();
+    }
+
+    @Override
+    public boolean isGuildEmpty() {
+        Table<?> channels = table(name("channels"));
+        Field<Boolean> isGuild = field(name("is_guild"), Boolean.class);
+
+        return this.dsl.fetchExists(
+                this.dsl.selectFrom(channels)
+                        .where(isGuild.isNull())
+        );
+    }
+
+    @Override
+    public void setGuildId(long channelId, long guildId) {
+        Table<?> channels = table(name("channels"));
+        Field<Long> channelIdField = field(name("channel_id"), Long.class);
+
+        this.dsl.update(channels)
+                .set(field(name("guild_id")), guildId)
+                .where(channelIdField.eq(channelId))
+                .execute();
+    }
+
+    @Override
+    public List<Long> getWebhookAbsentChannels() {
+        Table<?> channels = table(name("channels"));
+        Table<?> channelWebhooks = table(name("channel_webhooks"));
+        Field<Long> channelId = field(name("channel_id"), Long.class);
+
+        return this.dsl.select(field(name(channels.getName(), "channel_id"), Long.class))
+                .from(channels)
+                .leftJoin(channelWebhooks).on(field(name(channels.getName(), "channel_id")).eq(field(name(channelWebhooks.getName(), "channel_id"))))
+                .where(field(name(channelWebhooks.getName(), "channel_id")).isNull())
+                .fetch(0, Long.class);
+    }
+
+    @Override
+    public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
+        Table<?> channels = table(name("channels"));
+        Field<Long> channelId = field(name("channel_id"), Long.class);
+
+        Condition condition = buildCondition(filter);
+
+        this.dsl.select(channelId)
+                .from(channels)
+                .where(condition)
+                .fetch()
+                .forEach(r -> consumer.accept(r.value1()));
+    }
+
+    @Override
+    public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
+        Table<?> channels = table(name("channels"));
+        Table<?> channelWebhooks = table(name("channel_webhooks"));
+
+        Field<Long> channelId = field(name("channel_id"), Long.class);
+        Field<Boolean> isGuild = field(name("is_guild"), Boolean.class);
+        Field<Long> guildId = field(name("guild_id"), Long.class);
+        Field<Boolean> eewAlert = field(name("eew_alert"), Boolean.class);
+        Field<Boolean> eewPrediction = field(name("eew_prediction"), Boolean.class);
+        Field<Boolean> eewDecimation = field(name("eew_decimation"), Boolean.class);
+        Field<Boolean> quakeInfo = field(name("quake_info"), Boolean.class);
+        Field<Integer> minIntensity = field(name("min_intensity"), Integer.class);
+        Field<String> lang = field(name("lang"), String.class);
+        Field<Long> webhookId = field(name("webhook_id"), Long.class);
+        Field<String> token = field(name("token"), String.class);
+        Field<Long> threadId = field(name("thread_id"), Long.class);
+
+        Condition condition = buildCondition(filter);
+
+        Result<Record7<Long, Boolean, Long, String, Long, String, Long>> records = this.dsl.select(
+                        field(name(channels.getName(), "channel_id"), Long.class),
+                        field(name(channels.getName(), "is_guild"), Boolean.class),
+                        field(name(channels.getName(), "guild_id"), Long.class),
+                        field(name(channels.getName(), "lang"), String.class),
+                        field(name(channelWebhooks.getName(), "webhook_id"), Long.class),
+                        field(name(channelWebhooks.getName(), "token"), String.class),
+                        field(name(channelWebhooks.getName(), "thread_id"), Long.class)
+                )
+                .from(channels)
+                .leftJoin(channelWebhooks).on(field(name(channels.getName(), "channel_id")).eq(field(name(channelWebhooks.getName(), "channel_id"))))
+                .where(condition)
+                .fetch();
+
+        Map<Boolean, List<Record7<Long, Boolean, Long, String, Long, String, Long>>> partitioned = records.stream()
+                .collect(Collectors.partitioningBy(r -> r.value5() != null));
+
+        return Map.of(
+                true, partitioned.get(true).stream()
+                        .collect(Collectors.toMap(
+                                r -> r.value1(),
+                                r -> new ChannelBase(
+                                        r.value2(),
+                                        r.value3(),
+                                        new ChannelWebhook(r.value5(), r.value6(), r.value7()),
+                                        r.value4()
+                                )
+                        )),
+                false, partitioned.get(false).stream()
+                        .collect(Collectors.toMap(
+                                r -> r.value1(),
+                                r -> new ChannelBase(
+                                        r.value2(),
+                                        r.value3(),
+                                        null,
+                                        r.value4()
+                                )
+                        ))
+        );
+    }
+
+    @Override
+    public boolean isWebhookForThread(long webhookId, long threadId) {
+        Table<?> channelWebhooks = table(name("channel_webhooks"));
+        Field<Long> webhookIdField = field(name("webhook_id"), Long.class);
+        Field<Long> threadIdField = field(name("thread_id"), Long.class);
+
+        boolean exists = this.dsl.fetchExists(
+                this.dsl.selectFrom(channelWebhooks)
+                        .where(webhookIdField.eq(webhookId))
+                        .and(threadIdField.isNotNull())
+                        .and(threadIdField.ne(threadId))
+        );
+        return !exists;
+    }
+
+    public void close() {
+        if (this.dataSource instanceof HikariDataSource) {
+            ((HikariDataSource) this.dataSource).close();
+            Log.logger.info("Closed PostgreSQL connection pool");
+        }
+    }
+
+    private Condition buildCondition(ChannelFilter filter) {
+        List<Condition> conditions = new ArrayList<>();
+
+        if (filter == null) {
+            return noCondition();
+        }
+
+        Table<?> channels = table(name("channels"));
+        Field<Boolean> isGuild = field(name("is_guild"), Boolean.class);
+        Field<Long> guildId = field(name("guild_id"), Long.class);
+        Field<Boolean> eewAlert = field(name("eew_alert"), Boolean.class);
+        Field<Boolean> eewPrediction = field(name("eew_prediction"), Boolean.class);
+        Field<Boolean> eewDecimation = field(name("eew_decimation"), Boolean.class);
+        Field<Boolean> quakeInfo = field(name("quake_info"), Boolean.class);
+        Field<Integer> minIntensity = field(name("min_intensity"), Integer.class);
+
+        Channel testChannel = new Channel(false, null, false, false, false, false, SeismicIntensity.ONE, null, "");
+        if (filter.test(testChannel)) {
+            return noCondition();
+        }
+
+        try {
+            java.lang.reflect.Field isGuildPresentField = filter.getClass().getDeclaredField("isGuildPresent");
+            isGuildPresentField.setAccessible(true);
+            if ((boolean) isGuildPresentField.get(filter)) {
+                java.lang.reflect.Field isGuildField = filter.getClass().getDeclaredField("isGuild");
+                isGuildField.setAccessible(true);
+                Boolean isGuildValue = (Boolean) isGuildField.get(filter);
+                if (isGuildValue != null) {
+                    conditions.add(isGuild.eq(isGuildValue));
+                } else {
+                    conditions.add(isGuild.isNull());
+                }
+            }
+
+            java.lang.reflect.Field guildIdPresentField = filter.getClass().getDeclaredField("guildIdPresent");
+            guildIdPresentField.setAccessible(true);
+            if ((boolean) guildIdPresentField.get(filter)) {
+                java.lang.reflect.Field guildIdField = filter.getClass().getDeclaredField("guildId");
+                guildIdField.setAccessible(true);
+                long guildIdValue = (long) guildIdField.get(filter);
+                conditions.add(guildId.eq(guildIdValue));
+            }
+
+            java.lang.reflect.Field eewAlertPresentField = filter.getClass().getDeclaredField("eewAlertPresent");
+            eewAlertPresentField.setAccessible(true);
+            if ((boolean) eewAlertPresentField.get(filter)) {
+                java.lang.reflect.Field eewAlertField = filter.getClass().getDeclaredField("eewAlert");
+                eewAlertField.setAccessible(true);
+                boolean eewAlertValue = (boolean) eewAlertField.get(filter);
+                conditions.add(eewAlert.eq(eewAlertValue));
+            }
+
+            java.lang.reflect.Field eewPredictionPresentField = filter.getClass().getDeclaredField("eewPredictionPresent");
+            eewPredictionPresentField.setAccessible(true);
+            if ((boolean) eewPredictionPresentField.get(filter)) {
+                java.lang.reflect.Field eewPredictionField = filter.getClass().getDeclaredField("eewPrediction");
+                eewPredictionField.setAccessible(true);
+                boolean eewPredictionValue = (boolean) eewPredictionField.get(filter);
+                conditions.add(eewPrediction.eq(eewPredictionValue));
+            }
+
+            java.lang.reflect.Field eewDecimationPresentField = filter.getClass().getDeclaredField("eewDecimationPresent");
+            eewDecimationPresentField.setAccessible(true);
+            if ((boolean) eewDecimationPresentField.get(filter)) {
+                java.lang.reflect.Field eewDecimationField = filter.getClass().getDeclaredField("eewDecimation");
+                eewDecimationField.setAccessible(true);
+                boolean eewDecimationValue = (boolean) eewDecimationField.get(filter);
+                conditions.add(eewDecimation.eq(eewDecimationValue));
+            }
+
+            java.lang.reflect.Field quakeInfoPresentField = filter.getClass().getDeclaredField("quakeInfoPresent");
+            quakeInfoPresentField.setAccessible(true);
+            if ((boolean) quakeInfoPresentField.get(filter)) {
+                java.lang.reflect.Field quakeInfoField = filter.getClass().getDeclaredField("quakeInfo");
+                quakeInfoField.setAccessible(true);
+                boolean quakeInfoValue = (boolean) quakeInfoField.get(filter);
+                conditions.add(quakeInfo.eq(quakeInfoValue));
+            }
+
+            java.lang.reflect.Field intensityPresentField = filter.getClass().getDeclaredField("intensityPresent");
+            intensityPresentField.setAccessible(true);
+            if ((boolean) intensityPresentField.get(filter)) {
+                java.lang.reflect.Field intensityField = filter.getClass().getDeclaredField("intensity");
+                intensityField.setAccessible(true);
+                SeismicIntensity intensityValue = (SeismicIntensity) intensityField.get(filter);
+                conditions.add(minIntensity.le(intensityValue.ordinal()));
+            }
+
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException("Failed to build SQL condition from ChannelFilter", e);
+        }
+
+        if (conditions.isEmpty()) {
+            return noCondition();
+        }
+
+        return conditions.stream().reduce(Condition::and).orElse(noCondition());
+    }
+
+    private Channel mapToChannel(Record r,
+                                  Field<Boolean> isGuild,
+                                  Field<Long> guildId,
+                                  Field<Boolean> eewAlert,
+                                  Field<Boolean> eewPrediction,
+                                  Field<Boolean> eewDecimation,
+                                  Field<Boolean> quakeInfo,
+                                  Field<Integer> minIntensity,
+                                  Field<String> lang,
+                                  Field<Long> webhookId,
+                                  Field<String> token,
+                                  Field<Long> threadId) {
+        if (r == null) {
+            return null;
+        }
+
+        ChannelWebhook webhook = null;
+        if (r.get(webhookId) != null) {
+            webhook = new ChannelWebhook(r.get(webhookId), r.get(token), r.get(threadId));
+        }
+
+        return new Channel(
+                r.get(isGuild) != null && r.get(isGuild),
+                r.get(guildId),
+                r.get(eewAlert) != null && r.get(eewAlert),
+                r.get(eewPrediction) != null && r.get(eewPrediction),
+                r.get(eewDecimation) != null && r.get(eewDecimation),
+                r.get(quakeInfo) != null && r.get(quakeInfo),
+                r.get(minIntensity) != null ? SeismicIntensity.values()[r.get(minIntensity)] : SeismicIntensity.ONE,
+                webhook,
+                r.get(lang)
+        );
+    }
+}

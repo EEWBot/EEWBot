@@ -84,7 +84,20 @@ public class EEWBot {
         this.rendererQueryFactory = new RendererQueryFactory(getConfig().getRenderer().getAddress(), getConfig().getRenderer().getKey());
 
         Path path = DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json");
-        if (StringUtils.isNotEmpty(getConfig().getRedis().getAddress())) {
+        String dbType = getConfig().getDatabase().getType();
+
+        if ("postgresql".equalsIgnoreCase(dbType)) {
+            ChannelRegistrySql registry = ChannelRegistrySql.forPostgreSQL(getConfig().getDatabase().getPostgresql());
+            DatabaseInitializer.migrate(registry.getDataSource(), registry.getDialect());
+            this.channels = registry;
+        } else if ("sqlite".equalsIgnoreCase(dbType)) {
+            Path sqlitePath = DATA_DIRECTORY != null
+                    ? Paths.get(DATA_DIRECTORY, getConfig().getDatabase().getSqlite().getPath())
+                    : Paths.get(getConfig().getDatabase().getSqlite().getPath());
+            ChannelRegistrySql registry = ChannelRegistrySql.forSQLite(sqlitePath);
+            DatabaseInitializer.migrate(registry.getDataSource(), registry.getDialect());
+            this.channels = registry;
+        } else if (StringUtils.isNotEmpty(getConfig().getRedis().getAddress())) {
             String redisAddress = getConfig().getRedis().getAddress();
             HostAndPort hnp = redisAddress.lastIndexOf(":") < 0 ? new HostAndPort(redisAddress, 6379) : HostAndPort.from(redisAddress);
             JedisPooled jedisPooled = new JedisPooled(hnp);
@@ -188,6 +201,9 @@ public class EEWBot {
                 getChannels().save();
             } catch (final IOException e) {
                 Log.logger.error("Save failed", e);
+            }
+            if (this.channels instanceof ChannelRegistrySql) {
+                ((ChannelRegistrySql) this.channels).close();
             }
             if (this.externalWebhookService != null) {
                 this.externalWebhookService.shutdown();

@@ -31,6 +31,14 @@ dependencies {
     implementation(libs.wire.runtime)
     implementation(libs.net.eewbot.base65536j)
 
+    // SQL Database dependencies
+    implementation(libs.sqlite.jdbc)
+    implementation(libs.postgresql)
+    implementation(libs.hikaricp)
+    implementation(libs.jooq)
+    implementation(libs.flyway.core)
+    implementation(libs.flyway.database.postgresql)
+
     // Test dependencies
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
