@@ -22,6 +22,13 @@ import static org.jooq.impl.DSL.*;
 
 public class ChannelRegistrySql implements ChannelRegistry {
 
+    private static final Map<String, String> SETTABLE_BOOLEAN_COLUMNS = Map.of(
+            "eewAlert", "eew_alert",
+            "eewPrediction", "eew_prediction",
+            "eewDecimation", "eew_decimation",
+            "quakeInfo", "quake_info"
+    );
+
     private final DSLContext dsl;
     private final DataSource dataSource;
     private final SQLDialect dialect;
@@ -190,11 +197,16 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public void set(long key, String name, boolean bool) {
+        String columnName = SETTABLE_BOOLEAN_COLUMNS.get(name);
+        if (columnName == null) {
+            throw new IllegalArgumentException("Unknown or non-settable column: " + name);
+        }
+
         Table<?> channels = table(name("channels"));
         Field<Long> channelId = field(name("channel_id"), Long.class);
 
         this.dsl.update(channels)
-                .set(field(name(name)), bool ? 1 : 0)
+                .set(field(name(columnName), Integer.class), bool ? 1 : 0)
                 .where(channelId.eq(key))
                 .execute();
     }
