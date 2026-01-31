@@ -29,6 +29,45 @@ public class ChannelRegistrySql implements ChannelRegistry {
             "quakeInfo", "quake_info"
     );
 
+    // === Tables ===
+    private static final Table<?> CHANNELS = table(name("channels"));
+    private static final Table<?> CHANNEL_WEBHOOKS = table(name("channel_webhooks"));
+
+    // JOIN用エイリアス付きテーブル
+    private static final Table<?> C = CHANNELS.as("c");
+    private static final Table<?> W = CHANNEL_WEBHOOKS.as("w");
+
+    // === Unqualified Fields (単一テーブル操作用) ===
+    private static final Field<Long> CHANNEL_ID = field(name("channel_id"), Long.class);
+    private static final Field<Integer> IS_GUILD = field(name("is_guild"), Integer.class);
+    private static final Field<Long> GUILD_ID = field(name("guild_id"), Long.class);
+    private static final Field<Integer> EEW_ALERT = field(name("eew_alert"), Integer.class);
+    private static final Field<Integer> EEW_PREDICTION = field(name("eew_prediction"), Integer.class);
+    private static final Field<Integer> EEW_DECIMATION = field(name("eew_decimation"), Integer.class);
+    private static final Field<Integer> QUAKE_INFO = field(name("quake_info"), Integer.class);
+    private static final Field<Integer> MIN_INTENSITY = field(name("min_intensity"), Integer.class);
+    private static final Field<String> LANG = field(name("lang"), String.class);
+    private static final Field<Long> WEBHOOK_ID = field(name("webhook_id"), Long.class);
+    private static final Field<String> TOKEN = field(name("token"), String.class);
+    private static final Field<Long> THREAD_ID = field(name("thread_id"), Long.class);
+
+    // === Qualified Fields for alias "c" ===
+    private static final Field<Long> C_CHANNEL_ID = field(name("c", "channel_id"), Long.class);
+    private static final Field<Integer> C_IS_GUILD = field(name("c", "is_guild"), Integer.class);
+    private static final Field<Long> C_GUILD_ID = field(name("c", "guild_id"), Long.class);
+    private static final Field<Integer> C_EEW_ALERT = field(name("c", "eew_alert"), Integer.class);
+    private static final Field<Integer> C_EEW_PREDICTION = field(name("c", "eew_prediction"), Integer.class);
+    private static final Field<Integer> C_EEW_DECIMATION = field(name("c", "eew_decimation"), Integer.class);
+    private static final Field<Integer> C_QUAKE_INFO = field(name("c", "quake_info"), Integer.class);
+    private static final Field<Integer> C_MIN_INTENSITY = field(name("c", "min_intensity"), Integer.class);
+    private static final Field<String> C_LANG = field(name("c", "lang"), String.class);
+
+    // === Qualified Fields for alias "w" ===
+    private static final Field<Long> W_CHANNEL_ID = field(name("w", "channel_id"), Long.class);
+    private static final Field<Long> W_WEBHOOK_ID = field(name("w", "webhook_id"), Long.class);
+    private static final Field<String> W_TOKEN = field(name("w", "token"), String.class);
+    private static final Field<Long> W_THREAD_ID = field(name("w", "thread_id"), Long.class);
+
     private final DSLContext dsl;
     private final DataSource dataSource;
     private final SQLDialect dialect;
@@ -78,61 +117,38 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public Channel get(long key) {
-        Table<?> c = table(name("channels")).as("c");
-        Table<?> w = table(name("channel_webhooks")).as("w");
-
-        Field<Long> cChannelId = field(name("c", "channel_id"), Long.class);
-        Field<Long> wChannelId = field(name("w", "channel_id"), Long.class);
-        Field<Integer> cIsGuild = field(name("c", "is_guild"), Integer.class);
-        Field<Long> cGuildId = field(name("c", "guild_id"), Long.class);
-        Field<Integer> cEewAlert = field(name("c", "eew_alert"), Integer.class);
-        Field<Integer> cEewPrediction = field(name("c", "eew_prediction"), Integer.class);
-        Field<Integer> cEewDecimation = field(name("c", "eew_decimation"), Integer.class);
-        Field<Integer> cQuakeInfo = field(name("c", "quake_info"), Integer.class);
-        Field<Integer> cMinIntensity = field(name("c", "min_intensity"), Integer.class);
-        Field<String> cLang = field(name("c", "lang"), String.class);
-        Field<Long> wWebhookId = field(name("w", "webhook_id"), Long.class);
-        Field<String> wToken = field(name("w", "token"), String.class);
-        Field<Long> wThreadId = field(name("w", "thread_id"), Long.class);
-
         return this.dsl.select(
-                        cChannelId,
-                        cIsGuild,
-                        cGuildId,
-                        cEewAlert,
-                        cEewPrediction,
-                        cEewDecimation,
-                        cQuakeInfo,
-                        cMinIntensity,
-                        cLang,
-                        wWebhookId,
-                        wToken,
-                        wThreadId
+                        C_CHANNEL_ID,
+                        C_IS_GUILD,
+                        C_GUILD_ID,
+                        C_EEW_ALERT,
+                        C_EEW_PREDICTION,
+                        C_EEW_DECIMATION,
+                        C_QUAKE_INFO,
+                        C_MIN_INTENSITY,
+                        C_LANG,
+                        W_WEBHOOK_ID,
+                        W_TOKEN,
+                        W_THREAD_ID
                 )
-                .from(c)
-                .leftJoin(w).on(cChannelId.eq(wChannelId))
-                .where(cChannelId.eq(key))
-                .fetchOne(r -> mapToChannel(r, cIsGuild, cGuildId, cEewAlert, cEewPrediction, cEewDecimation, cQuakeInfo, cMinIntensity, cLang, wWebhookId, wToken, wThreadId));
+                .from(C)
+                .leftJoin(W).on(C_CHANNEL_ID.eq(W_CHANNEL_ID))
+                .where(C_CHANNEL_ID.eq(key))
+                .fetchOne(this::mapToChannel);
     }
 
     @Override
     public void remove(long key) {
-        Table<?> channels = table(name("channels"));
-        Field<Long> channelId = field(name("channel_id"), Long.class);
-
-        this.dsl.deleteFrom(channels)
-                .where(channelId.eq(key))
+        this.dsl.deleteFrom(CHANNELS)
+                .where(CHANNEL_ID.eq(key))
                 .execute();
     }
 
     @Override
     public boolean exists(long key) {
-        Table<?> channels = table(name("channels"));
-        Field<Long> channelId = field(name("channel_id"), Long.class);
-
         return this.dsl.fetchExists(
-                this.dsl.selectFrom(channels)
-                        .where(channelId.eq(key))
+                this.dsl.selectFrom(CHANNELS)
+                        .where(CHANNEL_ID.eq(key))
         );
     }
 
@@ -143,19 +159,17 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     private void insertChannelIfAbsent(long channelId, Channel channel) {
-        Table<?> channels = table(name("channels"));
-
-        int inserted = this.dsl.insertInto(channels)
+        int inserted = this.dsl.insertInto(CHANNELS)
                 .columns(
-                        field(name("channel_id")),
-                        field(name("is_guild")),
-                        field(name("guild_id")),
-                        field(name("eew_alert")),
-                        field(name("eew_prediction")),
-                        field(name("eew_decimation")),
-                        field(name("quake_info")),
-                        field(name("min_intensity")),
-                        field(name("lang"))
+                        CHANNEL_ID,
+                        IS_GUILD,
+                        GUILD_ID,
+                        EEW_ALERT,
+                        EEW_PREDICTION,
+                        EEW_DECIMATION,
+                        QUAKE_INFO,
+                        MIN_INTENSITY,
+                        LANG
                 )
                 .values(
                         channelId,
@@ -177,14 +191,12 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     private void upsertWebhook(long channelId, ChannelWebhook webhook) {
-        Table<?> channelWebhooks = table(name("channel_webhooks"));
-
-        this.dsl.insertInto(channelWebhooks)
+        this.dsl.insertInto(CHANNEL_WEBHOOKS)
                 .columns(
-                        field(name("channel_id")),
-                        field(name("webhook_id")),
-                        field(name("token")),
-                        field(name("thread_id"))
+                        CHANNEL_ID,
+                        WEBHOOK_ID,
+                        TOKEN,
+                        THREAD_ID
                 )
                 .values(
                         channelId,
@@ -192,11 +204,11 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         webhook.getToken(),
                         webhook.getThreadId()
                 )
-                .onConflict(field(name("channel_id")))
+                .onConflict(CHANNEL_ID)
                 .doUpdate()
-                .set(field(name("webhook_id")), webhook.getId())
-                .set(field(name("token")), webhook.getToken())
-                .set(field(name("thread_id")), webhook.getThreadId())
+                .set(WEBHOOK_ID, webhook.getId())
+                .set(TOKEN, webhook.getToken())
+                .set(THREAD_ID, webhook.getThreadId())
                 .execute();
     }
 
@@ -207,34 +219,25 @@ public class ChannelRegistrySql implements ChannelRegistry {
             throw new IllegalArgumentException("Unknown or non-settable column: " + name);
         }
 
-        Table<?> channels = table(name("channels"));
-        Field<Long> channelId = field(name("channel_id"), Long.class);
-
-        this.dsl.update(channels)
+        this.dsl.update(CHANNELS)
                 .set(field(name(columnName), Integer.class), bool ? 1 : 0)
-                .where(channelId.eq(key))
+                .where(CHANNEL_ID.eq(key))
                 .execute();
     }
 
     @Override
     public void setMinIntensity(long key, SeismicIntensity intensity) {
-        Table<?> channels = table(name("channels"));
-        Field<Long> channelId = field(name("channel_id"), Long.class);
-
-        this.dsl.update(channels)
-                .set(field(name("min_intensity")), intensity.ordinal())
-                .where(channelId.eq(key))
+        this.dsl.update(CHANNELS)
+                .set(MIN_INTENSITY, intensity.ordinal())
+                .where(CHANNEL_ID.eq(key))
                 .execute();
     }
 
     @Override
     public void setIsGuild(long key, boolean guild) {
-        Table<?> channels = table(name("channels"));
-        Field<Long> channelId = field(name("channel_id"), Long.class);
-
-        this.dsl.update(channels)
-                .set(field(name("is_guild")), guild ? 1 : 0)
-                .where(channelId.eq(key))
+        this.dsl.update(CHANNELS)
+                .set(IS_GUILD, guild ? 1 : 0)
+                .where(CHANNEL_ID.eq(key))
                 .execute();
     }
 
@@ -243,72 +246,51 @@ public class ChannelRegistrySql implements ChannelRegistry {
         if (webhook != null) {
             upsertWebhook(key, webhook);
         } else {
-            Table<?> channelWebhooks = table(name("channel_webhooks"));
-            Field<Long> channelId = field(name("channel_id"), Long.class);
-
-            this.dsl.deleteFrom(channelWebhooks)
-                    .where(channelId.eq(key))
+            this.dsl.deleteFrom(CHANNEL_WEBHOOKS)
+                    .where(CHANNEL_ID.eq(key))
                     .execute();
         }
     }
 
     @Override
     public void setLang(long key, String lang) {
-        Table<?> channels = table(name("channels"));
-        Field<Long> channelId = field(name("channel_id"), Long.class);
-
-        this.dsl.update(channels)
-                .set(field(name("lang")), lang)
-                .where(channelId.eq(key))
+        this.dsl.update(CHANNELS)
+                .set(LANG, lang)
+                .where(CHANNEL_ID.eq(key))
                 .execute();
     }
 
     @Override
     public boolean isGuildEmpty() {
-        Table<?> channels = table(name("channels"));
-        Field<Integer> isGuild = field(name("is_guild"), Integer.class);
-
         return this.dsl.fetchExists(
-                this.dsl.selectFrom(channels)
-                        .where(isGuild.isNull())
+                this.dsl.selectFrom(CHANNELS)
+                        .where(IS_GUILD.isNull())
         );
     }
 
     @Override
     public void setGuildId(long channelId, long guildId) {
-        Table<?> channels = table(name("channels"));
-        Field<Long> channelIdField = field(name("channel_id"), Long.class);
-
-        this.dsl.update(channels)
-                .set(field(name("guild_id")), guildId)
-                .where(channelIdField.eq(channelId))
+        this.dsl.update(CHANNELS)
+                .set(GUILD_ID, guildId)
+                .where(CHANNEL_ID.eq(channelId))
                 .execute();
     }
 
     @Override
     public List<Long> getWebhookAbsentChannels() {
-        Table<?> c = table(name("channels")).as("c");
-        Table<?> w = table(name("channel_webhooks")).as("w");
-
-        Field<Long> cChannelId = field(name("c", "channel_id"), Long.class);
-        Field<Long> wChannelId = field(name("w", "channel_id"), Long.class);
-
-        return this.dsl.select(cChannelId)
-                .from(c)
-                .leftJoin(w).on(cChannelId.eq(wChannelId))
-                .where(wChannelId.isNull())
+        return this.dsl.select(C_CHANNEL_ID)
+                .from(C)
+                .leftJoin(W).on(C_CHANNEL_ID.eq(W_CHANNEL_ID))
+                .where(W_CHANNEL_ID.isNull())
                 .fetch(0, Long.class);
     }
 
     @Override
     public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
-        Table<?> channels = table(name("channels"));
-        Field<Long> channelId = field(name("channel_id"), Long.class);
-
         Condition condition = buildCondition(filter);
 
-        this.dsl.select(channelId)
-                .from(channels)
+        this.dsl.select(CHANNEL_ID)
+                .from(CHANNELS)
                 .where(condition)
                 .fetch()
                 .forEach(r -> consumer.accept(r.value1()));
@@ -316,31 +298,19 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
-        Table<?> c = table(name("channels")).as("c");
-        Table<?> w = table(name("channel_webhooks")).as("w");
-
-        Field<Long> cChannelId = field(name("c", "channel_id"), Long.class);
-        Field<Long> wChannelId = field(name("w", "channel_id"), Long.class);
-        Field<Integer> cIsGuild = field(name("c", "is_guild"), Integer.class);
-        Field<Long> cGuildId = field(name("c", "guild_id"), Long.class);
-        Field<String> cLang = field(name("c", "lang"), String.class);
-        Field<Long> wWebhookId = field(name("w", "webhook_id"), Long.class);
-        Field<String> wToken = field(name("w", "token"), String.class);
-        Field<Long> wThreadId = field(name("w", "thread_id"), Long.class);
-
         Condition condition = buildCondition(filter);
 
         Result<Record7<Long, Integer, Long, String, Long, String, Long>> records = this.dsl.select(
-                        cChannelId,
-                        cIsGuild,
-                        cGuildId,
-                        cLang,
-                        wWebhookId,
-                        wToken,
-                        wThreadId
+                        C_CHANNEL_ID,
+                        C_IS_GUILD,
+                        C_GUILD_ID,
+                        C_LANG,
+                        W_WEBHOOK_ID,
+                        W_TOKEN,
+                        W_THREAD_ID
                 )
-                .from(c)
-                .leftJoin(w).on(cChannelId.eq(wChannelId))
+                .from(C)
+                .leftJoin(W).on(C_CHANNEL_ID.eq(W_CHANNEL_ID))
                 .where(condition)
                 .fetch();
 
@@ -373,15 +343,11 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public boolean isWebhookForThread(long webhookId, long threadId) {
-        Table<?> channelWebhooks = table(name("channel_webhooks"));
-        Field<Long> webhookIdField = field(name("webhook_id"), Long.class);
-        Field<Long> threadIdField = field(name("thread_id"), Long.class);
-
         boolean exists = this.dsl.fetchExists(
-                this.dsl.selectFrom(channelWebhooks)
-                        .where(webhookIdField.eq(webhookId))
-                        .and(threadIdField.isNotNull())
-                        .and(threadIdField.ne(threadId))
+                this.dsl.selectFrom(CHANNEL_WEBHOOKS)
+                        .where(WEBHOOK_ID.eq(webhookId))
+                        .and(THREAD_ID.isNotNull())
+                        .and(THREAD_ID.ne(threadId))
         );
         return !exists;
     }
@@ -400,37 +366,26 @@ public class ChannelRegistrySql implements ChannelRegistry {
         return filter.toCondition();
     }
 
-    private Channel mapToChannel(Record r,
-                                  Field<Integer> isGuild,
-                                  Field<Long> guildId,
-                                  Field<Integer> eewAlert,
-                                  Field<Integer> eewPrediction,
-                                  Field<Integer> eewDecimation,
-                                  Field<Integer> quakeInfo,
-                                  Field<Integer> minIntensity,
-                                  Field<String> lang,
-                                  Field<Long> webhookId,
-                                  Field<String> token,
-                                  Field<Long> threadId) {
+    private Channel mapToChannel(Record r) {
         if (r == null) {
             return null;
         }
 
         ChannelWebhook webhook = null;
-        if (r.get(webhookId) != null) {
-            webhook = new ChannelWebhook(r.get(webhookId), r.get(token), r.get(threadId));
+        if (r.get(W_WEBHOOK_ID) != null) {
+            webhook = new ChannelWebhook(r.get(W_WEBHOOK_ID), r.get(W_TOKEN), r.get(W_THREAD_ID));
         }
 
         return new Channel(
-                r.get(isGuild) != null && r.get(isGuild) == 1,
-                r.get(guildId),
-                r.get(eewAlert) != null && r.get(eewAlert) == 1,
-                r.get(eewPrediction) != null && r.get(eewPrediction) == 1,
-                r.get(eewDecimation) != null && r.get(eewDecimation) == 1,
-                r.get(quakeInfo) != null && r.get(quakeInfo) == 1,
-                r.get(minIntensity) != null ? SeismicIntensity.values()[r.get(minIntensity)] : SeismicIntensity.ONE,
+                r.get(C_IS_GUILD) != null && r.get(C_IS_GUILD) == 1,
+                r.get(C_GUILD_ID),
+                r.get(C_EEW_ALERT) != null && r.get(C_EEW_ALERT) == 1,
+                r.get(C_EEW_PREDICTION) != null && r.get(C_EEW_PREDICTION) == 1,
+                r.get(C_EEW_DECIMATION) != null && r.get(C_EEW_DECIMATION) == 1,
+                r.get(C_QUAKE_INFO) != null && r.get(C_QUAKE_INFO) == 1,
+                r.get(C_MIN_INTENSITY) != null ? SeismicIntensity.values()[r.get(C_MIN_INTENSITY)] : SeismicIntensity.ONE,
                 webhook,
-                r.get(lang)
+                r.get(C_LANG)
         );
     }
 }
