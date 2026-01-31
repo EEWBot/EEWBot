@@ -137,16 +137,14 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public void computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction) {
-        if (!exists(key)) {
-            Channel channel = mappingFunction.apply(key);
-            insertChannel(key, channel);
-        }
+        Channel channel = mappingFunction.apply(key);
+        insertChannelIfAbsent(key, channel);
     }
 
-    private void insertChannel(long channelId, Channel channel) {
+    private void insertChannelIfAbsent(long channelId, Channel channel) {
         Table<?> channels = table(name("channels"));
 
-        this.dsl.insertInto(channels)
+        int inserted = this.dsl.insertInto(channels)
                 .columns(
                         field(name("channel_id")),
                         field(name("is_guild")),
@@ -169,9 +167,10 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         channel.getMinIntensity() != null ? channel.getMinIntensity().ordinal() : SeismicIntensity.ONE.ordinal(),
                         channel.getLang()
                 )
+                .onConflictDoNothing()
                 .execute();
 
-        if (channel.getWebhook() != null) {
+        if (inserted > 0 && channel.getWebhook() != null) {
             insertWebhook(channelId, channel.getWebhook());
         }
     }
