@@ -86,10 +86,15 @@ public class ChannelRegistryRedis implements ChannelRegistry {
             Channel channel = this.jedisPool.jsonGet(key, Channel.class);
             if (channel != null && channel.getChannelId() == null) {
                 // Old format: set channelId to targetId
-                long targetId = Long.parseLong(Strings.CS.removeStart(key, CHANNEL_PREFIX));
-                channel.setChannelId(targetId);
-                this.jedisPool.jsonSet(key, Path.ROOT_PATH, channel);
-                migrated = true;
+                String idPart = Strings.CS.removeStart(key, CHANNEL_PREFIX);
+                try {
+                    long targetId = Long.parseLong(idPart);
+                    channel.setChannelId(targetId);
+                    this.jedisPool.jsonSet(key, Path.ROOT_PATH, channel);
+                    migrated = true;
+                } catch (NumberFormatException e) {
+                    Log.logger.warn("Skipping migration of channel with non-numeric key suffix: {}", key, e);
+                }
             }
         }
         if (migrated) {
