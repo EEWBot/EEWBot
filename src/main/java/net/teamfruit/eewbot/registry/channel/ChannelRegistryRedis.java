@@ -275,11 +275,35 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         do {
             cursorId = aggregationResult.getCursorId();
             aggregationResult.getRows().forEach(row -> {
-                long targetId = Long.parseLong(Strings.CS.removeStart(row.getString("__key"), CHANNEL_PREFIX));
+                String key = row.getString("__key");
+                long targetId;
+                try {
+                    targetId = Long.parseLong(Strings.CS.removeStart(key, CHANNEL_PREFIX));
+                } catch (NumberFormatException e) {
+                    Log.logger.warn("Invalid channel key in Redis index: {}", key, e);
+                    return;
+                }
+
                 boolean isGuild = row.get("$.isGuild") != null && Boolean.parseBoolean(row.getString("$.isGuild"));
-                Long guildId = row.get("$.guildId") != null ? Long.parseLong(row.getString("$.guildId")) : null;
-                Long channelId = row.get("$.channelId") != null ? Long.parseLong(row.getString("$.channelId")) : null;
-                Long threadId = row.get("$.threadId") != null ? Long.parseLong(row.getString("$.threadId")) : null;
+                Long guildId = null;
+                Long channelId = null;
+                Long threadId = null;
+                try {
+                    if (row.get("$.guildId") != null) {
+                        guildId = Long.parseLong(row.getString("$.guildId"));
+                    }
+                    if (row.get("$.channelId") != null) {
+                        channelId = Long.parseLong(row.getString("$.channelId"));
+                    }
+                    if (row.get("$.threadId") != null) {
+                        threadId = Long.parseLong(row.getString("$.threadId"));
+                    }
+                } catch (NumberFormatException e) {
+                    Log.logger.warn("Invalid numeric ID in Redis channel entry for key {}: guildId='{}', channelId='{}', threadId='{}'",
+                            key, row.getString("$.guildId"), row.getString("$.channelId"), row.getString("$.threadId"), e);
+                    return;
+                }
+
                 String lang = row.getString("$.lang");
 
                 if (row.get("$.webhook") != null) {
