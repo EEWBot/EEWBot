@@ -327,9 +327,15 @@ public class ChannelRegistryRedis implements ChannelRegistry {
 
         // If webhook is used by any destination other than targetId, return false
         for (var doc : searchResult.getDocuments()) {
-            long docTargetId = Long.parseLong(Strings.CS.removeStart(doc.getId(), CHANNEL_PREFIX));
-            if (docTargetId != targetId) {
-                return false;
+            String idWithoutPrefix = Strings.CS.removeStart(doc.getId(), CHANNEL_PREFIX);
+            try {
+                long docTargetId = Long.parseLong(idWithoutPrefix);
+                if (docTargetId != targetId) {
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                // Skip documents with invalid numeric IDs to avoid unexpected runtime exceptions
+                Log.logger.warn("Invalid channel id in Redis document id: {}", doc.getId(), e);
             }
         }
         return true;
