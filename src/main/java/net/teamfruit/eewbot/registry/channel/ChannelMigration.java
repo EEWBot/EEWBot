@@ -41,8 +41,7 @@ public class ChannelMigration {
             ChannelRegistry source = createRegistry(config.sourceType, config.sourceConfig);
             ChannelRegistry destination = createRegistry(config.destType, config.destConfig);
 
-            if (destination instanceof ChannelRegistrySql) {
-                ChannelRegistrySql sqlDest = (ChannelRegistrySql) destination;
+            if (destination instanceof ChannelRegistrySql sqlDest) {
                 String migrationName = config.sourceType + "_to_sql_channels_v1";
 
                 if (isMigrationApplied(sqlDest, migrationName)) {
@@ -88,9 +87,7 @@ public class ChannelMigration {
 
             if (dest.getDialect() == org.jooq.SQLDialect.SQLITE) {
                 try {
-                    tx.connection(conn -> {
-                        conn.createStatement().execute("BEGIN IMMEDIATE");
-                    });
+                    tx.connection(conn -> conn.createStatement().execute("BEGIN IMMEDIATE"));
                 } catch (Exception e) {
                     throw new RuntimeException("Failed to start exclusive transaction", e);
                 }
@@ -149,11 +146,11 @@ public class ChannelMigration {
         }
     }
 
-    private static List<Map.Entry<Long, Channel>> collectChannels(ChannelRegistry source) {
+    // Package-private for testing
+    static List<Map.Entry<Long, Channel>> collectChannels(ChannelRegistry source) {
         List<Map.Entry<Long, Channel>> entries = new ArrayList<>();
 
-        if (source instanceof ChannelRegistryJson) {
-            ChannelRegistryJson jsonSource = (ChannelRegistryJson) source;
+        if (source instanceof ChannelRegistryJson jsonSource) {
             entries.addAll(jsonSource.getElement().entrySet());
         } else if (source instanceof ChannelRegistryRedis) {
             Map<Long, Channel> channels = new HashMap<>();
@@ -207,7 +204,8 @@ public class ChannelMigration {
         }
     }
 
-    private static void migrateChannelsSql(List<Map.Entry<Long, Channel>> entries, ChannelRegistrySql destination) {
+    // Package-private for testing
+    static void migrateChannelsSql(List<Map.Entry<Long, Channel>> entries, ChannelRegistrySql destination) {
         DSLContext dsl = destination.getDsl();
 
         Table<?> destinations = table(name("destinations"));
@@ -238,7 +236,7 @@ public class ChannelMigration {
             Integer minIntensity = channel.getMinIntensity() != null
                     ? channel.getMinIntensity().ordinal()
                     : SeismicIntensity.ONE.ordinal();
-            boolean isGuild = channel.isGuild() != null && channel.isGuild();
+            boolean isGuild = channel.isGuild() != null && Boolean.TRUE.equals(channel.isGuild());
 
             dsl.insertInto(destinations)
                     .columns(
@@ -319,8 +317,7 @@ public class ChannelMigration {
                         ? new HostAndPort(address, 6379)
                         : HostAndPort.from(address);
                 JedisPooled jedisPooled = new JedisPooled(hnp);
-                ChannelRegistryRedis registry = new ChannelRegistryRedis(jedisPooled, GSON);
-                yield registry;
+                yield new ChannelRegistryRedis(jedisPooled, GSON);
             }
             case "sqlite" -> {
                 String pathStr = config.getOrDefault("path", "channels.db");
