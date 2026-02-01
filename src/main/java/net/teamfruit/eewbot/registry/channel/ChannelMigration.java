@@ -343,28 +343,37 @@ public class ChannelMigration {
         };
     }
 
+    private static String nextArg(String[] args, int index, String flag) {
+        if (index >= args.length) {
+            Log.logger.error("Missing value for argument: {}", flag);
+            printUsage();
+            System.exit(1);
+        }
+        return args[index];
+    }
+
     private static MigrationConfig parseArguments(String[] args) {
         MigrationConfig config = new MigrationConfig();
 
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             switch (arg) {
-                case "--source" -> config.sourceType = args[++i];
-                case "--dest" -> config.destType = args[++i];
-                case "--source-path" -> config.sourceConfig.put("path", args[++i]);
-                case "--source-address" -> config.sourceConfig.put("address", args[++i]);
-                case "--source-host" -> config.sourceConfig.put("host", args[++i]);
-                case "--source-port" -> config.sourceConfig.put("port", args[++i]);
-                case "--source-database" -> config.sourceConfig.put("database", args[++i]);
-                case "--source-username" -> config.sourceConfig.put("username", args[++i]);
-                case "--source-password" -> config.sourceConfig.put("password", args[++i]);
-                case "--dest-path" -> config.destConfig.put("path", args[++i]);
-                case "--dest-address" -> config.destConfig.put("address", args[++i]);
-                case "--dest-host" -> config.destConfig.put("host", args[++i]);
-                case "--dest-port" -> config.destConfig.put("port", args[++i]);
-                case "--dest-database" -> config.destConfig.put("database", args[++i]);
-                case "--dest-username" -> config.destConfig.put("username", args[++i]);
-                case "--dest-password" -> config.destConfig.put("password", args[++i]);
+                case "--source" -> config.sourceType = nextArg(args, ++i, "--source");
+                case "--dest" -> config.destType = nextArg(args, ++i, "--dest");
+                case "--source-path" -> config.sourceConfig.put("path", nextArg(args, ++i, "--source-path"));
+                case "--source-address" -> config.sourceConfig.put("address", nextArg(args, ++i, "--source-address"));
+                case "--source-host" -> config.sourceConfig.put("host", nextArg(args, ++i, "--source-host"));
+                case "--source-port" -> config.sourceConfig.put("port", nextArg(args, ++i, "--source-port"));
+                case "--source-database" -> config.sourceConfig.put("database", nextArg(args, ++i, "--source-database"));
+                case "--source-username" -> config.sourceConfig.put("username", nextArg(args, ++i, "--source-username"));
+                case "--source-password" -> config.sourceConfig.put("password", nextArg(args, ++i, "--source-password"));
+                case "--dest-path" -> config.destConfig.put("path", nextArg(args, ++i, "--dest-path"));
+                case "--dest-address" -> config.destConfig.put("address", nextArg(args, ++i, "--dest-address"));
+                case "--dest-host" -> config.destConfig.put("host", nextArg(args, ++i, "--dest-host"));
+                case "--dest-port" -> config.destConfig.put("port", nextArg(args, ++i, "--dest-port"));
+                case "--dest-database" -> config.destConfig.put("database", nextArg(args, ++i, "--dest-database"));
+                case "--dest-username" -> config.destConfig.put("username", nextArg(args, ++i, "--dest-username"));
+                case "--dest-password" -> config.destConfig.put("password", nextArg(args, ++i, "--dest-password"));
                 case "--dry-run" -> config.dryRun = true;
                 default -> {
                     if (arg.startsWith("--")) {
