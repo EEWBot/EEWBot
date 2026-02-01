@@ -16,7 +16,7 @@ public class Channel extends ChannelBase {
         COMMAND_KEYS = Arrays.stream(Channel.class.getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(ChannelSetting.class))
                 .map(Field::getName)
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     @ChannelSetting(ChannelSettingType.BASE)
@@ -125,13 +125,24 @@ public class Channel extends ChannelBase {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
         Channel channel = (Channel) o;
-        return this.eewAlert == channel.eewAlert && this.eewPrediction == channel.eewPrediction && this.eewDecimation == channel.eewDecimation && this.quakeInfo == channel.quakeInfo && this.minIntensity == channel.minIntensity && Objects.equals(this.webhook, channel.webhook) && Objects.equals(this.lang, channel.lang);
+        return this.eewAlert == channel.eewAlert
+                && this.eewPrediction == channel.eewPrediction
+                && this.eewDecimation == channel.eewDecimation
+                && this.quakeInfo == channel.quakeInfo
+                && this.minIntensity == channel.minIntensity;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.eewAlert, this.eewPrediction, this.eewDecimation, this.quakeInfo, this.minIntensity, this.webhook, this.lang);
+        int result = super.hashCode();
+        result = 31 * result + (this.eewAlert ? 1 : 0);
+        result = 31 * result + (this.eewPrediction ? 1 : 0);
+        result = 31 * result + (this.eewDecimation ? 1 : 0);
+        result = 31 * result + (this.quakeInfo ? 1 : 0);
+        result = 31 * result + (this.minIntensity != null ? this.minIntensity.hashCode() : 0);
+        return result;
     }
 
     @Override

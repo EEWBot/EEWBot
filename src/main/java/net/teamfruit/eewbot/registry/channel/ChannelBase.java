@@ -22,13 +22,6 @@ public class ChannelBase {
         this.lang = lang;
     }
 
-    public ChannelBase(Long channelId, Long threadId, ChannelWebhook webhook, String lang) {
-        this.channelId = channelId;
-        this.threadId = threadId;
-        this.webhook = webhook;
-        this.lang = lang;
-    }
-
     public @Nullable Boolean isGuild() {
         return this.isGuild;
     }
@@ -97,7 +90,7 @@ public class ChannelBase {
         if (!Objects.equals(this.channelId, that.channelId)) return false;
         if (!Objects.equals(this.threadId, that.threadId)) return false;
         if (!Objects.equals(this.webhook, that.webhook)) return false;
-        return this.lang.equals(that.lang);
+        return Objects.equals(this.lang, that.lang);
     }
 
     @Override
@@ -107,7 +100,7 @@ public class ChannelBase {
         result = 31 * result + (this.channelId != null ? this.channelId.hashCode() : 0);
         result = 31 * result + (this.threadId != null ? this.threadId.hashCode() : 0);
         result = 31 * result + (this.webhook != null ? this.webhook.hashCode() : 0);
-        result = 31 * result + this.lang.hashCode();
+        result = 31 * result + (this.lang != null ? this.lang.hashCode() : 0);
         return result;
     }
 
