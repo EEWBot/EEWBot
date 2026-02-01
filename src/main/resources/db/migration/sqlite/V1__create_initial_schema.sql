@@ -1,10 +1,6 @@
--- SQLite: Refactor to Destination model (channels + threads as unified destinations)
+-- SQLite: Initial schema with destination model
 
--- Drop old tables
-DROP TABLE IF EXISTS channel_webhooks;
-DROP TABLE IF EXISTS channels;
-
--- Create new destinations table
+-- Destinations table (channels + threads as unified destinations)
 CREATE TABLE destinations (
     target_id INTEGER PRIMARY KEY,      -- channel_id or thread_id (destination)
     channel_id INTEGER NOT NULL,        -- always parent channel ID
@@ -24,6 +20,14 @@ CREATE TABLE destination_webhooks (
     target_id INTEGER PRIMARY KEY REFERENCES destinations(target_id) ON DELETE CASCADE,
     webhook_id INTEGER NOT NULL,
     token TEXT NOT NULL
+);
+
+-- Data migration tracking table
+CREATE TABLE data_migrations (
+    name TEXT PRIMARY KEY,
+    applied_at TEXT NOT NULL DEFAULT (datetime('now')),
+    checksum TEXT NOT NULL DEFAULT '',
+    meta TEXT
 );
 
 -- Indexes
