@@ -176,6 +176,26 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         this.jedisPool.jsonSet(CHANNEL_PREFIX + channelId, Path.of("$.guildId"), guildId);
     }
 
+    /**
+     * Parse a channel ID from a Redis key, handling malformed values safely.
+     *
+     * @param key the full Redis key (expected to start with CHANNEL_PREFIX)
+     * @return the parsed channel ID, or {@code null} if the key is invalid
+     */
+    private Long parseChannelIdFromKey(final String key) {
+        if (key == null || !key.startsWith(CHANNEL_PREFIX)) {
+            Log.log.warn("Unexpected key format (missing prefix) when parsing channel ID: {}", key);
+            return null;
+        }
+        final String idPart = Strings.CS.removeStart(key, CHANNEL_PREFIX);
+        try {
+            return Long.parseLong(idPart);
+        } catch (NumberFormatException e) {
+            Log.log.warn("Failed to parse channel ID from key: {}", key, e);
+            return null;
+        }
+    }
+
     @Override
     public List<Long> getWebhookAbsentChannels() {
         List<Long> list = new ArrayList<>();
@@ -185,7 +205,12 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         long cursorId;
         do {
             cursorId = aggregationResult.getCursorId();
-            aggregationResult.getRows().forEach(row -> list.add(Long.parseLong(Strings.CS.removeStart(row.getString("__key"), CHANNEL_PREFIX))));
+            aggregationResult.getRows().forEach(row -> {
+                Long channelId = parseChannelIdFromKey(row.getString("__key"));
+                if (channelId != null) {
+                    list.add(channelId);
+                }
+            });
             if (cursorId != 0)
                 aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
         } while (cursorId != 0);
@@ -204,7 +229,12 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         long cursorId;
         do {
             cursorId = aggregationResult.getCursorId();
-            aggregationResult.getRows().forEach(row -> list.add(Long.parseLong(Strings.CS.removeStart(row.getString("__key"), CHANNEL_PREFIX))));
+            aggregationResult.getRows().forEach(row -> {
+                Long channelId = parseChannelIdFromKey(row.getString("__key"));
+                if (channelId != null) {
+                    list.add(channelId);
+                }
+            });
             if (cursorId != 0)
                 aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
         } while (cursorId != 0);
@@ -219,7 +249,12 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         long cursorId;
         do {
             cursorId = aggregationResult.getCursorId();
-            aggregationResult.getRows().forEach(row -> consumer.accept(Long.parseLong(Strings.CS.removeStart(row.getString("__key"), CHANNEL_PREFIX))));
+            aggregationResult.getRows().forEach(row -> {
+                Long channelId = parseChannelIdFromKey(row.getString("__key"));
+                if (channelId != null) {
+                    consumer.accept(channelId);
+                }
+            });
             if (cursorId != 0)
                 aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
         } while (cursorId != 0);
