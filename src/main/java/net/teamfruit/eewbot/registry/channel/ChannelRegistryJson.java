@@ -111,6 +111,16 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
+    public List<Long> getWebhookAbsentChannels(ChannelFilter filter) {
+        return getElement().entrySet()
+                .stream()
+                .filter(entry -> filter.test(entry.getValue()))
+                .filter(entry -> entry.getValue().getWebhook() == null)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
         getElement().entrySet().stream()
                 .filter(entry -> filter.test(entry.getValue()))

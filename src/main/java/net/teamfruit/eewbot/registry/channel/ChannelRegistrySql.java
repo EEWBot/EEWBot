@@ -11,6 +11,9 @@ import org.jooq.impl.DSL;
 import org.sqlite.SQLiteDataSource;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -83,9 +86,10 @@ public class ChannelRegistrySql implements ChannelRegistry {
     public static ChannelRegistrySql forSQLite(Path dbPath) {
         SQLiteDataSource ds = new SQLiteDataSource();
         ds.setUrl("jdbc:sqlite:" + dbPath);
-        DSLContext dsl = DSL.using(ds, SQLDialect.SQLITE);
+        DataSource wrapped = wrapSqliteDataSource(ds);
+        DSLContext dsl = DSL.using(wrapped, SQLDialect.SQLITE);
         Log.logger.info("Initialized SQLite channel registry at: {}", dbPath);
-        return new ChannelRegistrySql(dsl, ds, SQLDialect.SQLITE);
+        return new ChannelRegistrySql(dsl, wrapped, SQLDialect.SQLITE);
     }
 
     public static ChannelRegistrySql forPostgreSQL(ConfigV2.PostgreSQL config) {
@@ -290,6 +294,17 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     @Override
+    public List<Long> getWebhookAbsentChannels(ChannelFilter filter) {
+        Condition condition = buildCondition(filter);
+        return this.dsl.select(D_TARGET_ID)
+                .from(D)
+                .leftJoin(W).on(D_TARGET_ID.eq(W_TARGET_ID))
+                .where(condition)
+                .and(W_TARGET_ID.isNull())
+                .fetch(0, Long.class);
+    }
+
+    @Override
     public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
         Condition condition = buildCondition(filter);
 
@@ -364,6 +379,71 @@ public class ChannelRegistrySql implements ChannelRegistry {
         if (this.dataSource instanceof HikariDataSource) {
             ((HikariDataSource) this.dataSource).close();
             Log.logger.info("Closed PostgreSQL connection pool");
+        }
+    }
+
+    private static DataSource wrapSqliteDataSource(DataSource delegate) {
+        return new DataSource() {
+            @Override
+            public Connection getConnection() throws SQLException {
+                Connection connection = delegate.getConnection();
+                applySqlitePragmas(connection);
+                return connection;
+            }
+
+            @Override
+            public Connection getConnection(String username, String password) throws SQLException {
+                Connection connection = delegate.getConnection(username, password);
+                applySqlitePragmas(connection);
+                return connection;
+            }
+
+            @Override
+            public <T> T unwrap(Class<T> iface) throws SQLException {
+                return delegate.unwrap(iface);
+            }
+
+            @Override
+            public boolean isWrapperFor(Class<?> iface) throws SQLException {
+                return delegate.isWrapperFor(iface);
+            }
+
+            @Override
+            public java.io.PrintWriter getLogWriter() throws SQLException {
+                return delegate.getLogWriter();
+            }
+
+            @Override
+            public void setLogWriter(java.io.PrintWriter out) throws SQLException {
+                delegate.setLogWriter(out);
+            }
+
+            @Override
+            public void setLoginTimeout(int seconds) throws SQLException {
+                delegate.setLoginTimeout(seconds);
+            }
+
+            @Override
+            public int getLoginTimeout() throws SQLException {
+                return delegate.getLoginTimeout();
+            }
+
+            @Override
+            public java.util.logging.Logger getParentLogger() {
+                try {
+                    return delegate.getParentLogger();
+                } catch (java.sql.SQLFeatureNotSupportedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+    }
+
+    private static void applySqlitePragmas(Connection connection) throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("PRAGMA journal_mode=WAL");
+            stmt.execute("PRAGMA busy_timeout=5000");
+            stmt.execute("PRAGMA foreign_keys=ON");
         }
     }
 

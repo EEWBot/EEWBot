@@ -1,5 +1,4 @@
 -- SQLite: INTEGER for booleans
-PRAGMA journal_mode=WAL;
 
 -- Main channels table
 CREATE TABLE IF NOT EXISTS channels (

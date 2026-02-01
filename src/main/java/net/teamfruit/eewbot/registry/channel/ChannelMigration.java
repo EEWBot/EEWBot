@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -93,6 +94,8 @@ public class ChannelMigration {
                 } catch (Exception e) {
                     throw new RuntimeException("Failed to start exclusive transaction", e);
                 }
+            } else if (dest.getDialect() == org.jooq.SQLDialect.POSTGRES) {
+                tx.fetch("SELECT pg_advisory_xact_lock(?)", 0x454557424F54L);
             }
 
             Table<?> dataMigrations = table(name("data_migrations"));
@@ -114,13 +117,13 @@ public class ChannelMigration {
 
             if (dest.getDialect() == org.jooq.SQLDialect.SQLITE) {
                 tx.insertInto(dataMigrations)
-                        .columns(nameField, field(name("applied_at")))
-                        .values(migrationName, LocalDateTime.now().toString())
+                        .columns(nameField, field(name("applied_at")), field(name("checksum")), field(name("meta")))
+                        .values(migrationName, LocalDateTime.now().toString(), "", null)
                         .execute();
             } else {
                 tx.insertInto(dataMigrations)
-                        .columns(nameField, field(name("applied_at")))
-                        .values(migrationName, LocalDateTime.now())
+                        .columns(nameField, field(name("applied_at")), field(name("checksum")), field(name("meta")))
+                        .values(migrationName, OffsetDateTime.now(), "", null)
                         .execute();
             }
 
@@ -183,6 +186,10 @@ public class ChannelMigration {
     }
 
     private static void migrateChannels(List<Map.Entry<Long, Channel>> entries, ChannelRegistry destination) {
+        if (destination instanceof ChannelRegistrySql) {
+            migrateChannelsSql(entries, (ChannelRegistrySql) destination);
+            return;
+        }
         int count = 0;
         for (Map.Entry<Long, Channel> entry : entries) {
             destination.computeIfAbsent(entry.getKey(), k -> entry.getValue());
@@ -198,6 +205,103 @@ public class ChannelMigration {
         } catch (IOException e) {
             Log.logger.error("Failed to save destination registry", e);
         }
+    }
+
+    private static void migrateChannelsSql(List<Map.Entry<Long, Channel>> entries, ChannelRegistrySql destination) {
+        DSLContext dsl = destination.getDsl();
+
+        Table<?> destinations = table(name("destinations"));
+        Table<?> webhooks = table(name("destination_webhooks"));
+
+        Field<Long> targetIdField = field(name("target_id"), Long.class);
+        Field<Long> channelIdField = field(name("channel_id"), Long.class);
+        Field<Long> threadIdField = field(name("thread_id"), Long.class);
+        Field<Integer> isGuildField = field(name("is_guild"), Integer.class);
+        Field<Long> guildIdField = field(name("guild_id"), Long.class);
+        Field<Integer> eewAlertField = field(name("eew_alert"), Integer.class);
+        Field<Integer> eewPredictionField = field(name("eew_prediction"), Integer.class);
+        Field<Integer> eewDecimationField = field(name("eew_decimation"), Integer.class);
+        Field<Integer> quakeInfoField = field(name("quake_info"), Integer.class);
+        Field<Integer> minIntensityField = field(name("min_intensity"), Integer.class);
+        Field<String> langField = field(name("lang"), String.class);
+        Field<Long> webhookIdField = field(name("webhook_id"), Long.class);
+        Field<String> tokenField = field(name("token"), String.class);
+
+        int count = 0;
+        for (Map.Entry<Long, Channel> entry : entries) {
+            Channel channel = entry.getValue();
+            Long channelId = channel.getChannelId();
+            Long threadId = channel.getThreadId();
+            long targetId = threadId != null ? threadId : (channelId != null ? channelId : entry.getKey());
+            long effectiveChannelId = channelId != null ? channelId : targetId;
+
+            Integer minIntensity = channel.getMinIntensity() != null
+                    ? channel.getMinIntensity().ordinal()
+                    : SeismicIntensity.ONE.ordinal();
+            boolean isGuild = channel.isGuild() != null && channel.isGuild();
+
+            dsl.insertInto(destinations)
+                    .columns(
+                            targetIdField,
+                            channelIdField,
+                            threadIdField,
+                            isGuildField,
+                            guildIdField,
+                            eewAlertField,
+                            eewPredictionField,
+                            eewDecimationField,
+                            quakeInfoField,
+                            minIntensityField,
+                            langField
+                    )
+                    .values(
+                            targetId,
+                            effectiveChannelId,
+                            threadId,
+                            isGuild ? 1 : 0,
+                            channel.getGuildId(),
+                            channel.isEewAlert() ? 1 : 0,
+                            channel.isEewPrediction() ? 1 : 0,
+                            channel.isEewDecimation() ? 1 : 0,
+                            channel.isQuakeInfo() ? 1 : 0,
+                            minIntensity,
+                            channel.getLang()
+                    )
+                    .onConflict(targetIdField)
+                    .doUpdate()
+                    .set(channelIdField, effectiveChannelId)
+                    .set(threadIdField, threadId)
+                    .set(isGuildField, isGuild ? 1 : 0)
+                    .set(guildIdField, channel.getGuildId())
+                    .set(eewAlertField, channel.isEewAlert() ? 1 : 0)
+                    .set(eewPredictionField, channel.isEewPrediction() ? 1 : 0)
+                    .set(eewDecimationField, channel.isEewDecimation() ? 1 : 0)
+                    .set(quakeInfoField, channel.isQuakeInfo() ? 1 : 0)
+                    .set(minIntensityField, minIntensity)
+                    .set(langField, channel.getLang())
+                    .execute();
+
+            if (channel.getWebhook() != null) {
+                dsl.insertInto(webhooks)
+                        .columns(targetIdField, webhookIdField, tokenField)
+                        .values(targetId, channel.getWebhook().getId(), channel.getWebhook().getToken())
+                        .onConflict(targetIdField)
+                        .doUpdate()
+                        .set(webhookIdField, channel.getWebhook().getId())
+                        .set(tokenField, channel.getWebhook().getToken())
+                        .execute();
+            } else {
+                dsl.deleteFrom(webhooks)
+                        .where(targetIdField.eq(targetId))
+                        .execute();
+            }
+
+            count++;
+            if (count % 100 == 0) {
+                Log.logger.info("Migrated {} / {} channels", count, entries.size());
+            }
+        }
+        Log.logger.info("Migrated {} channels to destination", count);
     }
 
     private static ChannelRegistry createRegistry(String type, Map<String, String> config) throws IOException {

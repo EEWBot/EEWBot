@@ -188,6 +188,25 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
+    public List<Long> getWebhookAbsentChannels(ChannelFilter filter) {
+        String base = filter != null ? filter.toQueryString() : "";
+        String query = base.isEmpty() ? "-@webhookId:[0 inf]" : base + " -@webhookId:[0 inf]";
+
+        List<Long> list = new ArrayList<>();
+        AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder(query)
+                .load("__key")
+                .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
+        long cursorId;
+        do {
+            cursorId = aggregationResult.getCursorId();
+            aggregationResult.getRows().forEach(row -> list.add(Long.parseLong(Strings.CS.removeStart(row.getString("__key"), CHANNEL_PREFIX))));
+            if (cursorId != 0)
+                aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
+        } while (cursorId != 0);
+        return list;
+    }
+
+    @Override
     public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
         AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder(filter.toQueryString())
                 .load("__key")

@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.registry.channel;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -33,6 +34,20 @@ public interface ChannelRegistry {
     void setGuildId(long channelId, long guildId);
 
     List<Long> getWebhookAbsentChannels();
+
+    default List<Long> getWebhookAbsentChannels(ChannelFilter filter) {
+        if (filter == null) {
+            return getWebhookAbsentChannels();
+        }
+        List<Long> results = new ArrayList<>();
+        actionOnChannels(filter, channelId -> {
+            Channel channel = get(channelId);
+            if (channel != null && channel.getWebhook() == null) {
+                results.add(channelId);
+            }
+        });
+        return results;
+    }
 
     void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer);
 
