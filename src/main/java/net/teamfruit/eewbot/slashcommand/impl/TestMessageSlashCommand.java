@@ -86,7 +86,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                             .build()).then();
                 }
             }
-            return executeWebhook(event.getClient().getCoreResources().getRouter(), channel.getWebhook().getId(), channel.getWebhook().getToken(), true, channel.getWebhook().getThreadId(),
+            return executeWebhook(event.getClient().getCoreResources().getRouter(), channel.getWebhook().getId(), channel.getWebhook().getToken(), true, channel.getThreadId(),
                     MultipartRequest.ofRequest(WebhookExecuteRequest.builder()
                             .addEmbed(SlashCommandUtils.createEmbed(lang)
                                     .title("eewbot.scmd.testmessage.title")

@@ -16,6 +16,12 @@ public class ChannelFilter {
     private boolean isGuildPresent;
     private long guildId;
     private boolean guildIdPresent;
+    private long channelId;
+    private boolean channelIdPresent;
+    private Long threadId;
+    private boolean threadIdPresent;
+    private Boolean isThread;
+    private boolean isThreadPresent;
     private boolean eewAlert;
     private boolean eewAlertPresent;
     private boolean eewPrediction;
@@ -35,6 +41,18 @@ public class ChannelFilter {
 
     public boolean isGuildIdPresent() {
         return this.guildIdPresent;
+    }
+
+    public boolean isChannelIdPresent() {
+        return this.channelIdPresent;
+    }
+
+    public boolean isThreadIdPresent() {
+        return this.threadIdPresent;
+    }
+
+    public boolean isIsThreadPresent() {
+        return this.isThreadPresent;
     }
 
     public boolean isEewAlertPresent() {
@@ -67,6 +85,18 @@ public class ChannelFilter {
 
     public long getGuildId() {
         return this.guildId;
+    }
+
+    public long getChannelId() {
+        return this.channelId;
+    }
+
+    public Long getThreadId() {
+        return this.threadId;
+    }
+
+    public Boolean getIsThread() {
+        return this.isThread;
     }
 
     public boolean getEewAlert() {
@@ -113,6 +143,25 @@ public class ChannelFilter {
         if (this.guildIdPresent) {
             conditions.add(field(name("guild_id"), Long.class).eq(this.guildId));
         }
+        if (this.channelIdPresent) {
+            conditions.add(field(name("channel_id"), Long.class).eq(this.channelId));
+        }
+        if (this.threadIdPresent) {
+            Field<Long> f = field(name("thread_id"), Long.class);
+            if (this.threadId != null) {
+                conditions.add(f.eq(this.threadId));
+            } else {
+                conditions.add(f.isNull());
+            }
+        }
+        if (this.isThreadPresent) {
+            Field<Long> f = field(name("thread_id"), Long.class);
+            if (this.isThread != null && this.isThread) {
+                conditions.add(f.isNotNull());
+            } else if (this.isThread != null) {
+                conditions.add(f.isNull());
+            }
+        }
         if (this.eewAlertPresent) {
             conditions.add(field(name("eew_alert"), Integer.class).eq(this.eewAlert ? 1 : 0));
         }
@@ -140,6 +189,15 @@ public class ChannelFilter {
             return false;
         if (this.guildIdPresent && !Objects.equals(channel.getGuildId(), this.guildId))
             return false;
+        if (this.channelIdPresent && !Objects.equals(channel.getChannelId(), this.channelId))
+            return false;
+        if (this.threadIdPresent && !Objects.equals(channel.getThreadId(), this.threadId))
+            return false;
+        if (this.isThreadPresent) {
+            boolean channelIsThread = channel.getThreadId() != null;
+            if (this.isThread != null && this.isThread != channelIsThread)
+                return false;
+        }
         if (this.eewAlertPresent && channel.isEewAlert() != this.eewAlert)
             return false;
         if (this.eewPredictionPresent && channel.isEewPrediction() != this.eewPrediction)
@@ -165,6 +223,20 @@ public class ChannelFilter {
         }
         if (this.guildIdPresent)
             builder.append("@guildId:[").append(this.guildId).append(" ").append(this.guildId).append("] ");
+        if (this.channelIdPresent)
+            builder.append("@channelId:[").append(this.channelId).append(" ").append(this.channelId).append("] ");
+        if (this.threadIdPresent) {
+            if (this.threadId != null)
+                builder.append("@threadId:[").append(this.threadId).append(" ").append(this.threadId).append("] ");
+            else
+                builder.append("-@threadId:[0 inf] ");
+        }
+        if (this.isThreadPresent) {
+            if (this.isThread != null && this.isThread)
+                builder.append("@threadId:[0 inf] ");
+            else if (this.isThread != null)
+                builder.append("-@threadId:[0 inf] ");
+        }
         if (this.eewAlertPresent)
             builder.append("@eewAlert:{").append(this.eewAlert).append("} ");
         if (this.eewPredictionPresent)
@@ -197,6 +269,24 @@ public class ChannelFilter {
         public Builder guildId(long guildId) {
             this.filter.guildId = guildId;
             this.filter.guildIdPresent = true;
+            return this;
+        }
+
+        public Builder channelId(long channelId) {
+            this.filter.channelId = channelId;
+            this.filter.channelIdPresent = true;
+            return this;
+        }
+
+        public Builder threadId(Long threadId) {
+            this.filter.threadId = threadId;
+            this.filter.threadIdPresent = true;
+            return this;
+        }
+
+        public Builder isThread(boolean isThread) {
+            this.filter.isThread = isThread;
+            this.filter.isThreadPresent = true;
             return this;
         }
 

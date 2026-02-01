@@ -42,6 +42,8 @@ public class EEWBot {
     public static final Gson GSON = new GsonBuilder()
             .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensitySerializer())
             .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensityDeserializer())
+            .registerTypeAdapter(Channel.class, new ChannelDeserializer())
+            .registerTypeAdapter(ChannelWebhook.class, new ChannelWebhookDeserializer())
             .create();
     public static final Gson GSON_PRETTY = new GsonBuilder()
             .setPrettyPrinting()

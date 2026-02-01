@@ -46,6 +46,8 @@ public class ChannelRegistryRedis implements ChannelRegistry {
 
         try {
             this.jedisPool.ftInfo("channel-index");
+            // Migrate old format in existing Redis data
+            migrateOldFormat();
         } catch (JedisDataException e) {
             Log.logger.info("Creating redis index");
             createJedisIndex();
@@ -65,8 +67,40 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         }
     }
 
+    private void migrateOldFormat() {
+        // Scan all channel entries and migrate old format
+        List<String> keys = new ArrayList<>();
+        AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder("*")
+                .load("__key")
+                .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
+        long cursorId;
+        do {
+            cursorId = aggregationResult.getCursorId();
+            aggregationResult.getRows().forEach(row -> keys.add(row.getString("__key")));
+            if (cursorId != 0)
+                aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
+        } while (cursorId != 0);
+
+        boolean migrated = false;
+        for (String key : keys) {
+            Channel channel = this.jedisPool.jsonGet(key, Channel.class);
+            if (channel != null && channel.getChannelId() == null) {
+                // Old format: set channelId to targetId
+                long targetId = Long.parseLong(Strings.CS.removeStart(key, CHANNEL_PREFIX));
+                channel.setChannelId(targetId);
+                this.jedisPool.jsonSet(key, Path.ROOT_PATH, channel);
+                migrated = true;
+            }
+        }
+        if (migrated) {
+            Log.logger.info("Migrated old Redis channel format to destination model");
+        }
+    }
+
     private void createJedisIndex() {
         Schema schema = new Schema()
+                .addNumericField("$.channelId").as("channelId")
+                .addNumericField("$.threadId").as("threadId")
                 .addTagField("$.isGuild").as("isGuild")
                 .addNumericField("$.guildId").as("guildId")
                 .addTagField("$.eewAlert").as("eewAlert")
@@ -74,8 +108,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
                 .addTagField("$.eewDecimation").as("eewDecimation")
                 .addTagField("$.quakeInfo").as("quakeInfo")
                 .addNumericField("$.minIntensity").as("minIntensity")
-                .addNumericField("$.webhook.id").as("webhookId")
-                .addNumericField("$.webhook.threadId").as("webhookThreadId");
+                .addNumericField("$.webhook.id").as("webhookId");
         IndexDefinition indexDefinition = new IndexDefinition(IndexDefinition.Type.JSON)
                 .setPrefixes(CHANNEL_PREFIX);
         this.jedisPool.ftCreate(CHANNEL_INDEX, IndexOptions.defaultOptions().setDefinition(indexDefinition), schema);
@@ -177,17 +210,25 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         map.put(false, webhookAbsent);
 
         AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder(filter.toQueryString())
-                .load("__key", "$.isGuild", "$.webhook", "$.lang")
+                .load("__key", "$.isGuild", "$.guildId", "$.channelId", "$.threadId", "$.webhook", "$.lang")
                 .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
         long cursorId;
         do {
             cursorId = aggregationResult.getCursorId();
             aggregationResult.getRows().forEach(row -> {
-                long channelId = Long.parseLong(Strings.CS.removeStart(row.getString("__key"), CHANNEL_PREFIX));
-                if (row.get("$.webhook") != null)
-                    webhookPresent.put(channelId, new ChannelBase(EEWBot.GSON.fromJson(row.getString("$.webhook"), ChannelWebhook.class), row.getString("$.lang")));
-                else
-                    webhookAbsent.put(channelId, new ChannelBase(null, row.getString("$.lang")));
+                long targetId = Long.parseLong(Strings.CS.removeStart(row.getString("__key"), CHANNEL_PREFIX));
+                boolean isGuild = row.get("$.isGuild") != null && Boolean.parseBoolean(row.getString("$.isGuild"));
+                Long guildId = row.get("$.guildId") != null ? Long.parseLong(row.getString("$.guildId")) : null;
+                Long channelId = row.get("$.channelId") != null ? Long.parseLong(row.getString("$.channelId")) : null;
+                Long threadId = row.get("$.threadId") != null ? Long.parseLong(row.getString("$.threadId")) : null;
+                String lang = row.getString("$.lang");
+
+                if (row.get("$.webhook") != null) {
+                    ChannelWebhook webhook = EEWBot.GSON.fromJson(row.getString("$.webhook"), ChannelWebhook.class);
+                    webhookPresent.put(targetId, new ChannelBase(isGuild, guildId, channelId, threadId, webhook, lang));
+                } else {
+                    webhookAbsent.put(targetId, new ChannelBase(isGuild, guildId, channelId, threadId, null, lang));
+                }
             });
             if (cursorId != 0)
                 aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
@@ -196,10 +237,19 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
-    public boolean isWebhookForThread(long webhookId, long threadId) {
-        Query query = new Query("@webhookId:[" + webhookId + " " + webhookId + "] -@webhookThreadId:[" + threadId + " " + threadId + "]").setNoContent();
+    public boolean isWebhookForThread(long webhookId, long targetId) {
+        // Check if this webhook is used by a different destination
+        Query query = new Query("@webhookId:[" + webhookId + " " + webhookId + "]").setNoContent();
         SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
-        return searchResult.getDocuments().isEmpty();
+
+        // If webhook is used by any destination other than targetId, return false
+        for (var doc : searchResult.getDocuments()) {
+            long docTargetId = Long.parseLong(Strings.CS.removeStart(doc.getId(), CHANNEL_PREFIX));
+            if (docTargetId != targetId) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

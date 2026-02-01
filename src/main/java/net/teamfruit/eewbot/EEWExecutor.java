@@ -219,8 +219,7 @@ public class EEWExecutor {
                                                                 .name(name)
                                                                 .build(), "Create EEWBot webhook");
                                             }).flatMap(webhookData -> Mono.fromRunnable(() -> {
-                                                boolean isThread = guildChannel instanceof ThreadChannel;
-                                                ChannelWebhook webhook = new ChannelWebhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
+                                                ChannelWebhook webhook = new ChannelWebhook(webhookData.id().asLong(), webhookData.token().get());
                                                 this.channels.setWebhook(channelId, webhook);
                                                 try {
                                                     this.channels.save();

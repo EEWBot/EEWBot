@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.registry.channel;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.JsonRegistry;
 
@@ -20,6 +21,29 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     public ChannelRegistryJson(Path path, Gson gson) {
         super(path, ConcurrentHashMap::new, new TypeToken<ConcurrentHashMap<Long, Channel>>() {
         }.getType(), gson);
+    }
+
+    @Override
+    public void load(boolean createIfAbsent) throws IOException {
+        super.load(createIfAbsent);
+        // Migrate old format: if channelId is null, use target_id as fallback
+        migrateOldFormat();
+    }
+
+    private void migrateOldFormat() {
+        boolean migrated = false;
+        for (Map.Entry<Long, Channel> entry : getElement().entrySet()) {
+            Long targetId = entry.getKey();
+            Channel channel = entry.getValue();
+            if (channel.getChannelId() == null) {
+                // Old format detected: set channelId to targetId (parent unknown)
+                channel.setChannelId(targetId);
+                migrated = true;
+            }
+        }
+        if (migrated) {
+            Log.logger.info("Migrated old channel format to destination model");
+        }
     }
 
     @Override
@@ -102,14 +126,15 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
-    public boolean isWebhookForThread(long webhookId, long threadId) {
+    public boolean isWebhookForThread(long webhookId, long targetId) {
+        // Check if this webhook is used by a different destination
         return getElement().entrySet().stream().noneMatch(entry -> {
+            Long entryTargetId = entry.getKey();
             ChannelWebhook webhook = entry.getValue().getWebhook();
             if (webhook == null || webhook.getId() != webhookId)
                 return false;
-            if (webhook.getThreadId() == null)
-                return true;
-            return webhook.getThreadId() != threadId;
+            // If this is a different destination with the same webhook, return true (conflict)
+            return !entryTargetId.equals(targetId);
         });
     }
 

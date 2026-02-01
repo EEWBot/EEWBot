@@ -55,8 +55,10 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
-        bot.getChannels().computeIfAbsent(event.getInteraction().getChannelId().asLong(), key ->
-                Channel.createDefault(event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null), lang));
+        long targetId = event.getInteraction().getChannelId().asLong();
+        Long guildId = event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null);
+        bot.getChannels().computeIfAbsent(targetId, key ->
+                Channel.createDefault(guildId, targetId, null, lang));
         return event.reply()
                 .withEphemeral(true)
                 .withComponents(buildActionRows(bot, lang, event.getInteraction().getGuildId().isPresent()));

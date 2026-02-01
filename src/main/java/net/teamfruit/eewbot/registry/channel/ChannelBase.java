@@ -8,17 +8,23 @@ public class ChannelBase {
 
     protected Boolean isGuild;
     protected Long guildId;
+    protected Long channelId;
+    protected Long threadId;
     protected ChannelWebhook webhook;
     protected String lang;
 
-    public ChannelBase(boolean isGuild, Long guildId, ChannelWebhook webhook, String lang) {
+    public ChannelBase(boolean isGuild, Long guildId, Long channelId, Long threadId, ChannelWebhook webhook, String lang) {
         this.isGuild = isGuild;
         this.guildId = guildId;
+        this.channelId = channelId;
+        this.threadId = threadId;
         this.webhook = webhook;
         this.lang = lang;
     }
 
-    public ChannelBase(ChannelWebhook webhook, String lang) {
+    public ChannelBase(Long channelId, Long threadId, ChannelWebhook webhook, String lang) {
+        this.channelId = channelId;
+        this.threadId = threadId;
         this.webhook = webhook;
         this.lang = lang;
     }
@@ -55,6 +61,30 @@ public class ChannelBase {
         this.lang = lang;
     }
 
+    public @Nullable Long getChannelId() {
+        return this.channelId;
+    }
+
+    void setChannelId(Long channelId) {
+        this.channelId = channelId;
+    }
+
+    public @Nullable Long getThreadId() {
+        return this.threadId;
+    }
+
+    void setThreadId(Long threadId) {
+        this.threadId = threadId;
+    }
+
+    public @Nullable String getWebhookPath() {
+        if (this.webhook == null) return null;
+        if (this.threadId != null) {
+            return "/" + this.webhook.getId() + "/" + this.webhook.getToken() + "?thread_id=" + this.threadId;
+        }
+        return "/" + this.webhook.getId() + "/" + this.webhook.getToken();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -64,6 +94,8 @@ public class ChannelBase {
 
         if (!Objects.equals(this.isGuild, that.isGuild)) return false;
         if (!Objects.equals(this.guildId, that.guildId)) return false;
+        if (!Objects.equals(this.channelId, that.channelId)) return false;
+        if (!Objects.equals(this.threadId, that.threadId)) return false;
         if (!Objects.equals(this.webhook, that.webhook)) return false;
         return this.lang.equals(that.lang);
     }
@@ -72,6 +104,8 @@ public class ChannelBase {
     public int hashCode() {
         int result = this.isGuild != null ? this.isGuild.hashCode() : 0;
         result = 31 * result + (this.guildId != null ? this.guildId.hashCode() : 0);
+        result = 31 * result + (this.channelId != null ? this.channelId.hashCode() : 0);
+        result = 31 * result + (this.threadId != null ? this.threadId.hashCode() : 0);
         result = 31 * result + (this.webhook != null ? this.webhook.hashCode() : 0);
         result = 31 * result + this.lang.hashCode();
         return result;
@@ -82,6 +116,8 @@ public class ChannelBase {
         return "ChannelBase{" +
                 "isGuild=" + this.isGuild +
                 ", guildId=" + this.guildId +
+                ", channelId=" + this.channelId +
+                ", threadId=" + this.threadId +
                 ", webhook=" + this.webhook +
                 ", lang='" + this.lang + '\'' +
                 '}';

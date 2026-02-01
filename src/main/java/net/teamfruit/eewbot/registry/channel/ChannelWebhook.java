@@ -1,23 +1,15 @@
 package net.teamfruit.eewbot.registry.channel;
 
-import reactor.util.annotation.Nullable;
-
 import java.util.Objects;
 
 public class ChannelWebhook {
 
     private long id;
     private String token;
-    private Long threadId;
-
-    public ChannelWebhook(long id, String token, Long threadId) {
-        this.id = id;
-        this.token = token;
-        this.threadId = threadId;
-    }
 
     public ChannelWebhook(long id, String token) {
-        this(id, token, null);
+        this.id = id;
+        this.token = token;
     }
 
     public long getId() {
@@ -36,28 +28,12 @@ public class ChannelWebhook {
         this.token = token;
     }
 
-    public @Nullable Long getThreadId() {
-        return this.threadId;
-    }
-
-    void setThreadId(Long threadId) {
-        this.threadId = threadId;
-    }
-
     public String getPath() {
-        if (this.threadId != null) {
-            return "/" + this.id + "/" + this.token + "?thread_id=" + this.threadId;
-        } else {
-            return "/" + this.id + "/" + this.token;
-        }
+        return "/" + this.id + "/" + this.token;
     }
 
     public String getUrl() {
-        if (this.threadId != null) {
-            return "https://discord.com/api/webhooks/" + this.id + "/" + this.token + "?thread_id=" + this.threadId;
-        } else {
-            return "https://discord.com/api/webhooks/" + this.id + "/" + this.token;
-        }
+        return "https://discord.com/api/webhooks/" + this.id + "/" + this.token;
     }
 
     @Override
@@ -65,12 +41,12 @@ public class ChannelWebhook {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ChannelWebhook webhook = (ChannelWebhook) o;
-        return Objects.equals(this.id, webhook.id) && Objects.equals(this.token, webhook.token) && Objects.equals(this.threadId, webhook.threadId);
+        return Objects.equals(this.id, webhook.id) && Objects.equals(this.token, webhook.token);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.id, this.token, this.threadId);
+        return Objects.hash(this.id, this.token);
     }
 
     @Override
@@ -78,7 +54,6 @@ public class ChannelWebhook {
         return "Webhook{" +
                 "id=" + this.id +
                 ", token='" + this.token + '\'' +
-                ", threadId=" + this.threadId +
                 '}';
     }
 }
