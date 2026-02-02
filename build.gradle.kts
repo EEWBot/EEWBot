@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.jooq)
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
+    implementation(libs.caffeine)
 
     // Test dependencies
     testImplementation(libs.junit.jupiter)

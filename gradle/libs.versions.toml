@@ -22,6 +22,7 @@ postgresql = "42.7.1"
 hikaricp = "5.1.0"
 jooq = "3.19.3"
 flyway = "10.8.1"
+caffeine = "3.1.8"
 
 [libraries]
 ch-qos-logback-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "ch-qos-logback-logback-classic" }
@@ -45,6 +46,7 @@ hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
 jooq = { module = "org.jooq:jooq", version.ref = "jooq" }
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
 
 [plugins]
 shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar" }

@@ -184,14 +184,14 @@ public class ChannelRegistryRedis implements ChannelRegistry {
      */
     private Long parseChannelIdFromKey(final String key) {
         if (key == null || !key.startsWith(CHANNEL_PREFIX)) {
-            Log.log.warn("Unexpected key format (missing prefix) when parsing channel ID: {}", key);
+            Log.logger.warn("Unexpected key format (missing prefix) when parsing channel ID: {}", key);
             return null;
         }
         final String idPart = Strings.CS.removeStart(key, CHANNEL_PREFIX);
         try {
             return Long.parseLong(idPart);
         } catch (NumberFormatException e) {
-            Log.log.warn("Failed to parse channel ID from key: {}", key, e);
+            Log.logger.warn("Failed to parse channel ID from key: {}", key, e);
             return null;
         }
     }

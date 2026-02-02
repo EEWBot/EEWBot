@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -56,10 +57,12 @@ public class EEWBot {
 
     private final JsonRegistry<ConfigV2> config = new JsonRegistry<>(getConfigPath(), ConfigV2::new, ConfigV2.class, GSON_PRETTY);
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
+    private final ExecutorService snapshotReloadExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "eewbot-snapshot-reload"));
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private GatewayDiscordClient gateway;
     private ChannelRegistry channels;
+    private RevisionPoller revisionPoller;
     private I18n i18n;
     private QuakeInfoStore quakeInfoStore;
     private RendererQueryFactory rendererQueryFactory;
@@ -89,16 +92,16 @@ public class EEWBot {
         String dbType = getConfig().getDatabase().getType();
 
         if ("postgresql".equalsIgnoreCase(dbType)) {
-            ChannelRegistrySql registry = ChannelRegistrySql.forPostgreSQL(getConfig().getDatabase().getPostgresql());
-            DatabaseInitializer.migrate(registry.getDataSource(), registry.getDialect());
-            this.channels = registry;
+            ChannelRegistrySql sqlRegistry = ChannelRegistrySql.forPostgreSQL(getConfig().getDatabase().getPostgresql());
+            DatabaseInitializer.migrate(sqlRegistry.getDataSource(), sqlRegistry.getDialect());
+            this.channels = initializeCachedRegistry(sqlRegistry);
         } else if ("sqlite".equalsIgnoreCase(dbType)) {
             Path sqlitePath = DATA_DIRECTORY != null
                     ? Paths.get(DATA_DIRECTORY, getConfig().getDatabase().getSqlite().getPath())
                     : Paths.get(getConfig().getDatabase().getSqlite().getPath());
-            ChannelRegistrySql registry = ChannelRegistrySql.forSQLite(sqlitePath);
-            DatabaseInitializer.migrate(registry.getDataSource(), registry.getDialect());
-            this.channels = registry;
+            ChannelRegistrySql sqlRegistry = ChannelRegistrySql.forSQLite(sqlitePath);
+            DatabaseInitializer.migrate(sqlRegistry.getDataSource(), sqlRegistry.getDialect());
+            this.channels = initializeCachedRegistry(sqlRegistry);
         } else if (StringUtils.isNotEmpty(getConfig().getRedis().getAddress())) {
             String redisAddress = getConfig().getRedis().getAddress();
             HostAndPort hnp = redisAddress.lastIndexOf(":") < 0 ? new HostAndPort(redisAddress, 6379) : HostAndPort.from(redisAddress);
@@ -199,20 +202,56 @@ public class EEWBot {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             Log.logger.info("Shutdown");
+            if (this.revisionPoller != null) {
+                this.revisionPoller.stop();
+            }
             try {
                 getChannels().save();
             } catch (final IOException e) {
                 Log.logger.error("Save failed", e);
             }
-            if (this.channels instanceof ChannelRegistrySql) {
+            if (this.channels instanceof ChannelRegistryCached) {
+                ((ChannelRegistryCached) this.channels).getDelegate().close();
+            } else if (this.channels instanceof ChannelRegistrySql) {
                 ((ChannelRegistrySql) this.channels).close();
             }
+            this.snapshotReloadExecutor.shutdown();
             if (this.externalWebhookService != null) {
                 this.externalWebhookService.shutdown();
             }
         }));
 
         this.gateway.onDisconnect().block();
+    }
+
+    /**
+     * Initialize cached registry with snapshot and revision poller.
+     * Fail-fast: throws exception if initialization fails.
+     */
+    private ChannelRegistryCached initializeCachedRegistry(ChannelRegistrySql sqlRegistry) {
+        ConfigRevisionStore revisionStore = new ConfigRevisionStore(sqlRegistry.getDsl(), sqlRegistry.getDialect());
+        DeliverySnapshotLoader snapshotLoader = new DeliverySnapshotLoader(sqlRegistry, revisionStore);
+
+        ChannelRegistryCached cachedRegistry = new ChannelRegistryCached(
+                sqlRegistry,
+                snapshotLoader,
+                revisionStore,
+                this.snapshotReloadExecutor
+        );
+
+        // Blocking initialization - fail fast if snapshot load fails
+        try {
+            cachedRegistry.initializeSnapshot();
+        } catch (Exception e) {
+            Log.logger.error("Failed to initialize delivery snapshot, aborting startup", e);
+            throw new RuntimeException("Snapshot initialization failed", e);
+        }
+
+        // Start revision poller for external change detection
+        this.revisionPoller = new RevisionPoller(cachedRegistry, revisionStore, this.scheduledExecutor);
+        this.revisionPoller.start();
+
+        return cachedRegistry;
     }
 
     private void handleDeletion(long id, boolean isGuild) {
