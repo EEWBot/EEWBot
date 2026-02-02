@@ -12,7 +12,6 @@ import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
 import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.thread.ThreadChannelDeleteEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.Intent;
@@ -169,26 +168,6 @@ public class EEWBot {
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
-
-        if (this.channels.hasChannelsWithoutGuildId()) {
-            Log.logger.info("Registering guild ids");
-            this.gateway.getGuilds().flatMap(Guild::getChannels)
-                    .subscribe(channel -> {
-                                long channelId = channel.getId().asLong();
-                                if (this.channels.exists(channelId)) {
-                                    this.channels.setGuildId(channel.getId().asLong(), channel.getGuildId().asLong());
-                                }
-                            },
-                            e -> Log.logger.error("Failed to register guild ids", e),
-                            () -> {
-                                try {
-                                    this.channels.save();
-                                    Log.logger.info("Registered guild ids");
-                                } catch (IOException e) {
-                                    Log.logger.error("Failed to save channels", e);
-                                }
-                            });
-        }
 
         this.gateway.on(GuildDeleteEvent.class)
                 .subscribe(event -> handleDeletion(event.getGuildId().asLong(), true));

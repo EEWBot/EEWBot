@@ -650,19 +650,6 @@ class JsonToSqliteMigrationEquivalenceTest {
                 .isTrue(); // No conflict found
     }
 
-    // ===== hasChannelsWithoutGuildId() tests =====
-
-    @Test
-    @DisplayName("hasChannelsWithoutGuildId() should return same result")
-    void testHasChannelsWithoutGuildId() {
-        boolean jsonResult = this.jsonRegistry.hasChannelsWithoutGuildId();
-        boolean sqlResult = this.sqlRegistry.hasChannelsWithoutGuildId();
-
-        assertThat(sqlResult)
-                .as("hasChannelsWithoutGuildId()")
-                .isEqualTo(jsonResult);
-    }
-
     // ===== Null value handling tests =====
 
     @Test

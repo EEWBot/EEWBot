@@ -158,18 +158,6 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.lang"), lang);
     }
 
-    @Override
-    public boolean hasChannelsWithoutGuildId() {
-        Query query = new Query("-@guildId:[0 inf]").setNoContent();
-        SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
-        return !searchResult.getDocuments().isEmpty();
-    }
-
-    @Override
-    public void setGuildId(long channelId, long guildId) {
-        this.jedisPool.jsonSet(CHANNEL_PREFIX + channelId, Path.of("$.guildId"), guildId);
-    }
-
     /**
      * Parse a channel ID from a Redis key, handling malformed values safely.
      *

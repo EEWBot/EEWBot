@@ -27,10 +27,6 @@ public interface ChannelRegistry {
 
     void setLang(long key, String lang);
 
-    boolean hasChannelsWithoutGuildId();
-
-    void setGuildId(long channelId, long guildId);
-
     List<Long> getWebhookAbsentChannels();
 
     default List<Long> getWebhookAbsentChannels(ChannelFilter filter) {

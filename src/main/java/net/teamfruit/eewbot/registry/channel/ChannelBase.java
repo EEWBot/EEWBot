@@ -28,10 +28,6 @@ public class ChannelBase {
         return this.guildId;
     }
 
-    void setGuildId(long guildId) {
-        this.guildId = guildId;
-    }
-
     public @Nullable ChannelWebhook getWebhook() {
         return this.webhook;
     }

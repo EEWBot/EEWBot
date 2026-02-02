@@ -306,29 +306,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     @Override
-    public boolean hasChannelsWithoutGuildId() {
-        return this.dsl.fetchExists(
-                this.dsl.selectFrom(DESTINATIONS)
-                        .where(GUILD_ID.isNull())
-        );
-    }
-
-    @Override
-    public void setGuildId(long targetId, long guildId) {
-        setGuildIdWithDsl(this.dsl, targetId, guildId);
-    }
-
-    /**
-     * Set guildId using the provided DSLContext (for transactional use).
-     */
-    public void setGuildIdWithDsl(DSLContext tx, long targetId, long guildId) {
-        tx.update(DESTINATIONS)
-                .set(GUILD_ID, guildId)
-                .where(TARGET_ID.eq(targetId))
-                .execute();
-    }
-
-    @Override
     public List<Long> getWebhookAbsentChannels() {
         return this.dsl.select(D_TARGET_ID)
                 .from(D)

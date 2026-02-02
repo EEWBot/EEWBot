@@ -175,11 +175,6 @@ public class ChannelRegistryCached implements ChannelRegistry {
         return this.delegate.exists(key);
     }
 
-    @Override
-    public boolean hasChannelsWithoutGuildId() {
-        return this.delegate.hasChannelsWithoutGuildId();
-    }
-
     // ========================================
     // Write methods - update DB with revision++ in same transaction, then reload
     // ========================================
@@ -247,17 +242,6 @@ public class ChannelRegistryCached implements ChannelRegistry {
             this.revisionStore.incrementWithDsl(tx);
         });
         this.channelCache.invalidate(key);
-        requestReload();
-    }
-
-    @Override
-    public void setGuildId(long channelId, long guildId) {
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            this.delegate.setGuildIdWithDsl(tx, channelId, guildId);
-            this.revisionStore.incrementWithDsl(tx);
-        });
-        this.channelCache.invalidate(channelId);
         requestReload();
     }
 
