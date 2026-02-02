@@ -214,7 +214,6 @@ public class ChannelMigration {
         Field<Long> targetIdField = field(name("target_id"), Long.class);
         Field<Long> channelIdField = field(name("channel_id"), Long.class);
         Field<Long> threadIdField = field(name("thread_id"), Long.class);
-        Field<Integer> isGuildField = field(name("is_guild"), Integer.class);
         Field<Long> guildIdField = field(name("guild_id"), Long.class);
         Field<Integer> eewAlertField = field(name("eew_alert"), Integer.class);
         Field<Integer> eewPredictionField = field(name("eew_prediction"), Integer.class);
@@ -236,14 +235,12 @@ public class ChannelMigration {
             Integer minIntensity = channel.getMinIntensity() != null
                     ? channel.getMinIntensity().ordinal()
                     : SeismicIntensity.ONE.ordinal();
-            boolean isGuild = channel.isGuild() != null && Boolean.TRUE.equals(channel.isGuild());
 
             dsl.insertInto(destinations)
                     .columns(
                             targetIdField,
                             channelIdField,
                             threadIdField,
-                            isGuildField,
                             guildIdField,
                             eewAlertField,
                             eewPredictionField,
@@ -256,7 +253,6 @@ public class ChannelMigration {
                             targetId,
                             effectiveChannelId,
                             threadId,
-                            isGuild ? 1 : 0,
                             channel.getGuildId(),
                             channel.isEewAlert() ? 1 : 0,
                             channel.isEewPrediction() ? 1 : 0,
@@ -269,7 +265,6 @@ public class ChannelMigration {
                     .doUpdate()
                     .set(channelIdField, effectiveChannelId)
                     .set(threadIdField, threadId)
-                    .set(isGuildField, isGuild ? 1 : 0)
                     .set(guildIdField, channel.getGuildId())
                     .set(eewAlertField, channel.isEewAlert() ? 1 : 0)
                     .set(eewPredictionField, channel.isEewPrediction() ? 1 : 0)

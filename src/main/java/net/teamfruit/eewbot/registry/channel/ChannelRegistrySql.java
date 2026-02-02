@@ -44,7 +44,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
     private static final Field<Long> TARGET_ID = field(name("target_id"), Long.class);
     private static final Field<Long> CHANNEL_ID = field(name("channel_id"), Long.class);
     private static final Field<Long> THREAD_ID = field(name("thread_id"), Long.class);
-    private static final Field<Integer> IS_GUILD = field(name("is_guild"), Integer.class);
     private static final Field<Long> GUILD_ID = field(name("guild_id"), Long.class);
     private static final Field<Integer> EEW_ALERT = field(name("eew_alert"), Integer.class);
     private static final Field<Integer> EEW_PREDICTION = field(name("eew_prediction"), Integer.class);
@@ -59,7 +58,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
     private static final Field<Long> D_TARGET_ID = field(name("d", "target_id"), Long.class);
     private static final Field<Long> D_CHANNEL_ID = field(name("d", "channel_id"), Long.class);
     private static final Field<Long> D_THREAD_ID = field(name("d", "thread_id"), Long.class);
-    private static final Field<Integer> D_IS_GUILD = field(name("d", "is_guild"), Integer.class);
     private static final Field<Long> D_GUILD_ID = field(name("d", "guild_id"), Long.class);
     private static final Field<Integer> D_EEW_ALERT = field(name("d", "eew_alert"), Integer.class);
     private static final Field<Integer> D_EEW_PREDICTION = field(name("d", "eew_prediction"), Integer.class);
@@ -127,7 +125,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         D_TARGET_ID,
                         D_CHANNEL_ID,
                         D_THREAD_ID,
-                        D_IS_GUILD,
                         D_GUILD_ID,
                         D_EEW_ALERT,
                         D_EEW_PREDICTION,
@@ -189,7 +186,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         TARGET_ID,
                         CHANNEL_ID,
                         THREAD_ID,
-                        IS_GUILD,
                         GUILD_ID,
                         EEW_ALERT,
                         EEW_PREDICTION,
@@ -202,7 +198,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         targetId,
                         channel.getChannelId(),
                         channel.getThreadId(),
-                        channel.isGuild() ? 1 : 0,
                         channel.getGuildId(),
                         channel.isEewAlert() ? 1 : 0,
                         channel.isEewPrediction() ? 1 : 0,
@@ -278,21 +273,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     @Override
-    public void setIsGuild(long key, boolean guild) {
-        setIsGuildWithDsl(this.dsl, key, guild);
-    }
-
-    /**
-     * Set isGuild using the provided DSLContext (for transactional use).
-     */
-    public void setIsGuildWithDsl(DSLContext tx, long key, boolean guild) {
-        tx.update(DESTINATIONS)
-                .set(IS_GUILD, guild ? 1 : 0)
-                .where(TARGET_ID.eq(key))
-                .execute();
-    }
-
-    @Override
     public void setWebhook(long key, ChannelWebhook webhook) {
         setWebhookWithDsl(this.dsl, key, webhook);
     }
@@ -326,10 +306,10 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     @Override
-    public boolean isGuildEmpty() {
+    public boolean hasChannelsWithoutGuildId() {
         return this.dsl.fetchExists(
                 this.dsl.selectFrom(DESTINATIONS)
-                        .where(IS_GUILD.isNull())
+                        .where(GUILD_ID.isNull())
         );
     }
 
@@ -383,11 +363,10 @@ public class ChannelRegistrySql implements ChannelRegistry {
     public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
         Condition condition = buildCondition(filter);
 
-        Result<Record8<Long, Long, Long, Integer, Long, String, Long, String>> records = this.dsl.select(
+        Result<Record7<Long, Long, Long, Long, String, Long, String>> records = this.dsl.select(
                         D_TARGET_ID,
                         D_CHANNEL_ID,
                         D_THREAD_ID,
-                        D_IS_GUILD,
                         D_GUILD_ID,
                         D_LANG,
                         W_WEBHOOK_ID,
@@ -398,32 +377,30 @@ public class ChannelRegistrySql implements ChannelRegistry {
                 .where(condition)
                 .fetch();
 
-        Map<Boolean, List<Record8<Long, Long, Long, Integer, Long, String, Long, String>>> partitioned = records.stream()
-                .collect(Collectors.partitioningBy(r -> r.value7() != null));
+        Map<Boolean, List<Record7<Long, Long, Long, Long, String, Long, String>>> partitioned = records.stream()
+                .collect(Collectors.partitioningBy(r -> r.value6() != null));
 
         return Map.of(
                 true, partitioned.get(true).stream()
                         .collect(Collectors.toMap(
-                                Record8::value1,
+                                Record7::value1,
                                 r -> new ChannelBase(
-                                        r.value4() != null && r.value4() == 1,
-                                        r.value5(),
+                                        r.value4(),
                                         r.value2(),
                                         r.value3(),
-                                        new ChannelWebhook(r.value7(), r.value8()),
-                                        r.value6()
+                                        new ChannelWebhook(r.value6(), r.value7()),
+                                        r.value5()
                                 )
                         )),
                 false, partitioned.get(false).stream()
                         .collect(Collectors.toMap(
-                                Record8::value1,
+                                Record7::value1,
                                 r -> new ChannelBase(
-                                        r.value4() != null && r.value4() == 1,
-                                        r.value5(),
+                                        r.value4(),
                                         r.value2(),
                                         r.value3(),
                                         null,
-                                        r.value6()
+                                        r.value5()
                                 )
                         ))
         );
@@ -526,7 +503,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         D_TARGET_ID,
                         D_CHANNEL_ID,
                         D_THREAD_ID,
-                        D_IS_GUILD,
                         D_GUILD_ID,
                         D_EEW_ALERT,
                         D_EEW_PREDICTION,
@@ -552,7 +528,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
                 r.get(D_TARGET_ID),
                 r.get(D_CHANNEL_ID),
                 r.get(D_THREAD_ID),
-                r.get(D_IS_GUILD) != null && r.get(D_IS_GUILD) == 1,
                 r.get(D_GUILD_ID),
                 r.get(D_EEW_ALERT) != null && r.get(D_EEW_ALERT) == 1,
                 r.get(D_EEW_PREDICTION) != null && r.get(D_EEW_PREDICTION) == 1,
@@ -582,7 +557,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
         }
 
         return new Channel(
-                r.get(D_IS_GUILD) != null && r.get(D_IS_GUILD) == 1,
                 r.get(D_GUILD_ID),
                 r.get(D_CHANNEL_ID),
                 r.get(D_THREAD_ID),

@@ -6,15 +6,13 @@ import java.util.Objects;
 
 public class ChannelBase {
 
-    protected Boolean isGuild;
     protected Long guildId;
     protected Long channelId;
     protected Long threadId;
     protected ChannelWebhook webhook;
     protected String lang;
 
-    public ChannelBase(boolean isGuild, Long guildId, Long channelId, Long threadId, ChannelWebhook webhook, String lang) {
-        this.isGuild = isGuild;
+    public ChannelBase(Long guildId, Long channelId, Long threadId, ChannelWebhook webhook, String lang) {
         this.guildId = guildId;
         this.channelId = channelId;
         this.threadId = threadId;
@@ -22,12 +20,8 @@ public class ChannelBase {
         this.lang = lang;
     }
 
-    public @Nullable Boolean isGuild() {
-        return this.isGuild;
-    }
-
-    void setGuild(boolean guild) {
-        this.isGuild = guild;
+    public boolean isGuild() {
+        return this.guildId != null;
     }
 
     public @Nullable Long getGuildId() {
@@ -85,7 +79,6 @@ public class ChannelBase {
 
         ChannelBase that = (ChannelBase) o;
 
-        if (!Objects.equals(this.isGuild, that.isGuild)) return false;
         if (!Objects.equals(this.guildId, that.guildId)) return false;
         if (!Objects.equals(this.channelId, that.channelId)) return false;
         if (!Objects.equals(this.threadId, that.threadId)) return false;
@@ -95,8 +88,7 @@ public class ChannelBase {
 
     @Override
     public int hashCode() {
-        int result = this.isGuild != null ? this.isGuild.hashCode() : 0;
-        result = 31 * result + (this.guildId != null ? this.guildId.hashCode() : 0);
+        int result = this.guildId != null ? this.guildId.hashCode() : 0;
         result = 31 * result + (this.channelId != null ? this.channelId.hashCode() : 0);
         result = 31 * result + (this.threadId != null ? this.threadId.hashCode() : 0);
         result = 31 * result + (this.webhook != null ? this.webhook.hashCode() : 0);
@@ -107,8 +99,7 @@ public class ChannelBase {
     @Override
     public String toString() {
         return "ChannelBase{" +
-                "isGuild=" + this.isGuild +
-                ", guildId=" + this.guildId +
+                "guildId=" + this.guildId +
                 ", channelId=" + this.channelId +
                 ", threadId=" + this.threadId +
                 ", webhook=" + this.webhook +

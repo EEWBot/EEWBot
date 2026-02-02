@@ -77,11 +77,6 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
-    public void setIsGuild(long key, boolean guild) {
-        getElement().get(key).setGuild(guild);
-    }
-
-    @Override
     public void setWebhook(long key, ChannelWebhook webhook) {
         getElement().get(key).setWebhook(webhook);
     }
@@ -92,8 +87,8 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
-    public boolean isGuildEmpty() {
-        return getElement().entrySet().stream().anyMatch(entry -> entry.getValue().isGuild() == null);
+    public boolean hasChannelsWithoutGuildId() {
+        return getElement().values().stream().anyMatch(channel -> channel.getGuildId() == null);
     }
 
     @Override

@@ -106,7 +106,6 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         Schema schema = new Schema()
                 .addNumericField("$.channelId").as("channelId")
                 .addNumericField("$.threadId").as("threadId")
-                .addTagField("$.isGuild").as("isGuild")
                 .addNumericField("$.guildId").as("guildId")
                 .addTagField("$.eewAlert").as("eewAlert")
                 .addTagField("$.eewPrediction").as("eewPrediction")
@@ -150,11 +149,6 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
-    public void setIsGuild(long key, boolean guild) {
-        this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.isGuild"), guild);
-    }
-
-    @Override
     public void setWebhook(long key, ChannelWebhook webhook) {
         this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.webhook"), webhook);
     }
@@ -165,8 +159,8 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
-    public boolean isGuildEmpty() {
-        Query query = new Query("-@isGuild:{true | false}").setNoContent();
+    public boolean hasChannelsWithoutGuildId() {
+        Query query = new Query("-@guildId:[0 inf]").setNoContent();
         SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);
         return !searchResult.getDocuments().isEmpty();
     }
@@ -269,7 +263,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         map.put(false, webhookAbsent);
 
         AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder(filter.toQueryString())
-                .load("__key", "$.isGuild", "$.guildId", "$.channelId", "$.threadId", "$.webhook", "$.lang")
+                .load("__key", "$.guildId", "$.channelId", "$.threadId", "$.webhook", "$.lang")
                 .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
         long cursorId;
         do {
@@ -284,7 +278,6 @@ public class ChannelRegistryRedis implements ChannelRegistry {
                     return;
                 }
 
-                boolean isGuild = row.get("$.isGuild") != null && Boolean.parseBoolean(row.getString("$.isGuild"));
                 Long guildId = null;
                 Long channelId = null;
                 Long threadId = null;
@@ -308,9 +301,9 @@ public class ChannelRegistryRedis implements ChannelRegistry {
 
                 if (row.get("$.webhook") != null) {
                     ChannelWebhook webhook = EEWBot.GSON.fromJson(row.getString("$.webhook"), ChannelWebhook.class);
-                    webhookPresent.put(targetId, new ChannelBase(isGuild, guildId, channelId, threadId, webhook, lang));
+                    webhookPresent.put(targetId, new ChannelBase(guildId, channelId, threadId, webhook, lang));
                 } else {
-                    webhookAbsent.put(targetId, new ChannelBase(isGuild, guildId, channelId, threadId, null, lang));
+                    webhookAbsent.put(targetId, new ChannelBase(guildId, channelId, threadId, null, lang));
                 }
             });
             if (cursorId != 0)

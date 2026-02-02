@@ -41,7 +41,7 @@ class JsonToSqliteMigrationEquivalenceTest {
 
         // 1: Basic, no webhook, minIntensity=ONE (boundary lower)
         channels.put(1001L, new Channel(
-                true, 100L, 1001L, null,
+                100L, 1001L, null,
                 false, false, false, false,
                 SeismicIntensity.ONE,
                 null,
@@ -50,7 +50,7 @@ class JsonToSqliteMigrationEquivalenceTest {
 
         // 2: Guild, with webhook, minIntensity=TWO (boundary upper)
         channels.put(1002L, new Channel(
-                true, 100L, 1002L, null,
+                100L, 1002L, null,
                 true, false, false, true,
                 SeismicIntensity.TWO,
                 new ChannelWebhook(2001L, "token_2001"),
@@ -59,7 +59,7 @@ class JsonToSqliteMigrationEquivalenceTest {
 
         // 3: Thread (channelId != targetId), with webhook
         channels.put(1003L, new Channel(
-                true, 100L, 1000L, 1003L,
+                100L, 1000L, 1003L,
                 false, true, false, false,
                 SeismicIntensity.THREE,
                 new ChannelWebhook(2002L, "token_2002"),
@@ -68,7 +68,7 @@ class JsonToSqliteMigrationEquivalenceTest {
 
         // 4: DM (non-guild), guildId=null
         channels.put(1004L, new Channel(
-                false, null, 1004L, null,
+                null, 1004L, null,
                 true, true, false, true,
                 SeismicIntensity.FOUR,
                 null,
@@ -77,7 +77,7 @@ class JsonToSqliteMigrationEquivalenceTest {
 
         // 5: All flags ON, max intensity (SEVEN)
         channels.put(1005L, new Channel(
-                true, 200L, 1005L, null,
+                200L, 1005L, null,
                 true, true, true, true,
                 SeismicIntensity.SEVEN,
                 new ChannelWebhook(2003L, "token_2003"),
@@ -86,7 +86,7 @@ class JsonToSqliteMigrationEquivalenceTest {
 
         // 6: lang=null, guildId=null (compound null)
         channels.put(1006L, new Channel(
-                true, null, 1006L, null,
+                null, 1006L, null,
                 false, false, true, false,
                 SeismicIntensity.FIVE_MINUS,
                 null,
@@ -95,7 +95,7 @@ class JsonToSqliteMigrationEquivalenceTest {
 
         // 7: UNKNOWN intensity (edge case)
         channels.put(1007L, new Channel(
-                true, 300L, 1007L, null,
+                300L, 1007L, null,
                 false, true, false, true,
                 SeismicIntensity.UNKNOWN,
                 new ChannelWebhook(2004L, "token_2004"),
@@ -104,7 +104,7 @@ class JsonToSqliteMigrationEquivalenceTest {
 
         // 8: minIntensity=ONE, eewAlert=true (boundary + filter target)
         channels.put(1008L, new Channel(
-                true, 300L, 1008L, null,
+                300L, 1008L, null,
                 true, false, false, false,
                 SeismicIntensity.ONE,
                 null,
@@ -230,9 +230,9 @@ class JsonToSqliteMigrationEquivalenceTest {
     // ===== getWebhookAbsentChannels(ChannelFilter) tests =====
 
     @Test
-    @DisplayName("getWebhookAbsentChannels(filter) with isGuild=true should return equal results")
-    void testGetWebhookAbsentChannels_isGuildFilter() {
-        ChannelFilter filter = ChannelFilter.builder().isGuild(true).build();
+    @DisplayName("getWebhookAbsentChannels(filter) with hasGuild=true should return equal results")
+    void testGetWebhookAbsentChannels_hasGuildFilter() {
+        ChannelFilter filter = ChannelFilter.builder().hasGuild(true).build();
 
         List<Long> jsonResult = this.jsonRegistry.getWebhookAbsentChannels(filter);
         List<Long> sqlResult = this.sqlRegistry.getWebhookAbsentChannels(filter);
@@ -288,9 +288,9 @@ class JsonToSqliteMigrationEquivalenceTest {
     }
 
     @Test
-    @DisplayName("actionOnChannels() with isGuild=true should return guild channels")
-    void testActionOnChannels_isGuildFilter() {
-        ChannelFilter filter = ChannelFilter.builder().isGuild(true).build();
+    @DisplayName("actionOnChannels() with hasGuild=true should return guild channels")
+    void testActionOnChannels_hasGuildFilter() {
+        ChannelFilter filter = ChannelFilter.builder().hasGuild(true).build();
 
         Set<Long> jsonResult = new HashSet<>();
         Set<Long> sqlResult = new HashSet<>();
@@ -304,9 +304,9 @@ class JsonToSqliteMigrationEquivalenceTest {
     }
 
     @Test
-    @DisplayName("actionOnChannels() with isGuild=false should return DM channels")
+    @DisplayName("actionOnChannels() with hasGuild=false should return DM channels")
     void testActionOnChannels_isDMFilter() {
-        ChannelFilter filter = ChannelFilter.builder().isGuild(false).build();
+        ChannelFilter filter = ChannelFilter.builder().hasGuild(false).build();
 
         Set<Long> jsonResult = new HashSet<>();
         Set<Long> sqlResult = new HashSet<>();
@@ -317,7 +317,7 @@ class JsonToSqliteMigrationEquivalenceTest {
         assertThat(sqlResult)
                 .as("DM channels")
                 .isEqualTo(jsonResult)
-                .containsExactly(1004L);
+                .containsExactlyInAnyOrder(1004L, 1006L);
     }
 
     @Test
@@ -466,10 +466,10 @@ class JsonToSqliteMigrationEquivalenceTest {
     }
 
     @Test
-    @DisplayName("actionOnChannels() with compound filter (isGuild + eewAlert)")
-    void testActionOnChannels_compoundFilter_isGuildAndEewAlert() {
+    @DisplayName("actionOnChannels() with compound filter (hasGuild + eewAlert)")
+    void testActionOnChannels_compoundFilter_hasGuildAndEewAlert() {
         ChannelFilter filter = ChannelFilter.builder()
-                .isGuild(true)
+                .hasGuild(true)
                 .eewAlert(true)
                 .build();
 
@@ -485,10 +485,10 @@ class JsonToSqliteMigrationEquivalenceTest {
     }
 
     @Test
-    @DisplayName("actionOnChannels() with compound filter (isGuild + intensity)")
-    void testActionOnChannels_compoundFilter_isGuildAndIntensity() {
+    @DisplayName("actionOnChannels() with compound filter (hasGuild + intensity)")
+    void testActionOnChannels_compoundFilter_hasGuildAndIntensity() {
         ChannelFilter filter = ChannelFilter.builder()
-                .isGuild(true)
+                .hasGuild(true)
                 .intensity(SeismicIntensity.THREE)
                 .build();
 
@@ -577,9 +577,9 @@ class JsonToSqliteMigrationEquivalenceTest {
     }
 
     @Test
-    @DisplayName("getChannelsPartitionedByWebhookPresent() with isGuild filter")
-    void testGetChannelsPartitionedByWebhookPresent_isGuildFilter() {
-        ChannelFilter filter = ChannelFilter.builder().isGuild(true).build();
+    @DisplayName("getChannelsPartitionedByWebhookPresent() with hasGuild filter")
+    void testGetChannelsPartitionedByWebhookPresent_hasGuildFilter() {
+        ChannelFilter filter = ChannelFilter.builder().hasGuild(true).build();
 
         Map<Boolean, Map<Long, ChannelBase>> jsonResult = this.jsonRegistry.getChannelsPartitionedByWebhookPresent(filter);
         Map<Boolean, Map<Long, ChannelBase>> sqlResult = this.sqlRegistry.getChannelsPartitionedByWebhookPresent(filter);
@@ -650,16 +650,16 @@ class JsonToSqliteMigrationEquivalenceTest {
                 .isTrue(); // No conflict found
     }
 
-    // ===== isGuildEmpty() tests =====
+    // ===== hasChannelsWithoutGuildId() tests =====
 
     @Test
-    @DisplayName("isGuildEmpty() should return same result")
-    void testIsGuildEmpty() {
-        boolean jsonResult = this.jsonRegistry.isGuildEmpty();
-        boolean sqlResult = this.sqlRegistry.isGuildEmpty();
+    @DisplayName("hasChannelsWithoutGuildId() should return same result")
+    void testHasChannelsWithoutGuildId() {
+        boolean jsonResult = this.jsonRegistry.hasChannelsWithoutGuildId();
+        boolean sqlResult = this.sqlRegistry.hasChannelsWithoutGuildId();
 
         assertThat(sqlResult)
-                .as("isGuildEmpty()")
+                .as("hasChannelsWithoutGuildId()")
                 .isEqualTo(jsonResult);
     }
 

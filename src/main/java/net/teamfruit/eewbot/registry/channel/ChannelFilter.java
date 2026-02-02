@@ -12,8 +12,8 @@ import static org.jooq.impl.DSL.*;
 
 public class ChannelFilter {
 
-    private Boolean isGuild;
-    private boolean isGuildPresent;
+    private Boolean hasGuild;
+    private boolean hasGuildPresent;
     private long guildId;
     private boolean guildIdPresent;
     private long channelId;
@@ -35,8 +35,8 @@ public class ChannelFilter {
     private long webhookId;
     private boolean webhookIdPresent;
 
-    public boolean isGuildPresent() {
-        return this.isGuildPresent;
+    public boolean isHasGuildPresent() {
+        return this.hasGuildPresent;
     }
 
     public boolean isGuildIdPresent() {
@@ -79,8 +79,8 @@ public class ChannelFilter {
         return this.webhookIdPresent;
     }
 
-    public Boolean getIsGuild() {
-        return this.isGuild;
+    public Boolean getHasGuild() {
+        return this.hasGuild;
     }
 
     public long getGuildId() {
@@ -132,11 +132,11 @@ public class ChannelFilter {
     public Condition toCondition() {
         List<Condition> conditions = new ArrayList<>();
 
-        if (this.isGuildPresent) {
-            Field<Integer> f = field(name("is_guild"), Integer.class);
-            if (this.isGuild != null) {
-                conditions.add(f.eq(this.isGuild ? 1 : 0));
-            } else {
+        if (this.hasGuildPresent) {
+            Field<Long> f = field(name("guild_id"), Long.class);
+            if (this.hasGuild != null && this.hasGuild) {
+                conditions.add(f.isNotNull());
+            } else if (this.hasGuild != null) {
                 conditions.add(f.isNull());
             }
         }
@@ -185,7 +185,7 @@ public class ChannelFilter {
     }
 
     public boolean test(Channel channel) {
-        if (this.isGuildPresent && !Objects.equals(channel.isGuild(), this.isGuild))
+        if (this.hasGuildPresent && this.hasGuild != null && channel.isGuild() != this.hasGuild)
             return false;
         if (this.guildIdPresent && !Objects.equals(channel.getGuildId(), this.guildId))
             return false;
@@ -215,11 +215,11 @@ public class ChannelFilter {
 
     public String toQueryString() {
         StringBuilder builder = new StringBuilder();
-        if (this.isGuildPresent) {
-            if (this.isGuild != null)
-                builder.append("@isGuild:{").append(this.isGuild).append("} ");
-            else
-                builder.append("-@isGuild:{true | false}");
+        if (this.hasGuildPresent) {
+            if (this.hasGuild != null && this.hasGuild)
+                builder.append("@guildId:[0 inf] ");
+            else if (this.hasGuild != null)
+                builder.append("-@guildId:[0 inf] ");
         }
         if (this.guildIdPresent)
             builder.append("@guildId:[").append(this.guildId).append(" ").append(this.guildId).append("] ");
@@ -260,9 +260,9 @@ public class ChannelFilter {
 
         private final ChannelFilter filter = new ChannelFilter();
 
-        public Builder isGuild(Boolean isGuild) {
-            this.filter.isGuild = isGuild;
-            this.filter.isGuildPresent = true;
+        public Builder hasGuild(boolean hasGuild) {
+            this.filter.hasGuild = hasGuild;
+            this.filter.hasGuildPresent = true;
             return this;
         }
 

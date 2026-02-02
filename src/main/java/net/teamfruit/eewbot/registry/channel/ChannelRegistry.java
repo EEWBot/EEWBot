@@ -23,13 +23,11 @@ public interface ChannelRegistry {
 
     void setMinIntensity(long key, SeismicIntensity intensity);
 
-    void setIsGuild(long key, boolean guild);
-
     void setWebhook(long key, ChannelWebhook webhook);
 
     void setLang(long key, String lang);
 
-    boolean isGuildEmpty();
+    boolean hasChannelsWithoutGuildId();
 
     void setGuildId(long channelId, long guildId);
 

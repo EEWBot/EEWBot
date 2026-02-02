@@ -20,7 +20,6 @@ public final class DeliverySnapshot {
             long targetId,
             long channelId,
             Long threadId,
-            boolean isGuild,
             Long guildId,
             boolean eewAlert,
             boolean eewPrediction,
@@ -31,10 +30,17 @@ public final class DeliverySnapshot {
             ChannelWebhook webhook
     ) {
         /**
+         * Check if this is a guild channel.
+         */
+        public boolean isGuild() {
+            return this.guildId != null;
+        }
+
+        /**
          * Convert to ChannelBase for delivery.
          */
         public ChannelBase toChannelBase() {
-            return new ChannelBase(this.isGuild, this.guildId, this.channelId, this.threadId, this.webhook, this.lang);
+            return new ChannelBase(this.guildId, this.channelId, this.threadId, this.webhook, this.lang);
         }
     }
 
@@ -179,12 +185,9 @@ public final class DeliverySnapshot {
         }
 
         return ch -> {
-            if (filter.isGuildPresent()) {
-                Boolean filterIsGuild = filter.getIsGuild();
-                if (filterIsGuild == null) {
-                    // Filter for isGuild == null (should not happen in normal use)
-                    if (ch.isGuild()) return false;
-                } else if (filterIsGuild != ch.isGuild()) {
+            if (filter.isHasGuildPresent()) {
+                Boolean filterHasGuild = filter.getHasGuild();
+                if (filterHasGuild != null && filterHasGuild != ch.isGuild()) {
                     return false;
                 }
             }

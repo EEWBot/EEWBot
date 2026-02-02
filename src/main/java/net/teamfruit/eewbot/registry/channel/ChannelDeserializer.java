@@ -11,8 +11,7 @@ public class ChannelDeserializer implements JsonDeserializer<Channel> {
     public Channel deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
         JsonObject obj = json.getAsJsonObject();
 
-        // Extract fields
-        boolean isGuild = obj.has("isGuild") && obj.get("isGuild").getAsBoolean();
+        // Extract guildId (isGuild is derived from guildId != null)
         Long guildId = obj.has("guildId") && !obj.get("guildId").isJsonNull() ? obj.get("guildId").getAsLong() : null;
 
         // Migration logic: detect old format and convert
@@ -55,6 +54,6 @@ public class ChannelDeserializer implements JsonDeserializer<Channel> {
 
         String lang = obj.has("lang") && !obj.get("lang").isJsonNull() ? obj.get("lang").getAsString() : "ja";
 
-        return new Channel(isGuild, guildId, channelId, threadId, eewAlert, eewPrediction, eewDecimation, quakeInfo, minIntensity, webhook, lang);
+        return new Channel(guildId, channelId, threadId, eewAlert, eewPrediction, eewDecimation, quakeInfo, minIntensity, webhook, lang);
     }
 }

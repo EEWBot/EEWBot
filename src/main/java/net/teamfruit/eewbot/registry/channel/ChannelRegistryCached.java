@@ -176,8 +176,8 @@ public class ChannelRegistryCached implements ChannelRegistry {
     }
 
     @Override
-    public boolean isGuildEmpty() {
-        return this.delegate.isGuildEmpty();
+    public boolean hasChannelsWithoutGuildId() {
+        return this.delegate.hasChannelsWithoutGuildId();
     }
 
     // ========================================
@@ -222,17 +222,6 @@ public class ChannelRegistryCached implements ChannelRegistry {
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
             this.delegate.setMinIntensityWithDsl(tx, key, intensity);
-            this.revisionStore.incrementWithDsl(tx);
-        });
-        this.channelCache.invalidate(key);
-        requestReload();
-    }
-
-    @Override
-    public void setIsGuild(long key, boolean guild) {
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            this.delegate.setIsGuildWithDsl(tx, key, guild);
             this.revisionStore.incrementWithDsl(tx);
         });
         this.channelCache.invalidate(key);

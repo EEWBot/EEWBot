@@ -37,8 +37,8 @@ public class Channel extends ChannelBase {
 
     private SeismicIntensity minIntensity;
 
-    public Channel(final boolean isGuild, final Long guildId, final Long channelId, final Long threadId, final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final SeismicIntensity minIntensity, ChannelWebhook webhook, String lang) {
-        super(isGuild, guildId, channelId, threadId, webhook, lang);
+    public Channel(final Long guildId, final Long channelId, final Long threadId, final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final SeismicIntensity minIntensity, ChannelWebhook webhook, String lang) {
+        super(guildId, channelId, threadId, webhook, lang);
         this.eewAlert = eewAlert;
         this.eewPrediction = eewPrediction;
         this.eewDecimation = eewDecimation;
@@ -47,7 +47,7 @@ public class Channel extends ChannelBase {
     }
 
     public static Channel createDefault(Long guildId, Long channelId, Long threadId, String lang) {
-        return new Channel(guildId != null, guildId, channelId, threadId, false, false, false, false, SeismicIntensity.ONE, null, lang);
+        return new Channel(guildId, channelId, threadId, false, false, false, false, SeismicIntensity.ONE, null, lang);
     }
 
     public boolean isEewAlert() {
