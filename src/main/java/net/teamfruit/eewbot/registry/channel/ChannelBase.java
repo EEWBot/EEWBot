@@ -62,10 +62,8 @@ public class ChannelBase {
 
     public @Nullable String getWebhookPath() {
         if (this.webhook == null) return null;
-        if (this.threadId != null) {
-            return "/" + this.webhook.getId() + "/" + this.webhook.getToken() + "?thread_id=" + this.threadId;
-        }
-        return "/" + this.webhook.getId() + "/" + this.webhook.getToken();
+        // Extract path from full URL by removing "https://discord.com/api/webhooks" prefix (33 chars)
+        return this.webhook.getUrl().substring(33);
     }
 
     @Override

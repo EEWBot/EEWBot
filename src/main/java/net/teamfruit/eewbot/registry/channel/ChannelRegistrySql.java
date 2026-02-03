@@ -32,15 +32,10 @@ public class ChannelRegistrySql implements ChannelRegistry {
             "quakeInfo", "quake_info"
     );
 
-    // === Tables ===
+    // === Table ===
     private static final Table<?> DESTINATIONS = table(name("destinations"));
-    private static final Table<?> DESTINATION_WEBHOOKS = table(name("destination_webhooks"));
 
-    // JOIN用エイリアス付きテーブル
-    private static final Table<?> D = DESTINATIONS.as("d");
-    private static final Table<?> W = DESTINATION_WEBHOOKS.as("w");
-
-    // === Unqualified Fields (単一テーブル操作用) ===
+    // === Unqualified Fields ===
     private static final Field<Long> TARGET_ID = field(name("target_id"), Long.class);
     private static final Field<Long> CHANNEL_ID = field(name("channel_id"), Long.class);
     private static final Field<Long> THREAD_ID = field(name("thread_id"), Long.class);
@@ -51,25 +46,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
     private static final Field<Integer> QUAKE_INFO = field(name("quake_info"), Integer.class);
     private static final Field<Integer> MIN_INTENSITY = field(name("min_intensity"), Integer.class);
     private static final Field<String> LANG = field(name("lang"), String.class);
-    private static final Field<Long> WEBHOOK_ID = field(name("webhook_id"), Long.class);
-    private static final Field<String> TOKEN = field(name("token"), String.class);
-
-    // === Qualified Fields for alias "d" ===
-    private static final Field<Long> D_TARGET_ID = field(name("d", "target_id"), Long.class);
-    private static final Field<Long> D_CHANNEL_ID = field(name("d", "channel_id"), Long.class);
-    private static final Field<Long> D_THREAD_ID = field(name("d", "thread_id"), Long.class);
-    private static final Field<Long> D_GUILD_ID = field(name("d", "guild_id"), Long.class);
-    private static final Field<Integer> D_EEW_ALERT = field(name("d", "eew_alert"), Integer.class);
-    private static final Field<Integer> D_EEW_PREDICTION = field(name("d", "eew_prediction"), Integer.class);
-    private static final Field<Integer> D_EEW_DECIMATION = field(name("d", "eew_decimation"), Integer.class);
-    private static final Field<Integer> D_QUAKE_INFO = field(name("d", "quake_info"), Integer.class);
-    private static final Field<Integer> D_MIN_INTENSITY = field(name("d", "min_intensity"), Integer.class);
-    private static final Field<String> D_LANG = field(name("d", "lang"), String.class);
-
-    // === Qualified Fields for alias "w" ===
-    private static final Field<Long> W_TARGET_ID = field(name("w", "target_id"), Long.class);
-    private static final Field<Long> W_WEBHOOK_ID = field(name("w", "webhook_id"), Long.class);
-    private static final Field<String> W_TOKEN = field(name("w", "token"), String.class);
+    private static final Field<String> WEBHOOK_URL = field(name("webhook_url"), String.class);
 
     private final DSLContext dsl;
     private final DataSource dataSource;
@@ -121,23 +98,8 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public Channel get(long key) {
-        return this.dsl.select(
-                        D_TARGET_ID,
-                        D_CHANNEL_ID,
-                        D_THREAD_ID,
-                        D_GUILD_ID,
-                        D_EEW_ALERT,
-                        D_EEW_PREDICTION,
-                        D_EEW_DECIMATION,
-                        D_QUAKE_INFO,
-                        D_MIN_INTENSITY,
-                        D_LANG,
-                        W_WEBHOOK_ID,
-                        W_TOKEN
-                )
-                .from(D)
-                .leftJoin(W).on(D_TARGET_ID.eq(W_TARGET_ID))
-                .where(D_TARGET_ID.eq(key))
+        return this.dsl.selectFrom(DESTINATIONS)
+                .where(TARGET_ID.eq(key))
                 .fetchOne(this::mapToChannel);
     }
 
@@ -176,12 +138,8 @@ public class ChannelRegistrySql implements ChannelRegistry {
         insertChannelIfAbsentWithDsl(tx, key, channel);
     }
 
-    private void insertChannelIfAbsent(long targetId, Channel channel) {
-        insertChannelIfAbsentWithDsl(this.dsl, targetId, channel);
-    }
-
     private void insertChannelIfAbsentWithDsl(DSLContext tx, long targetId, Channel channel) {
-        int inserted = tx.insertInto(DESTINATIONS)
+        tx.insertInto(DESTINATIONS)
                 .columns(
                         TARGET_ID,
                         CHANNEL_ID,
@@ -192,7 +150,8 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         EEW_DECIMATION,
                         QUAKE_INFO,
                         MIN_INTENSITY,
-                        LANG
+                        LANG,
+                        WEBHOOK_URL
                 )
                 .values(
                         targetId,
@@ -204,36 +163,10 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         channel.isEewDecimation() ? 1 : 0,
                         channel.isQuakeInfo() ? 1 : 0,
                         channel.getMinIntensity() != null ? channel.getMinIntensity().ordinal() : SeismicIntensity.ONE.ordinal(),
-                        channel.getLang()
+                        channel.getLang(),
+                        channel.getWebhook() != null ? channel.getWebhook().getUrl() : null
                 )
                 .onConflictDoNothing()
-                .execute();
-
-        if (inserted > 0 && channel.getWebhook() != null) {
-            upsertWebhookWithDsl(tx, targetId, channel.getWebhook());
-        }
-    }
-
-    private void upsertWebhook(long targetId, ChannelWebhook webhook) {
-        upsertWebhookWithDsl(this.dsl, targetId, webhook);
-    }
-
-    private void upsertWebhookWithDsl(DSLContext tx, long targetId, ChannelWebhook webhook) {
-        tx.insertInto(DESTINATION_WEBHOOKS)
-                .columns(
-                        TARGET_ID,
-                        WEBHOOK_ID,
-                        TOKEN
-                )
-                .values(
-                        targetId,
-                        webhook.getId(),
-                        webhook.getToken()
-                )
-                .onConflict(TARGET_ID)
-                .doUpdate()
-                .set(WEBHOOK_ID, webhook.getId())
-                .set(TOKEN, webhook.getToken())
                 .execute();
     }
 
@@ -281,13 +214,10 @@ public class ChannelRegistrySql implements ChannelRegistry {
      * Set webhook using the provided DSLContext (for transactional use).
      */
     public void setWebhookWithDsl(DSLContext tx, long key, ChannelWebhook webhook) {
-        if (webhook != null) {
-            upsertWebhookWithDsl(tx, key, webhook);
-        } else {
-            tx.deleteFrom(DESTINATION_WEBHOOKS)
-                    .where(TARGET_ID.eq(key))
-                    .execute();
-        }
+        tx.update(DESTINATIONS)
+                .set(WEBHOOK_URL, webhook != null ? webhook.getUrl() : null)
+                .where(TARGET_ID.eq(key))
+                .execute();
     }
 
     @Override
@@ -307,21 +237,19 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public List<Long> getWebhookAbsentChannels() {
-        return this.dsl.select(D_TARGET_ID)
-                .from(D)
-                .leftJoin(W).on(D_TARGET_ID.eq(W_TARGET_ID))
-                .where(W_TARGET_ID.isNull())
+        return this.dsl.select(TARGET_ID)
+                .from(DESTINATIONS)
+                .where(WEBHOOK_URL.isNull())
                 .fetch(0, Long.class);
     }
 
     @Override
     public List<Long> getWebhookAbsentChannels(ChannelFilter filter) {
         Condition condition = buildCondition(filter);
-        return this.dsl.select(D_TARGET_ID)
-                .from(D)
-                .leftJoin(W).on(D_TARGET_ID.eq(W_TARGET_ID))
+        return this.dsl.select(TARGET_ID)
+                .from(DESTINATIONS)
                 .where(condition)
-                .and(W_TARGET_ID.isNull())
+                .and(WEBHOOK_URL.isNull())
                 .fetch(0, Long.class);
     }
 
@@ -332,7 +260,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     /**
      * Remove all channels belonging to the specified guild using the provided DSLContext (for transactional use).
-     * CASCADE delete will also remove associated webhooks.
      */
     public int removeByGuildIdWithDsl(DSLContext tx, long guildId) {
         return tx.deleteFrom(DESTINATIONS)
@@ -341,16 +268,25 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     @Override
-    public int clearWebhookByWebhookId(long webhookId) {
-        return clearWebhookByWebhookIdWithDsl(this.dsl, webhookId);
+    public int clearWebhookByBaseUrl(String webhookUrl) {
+        return clearWebhookByBaseUrlWithDsl(this.dsl, webhookUrl);
     }
 
     /**
-     * Clear (delete) webhook configuration for all channels using the specified webhook ID.
+     * Clear (set to null) webhook_url for all channels using the specified base URL.
+     * Uses prefix matching (LIKE baseUrl%) to clear all destinations sharing the same webhook.
+     *
+     * @param webhookUrl full webhook URL (may include ?thread_id query parameter)
      */
-    public int clearWebhookByWebhookIdWithDsl(DSLContext tx, long webhookId) {
-        return tx.deleteFrom(DESTINATION_WEBHOOKS)
-                .where(WEBHOOK_ID.eq(webhookId))
+    public int clearWebhookByBaseUrlWithDsl(DSLContext tx, String webhookUrl) {
+        // Remove ?thread_id= query parameter to get base URL
+        int queryIndex = webhookUrl.indexOf('?');
+        String baseUrl = queryIndex >= 0 ? webhookUrl.substring(0, queryIndex) : webhookUrl;
+        String pattern = baseUrl + "%";
+
+        return tx.update(DESTINATIONS)
+                .set(WEBHOOK_URL, (String) null)
+                .where(WEBHOOK_URL.like(pattern))
                 .execute();
     }
 
@@ -379,27 +315,15 @@ public class ChannelRegistrySql implements ChannelRegistry {
      */
     public Map<Long, Channel> getAllChannelsWithDsl(DSLContext tx) {
         Map<Long, Channel> result = new HashMap<>();
-        tx.select(
-                        D_TARGET_ID,
-                        D_CHANNEL_ID,
-                        D_THREAD_ID,
-                        D_GUILD_ID,
-                        D_EEW_ALERT,
-                        D_EEW_PREDICTION,
-                        D_EEW_DECIMATION,
-                        D_QUAKE_INFO,
-                        D_MIN_INTENSITY,
-                        D_LANG,
-                        W_WEBHOOK_ID,
-                        W_TOKEN
-                )
-                .from(D)
-                .leftJoin(W).on(D_TARGET_ID.eq(W_TARGET_ID))
+        tx.selectFrom(DESTINATIONS)
                 .fetch()
                 .forEach(r -> {
                     Channel channel = mapToChannel(r);
                     if (channel != null) {
-                        result.put(r.get(D_TARGET_ID), channel);
+                        Long targetId = toLong(r.get(TARGET_ID));
+                        if (targetId != null) {
+                            result.put(targetId, channel);
+                        }
                     }
                 });
         return result;
@@ -409,38 +333,36 @@ public class ChannelRegistrySql implements ChannelRegistry {
     public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
         Condition condition = buildCondition(filter);
 
-        Result<Record7<Long, Long, Long, Long, String, Long, String>> records = this.dsl.select(
-                        D_TARGET_ID,
-                        D_CHANNEL_ID,
-                        D_THREAD_ID,
-                        D_GUILD_ID,
-                        D_LANG,
-                        W_WEBHOOK_ID,
-                        W_TOKEN
+        Result<Record6<Long, Long, Long, Long, String, String>> records = this.dsl.select(
+                        TARGET_ID,
+                        CHANNEL_ID,
+                        THREAD_ID,
+                        GUILD_ID,
+                        LANG,
+                        WEBHOOK_URL
                 )
-                .from(D)
-                .leftJoin(W).on(D_TARGET_ID.eq(W_TARGET_ID))
+                .from(DESTINATIONS)
                 .where(condition)
                 .fetch();
 
-        Map<Boolean, List<Record7<Long, Long, Long, Long, String, Long, String>>> partitioned = records.stream()
+        Map<Boolean, List<Record6<Long, Long, Long, Long, String, String>>> partitioned = records.stream()
                 .collect(Collectors.partitioningBy(r -> r.value6() != null));
 
         return Map.of(
                 true, partitioned.get(true).stream()
                         .collect(Collectors.toMap(
-                                Record7::value1,
+                                Record6::value1,
                                 r -> new ChannelBase(
                                         r.value4(),
                                         r.value2(),
                                         r.value3(),
-                                        new ChannelWebhook(r.value6(), r.value7()),
+                                        new ChannelWebhook(r.value6()),
                                         r.value5()
                                 )
                         )),
                 false, partitioned.get(false).stream()
                         .collect(Collectors.toMap(
-                                Record7::value1,
+                                Record6::value1,
                                 r -> new ChannelBase(
                                         r.value4(),
                                         r.value2(),
@@ -454,9 +376,11 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public boolean isWebhookForThread(long webhookId, long targetId) {
+        // Search by webhook ID pattern in URL: .../webhooks/{id}/...
+        String pattern = "%/webhooks/" + webhookId + "/%";
         boolean exists = this.dsl.fetchExists(
-                this.dsl.selectFrom(DESTINATION_WEBHOOKS)
-                        .where(WEBHOOK_ID.eq(webhookId))
+                this.dsl.selectFrom(DESTINATIONS)
+                        .where(WEBHOOK_URL.like(pattern))
                         .and(TARGET_ID.ne(targetId))
         );
         return !exists;
@@ -545,42 +469,32 @@ public class ChannelRegistrySql implements ChannelRegistry {
      * Load all channels for snapshot creation using the provided DSLContext (for transactional use).
      */
     public List<DeliverySnapshot.DeliveryChannel> loadAllForSnapshotWithDsl(DSLContext tx) {
-        return tx.select(
-                        D_TARGET_ID,
-                        D_CHANNEL_ID,
-                        D_THREAD_ID,
-                        D_GUILD_ID,
-                        D_EEW_ALERT,
-                        D_EEW_PREDICTION,
-                        D_EEW_DECIMATION,
-                        D_QUAKE_INFO,
-                        D_MIN_INTENSITY,
-                        D_LANG,
-                        W_WEBHOOK_ID,
-                        W_TOKEN
-                )
-                .from(D)
-                .leftJoin(W).on(D_TARGET_ID.eq(W_TARGET_ID))
+        return tx.selectFrom(DESTINATIONS)
                 .fetch(this::mapToDeliveryChannel);
     }
 
     private DeliverySnapshot.DeliveryChannel mapToDeliveryChannel(Record r) {
         ChannelWebhook webhook = null;
-        if (r.get(W_WEBHOOK_ID) != null) {
-            webhook = new ChannelWebhook(r.get(W_WEBHOOK_ID), r.get(W_TOKEN));
+        String webhookUrl = r.get(WEBHOOK_URL);
+        if (webhookUrl != null) {
+            webhook = new ChannelWebhook(webhookUrl);
         }
 
+        // TARGET_ID is used as long primitive, must not be null
+        Long targetId = toLong(r.get(TARGET_ID));
+        Long channelId = toLong(r.get(CHANNEL_ID));
+
         return new DeliverySnapshot.DeliveryChannel(
-                r.get(D_TARGET_ID),
-                r.get(D_CHANNEL_ID),
-                r.get(D_THREAD_ID),
-                r.get(D_GUILD_ID),
-                r.get(D_EEW_ALERT) != null && r.get(D_EEW_ALERT) == 1,
-                r.get(D_EEW_PREDICTION) != null && r.get(D_EEW_PREDICTION) == 1,
-                r.get(D_EEW_DECIMATION) != null && r.get(D_EEW_DECIMATION) == 1,
-                r.get(D_QUAKE_INFO) != null && r.get(D_QUAKE_INFO) == 1,
-                r.get(D_MIN_INTENSITY) != null ? SeismicIntensity.values()[r.get(D_MIN_INTENSITY)] : SeismicIntensity.ONE,
-                r.get(D_LANG),
+                targetId != null ? targetId : 0L,
+                channelId != null ? channelId : 0L,
+                toLong(r.get(THREAD_ID)),
+                toLong(r.get(GUILD_ID)),
+                r.get(EEW_ALERT) != null && r.get(EEW_ALERT) == 1,
+                r.get(EEW_PREDICTION) != null && r.get(EEW_PREDICTION) == 1,
+                r.get(EEW_DECIMATION) != null && r.get(EEW_DECIMATION) == 1,
+                r.get(QUAKE_INFO) != null && r.get(QUAKE_INFO) == 1,
+                r.get(MIN_INTENSITY) != null ? SeismicIntensity.values()[r.get(MIN_INTENSITY)] : SeismicIntensity.ONE,
+                r.get(LANG),
                 webhook
         );
     }
@@ -598,21 +512,38 @@ public class ChannelRegistrySql implements ChannelRegistry {
         }
 
         ChannelWebhook webhook = null;
-        if (r.get(W_WEBHOOK_ID) != null) {
-            webhook = new ChannelWebhook(r.get(W_WEBHOOK_ID), r.get(W_TOKEN));
+        String webhookUrl = r.get(WEBHOOK_URL);
+        if (webhookUrl != null) {
+            webhook = new ChannelWebhook(webhookUrl);
         }
 
         return new Channel(
-                r.get(D_GUILD_ID),
-                r.get(D_CHANNEL_ID),
-                r.get(D_THREAD_ID),
-                r.get(D_EEW_ALERT) != null && r.get(D_EEW_ALERT) == 1,
-                r.get(D_EEW_PREDICTION) != null && r.get(D_EEW_PREDICTION) == 1,
-                r.get(D_EEW_DECIMATION) != null && r.get(D_EEW_DECIMATION) == 1,
-                r.get(D_QUAKE_INFO) != null && r.get(D_QUAKE_INFO) == 1,
-                r.get(D_MIN_INTENSITY) != null ? SeismicIntensity.values()[r.get(D_MIN_INTENSITY)] : SeismicIntensity.ONE,
+                toLong(r.get(GUILD_ID)),
+                toLong(r.get(CHANNEL_ID)),
+                toLong(r.get(THREAD_ID)),
+                r.get(EEW_ALERT) != null && r.get(EEW_ALERT) == 1,
+                r.get(EEW_PREDICTION) != null && r.get(EEW_PREDICTION) == 1,
+                r.get(EEW_DECIMATION) != null && r.get(EEW_DECIMATION) == 1,
+                r.get(QUAKE_INFO) != null && r.get(QUAKE_INFO) == 1,
+                r.get(MIN_INTENSITY) != null ? SeismicIntensity.values()[r.get(MIN_INTENSITY)] : SeismicIntensity.ONE,
                 webhook,
-                r.get(D_LANG)
+                r.get(LANG)
         );
+    }
+
+    /**
+     * Safely convert a Number to Long, handling SQLite's tendency to return Integer for small values.
+     */
+    private static Long toLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Long) {
+            return (Long) value;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return null;
     }
 }

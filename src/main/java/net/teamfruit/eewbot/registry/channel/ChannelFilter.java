@@ -210,7 +210,7 @@ public class ChannelFilter {
             return false;
         if (this.webhookIdPresent && channel.getWebhook() == null)
             return false;
-        return !this.webhookIdPresent || channel.getWebhook().getId() == this.webhookId;
+        return !this.webhookIdPresent || channel.getWebhook().id() == this.webhookId;
     }
 
     public String toQueryString() {

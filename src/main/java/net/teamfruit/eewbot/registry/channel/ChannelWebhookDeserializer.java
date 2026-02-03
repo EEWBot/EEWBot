@@ -10,12 +10,15 @@ public class ChannelWebhookDeserializer implements JsonDeserializer<ChannelWebho
     public ChannelWebhook deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
         JsonObject obj = json.getAsJsonObject();
 
+        // New format: { "url": "https://discord.com/api/webhooks/..." }
+        if (obj.has("url")) {
+            return new ChannelWebhook(obj.get("url").getAsString());
+        }
+
+        // Old format: { "id": 123, "token": "xxx" }
+        // Convert to URL format (without thread_id - that's stored in the channel)
         long id = obj.get("id").getAsLong();
         String token = obj.get("token").getAsString();
-
-        // Note: threadId is ignored in the new format - it's stored in Channel.threadId instead
-        // This deserializer only reads id and token
-
-        return new ChannelWebhook(id, token);
+        return ChannelWebhook.of(id, token);
     }
 }

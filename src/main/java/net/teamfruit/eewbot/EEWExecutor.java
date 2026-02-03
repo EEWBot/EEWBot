@@ -218,16 +218,23 @@ public class EEWExecutor {
                                                         .createWebhook(guildChannel.getId().asLong(), WebhookCreateRequest.builder()
                                                                 .name(name)
                                                                 .build(), "Create EEWBot webhook");
-                                            }).flatMap(webhookData -> Mono.fromRunnable(() -> {
-                                                ChannelWebhook webhook = new ChannelWebhook(webhookData.id().asLong(), webhookData.token().get());
-                                                this.channels.setWebhook(channelId, webhook);
-                                                try {
-                                                    this.channels.save();
-                                                } catch (IOException e) {
-                                                    Log.logger.error("Failed to save channels during webhook creation batch", e);
-                                                }
-                                                Log.logger.info("Created webhook for " + channelId);
-                                            })))
+                                            }).flatMap(webhookData -> guildChannel.getClient().getChannelById(Snowflake.of(channelId))
+                                                    .map(channel -> channel instanceof ThreadChannel ? channelId : null)
+                                                    .defaultIfEmpty((Long) null)
+                                                    .flatMap(threadId -> Mono.fromRunnable(() -> {
+                                                        ChannelWebhook webhook = ChannelWebhook.of(
+                                                                webhookData.id().asLong(),
+                                                                webhookData.token().get(),
+                                                                threadId
+                                                        );
+                                                        this.channels.setWebhook(channelId, webhook);
+                                                        try {
+                                                            this.channels.save();
+                                                        } catch (IOException e) {
+                                                            Log.logger.error("Failed to save channels during webhook creation batch", e);
+                                                        }
+                                                        Log.logger.info("Created webhook for " + channelId);
+                                                    }))))
                                     .subscribe();
                             try {
                                 Thread.sleep(10000);

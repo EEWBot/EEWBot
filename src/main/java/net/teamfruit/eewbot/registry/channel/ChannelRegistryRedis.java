@@ -249,7 +249,17 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
-    public int clearWebhookByWebhookId(long webhookId) {
+    public int clearWebhookByBaseUrl(String webhookUrl) {
+        // Remove ?thread_id= query parameter to get base URL
+        int queryIndex = webhookUrl.indexOf('?');
+        String baseUrl = queryIndex >= 0 ? webhookUrl.substring(0, queryIndex) : webhookUrl;
+
+        // Extract webhook ID from base URL for Redis index search
+        // URL format: https://discord.com/api/webhooks/{id}/{token}
+        String path = baseUrl.substring("https://discord.com/api/webhooks/".length());
+        int slashIndex = path.indexOf('/');
+        long webhookId = Long.parseLong(path.substring(0, slashIndex));
+
         List<String> keysToUpdate = new ArrayList<>();
         AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder("@webhookId:[" + webhookId + " " + webhookId + "]")
                 .load("__key")

@@ -205,7 +205,7 @@ public class EEWService {
                         Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
                         erroredChannels.forEach((channelId, channel) -> {
-                            Log.logger.info("Webhook {} is deleted, unregister", Objects.requireNonNull(channel.getWebhook()).getId());
+                            Log.logger.info("Webhook {} is deleted, unregister", Objects.requireNonNull(channel.getWebhook()).id());
                             this.channels.setWebhook(channelId, null);
                         });
                         try {
@@ -302,13 +302,12 @@ public class EEWService {
                 return;
             }
 
-            notFoundList.stream().map(webhook -> Long.parseLong(webhook.substring(33, webhook.lastIndexOf("/"))))
-                    .forEach(webhookId -> {
-                        int cleared = this.channels.clearWebhookByWebhookId(webhookId);
-                        if (cleared > 0) {
-                            Log.logger.info("Cleared webhook {} from {} channel(s)", webhookId, cleared);
-                        }
-                    });
+            notFoundList.forEach(webhookUrl -> {
+                int cleared = this.channels.clearWebhookByBaseUrl(webhookUrl);
+                if (cleared > 0) {
+                    Log.logger.info("Cleared webhook {} from {} channel(s)", webhookUrl, cleared);
+                }
+            });
         } catch (InterruptedException e) {
             Log.logger.error("Interrupted while fetching not founds from webhook sender", e);
         } catch (URISyntaxException e) {

@@ -259,11 +259,11 @@ public class ChannelRegistryCached implements ChannelRegistry {
     }
 
     @Override
-    public int clearWebhookByWebhookId(long webhookId) {
+    public int clearWebhookByBaseUrl(String webhookUrl) {
         AtomicInteger count = new AtomicInteger(0);
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
-            int cleared = this.delegate.clearWebhookByWebhookIdWithDsl(tx, webhookId);
+            int cleared = this.delegate.clearWebhookByBaseUrlWithDsl(tx, webhookUrl);
             count.set(cleared);
             if (cleared > 0) {
                 this.revisionStore.incrementWithDsl(tx);

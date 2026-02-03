@@ -38,12 +38,14 @@ public interface ChannelRegistry {
     int removeByGuildId(long guildId);
 
     /**
-     * Clear (delete) webhook configuration for all channels using the specified webhook ID.
+     * Clear (delete) webhook configuration for all channels using the specified webhook URL.
+     * Uses base URL (without ?thread_id query parameter) for prefix matching,
+     * so all destinations sharing the same webhook are cleared.
      *
-     * @param webhookId the webhook ID
+     * @param webhookUrl the webhook URL (may include ?thread_id query parameter)
      * @return the number of webhooks cleared
      */
-    int clearWebhookByWebhookId(long webhookId);
+    int clearWebhookByBaseUrl(String webhookUrl);
 
     /**
      * Set language for all channels belonging to the specified guild.

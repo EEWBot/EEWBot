@@ -130,7 +130,13 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                                                     .name(removeUnusableName(name, bot.getUsername()))
                                                                                     .build(), "Create EEWBot webhook")))
                                                             .flatMap(webhookData -> Mono.fromRunnable(() -> {
-                                                                ChannelWebhook webhook = new ChannelWebhook(webhookData.id().asLong(), webhookData.token().get());
+                                                                // For threads, include thread_id in the webhook URL
+                                                                Long threadId = guildChannel instanceof ThreadChannel ? targetId : null;
+                                                                ChannelWebhook webhook = ChannelWebhook.of(
+                                                                        webhookData.id().asLong(),
+                                                                        webhookData.token().get(),
+                                                                        threadId
+                                                                );
                                                                 bot.getChannels().setWebhook(targetId, webhook);
                                                             })).then(buildReply(bot, event, lang, targetId, false))
                                                     )))

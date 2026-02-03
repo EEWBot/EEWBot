@@ -122,11 +122,15 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
-    public int clearWebhookByWebhookId(long webhookId) {
+    public int clearWebhookByBaseUrl(String webhookUrl) {
+        // Remove ?thread_id= query parameter to get base URL
+        int queryIndex = webhookUrl.indexOf('?');
+        String baseUrl = queryIndex >= 0 ? webhookUrl.substring(0, queryIndex) : webhookUrl;
+
         int count = 0;
         for (Map.Entry<Long, Channel> entry : getElement().entrySet()) {
             ChannelWebhook webhook = entry.getValue().getWebhook();
-            if (webhook != null && webhook.getId() == webhookId) {
+            if (webhook != null && webhook.getUrl().startsWith(baseUrl)) {
                 entry.getValue().setWebhook(null);
                 count++;
             }
@@ -165,7 +169,7 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
         return getElement().entrySet().stream().noneMatch(entry -> {
             Long entryTargetId = entry.getKey();
             ChannelWebhook webhook = entry.getValue().getWebhook();
-            if (webhook == null || webhook.getId() != webhookId)
+            if (webhook == null || webhook.id() != webhookId)
                 return false;
             // If this is a different destination with the same webhook, return true (conflict)
             return !entryTargetId.equals(targetId);

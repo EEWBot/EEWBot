@@ -154,7 +154,7 @@ public final class DeliverySnapshot {
         for (long tid : this.targetsWithWebhook) {
             if (tid != targetId) {
                 DeliveryChannel channel = this.byTargetId.get(tid);
-                if (channel.webhook() != null && channel.webhook().getId() == webhookId) {
+                if (channel.webhook() != null && channel.webhook().id() == webhookId) {
                     return false;
                 }
             }
@@ -227,7 +227,7 @@ public final class DeliverySnapshot {
             }
 
             if (filter.isWebhookIdPresent()) {
-                if (ch.webhook() == null || ch.webhook().getId() != filter.getWebhookId()) {
+                if (ch.webhook() == null || ch.webhook().id() != filter.getWebhookId()) {
                     return false;
                 }
             }

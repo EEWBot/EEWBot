@@ -1,59 +1,63 @@
 package net.teamfruit.eewbot.registry.channel;
 
-import java.util.Objects;
+import org.jetbrains.annotations.NotNull;
 
-public class ChannelWebhook {
+public record ChannelWebhook(String url) {
 
-    private long id;
-    private String token;
+    private static final String URL_PREFIX = "https://discord.com/api/webhooks/";
 
-    public ChannelWebhook(long id, String token) {
-        this.id = id;
-        this.token = token;
+    /**
+     * Extract webhook_id from URL.
+     * URL format: https://discord.com/api/webhooks/{id}/{token}[?thread_id={threadId}]
+     */
+    public long id() {
+        String path = this.url.substring(URL_PREFIX.length());
+        int slashIndex = path.indexOf('/');
+        return Long.parseLong(path.substring(0, slashIndex));
     }
 
-    public long getId() {
-        return this.id;
+    /**
+     * Extract token from URL (removes ?thread_id= query parameter if present).
+     */
+    public String token() {
+        String path = this.url.substring(URL_PREFIX.length());
+        int slashIndex = path.indexOf('/');
+        String tokenPart = path.substring(slashIndex + 1);
+        int queryIndex = tokenPart.indexOf('?');
+        return queryIndex >= 0 ? tokenPart.substring(0, queryIndex) : tokenPart;
     }
 
-    void setId(long id) {
-        this.id = id;
-    }
-
-    public String getToken() {
-        return this.token;
-    }
-
-    void setToken(String token) {
-        this.token = token;
-    }
-
-    public String getPath() {
-        return "/" + this.id + "/" + this.token;
-    }
-
+    /**
+     * Get the full webhook URL.
+     */
     public String getUrl() {
-        return "https://discord.com/api/webhooks/" + this.id + "/" + this.token;
+        return this.url;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ChannelWebhook webhook = (ChannelWebhook) o;
-        return Objects.equals(this.id, webhook.id) && Objects.equals(this.token, webhook.token);
+    /**
+     * Create ChannelWebhook from id and token (without thread_id).
+     */
+    public static ChannelWebhook of(long id, String token) {
+        return new ChannelWebhook(URL_PREFIX + id + "/" + token);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.id, this.token);
+    /**
+     * Create ChannelWebhook from id, token, and optional threadId.
+     * If threadId is not null, appends ?thread_id= to the URL.
+     */
+    public static ChannelWebhook of(long id, String token, Long threadId) {
+        String url = URL_PREFIX + id + "/" + token;
+        if (threadId != null) {
+            url += "?thread_id=" + threadId;
+        }
+        return new ChannelWebhook(url);
     }
 
+    @NotNull
     @Override
     public String toString() {
         return "Webhook{" +
-                "id=" + this.id +
-                ", token='" + this.token + '\'' +
+                "url='" + this.url + '\'' +
                 '}';
     }
 }

@@ -189,7 +189,6 @@ public class ChannelMigration {
         DSLContext dsl = destination.getDsl();
 
         Table<?> destinations = table(name("destinations"));
-        Table<?> webhooks = table(name("destination_webhooks"));
 
         Field<Long> targetIdField = field(name("target_id"), Long.class);
         Field<Long> channelIdField = field(name("channel_id"), Long.class);
@@ -201,8 +200,7 @@ public class ChannelMigration {
         Field<Integer> quakeInfoField = field(name("quake_info"), Integer.class);
         Field<Integer> minIntensityField = field(name("min_intensity"), Integer.class);
         Field<String> langField = field(name("lang"), String.class);
-        Field<Long> webhookIdField = field(name("webhook_id"), Long.class);
-        Field<String> tokenField = field(name("token"), String.class);
+        Field<String> webhookUrlField = field(name("webhook_url"), String.class);
 
         int count = 0;
         for (Map.Entry<Long, Channel> entry : entries) {
@@ -216,6 +214,17 @@ public class ChannelMigration {
                     ? channel.getMinIntensity().ordinal()
                     : SeismicIntensity.ONE.ordinal();
 
+            // Build webhook URL with thread_id if applicable
+            String webhookUrl = null;
+            if (channel.getWebhook() != null) {
+                ChannelWebhook webhook = ChannelWebhook.of(
+                        channel.getWebhook().id(),
+                        channel.getWebhook().token(),
+                        threadId
+                );
+                webhookUrl = webhook.getUrl();
+            }
+
             dsl.insertInto(destinations)
                     .columns(
                             targetIdField,
@@ -227,7 +236,8 @@ public class ChannelMigration {
                             eewDecimationField,
                             quakeInfoField,
                             minIntensityField,
-                            langField
+                            langField,
+                            webhookUrlField
                     )
                     .values(
                             targetId,
@@ -239,7 +249,8 @@ public class ChannelMigration {
                             channel.isEewDecimation() ? 1 : 0,
                             channel.isQuakeInfo() ? 1 : 0,
                             minIntensity,
-                            channel.getLang()
+                            channel.getLang(),
+                            webhookUrl
                     )
                     .onConflict(targetIdField)
                     .doUpdate()
@@ -252,22 +263,8 @@ public class ChannelMigration {
                     .set(quakeInfoField, channel.isQuakeInfo() ? 1 : 0)
                     .set(minIntensityField, minIntensity)
                     .set(langField, channel.getLang())
+                    .set(webhookUrlField, webhookUrl)
                     .execute();
-
-            if (channel.getWebhook() != null) {
-                dsl.insertInto(webhooks)
-                        .columns(targetIdField, webhookIdField, tokenField)
-                        .values(targetId, channel.getWebhook().getId(), channel.getWebhook().getToken())
-                        .onConflict(targetIdField)
-                        .doUpdate()
-                        .set(webhookIdField, channel.getWebhook().getId())
-                        .set(tokenField, channel.getWebhook().getToken())
-                        .execute();
-            } else {
-                dsl.deleteFrom(webhooks)
-                        .where(targetIdField.eq(targetId))
-                        .execute();
-            }
 
             count++;
             if (count % 100 == 0) {
