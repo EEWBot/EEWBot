@@ -232,7 +232,7 @@ public class EEWBot {
 
     private void handleDeletion(long id, boolean isGuild) {
         if (isGuild)
-            this.channels.actionOnChannels(ChannelFilter.builder().guildId(id).build(), this.channels::remove);
+            this.channels.removeByGuildId(id);
         else
             this.channels.remove(id);
         try {

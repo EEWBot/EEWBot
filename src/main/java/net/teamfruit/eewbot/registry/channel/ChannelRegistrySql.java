@@ -15,9 +15,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -326,14 +326,83 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     @Override
-    public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
-        Condition condition = buildCondition(filter);
+    public int removeByGuildId(long guildId) {
+        return removeByGuildIdWithDsl(this.dsl, guildId);
+    }
 
-        this.dsl.select(TARGET_ID)
-                .from(DESTINATIONS)
-                .where(condition)
+    /**
+     * Remove all channels belonging to the specified guild using the provided DSLContext (for transactional use).
+     * CASCADE delete will also remove associated webhooks.
+     */
+    public int removeByGuildIdWithDsl(DSLContext tx, long guildId) {
+        return tx.deleteFrom(DESTINATIONS)
+                .where(GUILD_ID.eq(guildId))
+                .execute();
+    }
+
+    @Override
+    public int clearWebhookByWebhookId(long webhookId) {
+        return clearWebhookByWebhookIdWithDsl(this.dsl, webhookId);
+    }
+
+    /**
+     * Clear (delete) webhook configuration for all channels using the specified webhook ID.
+     */
+    public int clearWebhookByWebhookIdWithDsl(DSLContext tx, long webhookId) {
+        return tx.deleteFrom(DESTINATION_WEBHOOKS)
+                .where(WEBHOOK_ID.eq(webhookId))
+                .execute();
+    }
+
+    @Override
+    public int setLangByGuildId(long guildId, String lang) {
+        return setLangByGuildIdWithDsl(this.dsl, guildId, lang);
+    }
+
+    /**
+     * Set language for all channels belonging to the specified guild.
+     */
+    public int setLangByGuildIdWithDsl(DSLContext tx, long guildId, String lang) {
+        return tx.update(DESTINATIONS)
+                .set(LANG, lang)
+                .where(GUILD_ID.eq(guildId))
+                .execute();
+    }
+
+    @Override
+    public Map<Long, Channel> getAllChannels() {
+        return getAllChannelsWithDsl(this.dsl);
+    }
+
+    /**
+     * Get all channels as a map using the provided DSLContext (for transactional use).
+     */
+    public Map<Long, Channel> getAllChannelsWithDsl(DSLContext tx) {
+        Map<Long, Channel> result = new HashMap<>();
+        tx.select(
+                        D_TARGET_ID,
+                        D_CHANNEL_ID,
+                        D_THREAD_ID,
+                        D_GUILD_ID,
+                        D_EEW_ALERT,
+                        D_EEW_PREDICTION,
+                        D_EEW_DECIMATION,
+                        D_QUAKE_INFO,
+                        D_MIN_INTENSITY,
+                        D_LANG,
+                        W_WEBHOOK_ID,
+                        W_TOKEN
+                )
+                .from(D)
+                .leftJoin(W).on(D_TARGET_ID.eq(W_TARGET_ID))
                 .fetch()
-                .forEach(r -> consumer.accept(r.value1()));
+                .forEach(r -> {
+                    Channel channel = mapToChannel(r);
+                    if (channel != null) {
+                        result.put(r.get(D_TARGET_ID), channel);
+                    }
+                });
+        return result;
     }
 
     @Override

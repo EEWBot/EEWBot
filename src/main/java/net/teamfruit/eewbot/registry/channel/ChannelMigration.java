@@ -152,29 +152,9 @@ public class ChannelMigration {
 
         if (source instanceof ChannelRegistryJson jsonSource) {
             entries.addAll(jsonSource.getElement().entrySet());
-        } else if (source instanceof ChannelRegistryRedis) {
-            Map<Long, Channel> channels = new HashMap<>();
-            source.actionOnChannels(
-                    ChannelFilter.builder().build(),
-                    channelId -> {
-                        Channel channel = source.get(channelId);
-                        if (channel != null) {
-                            channels.put(channelId, channel);
-                        }
-                    }
-            );
-            entries.addAll(channels.entrySet());
-        } else if (source instanceof ChannelRegistrySql) {
-            Map<Long, Channel> channels = new HashMap<>();
-            source.actionOnChannels(
-                    null,
-                    channelId -> {
-                        Channel channel = source.get(channelId);
-                        if (channel != null) {
-                            channels.put(channelId, channel);
-                        }
-                    }
-            );
+        } else {
+            // Use the optimized getAllChannels method for all other registries
+            Map<Long, Channel> channels = source.getAllChannels();
             entries.addAll(channels.entrySet());
         }
 

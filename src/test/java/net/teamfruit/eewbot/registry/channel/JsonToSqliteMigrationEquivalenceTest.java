@@ -268,258 +268,142 @@ class JsonToSqliteMigrationEquivalenceTest {
                 .isEqualTo(new HashSet<>(jsonResult));
     }
 
-    // ===== actionOnChannels(ChannelFilter, Consumer) tests =====
+    // ===== getAllChannels() tests =====
 
     @Test
-    @DisplayName("actionOnChannels() with empty filter should return all channels")
-    void testActionOnChannels_emptyFilter() {
-        ChannelFilter filter = ChannelFilter.builder().build();
+    @DisplayName("getAllChannels() should return equal results")
+    void testGetAllChannels() {
+        Map<Long, Channel> jsonResult = this.jsonRegistry.getAllChannels();
+        Map<Long, Channel> sqlResult = this.sqlRegistry.getAllChannels();
 
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("All channels")
-                .isEqualTo(jsonResult)
+        assertThat(sqlResult.keySet())
+                .as("All channel IDs")
+                .isEqualTo(jsonResult.keySet())
                 .hasSize(TEST_CHANNELS.size());
+
+        for (Long targetId : sqlResult.keySet()) {
+            assertThat(sqlResult.get(targetId))
+                    .as("Channel for targetId=%d", targetId)
+                    .isEqualTo(jsonResult.get(targetId));
+        }
+    }
+
+    // ===== removeByGuildId() tests =====
+
+    @Test
+    @DisplayName("removeByGuildId() should remove channels belonging to the guild")
+    void testRemoveByGuildId() {
+        // Guild 100 has channels 1001, 1002, 1003
+        int jsonRemoved = this.jsonRegistry.removeByGuildId(100L);
+        int sqlRemoved = this.sqlRegistry.removeByGuildId(100L);
+
+        assertThat(sqlRemoved)
+                .as("Removed count for guild 100")
+                .isEqualTo(jsonRemoved)
+                .isEqualTo(3);
+
+        // Verify channels are removed
+        assertThat(this.jsonRegistry.exists(1001L)).isFalse();
+        assertThat(this.jsonRegistry.exists(1002L)).isFalse();
+        assertThat(this.jsonRegistry.exists(1003L)).isFalse();
+
+        assertThat(this.sqlRegistry.exists(1001L)).isFalse();
+        assertThat(this.sqlRegistry.exists(1002L)).isFalse();
+        assertThat(this.sqlRegistry.exists(1003L)).isFalse();
+
+        // Verify other channels are not affected
+        assertThat(this.jsonRegistry.exists(1004L)).isTrue();
+        assertThat(this.sqlRegistry.exists(1004L)).isTrue();
     }
 
     @Test
-    @DisplayName("actionOnChannels() with hasGuild=true should return guild channels")
-    void testActionOnChannels_hasGuildFilter() {
-        ChannelFilter filter = ChannelFilter.builder().hasGuild(true).build();
+    @DisplayName("removeByGuildId() for non-existent guild should return 0")
+    void testRemoveByGuildId_nonExistentGuild() {
+        int jsonRemoved = this.jsonRegistry.removeByGuildId(99999L);
+        int sqlRemoved = this.sqlRegistry.removeByGuildId(99999L);
 
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
+        assertThat(sqlRemoved)
+                .as("Removed count for non-existent guild")
+                .isEqualTo(jsonRemoved)
+                .isEqualTo(0);
+    }
 
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
+    // ===== clearWebhookByWebhookId() tests =====
 
-        assertThat(sqlResult)
-                .as("Guild channels")
-                .isEqualTo(jsonResult);
+    @Test
+    @DisplayName("clearWebhookByWebhookId() should clear webhook from channels")
+    void testClearWebhookByWebhookId() {
+        // Webhook 2001 is used by channel 1002
+        assertThat(this.jsonRegistry.get(1002L).getWebhook()).isNotNull();
+        assertThat(this.sqlRegistry.get(1002L).getWebhook()).isNotNull();
+
+        int jsonCleared = this.jsonRegistry.clearWebhookByWebhookId(2001L);
+        int sqlCleared = this.sqlRegistry.clearWebhookByWebhookId(2001L);
+
+        assertThat(sqlCleared)
+                .as("Cleared count for webhook 2001")
+                .isEqualTo(jsonCleared)
+                .isEqualTo(1);
+
+        // Verify webhook is cleared
+        assertThat(this.jsonRegistry.get(1002L).getWebhook()).isNull();
+        assertThat(this.sqlRegistry.get(1002L).getWebhook()).isNull();
+
+        // Verify other webhooks are not affected
+        assertThat(this.jsonRegistry.get(1003L).getWebhook()).isNotNull();
+        assertThat(this.sqlRegistry.get(1003L).getWebhook()).isNotNull();
     }
 
     @Test
-    @DisplayName("actionOnChannels() with hasGuild=false should return DM channels")
-    void testActionOnChannels_isDMFilter() {
-        ChannelFilter filter = ChannelFilter.builder().hasGuild(false).build();
+    @DisplayName("clearWebhookByWebhookId() for non-existent webhook should return 0")
+    void testClearWebhookByWebhookId_nonExistentWebhook() {
+        int jsonCleared = this.jsonRegistry.clearWebhookByWebhookId(99999L);
+        int sqlCleared = this.sqlRegistry.clearWebhookByWebhookId(99999L);
 
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
+        assertThat(sqlCleared)
+                .as("Cleared count for non-existent webhook")
+                .isEqualTo(jsonCleared)
+                .isEqualTo(0);
+    }
 
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
+    // ===== setLangByGuildId() tests =====
 
-        assertThat(sqlResult)
-                .as("DM channels")
-                .isEqualTo(jsonResult)
-                .containsExactlyInAnyOrder(1004L, 1006L);
+    @Test
+    @DisplayName("setLangByGuildId() should update language for all channels in guild")
+    void testSetLangByGuildId() {
+        // Guild 100 has channels 1001, 1002, 1003 with different languages
+        int jsonUpdated = this.jsonRegistry.setLangByGuildId(100L, "ko_kr");
+        int sqlUpdated = this.sqlRegistry.setLangByGuildId(100L, "ko_kr");
+
+        assertThat(sqlUpdated)
+                .as("Updated count for guild 100")
+                .isEqualTo(jsonUpdated)
+                .isEqualTo(3);
+
+        // Verify language is updated
+        assertThat(this.jsonRegistry.get(1001L).getLang()).isEqualTo("ko_kr");
+        assertThat(this.jsonRegistry.get(1002L).getLang()).isEqualTo("ko_kr");
+        assertThat(this.jsonRegistry.get(1003L).getLang()).isEqualTo("ko_kr");
+
+        assertThat(this.sqlRegistry.get(1001L).getLang()).isEqualTo("ko_kr");
+        assertThat(this.sqlRegistry.get(1002L).getLang()).isEqualTo("ko_kr");
+        assertThat(this.sqlRegistry.get(1003L).getLang()).isEqualTo("ko_kr");
+
+        // Verify other channels are not affected
+        assertThat(this.jsonRegistry.get(1004L).getLang()).isEqualTo("zh_tw");
+        assertThat(this.sqlRegistry.get(1004L).getLang()).isEqualTo("zh_tw");
     }
 
     @Test
-    @DisplayName("actionOnChannels() with guildId filter should return channels in guild")
-    void testActionOnChannels_guildIdFilter() {
-        ChannelFilter filter = ChannelFilter.builder().guildId(100L).build();
+    @DisplayName("setLangByGuildId() for non-existent guild should return 0")
+    void testSetLangByGuildId_nonExistentGuild() {
+        int jsonUpdated = this.jsonRegistry.setLangByGuildId(99999L, "ko_kr");
+        int sqlUpdated = this.sqlRegistry.setLangByGuildId(99999L, "ko_kr");
 
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("Channels in guild 100")
-                .isEqualTo(jsonResult);
-    }
-
-    @Test
-    @DisplayName("actionOnChannels() with eewAlert=true should return alert channels")
-    void testActionOnChannels_eewAlertFilter() {
-        ChannelFilter filter = ChannelFilter.builder().eewAlert(true).build();
-
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("EEW alert channels")
-                .isEqualTo(jsonResult);
-    }
-
-    @Test
-    @DisplayName("actionOnChannels() with eewPrediction=true should return prediction channels")
-    void testActionOnChannels_eewPredictionFilter() {
-        ChannelFilter filter = ChannelFilter.builder().eewPrediction(true).build();
-
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("EEW prediction channels")
-                .isEqualTo(jsonResult);
-    }
-
-    @Test
-    @DisplayName("actionOnChannels() with eewDecimation=true should return decimation channels")
-    void testActionOnChannels_eewDecimationFilter() {
-        ChannelFilter filter = ChannelFilter.builder().eewDecimation(true).build();
-
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("EEW decimation channels")
-                .isEqualTo(jsonResult);
-    }
-
-    @Test
-    @DisplayName("actionOnChannels() with quakeInfo=true should return quakeInfo channels")
-    void testActionOnChannels_quakeInfoFilter() {
-        ChannelFilter filter = ChannelFilter.builder().quakeInfo(true).build();
-
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("QuakeInfo channels")
-                .isEqualTo(jsonResult);
-    }
-
-    @Test
-    @DisplayName("actionOnChannels() with isThread=true should return thread channels")
-    void testActionOnChannels_isThreadFilter() {
-        ChannelFilter filter = ChannelFilter.builder().isThread(true).build();
-
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("Thread channels")
-                .isEqualTo(jsonResult)
-                .containsExactly(1003L);
-    }
-
-    @Test
-    @DisplayName("actionOnChannels() with isThread=false should return non-thread channels")
-    void testActionOnChannels_isNotThreadFilter() {
-        ChannelFilter filter = ChannelFilter.builder().isThread(false).build();
-
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("Non-thread channels")
-                .isEqualTo(jsonResult);
-    }
-
-    @Test
-    @DisplayName("actionOnChannels() with intensity=ONE should return low intensity channels")
-    void testActionOnChannels_intensityOneLowerBoundary() {
-        ChannelFilter filter = ChannelFilter.builder().intensity(SeismicIntensity.ONE).build();
-
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("Channels with intensity <= ONE")
-                .isEqualTo(jsonResult);
-    }
-
-    @Test
-    @DisplayName("actionOnChannels() with intensity=TWO should return channels up to TWO")
-    void testActionOnChannels_intensityTwoUpperBoundary() {
-        ChannelFilter filter = ChannelFilter.builder().intensity(SeismicIntensity.TWO).build();
-
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("Channels with intensity <= TWO")
-                .isEqualTo(jsonResult);
-    }
-
-    @Test
-    @DisplayName("actionOnChannels() with compound filter (hasGuild + eewAlert)")
-    void testActionOnChannels_compoundFilter_hasGuildAndEewAlert() {
-        ChannelFilter filter = ChannelFilter.builder()
-                .hasGuild(true)
-                .eewAlert(true)
-                .build();
-
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("Guild channels with eewAlert")
-                .isEqualTo(jsonResult);
-    }
-
-    @Test
-    @DisplayName("actionOnChannels() with compound filter (hasGuild + intensity)")
-    void testActionOnChannels_compoundFilter_hasGuildAndIntensity() {
-        ChannelFilter filter = ChannelFilter.builder()
-                .hasGuild(true)
-                .intensity(SeismicIntensity.THREE)
-                .build();
-
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("Guild channels with intensity <= THREE")
-                .isEqualTo(jsonResult);
-    }
-
-    @Test
-    @DisplayName("actionOnChannels() with compound filter (guildId + isThread)")
-    void testActionOnChannels_compoundFilter_guildIdAndIsThread() {
-        ChannelFilter filter = ChannelFilter.builder()
-                .guildId(100L)
-                .isThread(true)
-                .build();
-
-        Set<Long> jsonResult = new HashSet<>();
-        Set<Long> sqlResult = new HashSet<>();
-
-        this.jsonRegistry.actionOnChannels(filter, jsonResult::add);
-        this.sqlRegistry.actionOnChannels(filter, sqlResult::add);
-
-        assertThat(sqlResult)
-                .as("Thread channels in guild 100")
-                .isEqualTo(jsonResult);
+        assertThat(sqlUpdated)
+                .as("Updated count for non-existent guild")
+                .isEqualTo(jsonUpdated)
+                .isEqualTo(0);
     }
 
     // ===== getChannelsPartitionedByWebhookPresent(ChannelFilter) tests =====

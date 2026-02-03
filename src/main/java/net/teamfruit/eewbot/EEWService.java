@@ -14,7 +14,6 @@ import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.channel.ChannelBase;
 import net.teamfruit.eewbot.registry.channel.ChannelFilter;
 import net.teamfruit.eewbot.registry.channel.ChannelRegistry;
-import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.async.methods.*;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -304,12 +303,12 @@ public class EEWService {
             }
 
             notFoundList.stream().map(webhook -> Long.parseLong(webhook.substring(33, webhook.lastIndexOf("/"))))
-                    .forEach(webhookId -> this.channels.actionOnChannels(ChannelFilter.builder().webhookId(webhookId).build(), channelId -> {
-                        Log.logger.info("Webhook for channel {} is deleted, unregister", channelId);
-                        ChannelWebhook current = this.channels.get(channelId).getWebhook();
-                        if (current != null && current.getId() == webhookId)
-                            this.channels.setWebhook(channelId, null);
-                    }));
+                    .forEach(webhookId -> {
+                        int cleared = this.channels.clearWebhookByWebhookId(webhookId);
+                        if (cleared > 0) {
+                            Log.logger.info("Cleared webhook {} from {} channel(s)", webhookId, cleared);
+                        }
+                    });
         } catch (InterruptedException e) {
             Log.logger.error("Interrupted while fetching not founds from webhook sender", e);
         } catch (URISyntaxException e) {

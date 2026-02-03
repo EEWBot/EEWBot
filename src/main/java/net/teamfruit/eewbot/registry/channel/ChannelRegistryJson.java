@@ -8,11 +8,12 @@ import net.teamfruit.eewbot.registry.JsonRegistry;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -99,18 +100,56 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     public List<Long> getWebhookAbsentChannels(ChannelFilter filter) {
         return getElement().entrySet()
                 .stream()
-                .filter(entry -> filter.test(entry.getValue()))
+                .filter(entry -> filter == null || filter.test(entry.getValue()))
                 .filter(entry -> entry.getValue().getWebhook() == null)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
-        getElement().entrySet().stream()
-                .filter(entry -> filter.test(entry.getValue()))
-                .map(Map.Entry::getKey)
-                .forEach(consumer);
+    public int removeByGuildId(long guildId) {
+        int count = 0;
+        Iterator<Map.Entry<Long, Channel>> iterator = getElement().entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Long, Channel> entry = iterator.next();
+            Long channelGuildId = entry.getValue().getGuildId();
+            if (channelGuildId != null && channelGuildId == guildId) {
+                iterator.remove();
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public int clearWebhookByWebhookId(long webhookId) {
+        int count = 0;
+        for (Map.Entry<Long, Channel> entry : getElement().entrySet()) {
+            ChannelWebhook webhook = entry.getValue().getWebhook();
+            if (webhook != null && webhook.getId() == webhookId) {
+                entry.getValue().setWebhook(null);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public int setLangByGuildId(long guildId, String lang) {
+        int count = 0;
+        for (Map.Entry<Long, Channel> entry : getElement().entrySet()) {
+            Long channelGuildId = entry.getValue().getGuildId();
+            if (channelGuildId != null && channelGuildId == guildId) {
+                entry.getValue().setLang(lang);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public Map<Long, Channel> getAllChannels() {
+        return new HashMap<>(getElement());
     }
 
     @Override

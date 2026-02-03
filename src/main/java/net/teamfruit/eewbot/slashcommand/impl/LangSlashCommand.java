@@ -11,7 +11,6 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.registry.channel.Channel;
-import net.teamfruit.eewbot.registry.channel.ChannelFilter;
 import net.teamfruit.eewbot.slashcommand.IButtonSlashCommand;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
 import reactor.core.publisher.Mono;
@@ -90,7 +89,7 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
             Optional<Snowflake> guildId = event.getInteraction().getGuildId();
             if (guildId.isEmpty())
                 return Mono.empty();
-            bot.getChannels().actionOnChannels(ChannelFilter.builder().guildId(guildId.get().asLong()).build(), channelId -> bot.getChannels().setLang(channelId, lang));
+            bot.getChannels().setLangByGuildId(guildId.get().asLong(), lang);
             try {
                 bot.getChannels().save();
             } catch (IOException e) {

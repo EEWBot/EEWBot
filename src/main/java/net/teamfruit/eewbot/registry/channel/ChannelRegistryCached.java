@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 /**
@@ -126,15 +126,6 @@ public class ChannelRegistryCached implements ChannelRegistry {
     }
 
     @Override
-    public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
-        DeliverySnapshot snapshot = this.snapshotRef.get();
-        if (snapshot == null) {
-            throw new IllegalStateException("Snapshot not initialized. Call initializeSnapshot() first.");
-        }
-        snapshot.actionOnChannels(filter, consumer);
-    }
-
-    @Override
     public List<Long> getWebhookAbsentChannels() {
         DeliverySnapshot snapshot = this.snapshotRef.get();
         if (snapshot == null) {
@@ -243,6 +234,69 @@ public class ChannelRegistryCached implements ChannelRegistry {
         });
         this.channelCache.invalidate(key);
         requestReload();
+    }
+
+    // ========================================
+    // Batch write methods - update DB with revision++ in same transaction, then reload
+    // ========================================
+
+    @Override
+    public int removeByGuildId(long guildId) {
+        AtomicInteger count = new AtomicInteger(0);
+        this.delegate.getDsl().transaction(ctx -> {
+            org.jooq.DSLContext tx = ctx.dsl();
+            int removed = this.delegate.removeByGuildIdWithDsl(tx, guildId);
+            count.set(removed);
+            if (removed > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+            }
+        });
+        if (count.get() > 0) {
+            this.channelCache.invalidateAll();
+            requestReload();
+        }
+        return count.get();
+    }
+
+    @Override
+    public int clearWebhookByWebhookId(long webhookId) {
+        AtomicInteger count = new AtomicInteger(0);
+        this.delegate.getDsl().transaction(ctx -> {
+            org.jooq.DSLContext tx = ctx.dsl();
+            int cleared = this.delegate.clearWebhookByWebhookIdWithDsl(tx, webhookId);
+            count.set(cleared);
+            if (cleared > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+            }
+        });
+        if (count.get() > 0) {
+            this.channelCache.invalidateAll();
+            requestReload();
+        }
+        return count.get();
+    }
+
+    @Override
+    public int setLangByGuildId(long guildId, String lang) {
+        AtomicInteger count = new AtomicInteger(0);
+        this.delegate.getDsl().transaction(ctx -> {
+            org.jooq.DSLContext tx = ctx.dsl();
+            int updated = this.delegate.setLangByGuildIdWithDsl(tx, guildId, lang);
+            count.set(updated);
+            if (updated > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+            }
+        });
+        if (count.get() > 0) {
+            this.channelCache.invalidateAll();
+            requestReload();
+        }
+        return count.get();
+    }
+
+    @Override
+    public Map<Long, Channel> getAllChannels() {
+        return this.delegate.getAllChannels();
     }
 
     @Override

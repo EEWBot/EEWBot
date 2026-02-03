@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -224,8 +223,75 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
-    public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
-        AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder(filter.toQueryString())
+    public int removeByGuildId(long guildId) {
+        List<String> keysToRemove = new ArrayList<>();
+        AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder("@guildId:[" + guildId + " " + guildId + "]")
+                .load("__key")
+                .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
+        long cursorId;
+        do {
+            cursorId = aggregationResult.getCursorId();
+            aggregationResult.getRows().forEach(row -> keysToRemove.add(row.getString("__key")));
+            if (cursorId != 0)
+                aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
+        } while (cursorId != 0);
+
+        if (!keysToRemove.isEmpty()) {
+            try (Connection connection = this.jedisPool.getPool().getResource()) {
+                Transaction transaction = new Transaction(connection);
+                for (String key : keysToRemove) {
+                    transaction.jsonDel(key);
+                }
+                transaction.exec();
+            }
+        }
+        return keysToRemove.size();
+    }
+
+    @Override
+    public int clearWebhookByWebhookId(long webhookId) {
+        List<String> keysToUpdate = new ArrayList<>();
+        AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder("@webhookId:[" + webhookId + " " + webhookId + "]")
+                .load("__key")
+                .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
+        long cursorId;
+        do {
+            cursorId = aggregationResult.getCursorId();
+            aggregationResult.getRows().forEach(row -> keysToUpdate.add(row.getString("__key")));
+            if (cursorId != 0)
+                aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
+        } while (cursorId != 0);
+
+        for (String key : keysToUpdate) {
+            this.jedisPool.jsonSet(key, Path.of("$.webhook"), (Object) null);
+        }
+        return keysToUpdate.size();
+    }
+
+    @Override
+    public int setLangByGuildId(long guildId, String lang) {
+        List<String> keysToUpdate = new ArrayList<>();
+        AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder("@guildId:[" + guildId + " " + guildId + "]")
+                .load("__key")
+                .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
+        long cursorId;
+        do {
+            cursorId = aggregationResult.getCursorId();
+            aggregationResult.getRows().forEach(row -> keysToUpdate.add(row.getString("__key")));
+            if (cursorId != 0)
+                aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
+        } while (cursorId != 0);
+
+        for (String key : keysToUpdate) {
+            this.jedisPool.jsonSet(key, Path.of("$.lang"), lang);
+        }
+        return keysToUpdate.size();
+    }
+
+    @Override
+    public Map<Long, Channel> getAllChannels() {
+        Map<Long, Channel> result = new HashMap<>();
+        AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder("*")
                 .load("__key")
                 .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
         long cursorId;
@@ -234,12 +300,16 @@ public class ChannelRegistryRedis implements ChannelRegistry {
             aggregationResult.getRows().forEach(row -> {
                 Long channelId = parseChannelIdFromKey(row.getString("__key"));
                 if (channelId != null) {
-                    consumer.accept(channelId);
+                    Channel channel = this.jedisPool.jsonGet(row.getString("__key"), Channel.class);
+                    if (channel != null) {
+                        result.put(channelId, channel);
+                    }
                 }
             });
             if (cursorId != 0)
                 aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
         } while (cursorId != 0);
+        return result;
     }
 
     @Override

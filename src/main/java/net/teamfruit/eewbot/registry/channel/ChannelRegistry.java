@@ -3,10 +3,8 @@ package net.teamfruit.eewbot.registry.channel;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public interface ChannelRegistry {
@@ -29,21 +27,39 @@ public interface ChannelRegistry {
 
     List<Long> getWebhookAbsentChannels();
 
-    default List<Long> getWebhookAbsentChannels(ChannelFilter filter) {
-        if (filter == null) {
-            return getWebhookAbsentChannels();
-        }
-        List<Long> results = new ArrayList<>();
-        actionOnChannels(filter, channelId -> {
-            Channel channel = get(channelId);
-            if (channel != null && channel.getWebhook() == null) {
-                results.add(channelId);
-            }
-        });
-        return results;
-    }
+    List<Long> getWebhookAbsentChannels(ChannelFilter filter);
 
-    void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer);
+    /**
+     * Remove all channels belonging to the specified guild.
+     *
+     * @param guildId the guild ID
+     * @return the number of channels removed
+     */
+    int removeByGuildId(long guildId);
+
+    /**
+     * Clear (delete) webhook configuration for all channels using the specified webhook ID.
+     *
+     * @param webhookId the webhook ID
+     * @return the number of webhooks cleared
+     */
+    int clearWebhookByWebhookId(long webhookId);
+
+    /**
+     * Set language for all channels belonging to the specified guild.
+     *
+     * @param guildId the guild ID
+     * @param lang the language code
+     * @return the number of channels updated
+     */
+    int setLangByGuildId(long guildId, String lang);
+
+    /**
+     * Get all channels as a map.
+     *
+     * @return a map of target ID to Channel
+     */
+    Map<Long, Channel> getAllChannels();
 
     Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter);
 

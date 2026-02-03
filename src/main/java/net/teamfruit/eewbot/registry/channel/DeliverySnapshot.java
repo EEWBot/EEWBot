@@ -3,7 +3,6 @@ package net.teamfruit.eewbot.registry.channel;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -125,19 +124,6 @@ public final class DeliverySnapshot {
         }
 
         return Map.of(true, withWebhook, false, withoutWebhook);
-    }
-
-    /**
-     * Execute action on all target IDs matching the filter.
-     */
-    public void actionOnChannels(ChannelFilter filter, Consumer<Long> consumer) {
-        Predicate<DeliveryChannel> predicate = buildPredicate(filter);
-
-        for (DeliveryChannel channel : this.byTargetId.values()) {
-            if (predicate.test(channel)) {
-                consumer.accept(channel.targetId());
-            }
-        }
     }
 
     /**
