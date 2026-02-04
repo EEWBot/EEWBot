@@ -227,8 +227,13 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     /**
      * Set lang using the provided DSLContext (for transactional use).
+     *
+     * @throws IllegalArgumentException if lang is null
      */
     public void setLangWithDsl(DSLContext tx, long key, String lang) {
+        if (lang == null) {
+            throw new IllegalArgumentException("lang cannot be null");
+        }
         tx.update(DESTINATIONS)
                 .set(LANG, lang)
                 .where(TARGET_ID.eq(key))

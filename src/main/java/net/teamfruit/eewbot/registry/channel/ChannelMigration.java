@@ -50,7 +50,7 @@ public class ChannelMigration {
                 }
 
                 if (!config.dryRun) {
-                    performMigrationWithTracking(source, sqlDest, migrationName);
+                    performMigrationWithTracking(source, sqlDest, migrationName, config.defaultLang);
                 } else {
                     performDryRun(source);
                 }
@@ -58,7 +58,7 @@ public class ChannelMigration {
                 if (config.dryRun) {
                     performDryRun(source);
                 } else {
-                    performMigration(source, destination);
+                    performMigration(source, destination, config.defaultLang);
                 }
             }
 
@@ -81,7 +81,7 @@ public class ChannelMigration {
         );
     }
 
-    private static void performMigrationWithTracking(ChannelRegistry source, ChannelRegistrySql dest, String migrationName) {
+    private static void performMigrationWithTracking(ChannelRegistry source, ChannelRegistrySql dest, String migrationName, String defaultLang) {
         dest.getDsl().transaction(ctx -> {
             DSLContext tx = ctx.dsl();
 
@@ -110,7 +110,7 @@ public class ChannelMigration {
 
             Log.logger.info("Performing migration: {}", migrationName);
             List<Map.Entry<Long, Channel>> entries = collectChannels(source);
-            migrateChannels(entries, dest);
+            migrateChannels(entries, dest, defaultLang);
 
             if (dest.getDialect() == org.jooq.SQLDialect.SQLITE) {
                 tx.insertInto(dataMigrations)
@@ -128,9 +128,9 @@ public class ChannelMigration {
         });
     }
 
-    private static void performMigration(ChannelRegistry source, ChannelRegistry destination) {
+    private static void performMigration(ChannelRegistry source, ChannelRegistry destination, String defaultLang) {
         List<Map.Entry<Long, Channel>> entries = collectChannels(source);
-        migrateChannels(entries, destination);
+        migrateChannels(entries, destination, defaultLang);
     }
 
     private static void performDryRun(ChannelRegistry source) {
@@ -162,9 +162,9 @@ public class ChannelMigration {
         return entries;
     }
 
-    private static void migrateChannels(List<Map.Entry<Long, Channel>> entries, ChannelRegistry destination) {
+    private static void migrateChannels(List<Map.Entry<Long, Channel>> entries, ChannelRegistry destination, String defaultLang) {
         if (destination instanceof ChannelRegistrySql) {
-            migrateChannelsSql(entries, (ChannelRegistrySql) destination);
+            migrateChannelsSql(entries, (ChannelRegistrySql) destination, defaultLang);
             return;
         }
         int count = 0;
@@ -185,7 +185,7 @@ public class ChannelMigration {
     }
 
     // Package-private for testing
-    static void migrateChannelsSql(List<Map.Entry<Long, Channel>> entries, ChannelRegistrySql destination) {
+    static void migrateChannelsSql(List<Map.Entry<Long, Channel>> entries, ChannelRegistrySql destination, String defaultLang) {
         DSLContext dsl = destination.getDsl();
 
         Table<?> destinations = table(name("destinations"));
@@ -213,6 +213,9 @@ public class ChannelMigration {
             Integer minIntensity = channel.getMinIntensity() != null
                     ? channel.getMinIntensity().ordinal()
                     : SeismicIntensity.ONE.ordinal();
+
+            // Use defaultLang if channel's lang is null
+            String lang = channel.getLang() != null ? channel.getLang() : defaultLang;
 
             // Build webhook URL with thread_id if applicable
             String webhookUrl = null;
@@ -249,7 +252,7 @@ public class ChannelMigration {
                             channel.isEewDecimation() ? 1 : 0,
                             channel.isQuakeInfo() ? 1 : 0,
                             minIntensity,
-                            channel.getLang(),
+                            lang,
                             webhookUrl
                     )
                     .onConflict(targetIdField)
@@ -262,7 +265,7 @@ public class ChannelMigration {
                     .set(eewDecimationField, channel.isEewDecimation() ? 1 : 0)
                     .set(quakeInfoField, channel.isQuakeInfo() ? 1 : 0)
                     .set(minIntensityField, minIntensity)
-                    .set(langField, channel.getLang())
+                    .set(langField, lang)
                     .set(webhookUrlField, webhookUrl)
                     .execute();
 
@@ -347,6 +350,7 @@ public class ChannelMigration {
                 case "--dest-username" -> config.destConfig.put("username", nextArg(args, ++i, "--dest-username"));
                 case "--dest-password" -> config.destConfig.put("password", nextArg(args, ++i, "--dest-password"));
                 case "--dry-run" -> config.dryRun = true;
+                case "--default-lang" -> config.defaultLang = nextArg(args, ++i, "--default-lang");
                 default -> {
                     if (arg.startsWith("--")) {
                         Log.logger.warn("Unknown argument: {}", arg);
@@ -382,6 +386,7 @@ public class ChannelMigration {
         System.out.println("  --dest-username <user>    Destination PostgreSQL username");
         System.out.println("  --dest-password <pass>    Destination PostgreSQL password");
         System.out.println("  --dry-run                 Preview migration without making changes");
+        System.out.println("  --default-lang <lang>     Default language for channels with null lang (default: ja_JP)");
         System.out.println();
         System.out.println("Examples:");
         System.out.println("  # JSON to SQLite");
@@ -406,5 +411,6 @@ public class ChannelMigration {
         Map<String, String> sourceConfig = new HashMap<>();
         Map<String, String> destConfig = new HashMap<>();
         boolean dryRun = false;
+        String defaultLang = "ja_JP";
     }
 }
