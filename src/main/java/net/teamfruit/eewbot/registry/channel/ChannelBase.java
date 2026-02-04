@@ -60,10 +60,9 @@ public class ChannelBase {
         this.threadId = threadId;
     }
 
-    public @Nullable String getWebhookPath() {
+    public @Nullable String getWebhookUrl() {
         if (this.webhook == null) return null;
-        // Extract path from full URL by removing "https://discord.com/api/webhooks" prefix (33 chars)
-        return this.webhook.getUrl().substring(33);
+        return this.webhook.getUrl();
     }
 
     @Override

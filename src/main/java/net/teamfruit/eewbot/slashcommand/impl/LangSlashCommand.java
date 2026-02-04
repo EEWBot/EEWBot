@@ -60,7 +60,15 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
                 Channel.createDefault(guildId, targetId, null, lang));
         return event.reply()
                 .withEphemeral(true)
-                .withComponents(buildActionRows(bot, lang, event.getInteraction().getGuildId().isPresent()));
+                .withComponents(buildActionRows(bot, lang, event.getInteraction().getGuildId().isPresent()))
+                .then(Mono.create(sink -> {
+                    try {
+                        bot.getChannels().save();
+                        sink.success();
+                    } catch (IOException e) {
+                        sink.error(e);
+                    }
+                }));
     }
 
     @Override

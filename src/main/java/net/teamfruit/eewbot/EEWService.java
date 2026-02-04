@@ -170,7 +170,7 @@ public class EEWService {
                 Map<Long, ChannelBase> erroredChannels = new ConcurrentHashMap<>();
                 webhookChannels.forEach((channelId, channel) -> {
                     SimpleHttpRequest request = SimpleRequestBuilder.copy(cacheReq.get(channel.getLang()))
-                            .setPath("/api/webhooks" + channel.getWebhookPath())
+                            .setUri(channel.getWebhookUrl())
                             .build();
                     endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
                         @Override
