@@ -12,7 +12,7 @@ CREATE TABLE destinations_new (
     eew_decimation INTEGER NOT NULL DEFAULT 0,
     quake_info INTEGER NOT NULL DEFAULT 0,
     min_intensity INTEGER NOT NULL DEFAULT 1,
-    lang TEXT NOT NULL DEFAULT 'ja_JP',
+    lang TEXT NOT NULL DEFAULT 'ja_jp',
     webhook_url TEXT
 );
 
@@ -28,7 +28,7 @@ SELECT
     eew_decimation,
     quake_info,
     min_intensity,
-    COALESCE(lang, 'ja_JP'),
+    COALESCE(lang, 'ja_jp'),
     webhook_url
 FROM destinations;
 

@@ -386,7 +386,7 @@ public class ChannelMigration {
         System.out.println("  --dest-username <user>    Destination PostgreSQL username");
         System.out.println("  --dest-password <pass>    Destination PostgreSQL password");
         System.out.println("  --dry-run                 Preview migration without making changes");
-        System.out.println("  --default-lang <lang>     Default language for channels with null lang (default: ja_JP)");
+        System.out.println("  --default-lang <lang>     Default language for channels with null lang (default: ja_jp)");
         System.out.println();
         System.out.println("Examples:");
         System.out.println("  # JSON to SQLite");
@@ -411,6 +411,6 @@ public class ChannelMigration {
         Map<String, String> sourceConfig = new HashMap<>();
         Map<String, String> destConfig = new HashMap<>();
         boolean dryRun = false;
-        String defaultLang = "ja_JP";
+        String defaultLang = "ja_jp";
     }
 }

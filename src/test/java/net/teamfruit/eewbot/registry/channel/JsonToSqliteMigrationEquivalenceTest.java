@@ -84,13 +84,13 @@ class JsonToSqliteMigrationEquivalenceTest {
                 "ja_jp"
         ));
 
-        // 6: lang=null, guildId=null (compound null)
+        // 6: guildId=null (DM channel)
         channels.put(1006L, new Channel(
                 null, 1006L, null,
                 false, false, true, false,
                 SeismicIntensity.FIVE_MINUS,
                 null,
-                null
+                "ja_jp"
         ));
 
         // 7: UNKNOWN intensity (edge case)
@@ -142,7 +142,7 @@ class JsonToSqliteMigrationEquivalenceTest {
 
         // Use actual migration logic to migrate data from JSON to SQL
         List<Map.Entry<Long, Channel>> entries = ChannelMigration.collectChannels(this.jsonRegistry);
-        ChannelMigration.migrateChannelsSql(entries, this.sqlRegistry);
+        ChannelMigration.migrateChannelsSql(entries, this.sqlRegistry, "ja_jp");
     }
 
     @AfterEach
@@ -540,14 +540,33 @@ class JsonToSqliteMigrationEquivalenceTest {
     // ===== Null value handling tests =====
 
     @Test
-    @DisplayName("Channel with null lang should be handled correctly")
-    void testNullLangChannel() {
-        Channel jsonChannel = this.jsonRegistry.get(1006L);
-        Channel sqlChannel = this.sqlRegistry.get(1006L);
+    @DisplayName("Channel with null lang should be migrated with default lang")
+    void testNullLangChannel() throws IOException {
+        // Create a separate JSON registry with a null-lang channel to test migration behavior
+        Path jsonPath = this.tempDir.resolve("null_lang_test.json");
+        ConcurrentHashMap<Long, Channel> data = new ConcurrentHashMap<>();
+        data.put(9001L, new Channel(
+                null, 9001L, null,
+                false, false, false, false,
+                SeismicIntensity.ONE,
+                null,
+                null
+        ));
+        Files.writeString(jsonPath, this.gson.toJson(data));
 
-        assertThat(jsonChannel.getLang()).isNull();
-        assertThat(sqlChannel.getLang()).isNull();
-        assertThat(sqlChannel).isEqualTo(jsonChannel);
+        ChannelRegistryJson nullLangJson = new ChannelRegistryJson(jsonPath, this.gson);
+        nullLangJson.load(false);
+
+        // Verify source has null lang
+        assertThat(nullLangJson.get(9001L).getLang()).isNull();
+
+        // Migrate with default lang
+        List<Map.Entry<Long, Channel>> entries = ChannelMigration.collectChannels(nullLangJson);
+        ChannelMigration.migrateChannelsSql(entries, this.sqlRegistry, "ja_jp");
+
+        // Verify SQL has default lang instead of null
+        Channel sqlChannel = this.sqlRegistry.get(9001L);
+        assertThat(sqlChannel.getLang()).isEqualTo("ja_jp");
     }
 
     @Test
