@@ -211,8 +211,8 @@ public class ChannelMigration {
             long effectiveChannelId = channelId != null ? channelId : targetId;
 
             Integer minIntensity = channel.getMinIntensity() != null
-                    ? channel.getMinIntensity().ordinal()
-                    : SeismicIntensity.ONE.ordinal();
+                    ? channel.getMinIntensity().getCode()
+                    : SeismicIntensity.ONE.getCode();
 
             // Use defaultLang if channel's lang is null
             String lang = channel.getLang() != null ? channel.getLang() : defaultLang;

@@ -221,7 +221,7 @@ public final class DeliverySnapshot {
 
             if (filter.isIntensityPresent()) {
                 SeismicIntensity minIntensity = ch.minIntensity();
-                if (minIntensity == null || minIntensity.ordinal() > filter.getIntensity().ordinal()) {
+                if (minIntensity == null || minIntensity.getCode() > filter.getIntensity().getCode()) {
                     return false;
                 }
             }

@@ -162,7 +162,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         channel.isEewPrediction() ? 1 : 0,
                         channel.isEewDecimation() ? 1 : 0,
                         channel.isQuakeInfo() ? 1 : 0,
-                        channel.getMinIntensity() != null ? channel.getMinIntensity().ordinal() : SeismicIntensity.ONE.ordinal(),
+                        channel.getMinIntensity() != null ? channel.getMinIntensity().getCode() : SeismicIntensity.ONE.getCode(),
                         channel.getLang(),
                         channel.getWebhook() != null ? channel.getWebhook().getUrl() : null
                 )
@@ -200,7 +200,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
      */
     public void setMinIntensityWithDsl(DSLContext tx, long key, SeismicIntensity intensity) {
         tx.update(DESTINATIONS)
-                .set(MIN_INTENSITY, intensity.ordinal())
+                .set(MIN_INTENSITY, intensity.getCode())
                 .where(TARGET_ID.eq(key))
                 .execute();
     }
@@ -498,7 +498,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
                 r.get(EEW_PREDICTION) != null && r.get(EEW_PREDICTION) == 1,
                 r.get(EEW_DECIMATION) != null && r.get(EEW_DECIMATION) == 1,
                 r.get(QUAKE_INFO) != null && r.get(QUAKE_INFO) == 1,
-                r.get(MIN_INTENSITY) != null ? SeismicIntensity.values()[r.get(MIN_INTENSITY)] : SeismicIntensity.ONE,
+                r.get(MIN_INTENSITY) != null ? SeismicIntensity.fromCode(r.get(MIN_INTENSITY)) : SeismicIntensity.ONE,
                 r.get(LANG),
                 webhook
         );
@@ -530,7 +530,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
                 r.get(EEW_PREDICTION) != null && r.get(EEW_PREDICTION) == 1,
                 r.get(EEW_DECIMATION) != null && r.get(EEW_DECIMATION) == 1,
                 r.get(QUAKE_INFO) != null && r.get(QUAKE_INFO) == 1,
-                r.get(MIN_INTENSITY) != null ? SeismicIntensity.values()[r.get(MIN_INTENSITY)] : SeismicIntensity.ONE,
+                r.get(MIN_INTENSITY) != null ? SeismicIntensity.fromCode(r.get(MIN_INTENSITY)) : SeismicIntensity.ONE,
                 webhook,
                 r.get(LANG)
         );

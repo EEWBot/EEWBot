@@ -12,6 +12,6 @@ public class SeismicIntensitySerializer implements JsonSerializer<SeismicIntensi
 
     @Override
     public JsonElement serialize(SeismicIntensity seismicIntensity, Type type, JsonSerializationContext jsonSerializationContext) {
-        return new JsonPrimitive(seismicIntensity.ordinal());
+        return new JsonPrimitive(seismicIntensity.getCode());
     }
 }

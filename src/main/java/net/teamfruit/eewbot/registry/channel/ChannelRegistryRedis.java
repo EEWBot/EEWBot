@@ -144,7 +144,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
 
     @Override
     public void setMinIntensity(long key, SeismicIntensity intensity) {
-        this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.minIntensity"), intensity.ordinal());
+        this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$.minIntensity"), intensity.getCode());
     }
 
     @Override

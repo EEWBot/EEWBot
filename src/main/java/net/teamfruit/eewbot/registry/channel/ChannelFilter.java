@@ -175,7 +175,7 @@ public class ChannelFilter {
             conditions.add(field(name("quake_info"), Integer.class).eq(this.quakeInfo ? 1 : 0));
         }
         if (this.intensityPresent) {
-            conditions.add(field(name("min_intensity"), Integer.class).le(this.intensity.ordinal()));
+            conditions.add(field(name("min_intensity"), Integer.class).le(this.intensity.getCode()));
         }
 
         if (conditions.isEmpty()) {
@@ -206,7 +206,7 @@ public class ChannelFilter {
             return false;
         if (this.quakeInfoPresent && channel.isQuakeInfo() != this.quakeInfo)
             return false;
-        if (this.intensityPresent && channel.getMinIntensity().ordinal() > this.intensity.ordinal())
+        if (this.intensityPresent && channel.getMinIntensity().getCode() > this.intensity.getCode())
             return false;
         if (this.webhookIdPresent && channel.getWebhook() == null)
             return false;
@@ -246,7 +246,7 @@ public class ChannelFilter {
         if (this.quakeInfoPresent)
             builder.append("@quakeInfo:{").append(this.quakeInfo).append("} ");
         if (this.intensityPresent)
-            builder.append("@minIntensity:[0 ").append(this.intensity.ordinal()).append("] ");
+            builder.append("@minIntensity:[0 ").append(this.intensity.getCode()).append("] ");
         if (this.webhookIdPresent)
             builder.append("@webhookId:[").append(this.webhookId).append(" ").append(this.webhookId).append("]");
         return builder.toString();

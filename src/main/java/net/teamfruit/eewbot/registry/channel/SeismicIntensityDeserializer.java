@@ -12,10 +12,7 @@ public class SeismicIntensityDeserializer implements JsonDeserializer<SeismicInt
         if (jsonElement.isJsonPrimitive()) {
             JsonPrimitive primitive = jsonElement.getAsJsonPrimitive();
             if (primitive.isNumber()) {
-                int ordinal = primitive.getAsInt();
-                if (ordinal >= 0 && ordinal < SeismicIntensity.values().length) {
-                    return SeismicIntensity.values()[ordinal];
-                }
+                return SeismicIntensity.fromCode(primitive.getAsInt());
             } else if (primitive.isString()) {
                 for (SeismicIntensity intensity : SeismicIntensity.values()) {
                     if (intensity.getLegacySerializedName().equals(primitive.getAsString())) {
