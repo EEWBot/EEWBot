@@ -15,10 +15,11 @@ public class ChannelWebhookDeserializer implements JsonDeserializer<ChannelWebho
             return new ChannelWebhook(obj.get("url").getAsString());
         }
 
-        // Old format: { "id": 123, "token": "xxx" }
-        // Convert to URL format (without thread_id - that's stored in the channel)
+        // Old format: { "id": 123, "token": "xxx", "threadId": 456 }
         long id = obj.get("id").getAsLong();
         String token = obj.get("token").getAsString();
-        return ChannelWebhook.of(id, token);
+        Long threadId = obj.has("threadId") && !obj.get("threadId").isJsonNull()
+                ? obj.get("threadId").getAsLong() : null;
+        return ChannelWebhook.of(id, token, threadId);
     }
 }

@@ -21,6 +21,7 @@ import net.teamfruit.eewbot.registry.channel.ChannelSettingType;
 import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -74,6 +75,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
+        // channel id or thread id
         long targetId = event.getInteraction().getChannelId().asLong();
         Long guildId = event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null);
 
@@ -236,7 +238,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     public static String removeStringsIgnoreCase(String source, String... stringsToRemove) {
         for (String remove : stringsToRemove) {
-            source = StringUtils.removeIgnoreCase(source, remove);
+            source = Strings.CI.remove(source, remove);
         }
         return source;
     }
