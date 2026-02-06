@@ -180,17 +180,14 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                             .flatMap(perms -> {
                                                 if (channel == null) {
                                                     // Case 1: Not registered — register target and create webhook
-                                                    bot.getChannels().computeIfAbsent(targetId, key ->
-                                                            event.getInteraction().getChannel()
-                                                                    .filter(ch -> ch instanceof ThreadChannel)
-                                                                    .cast(ThreadChannel.class)
-                                                                    .map(thread -> {
-                                                                        Long channelId = thread.getParentId().map(Snowflake::asLong).orElse(targetId);
-                                                                        return Channel.createDefault(guildId, channelId, targetId, lang);
-                                                                    })
-                                                                    .defaultIfEmpty(Channel.createDefault(guildId, targetId, null, lang))
-                                                                    .block()
-                                                    );
+                                                    Channel newChannel;
+                                                    if (guildChannel instanceof ThreadChannel) {
+                                                        Long channelId = ((ThreadChannel) guildChannel).getParentId().map(Snowflake::asLong).orElse(targetId);
+                                                        newChannel = Channel.createDefault(guildId, channelId, targetId, lang);
+                                                    } else {
+                                                        newChannel = Channel.createDefault(guildId, targetId, null, lang);
+                                                    }
+                                                    bot.getChannels().put(targetId, newChannel);
                                                     return createWebhookWithPermCheck(bot, event, gid, guildChannel, targetId, perms, lang);
                                                 } else if (channel.getWebhook() == null) {
                                                     // Case 2: Registered, no webhook — try to create webhook
@@ -215,8 +212,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                         .switchIfEmpty(Mono.defer(() -> {
                             // DM
                             if (channel == null) {
-                                bot.getChannels().computeIfAbsent(targetId, key ->
-                                        Channel.createDefault(guildId, targetId, null, lang));
+                                bot.getChannels().put(targetId, Channel.createDefault(guildId, targetId, null, lang));
                             }
                             return buildReply(bot, event, lang, targetId, false).thenReturn(true);
                         }))

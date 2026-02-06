@@ -138,6 +138,11 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
+    public void put(long key, Channel channel) {
+        this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.ROOT_PATH, channel, new JsonSetParams().nx());
+    }
+
+    @Override
     public void set(long key, String name, boolean bool) {
         this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.of("$." + name), bool);
     }

@@ -171,6 +171,15 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     @Override
+    public void put(long key, Channel channel) {
+        insertChannelIfAbsentWithDsl(this.dsl, key, channel);
+    }
+
+    public void putWithDsl(DSLContext tx, long key, Channel channel) {
+        insertChannelIfAbsentWithDsl(tx, key, channel);
+    }
+
+    @Override
     public void set(long key, String name, boolean bool) {
         setWithDsl(this.dsl, key, name, bool);
     }

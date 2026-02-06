@@ -17,6 +17,8 @@ public interface ChannelRegistry {
 
     void computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction);
 
+    void put(long key, Channel channel);
+
     void set(long key, String name, boolean bool);
 
     void setMinIntensity(long key, SeismicIntensity intensity);

@@ -193,6 +193,17 @@ public class ChannelRegistryCached implements ChannelRegistry {
     }
 
     @Override
+    public void put(long key, Channel channel) {
+        this.delegate.getDsl().transaction(ctx -> {
+            org.jooq.DSLContext tx = ctx.dsl();
+            this.delegate.putWithDsl(tx, key, channel);
+            this.revisionStore.incrementWithDsl(tx);
+        });
+        this.channelCache.invalidate(key);
+        requestReload();
+    }
+
+    @Override
     public void set(long key, String name, boolean bool) {
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();

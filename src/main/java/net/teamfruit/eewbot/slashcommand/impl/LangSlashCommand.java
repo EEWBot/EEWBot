@@ -7,6 +7,7 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.SelectMenu;
+import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.EEWBot;
@@ -55,12 +56,28 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         long targetId = event.getInteraction().getChannelId().asLong();
-        Long guildId = event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null);
-        bot.getChannels().computeIfAbsent(targetId, key ->
-                Channel.createDefault(guildId, targetId, null, lang));
-        return event.reply()
-                .withEphemeral(true)
-                .withComponents(buildActionRows(bot, lang, event.getInteraction().getGuildId().isPresent()))
+        Mono<Void> ensureRegistered;
+        if (channel == null) {
+            Long guildId = event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null);
+            ensureRegistered = event.getInteraction().getChannel()
+                    .doOnNext(ch -> {
+                        Channel newChannel;
+                        if (ch instanceof ThreadChannel) {
+                            Long channelId = ((ThreadChannel) ch).getParentId().map(Snowflake::asLong).orElse(targetId);
+                            newChannel = Channel.createDefault(guildId, channelId, targetId, lang);
+                        } else {
+                            newChannel = Channel.createDefault(guildId, targetId, null, lang);
+                        }
+                        bot.getChannels().put(targetId, newChannel);
+                    })
+                    .then();
+        } else {
+            ensureRegistered = Mono.empty();
+        }
+        return ensureRegistered
+                .then(event.reply()
+                        .withEphemeral(true)
+                        .withComponents(buildActionRows(bot, lang, event.getInteraction().getGuildId().isPresent())))
                 .then(Mono.create(sink -> {
                     try {
                         bot.getChannels().save();

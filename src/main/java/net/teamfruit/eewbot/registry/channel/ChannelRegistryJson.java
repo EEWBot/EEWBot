@@ -68,6 +68,11 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
+    public void put(long key, Channel channel) {
+        getElement().putIfAbsent(key, channel);
+    }
+
+    @Override
     public void set(long key, String name, boolean bool) {
         getElement().get(key).set(name, bool);
     }
