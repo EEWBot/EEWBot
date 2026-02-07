@@ -177,6 +177,9 @@ public class ChannelFilter {
         if (this.intensityPresent) {
             conditions.add(field(name("min_intensity"), Integer.class).le(this.intensity.getCode()));
         }
+        if (this.webhookIdPresent) {
+            conditions.add(field(name("webhook_id"), Long.class).eq(this.webhookId));
+        }
 
         if (conditions.isEmpty()) {
             return noCondition();

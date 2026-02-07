@@ -201,6 +201,7 @@ public class ChannelMigration {
         Field<Integer> minIntensityField = field(name("min_intensity"), Integer.class);
         Field<String> langField = field(name("lang"), String.class);
         Field<String> webhookUrlField = field(name("webhook_url"), String.class);
+        Field<Long> webhookIdField = field(name("webhook_id"), Long.class);
 
         int count = 0;
         for (Map.Entry<Long, Channel> entry : entries) {
@@ -219,6 +220,7 @@ public class ChannelMigration {
 
             // Build webhook URL with thread_id if applicable
             String webhookUrl = null;
+            Long webhookIdValue = null;
             if (channel.getWebhook() != null) {
                 ChannelWebhook webhook = ChannelWebhook.of(
                         channel.getWebhook().id(),
@@ -226,6 +228,7 @@ public class ChannelMigration {
                         threadId
                 );
                 webhookUrl = webhook.getUrl();
+                webhookIdValue = webhook.id();
             }
 
             dsl.insertInto(destinations)
@@ -240,7 +243,8 @@ public class ChannelMigration {
                             quakeInfoField,
                             minIntensityField,
                             langField,
-                            webhookUrlField
+                            webhookUrlField,
+                            webhookIdField
                     )
                     .values(
                             targetId,
@@ -253,7 +257,8 @@ public class ChannelMigration {
                             channel.isQuakeInfo() ? 1 : 0,
                             minIntensity,
                             lang,
-                            webhookUrl
+                            webhookUrl,
+                            webhookIdValue
                     )
                     .onConflict(targetIdField)
                     .doUpdate()
@@ -267,6 +272,7 @@ public class ChannelMigration {
                     .set(minIntensityField, minIntensity)
                     .set(langField, lang)
                     .set(webhookUrlField, webhookUrl)
+                    .set(webhookIdField, webhookIdValue)
                     .execute();
 
             count++;

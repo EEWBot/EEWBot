@@ -47,6 +47,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
     private static final Field<Integer> MIN_INTENSITY = field(name("min_intensity"), Integer.class);
     private static final Field<String> LANG = field(name("lang"), String.class);
     private static final Field<String> WEBHOOK_URL = field(name("webhook_url"), String.class);
+    private static final Field<Long> WEBHOOK_ID = field(name("webhook_id"), Long.class);
 
     private final DSLContext dsl;
     private final DataSource dataSource;
@@ -151,7 +152,8 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         QUAKE_INFO,
                         MIN_INTENSITY,
                         LANG,
-                        WEBHOOK_URL
+                        WEBHOOK_URL,
+                        WEBHOOK_ID
                 )
                 .values(
                         targetId,
@@ -164,7 +166,8 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         channel.isQuakeInfo() ? 1 : 0,
                         channel.getMinIntensity() != null ? channel.getMinIntensity().getCode() : SeismicIntensity.ONE.getCode(),
                         channel.getLang(),
-                        channel.getWebhook() != null ? channel.getWebhook().getUrl() : null
+                        channel.getWebhook() != null ? channel.getWebhook().getUrl() : null,
+                        channel.getWebhook() != null ? channel.getWebhook().id() : null
                 )
                 .onConflictDoNothing()
                 .execute();
@@ -225,6 +228,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
     public void setWebhookWithDsl(DSLContext tx, long key, ChannelWebhook webhook) {
         tx.update(DESTINATIONS)
                 .set(WEBHOOK_URL, webhook != null ? webhook.getUrl() : null)
+                .set(WEBHOOK_ID, webhook != null ? webhook.id() : (Long) null)
                 .where(TARGET_ID.eq(key))
                 .execute();
     }
@@ -287,20 +291,17 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     /**
-     * Clear (set to null) webhook_url for all channels using the specified base URL.
-     * Uses prefix matching (LIKE baseUrl%) to clear all destinations sharing the same webhook.
+     * Clear (set to null) webhook_url and webhook_id for all channels using the specified webhook.
+     * Uses webhook_id equality comparison via index instead of LIKE pattern matching.
      *
      * @param webhookUrl full webhook URL (may include ?thread_id query parameter)
      */
     public int clearWebhookByBaseUrlWithDsl(DSLContext tx, String webhookUrl) {
-        // Remove ?thread_id= query parameter to get base URL
-        int queryIndex = webhookUrl.indexOf('?');
-        String baseUrl = queryIndex >= 0 ? webhookUrl.substring(0, queryIndex) : webhookUrl;
-        String pattern = baseUrl + "%";
-
+        long webhookId = new ChannelWebhook(webhookUrl).id();
         return tx.update(DESTINATIONS)
                 .set(WEBHOOK_URL, (String) null)
-                .where(WEBHOOK_URL.like(pattern))
+                .set(WEBHOOK_ID, (Long) null)
+                .where(WEBHOOK_ID.eq(webhookId))
                 .execute();
     }
 
@@ -390,11 +391,9 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
     @Override
     public boolean isWebhookForThread(long webhookId, long targetId) {
-        // Search by webhook ID pattern in URL: .../webhooks/{id}/...
-        String pattern = "%/webhooks/" + webhookId + "/%";
         boolean exists = this.dsl.fetchExists(
                 this.dsl.selectFrom(DESTINATIONS)
-                        .where(WEBHOOK_URL.like(pattern))
+                        .where(WEBHOOK_ID.eq(webhookId))
                         .and(TARGET_ID.ne(targetId))
         );
         return !exists;

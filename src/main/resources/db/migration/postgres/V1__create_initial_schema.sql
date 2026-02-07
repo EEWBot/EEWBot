@@ -11,8 +11,9 @@ CREATE TABLE destinations (
     eew_decimation INTEGER NOT NULL DEFAULT 0,
     quake_info INTEGER NOT NULL DEFAULT 0,
     min_intensity INTEGER NOT NULL DEFAULT 1,
-    lang TEXT,
-    webhook_url TEXT                    -- full webhook URL (including ?thread_id= if applicable)
+    lang TEXT NOT NULL DEFAULT 'ja_jp',
+    webhook_url TEXT,                   -- full webhook URL (including ?thread_id= if applicable)
+    webhook_id BIGINT
 );
 
 -- Config meta table for revision tracking
@@ -35,6 +36,7 @@ CREATE INDEX idx_destinations_thread_id ON destinations(thread_id);
 CREATE INDEX idx_destinations_guild_id ON destinations(guild_id);
 CREATE INDEX idx_destinations_delivery_filter ON destinations(eew_alert, eew_prediction, eew_decimation, quake_info, min_intensity);
 CREATE INDEX idx_destinations_webhook_url ON destinations(webhook_url);
+CREATE INDEX idx_destinations_webhook_id ON destinations(webhook_id);
 
 -- Initial config_meta row
 INSERT INTO config_meta (id, channels_revision) VALUES (1, 0);
