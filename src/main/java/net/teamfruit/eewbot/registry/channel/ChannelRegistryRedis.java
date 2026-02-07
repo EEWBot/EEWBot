@@ -17,12 +17,10 @@ import redis.clients.jedis.search.aggr.AggregationResult;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class ChannelRegistryRedis implements ChannelRegistry {
 
@@ -254,28 +252,28 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
-    public int clearWebhookByUrl(String webhookUrl) {
-        // Remove ?thread_id= query parameter to get base URL
-        int queryIndex = webhookUrl.indexOf('?');
-        String baseUrl = queryIndex >= 0 ? webhookUrl.substring(0, queryIndex) : webhookUrl;
-
-        // Extract webhook ID from base URL for Redis index search
-        // URL format: https://discord.com/api/webhooks/{id}/{token}
-        String path = baseUrl.substring("https://discord.com/api/webhooks/".length());
-        int slashIndex = path.indexOf('/');
-        long webhookId = Long.parseLong(path.substring(0, slashIndex));
+    public int clearWebhookByUrls(Collection<String> webhookUrls) {
+        if (webhookUrls.isEmpty()) {
+            return 0;
+        }
+        Set<Long> webhookIds = webhookUrls.stream()
+                .map(url -> new ChannelWebhook(url).id())
+                .collect(Collectors.toSet());
 
         List<String> keysToUpdate = new ArrayList<>();
-        AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder("@webhookId:[" + webhookId + " " + webhookId + "]")
-                .load("__key")
-                .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
-        long cursorId;
-        do {
-            cursorId = aggregationResult.getCursorId();
-            aggregationResult.getRows().forEach(row -> keysToUpdate.add(row.getString("__key")));
-            if (cursorId != 0)
-                aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
-        } while (cursorId != 0);
+        for (long webhookId : webhookIds) {
+            AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX,
+                    new AggregationBuilder("@webhookId:[" + webhookId + " " + webhookId + "]")
+                            .load("__key")
+                            .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
+            long cursorId;
+            do {
+                cursorId = aggregationResult.getCursorId();
+                aggregationResult.getRows().forEach(row -> keysToUpdate.add(row.getString("__key")));
+                if (cursorId != 0)
+                    aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
+            } while (cursorId != 0);
+        }
 
         for (String key : keysToUpdate) {
             this.jedisPool.jsonSet(key, Path.of("$.webhook"), (Object) null);

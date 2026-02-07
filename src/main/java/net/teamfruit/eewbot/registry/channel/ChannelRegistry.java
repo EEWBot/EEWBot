@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.registry.channel;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -40,14 +41,14 @@ public interface ChannelRegistry {
     int removeByGuildId(long guildId);
 
     /**
-     * Clear (delete) webhook configuration for all channels using the specified webhook URL.
-     * Uses base URL (without ?thread_id query parameter) for prefix matching,
-     * so all destinations sharing the same webhook are cleared.
+     * Clear (delete) webhook configuration for all channels using any of the specified webhook URLs.
+     * Uses webhook_id for matching, so URLs with different ?thread_id parameters but the same
+     * webhook ID are treated as the same webhook.
      *
-     * @param webhookUrl the webhook URL (may include ?thread_id query parameter)
+     * @param webhookUrls the webhook URLs (may include ?thread_id query parameter)
      * @return the number of webhooks cleared
      */
-    int clearWebhookByUrl(String webhookUrl);
+    int clearWebhookByUrls(Collection<String> webhookUrls);
 
     /**
      * Set language for all channels belonging to the specified guild.

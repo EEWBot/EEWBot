@@ -328,19 +328,19 @@ class JsonToSqliteMigrationEquivalenceTest {
                 .isEqualTo(0);
     }
 
-    // ===== clearWebhookByBaseUrl() tests =====
+    // ===== clearWebhookByUrls() tests =====
 
     @Test
-    @DisplayName("clearWebhookByUrl() should clear webhook from channels")
-    void testClearWebhookByUrl() {
+    @DisplayName("clearWebhookByUrls() should clear webhook from channels")
+    void testClearWebhookByUrls() {
         // Webhook 2001 is used by channel 1002
         assertThat(this.jsonRegistry.get(1002L).getWebhook()).isNotNull();
         assertThat(this.sqlRegistry.get(1002L).getWebhook()).isNotNull();
 
-        // Use URL format for clearing
+        // Use URL format for clearing (single URL in batch)
         String webhookUrl = "https://discord.com/api/webhooks/2001/token_2001";
-        int jsonCleared = this.jsonRegistry.clearWebhookByUrl(webhookUrl);
-        int sqlCleared = this.sqlRegistry.clearWebhookByUrl(webhookUrl);
+        int jsonCleared = this.jsonRegistry.clearWebhookByUrls(List.of(webhookUrl));
+        int sqlCleared = this.sqlRegistry.clearWebhookByUrls(List.of(webhookUrl));
 
         assertThat(sqlCleared)
                 .as("Cleared count for webhook 2001")
@@ -357,14 +357,36 @@ class JsonToSqliteMigrationEquivalenceTest {
     }
 
     @Test
-    @DisplayName("clearWebhookByUrl() for non-existent webhook should return 0")
-    void testClearWebhookByUrl_nonExistentWebhook() {
-        String webhookUrl = "https://discord.com/api/webhooks/99999/nonexistent_token";
-        int jsonCleared = this.jsonRegistry.clearWebhookByUrl(webhookUrl);
-        int sqlCleared = this.sqlRegistry.clearWebhookByUrl(webhookUrl);
+    @DisplayName("clearWebhookByUrls() with mix of existing and non-existent URLs should clear only existing")
+    void testClearWebhookByUrls_withNonExistentUrl() {
+        assertThat(this.jsonRegistry.get(1002L).getWebhook()).isNotNull();
+        assertThat(this.sqlRegistry.get(1002L).getWebhook()).isNotNull();
+
+        List<String> urls = List.of(
+                "https://discord.com/api/webhooks/2001/token_2001",
+                "https://discord.com/api/webhooks/99999/nonexistent_token"
+        );
+        int jsonCleared = this.jsonRegistry.clearWebhookByUrls(urls);
+        int sqlCleared = this.sqlRegistry.clearWebhookByUrls(urls);
 
         assertThat(sqlCleared)
-                .as("Cleared count for non-existent webhook")
+                .as("Cleared count for mixed URLs")
+                .isEqualTo(jsonCleared)
+                .isEqualTo(1);
+
+        // Verify webhook is cleared
+        assertThat(this.jsonRegistry.get(1002L).getWebhook()).isNull();
+        assertThat(this.sqlRegistry.get(1002L).getWebhook()).isNull();
+    }
+
+    @Test
+    @DisplayName("clearWebhookByUrls() with empty list should return 0")
+    void testClearWebhookByUrls_emptyList() {
+        int jsonCleared = this.jsonRegistry.clearWebhookByUrls(List.of());
+        int sqlCleared = this.sqlRegistry.clearWebhookByUrls(List.of());
+
+        assertThat(sqlCleared)
+                .as("Cleared count for empty list")
                 .isEqualTo(jsonCleared)
                 .isEqualTo(0);
     }

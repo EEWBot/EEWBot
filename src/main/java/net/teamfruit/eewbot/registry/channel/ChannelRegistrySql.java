@@ -15,9 +15,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -286,22 +284,21 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     @Override
-    public int clearWebhookByUrl(String webhookUrl) {
-        return clearWebhookByBaseUrlWithDsl(this.dsl, webhookUrl);
+    public int clearWebhookByUrls(Collection<String> webhookUrls) {
+        return clearWebhookByUrlsWithDsl(this.dsl, webhookUrls);
     }
 
-    /**
-     * Clear (set to null) webhook_url and webhook_id for all channels using the specified webhook.
-     * Uses webhook_id equality comparison via index instead of LIKE pattern matching.
-     *
-     * @param webhookUrl full webhook URL (may include ?thread_id query parameter)
-     */
-    public int clearWebhookByBaseUrlWithDsl(DSLContext tx, String webhookUrl) {
-        long webhookId = new ChannelWebhook(webhookUrl).id();
+    public int clearWebhookByUrlsWithDsl(DSLContext tx, Collection<String> webhookUrls) {
+        if (webhookUrls.isEmpty()) {
+            return 0;
+        }
+        Set<Long> webhookIds = webhookUrls.stream()
+                .map(url -> new ChannelWebhook(url).id())
+                .collect(Collectors.toSet());
         return tx.update(DESTINATIONS)
                 .set(WEBHOOK_URL, (String) null)
                 .set(WEBHOOK_ID, (Long) null)
-                .where(WEBHOOK_ID.eq(webhookId))
+                .where(WEBHOOK_ID.in(webhookIds))
                 .execute();
     }
 

@@ -302,12 +302,10 @@ public class EEWService {
                 return;
             }
 
-            notFoundList.forEach(webhookUrl -> {
-                int cleared = this.channels.clearWebhookByUrl(webhookUrl);
-                if (cleared > 0) {
-                    Log.logger.info("Cleared webhook {} from {} channel(s)", webhookUrl, cleared);
-                }
-            });
+            int cleared = this.channels.clearWebhookByUrls(notFoundList);
+            if (cleared > 0) {
+                Log.logger.info("Cleared {} channel webhook(s) for {} not-found URL(s)", cleared, notFoundList.size());
+            }
         } catch (InterruptedException e) {
             Log.logger.error("Interrupted while fetching not founds from webhook sender", e);
         } catch (URISyntaxException e) {

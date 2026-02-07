@@ -8,10 +8,7 @@ import net.teamfruit.eewbot.registry.JsonRegistry;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -127,15 +124,18 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
-    public int clearWebhookByUrl(String webhookUrl) {
-        // Remove ?thread_id= query parameter to get base URL
-        int queryIndex = webhookUrl.indexOf('?');
-        String baseUrl = queryIndex >= 0 ? webhookUrl.substring(0, queryIndex) : webhookUrl;
+    public int clearWebhookByUrls(Collection<String> webhookUrls) {
+        if (webhookUrls.isEmpty()) {
+            return 0;
+        }
+        Set<Long> webhookIds = webhookUrls.stream()
+                .map(url -> new ChannelWebhook(url).id())
+                .collect(Collectors.toSet());
 
         int count = 0;
         for (Map.Entry<Long, Channel> entry : getElement().entrySet()) {
             ChannelWebhook webhook = entry.getValue().getWebhook();
-            if (webhook != null && webhook.getUrl().startsWith(baseUrl)) {
+            if (webhook != null && webhookIds.contains(webhook.id())) {
                 entry.getValue().setWebhook(null);
                 count++;
             }

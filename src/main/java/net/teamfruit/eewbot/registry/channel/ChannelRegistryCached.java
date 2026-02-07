@@ -7,6 +7,7 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -270,11 +271,14 @@ public class ChannelRegistryCached implements ChannelRegistry {
     }
 
     @Override
-    public int clearWebhookByUrl(String webhookUrl) {
+    public int clearWebhookByUrls(Collection<String> webhookUrls) {
+        if (webhookUrls.isEmpty()) {
+            return 0;
+        }
         AtomicInteger count = new AtomicInteger(0);
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
-            int cleared = this.delegate.clearWebhookByBaseUrlWithDsl(tx, webhookUrl);
+            int cleared = this.delegate.clearWebhookByUrlsWithDsl(tx, webhookUrls);
             count.set(cleared);
             if (cleared > 0) {
                 this.revisionStore.incrementWithDsl(tx);
