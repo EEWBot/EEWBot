@@ -303,7 +303,7 @@ public class EEWService {
             }
 
             notFoundList.forEach(webhookUrl -> {
-                int cleared = this.channels.clearWebhookByBaseUrl(webhookUrl);
+                int cleared = this.channels.clearWebhookByUrl(webhookUrl);
                 if (cleared > 0) {
                     Log.logger.info("Cleared webhook {} from {} channel(s)", webhookUrl, cleared);
                 }

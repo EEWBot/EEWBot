@@ -286,7 +286,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
     }
 
     @Override
-    public int clearWebhookByBaseUrl(String webhookUrl) {
+    public int clearWebhookByUrl(String webhookUrl) {
         return clearWebhookByBaseUrlWithDsl(this.dsl, webhookUrl);
     }
 

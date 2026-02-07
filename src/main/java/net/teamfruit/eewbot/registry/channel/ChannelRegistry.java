@@ -47,7 +47,7 @@ public interface ChannelRegistry {
      * @param webhookUrl the webhook URL (may include ?thread_id query parameter)
      * @return the number of webhooks cleared
      */
-    int clearWebhookByBaseUrl(String webhookUrl);
+    int clearWebhookByUrl(String webhookUrl);
 
     /**
      * Set language for all channels belonging to the specified guild.

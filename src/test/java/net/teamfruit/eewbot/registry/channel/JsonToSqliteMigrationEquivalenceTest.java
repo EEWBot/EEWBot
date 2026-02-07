@@ -331,16 +331,16 @@ class JsonToSqliteMigrationEquivalenceTest {
     // ===== clearWebhookByBaseUrl() tests =====
 
     @Test
-    @DisplayName("clearWebhookByBaseUrl() should clear webhook from channels")
-    void testClearWebhookByBaseUrl() {
+    @DisplayName("clearWebhookByUrl() should clear webhook from channels")
+    void testClearWebhookByUrl() {
         // Webhook 2001 is used by channel 1002
         assertThat(this.jsonRegistry.get(1002L).getWebhook()).isNotNull();
         assertThat(this.sqlRegistry.get(1002L).getWebhook()).isNotNull();
 
         // Use URL format for clearing
         String webhookUrl = "https://discord.com/api/webhooks/2001/token_2001";
-        int jsonCleared = this.jsonRegistry.clearWebhookByBaseUrl(webhookUrl);
-        int sqlCleared = this.sqlRegistry.clearWebhookByBaseUrl(webhookUrl);
+        int jsonCleared = this.jsonRegistry.clearWebhookByUrl(webhookUrl);
+        int sqlCleared = this.sqlRegistry.clearWebhookByUrl(webhookUrl);
 
         assertThat(sqlCleared)
                 .as("Cleared count for webhook 2001")
@@ -357,11 +357,11 @@ class JsonToSqliteMigrationEquivalenceTest {
     }
 
     @Test
-    @DisplayName("clearWebhookByBaseUrl() for non-existent webhook should return 0")
-    void testClearWebhookByBaseUrl_nonExistentWebhook() {
+    @DisplayName("clearWebhookByUrl() for non-existent webhook should return 0")
+    void testClearWebhookByUrl_nonExistentWebhook() {
         String webhookUrl = "https://discord.com/api/webhooks/99999/nonexistent_token";
-        int jsonCleared = this.jsonRegistry.clearWebhookByBaseUrl(webhookUrl);
-        int sqlCleared = this.sqlRegistry.clearWebhookByBaseUrl(webhookUrl);
+        int jsonCleared = this.jsonRegistry.clearWebhookByUrl(webhookUrl);
+        int sqlCleared = this.sqlRegistry.clearWebhookByUrl(webhookUrl);
 
         assertThat(sqlCleared)
                 .as("Cleared count for non-existent webhook")

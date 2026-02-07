@@ -127,7 +127,7 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
-    public int clearWebhookByBaseUrl(String webhookUrl) {
+    public int clearWebhookByUrl(String webhookUrl) {
         // Remove ?thread_id= query parameter to get base URL
         int queryIndex = webhookUrl.indexOf('?');
         String baseUrl = queryIndex >= 0 ? webhookUrl.substring(0, queryIndex) : webhookUrl;
