@@ -224,9 +224,10 @@ public class ChannelRegistrySql implements ChannelRegistry {
      * Set webhook using the provided DSLContext (for transactional use).
      */
     public void setWebhookWithDsl(DSLContext tx, long key, ChannelWebhook webhook) {
+        final Long webhookId = webhook != null ? webhook.id() : null;
         tx.update(DESTINATIONS)
                 .set(WEBHOOK_URL, webhook != null ? webhook.getUrl() : null)
-                .set(WEBHOOK_ID, webhook != null ? webhook.id() : (Long) null)
+                .set(WEBHOOK_ID, webhookId)
                 .where(TARGET_ID.eq(key))
                 .execute();
     }
