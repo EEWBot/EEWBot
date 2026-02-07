@@ -180,6 +180,48 @@ public class ChannelRegistrySql implements ChannelRegistry {
         insertChannelIfAbsentWithDsl(tx, key, channel);
     }
 
+    public int insertAllIfAbsent(List<Map.Entry<Long, Channel>> entries, String defaultLang) {
+        return insertAllIfAbsentWithDsl(this.dsl, entries, defaultLang);
+    }
+
+    public int insertAllIfAbsentWithDsl(DSLContext tx, List<Map.Entry<Long, Channel>> entries, String defaultLang) {
+        if (entries.isEmpty()) {
+            return 0;
+        }
+
+        int totalInserted = 0;
+        int chunkSize = 500;
+        for (int i = 0; i < entries.size(); i += chunkSize) {
+            List<Map.Entry<Long, Channel>> chunk = entries.subList(i, Math.min(i + chunkSize, entries.size()));
+
+            var step = tx.insertInto(DESTINATIONS)
+                    .columns(TARGET_ID, CHANNEL_ID, THREAD_ID, GUILD_ID,
+                            EEW_ALERT, EEW_PREDICTION, EEW_DECIMATION, QUAKE_INFO,
+                            MIN_INTENSITY, LANG, WEBHOOK_URL, WEBHOOK_ID);
+
+            for (Map.Entry<Long, Channel> entry : chunk) {
+                Channel channel = entry.getValue();
+                String lang = channel.getLang() != null ? channel.getLang() : defaultLang;
+                step = step.values(
+                        entry.getKey(),
+                        channel.getChannelId(),
+                        channel.getThreadId(),
+                        channel.getGuildId(),
+                        channel.isEewAlert() ? 1 : 0,
+                        channel.isEewPrediction() ? 1 : 0,
+                        channel.isEewDecimation() ? 1 : 0,
+                        channel.isQuakeInfo() ? 1 : 0,
+                        channel.getMinIntensity() != null ? channel.getMinIntensity().getCode() : SeismicIntensity.ONE.getCode(),
+                        lang,
+                        channel.getWebhook() != null ? channel.getWebhook().getUrl() : null,
+                        channel.getWebhook() != null ? channel.getWebhook().id() : null
+                );
+            }
+            totalInserted += step.onConflictDoNothing().execute();
+        }
+        return totalInserted;
+    }
+
     @Override
     public void set(long key, String name, boolean bool) {
         setWithDsl(this.dsl, key, name, bool);

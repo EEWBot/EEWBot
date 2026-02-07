@@ -186,24 +186,7 @@ public class ChannelMigration {
 
     // Package-private for testing
     static void migrateChannelsSql(List<Map.Entry<Long, Channel>> entries, ChannelRegistrySql destination, String defaultLang) {
-        DSLContext dsl = destination.getDsl();
-
-        Table<?> destinations = table(name("destinations"));
-
-        Field<Long> targetIdField = field(name("target_id"), Long.class);
-        Field<Long> channelIdField = field(name("channel_id"), Long.class);
-        Field<Long> threadIdField = field(name("thread_id"), Long.class);
-        Field<Long> guildIdField = field(name("guild_id"), Long.class);
-        Field<Integer> eewAlertField = field(name("eew_alert"), Integer.class);
-        Field<Integer> eewPredictionField = field(name("eew_prediction"), Integer.class);
-        Field<Integer> eewDecimationField = field(name("eew_decimation"), Integer.class);
-        Field<Integer> quakeInfoField = field(name("quake_info"), Integer.class);
-        Field<Integer> minIntensityField = field(name("min_intensity"), Integer.class);
-        Field<String> langField = field(name("lang"), String.class);
-        Field<String> webhookUrlField = field(name("webhook_url"), String.class);
-        Field<Long> webhookIdField = field(name("webhook_id"), Long.class);
-
-        int count = 0;
+        List<Map.Entry<Long, Channel>> prepared = new ArrayList<>(entries.size());
         for (Map.Entry<Long, Channel> entry : entries) {
             Channel channel = entry.getValue();
             Long channelId = channel.getChannelId();
@@ -211,76 +194,25 @@ public class ChannelMigration {
             long targetId = threadId != null ? threadId : (channelId != null ? channelId : entry.getKey());
             long effectiveChannelId = channelId != null ? channelId : targetId;
 
-            Integer minIntensity = channel.getMinIntensity() != null
-                    ? channel.getMinIntensity().getCode()
-                    : SeismicIntensity.ONE.getCode();
-
-            // Use defaultLang if channel's lang is null
-            String lang = channel.getLang() != null ? channel.getLang() : defaultLang;
-
-            // Build webhook URL with thread_id if applicable
-            String webhookUrl = null;
-            Long webhookIdValue = null;
+            ChannelWebhook webhook = null;
             if (channel.getWebhook() != null) {
-                ChannelWebhook webhook = ChannelWebhook.of(
+                webhook = ChannelWebhook.of(
                         channel.getWebhook().id(),
                         channel.getWebhook().token(),
                         threadId
                 );
-                webhookUrl = webhook.getUrl();
-                webhookIdValue = webhook.id();
             }
 
-            dsl.insertInto(destinations)
-                    .columns(
-                            targetIdField,
-                            channelIdField,
-                            threadIdField,
-                            guildIdField,
-                            eewAlertField,
-                            eewPredictionField,
-                            eewDecimationField,
-                            quakeInfoField,
-                            minIntensityField,
-                            langField,
-                            webhookUrlField,
-                            webhookIdField
-                    )
-                    .values(
-                            targetId,
-                            effectiveChannelId,
-                            threadId,
-                            channel.getGuildId(),
-                            channel.isEewAlert() ? 1 : 0,
-                            channel.isEewPrediction() ? 1 : 0,
-                            channel.isEewDecimation() ? 1 : 0,
-                            channel.isQuakeInfo() ? 1 : 0,
-                            minIntensity,
-                            lang,
-                            webhookUrl,
-                            webhookIdValue
-                    )
-                    .onConflict(targetIdField)
-                    .doUpdate()
-                    .set(channelIdField, effectiveChannelId)
-                    .set(threadIdField, threadId)
-                    .set(guildIdField, channel.getGuildId())
-                    .set(eewAlertField, channel.isEewAlert() ? 1 : 0)
-                    .set(eewPredictionField, channel.isEewPrediction() ? 1 : 0)
-                    .set(eewDecimationField, channel.isEewDecimation() ? 1 : 0)
-                    .set(quakeInfoField, channel.isQuakeInfo() ? 1 : 0)
-                    .set(minIntensityField, minIntensity)
-                    .set(langField, lang)
-                    .set(webhookUrlField, webhookUrl)
-                    .set(webhookIdField, webhookIdValue)
-                    .execute();
-
-            count++;
-            if (count % 100 == 0) {
-                Log.logger.info("Migrated {} / {} channels", count, entries.size());
-            }
+            Channel preparedChannel = new Channel(
+                    channel.getGuildId(), effectiveChannelId, threadId,
+                    channel.isEewAlert(), channel.isEewPrediction(), channel.isEewDecimation(), channel.isQuakeInfo(),
+                    channel.getMinIntensity(), webhook, channel.getLang()
+            );
+            prepared.add(Map.entry(targetId, preparedChannel));
         }
-        Log.logger.info("Migrated {} channels to destination", count);
+
+        int inserted = destination.insertAllIfAbsent(prepared, defaultLang);
+        Log.logger.info("Migrated {} channels to destination ({} inserted)", entries.size(), inserted);
     }
 
     private static ChannelRegistry createRegistry(String type, Map<String, String> config) throws IOException {
