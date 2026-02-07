@@ -18,7 +18,6 @@ import redis.clients.jedis.search.aggr.AggregationResult;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -131,8 +130,18 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
-    public void computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction) {
-        this.jedisPool.jsonSet(CHANNEL_PREFIX + key, Path.ROOT_PATH, mappingFunction.apply(key), new JsonSetParams().nx());
+    public void putAllIfAbsent(Map<Long, Channel> channels) {
+        if (channels.isEmpty()) {
+            return;
+        }
+        try (Connection connection = this.jedisPool.getPool().getResource()) {
+            Transaction transaction = new Transaction(connection);
+            transaction.setJsonObjectMapper(this.objectMapper);
+            channels.forEach((key, channel) ->
+                    transaction.jsonSet(CHANNEL_PREFIX + key, Path.ROOT_PATH, channel, new JsonSetParams().nx())
+            );
+            transaction.exec();
+        }
     }
 
     @Override

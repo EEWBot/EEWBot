@@ -14,7 +14,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 /**
  * Cached implementation of ChannelRegistry.
@@ -176,17 +175,6 @@ public class ChannelRegistryCached implements ChannelRegistry {
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
             this.delegate.removeWithDsl(tx, key);
-            this.revisionStore.incrementWithDsl(tx);
-        });
-        this.channelCache.invalidate(key);
-        requestReload();
-    }
-
-    @Override
-    public void computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction) {
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            this.delegate.computeIfAbsentWithDsl(tx, key, mappingFunction);
             this.revisionStore.incrementWithDsl(tx);
         });
         this.channelCache.invalidate(key);

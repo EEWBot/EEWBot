@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -167,15 +168,13 @@ public class ChannelMigration {
             migrateChannelsSql(entries, (ChannelRegistrySql) destination, defaultLang);
             return;
         }
-        int count = 0;
+
+        Map<Long, Channel> channelMap = new LinkedHashMap<>(entries.size());
         for (Map.Entry<Long, Channel> entry : entries) {
-            destination.computeIfAbsent(entry.getKey(), k -> entry.getValue());
-            count++;
-            if (count % 100 == 0) {
-                Log.logger.info("Migrated {} / {} channels", count, entries.size());
-            }
+            channelMap.put(entry.getKey(), entry.getValue());
         }
-        Log.logger.info("Migrated {} channels to destination", count);
+        destination.putAllIfAbsent(channelMap);
+        Log.logger.info("Migrated {} channels to destination", entries.size());
 
         try {
             destination.save();

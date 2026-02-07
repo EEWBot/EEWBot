@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channel>> implements ChannelRegistry {
@@ -57,11 +56,6 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     @Override
     public boolean exists(long key) {
         return getElement().containsKey(key);
-    }
-
-    @Override
-    public void computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction) {
-        getElement().computeIfAbsent(key, mappingFunction);
     }
 
     @Override

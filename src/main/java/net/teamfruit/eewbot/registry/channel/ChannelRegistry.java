@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-
 public interface ChannelRegistry {
 
     Channel get(long key);
@@ -15,8 +13,6 @@ public interface ChannelRegistry {
     void remove(long key);
 
     boolean exists(long key);
-
-    void computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction);
 
     void put(long key, Channel channel);
 
@@ -69,6 +65,10 @@ public interface ChannelRegistry {
     Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter);
 
     boolean isWebhookForThread(long webhookId, long threadId);
+
+    default void putAllIfAbsent(Map<Long, Channel> channels) {
+        channels.forEach(this::put);
+    }
 
     default void save() throws IOException {
     }

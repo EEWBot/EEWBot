@@ -16,7 +16,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.*;
@@ -122,19 +121,6 @@ public class ChannelRegistrySql implements ChannelRegistry {
                 this.dsl.selectFrom(DESTINATIONS)
                         .where(TARGET_ID.eq(key))
         );
-    }
-
-    @Override
-    public void computeIfAbsent(long key, Function<? super Long, ? extends Channel> mappingFunction) {
-        computeIfAbsentWithDsl(this.dsl, key, mappingFunction);
-    }
-
-    /**
-     * Compute if absent using the provided DSLContext (for transactional use).
-     */
-    public void computeIfAbsentWithDsl(DSLContext tx, long key, Function<? super Long, ? extends Channel> mappingFunction) {
-        Channel channel = mappingFunction.apply(key);
-        insertChannelIfAbsentWithDsl(tx, key, channel);
     }
 
     private void insertChannelIfAbsentWithDsl(DSLContext tx, long targetId, Channel channel) {
