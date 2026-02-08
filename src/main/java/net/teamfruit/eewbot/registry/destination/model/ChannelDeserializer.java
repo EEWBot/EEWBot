@@ -52,7 +52,7 @@ public class ChannelDeserializer implements JsonDeserializer<Channel> {
             webhook = context.deserialize(obj.get("webhook"), ChannelWebhook.class);
         }
 
-        String lang = obj.has("lang") && !obj.get("lang").isJsonNull() ? obj.get("lang").getAsString() : "ja";
+        String lang = obj.has("lang") && !obj.get("lang").isJsonNull() ? obj.get("lang").getAsString() : "ja_jp";
 
         return new Channel(guildId, channelId, threadId, eewAlert, eewPrediction, eewDecimation, quakeInfo, minIntensity, webhook, lang);
     }
