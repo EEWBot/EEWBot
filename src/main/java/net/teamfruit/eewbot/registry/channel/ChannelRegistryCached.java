@@ -236,6 +236,20 @@ public class ChannelRegistryCached implements ChannelRegistry {
         requestReload();
     }
 
+    @Override
+    public void putAll(Map<Long, Channel> channels) {
+        if (channels.isEmpty()) {
+            return;
+        }
+        this.delegate.getDsl().transaction(ctx -> {
+            org.jooq.DSLContext tx = ctx.dsl();
+            this.delegate.putAllWithDsl(tx, channels);
+            this.revisionStore.incrementWithDsl(tx);
+        });
+        this.channelCache.invalidateAll();
+        requestReload();
+    }
+
     // ========================================
     // Batch write methods - update DB with revision++ in same transaction, then reload
     // ========================================

@@ -22,6 +22,9 @@ import static org.jooq.impl.DSL.*;
 
 public class ChannelRegistrySql implements ChannelRegistry {
 
+    /** Must match the DB schema DEFAULT for the lang column. */
+    private static final String DEFAULT_LANG = "ja_jp";
+
     private static final Map<String, String> SETTABLE_BOOLEAN_COLUMNS = Map.of(
             "eewAlert", "eew_alert",
             "eewPrediction", "eew_prediction",
@@ -166,17 +169,18 @@ public class ChannelRegistrySql implements ChannelRegistry {
         insertChannelIfAbsentWithDsl(tx, key, channel);
     }
 
-    public int insertAllIfAbsent(List<Map.Entry<Long, Channel>> entries, String defaultLang) {
-        return insertAllIfAbsentWithDsl(this.dsl, entries, defaultLang);
+    @Override
+    public void putAll(Map<Long, Channel> channels) {
+        putAllWithDsl(this.dsl, channels);
     }
 
-    public int insertAllIfAbsentWithDsl(DSLContext tx, List<Map.Entry<Long, Channel>> entries, String defaultLang) {
-        if (entries.isEmpty()) {
-            return 0;
+    public void putAllWithDsl(DSLContext tx, Map<Long, Channel> channels) {
+        if (channels.isEmpty()) {
+            return;
         }
 
-        int totalInserted = 0;
         int chunkSize = 500;
+        List<Map.Entry<Long, Channel>> entries = new ArrayList<>(channels.entrySet());
         for (int i = 0; i < entries.size(); i += chunkSize) {
             List<Map.Entry<Long, Channel>> chunk = entries.subList(i, Math.min(i + chunkSize, entries.size()));
 
@@ -187,8 +191,7 @@ public class ChannelRegistrySql implements ChannelRegistry {
 
             for (Map.Entry<Long, Channel> entry : chunk) {
                 Channel channel = entry.getValue();
-                String lang = channel.getLang() != null ? channel.getLang() : defaultLang;
-                step = step.values(
+                step = step.values(Arrays.asList(
                         entry.getKey(),
                         channel.getChannelId(),
                         channel.getThreadId(),
@@ -198,14 +201,13 @@ public class ChannelRegistrySql implements ChannelRegistry {
                         channel.isEewDecimation() ? 1 : 0,
                         channel.isQuakeInfo() ? 1 : 0,
                         channel.getMinIntensity() != null ? channel.getMinIntensity().getCode() : SeismicIntensity.ONE.getCode(),
-                        lang,
+                        channel.getLang() != null ? channel.getLang() : DEFAULT_LANG,
                         channel.getWebhook() != null ? channel.getWebhook().getUrl() : null,
                         channel.getWebhook() != null ? channel.getWebhook().id() : null
-                );
+                ));
             }
-            totalInserted += step.onConflictDoNothing().execute();
+            step.onConflictDoNothing().execute();
         }
-        return totalInserted;
     }
 
     @Override

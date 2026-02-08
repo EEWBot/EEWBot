@@ -130,7 +130,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
-    public void putAllIfAbsent(Map<Long, Channel> channels) {
+    public void putAll(Map<Long, Channel> channels) {
         if (channels.isEmpty()) {
             return;
         }

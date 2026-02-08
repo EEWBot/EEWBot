@@ -66,7 +66,7 @@ public interface ChannelRegistry {
 
     boolean isWebhookForThread(long webhookId, long threadId);
 
-    default void putAllIfAbsent(Map<Long, Channel> channels) {
+    default void putAll(Map<Long, Channel> channels) {
         channels.forEach(this::put);
     }
 
