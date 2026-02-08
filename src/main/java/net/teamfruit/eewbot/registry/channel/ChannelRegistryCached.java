@@ -108,6 +108,7 @@ public class ChannelRegistryCached implements ChannelRegistry {
             return; // Already up to date
         }
         this.snapshotRef.set(loaded);
+        this.channelCache.invalidateAll();
         Log.logger.debug("Snapshot reloaded: {} channels, revision {}",
                 loaded.size(), loaded.getRevision());
     }
