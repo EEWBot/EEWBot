@@ -102,12 +102,14 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         return this.dsl;
     }
 
+    @Override
     public Channel get(long key) {
         return this.dsl.selectFrom(DESTINATIONS)
                 .where(TARGET_ID.eq(key))
                 .fetchOne(this::mapToChannel);
     }
 
+    @Override
     public void remove(long key) {
         removeWithDsl(this.dsl, key);
     }
@@ -121,6 +123,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .execute();
     }
 
+    @Override
     public boolean exists(long key) {
         return this.dsl.fetchExists(
                 this.dsl.selectFrom(DESTINATIONS)
@@ -162,6 +165,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .execute();
     }
 
+    @Override
     public void put(long key, Channel channel) {
         insertChannelIfAbsentWithDsl(this.dsl, key, channel);
     }
@@ -170,6 +174,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         insertChannelIfAbsentWithDsl(tx, key, channel);
     }
 
+    @Override
     public void putAll(Map<Long, Channel> channels) {
         putAllWithDsl(this.dsl, channels);
     }
@@ -210,6 +215,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         }
     }
 
+    @Override
     public void set(long key, String name, boolean bool) {
         setWithDsl(this.dsl, key, name, bool);
     }
@@ -229,6 +235,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .execute();
     }
 
+    @Override
     public void setMinIntensity(long key, SeismicIntensity intensity) {
         setMinIntensityWithDsl(this.dsl, key, intensity);
     }
@@ -243,6 +250,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .execute();
     }
 
+    @Override
     public void setWebhook(long key, ChannelWebhook webhook) {
         setWebhookWithDsl(this.dsl, key, webhook);
     }
@@ -259,6 +267,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .execute();
     }
 
+    @Override
     public void setLang(long key, String lang) {
         setLangWithDsl(this.dsl, key, lang);
     }
@@ -278,6 +287,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .execute();
     }
 
+    @Override
     public List<Long> getWebhookAbsentChannels() {
         return this.dsl.select(TARGET_ID)
                 .from(DESTINATIONS)
@@ -285,6 +295,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .fetch(0, Long.class);
     }
 
+    @Override
     public List<Long> getWebhookAbsentChannels(ChannelFilter filter) {
         Condition condition = buildCondition(filter);
         return this.dsl.select(TARGET_ID)
@@ -294,6 +305,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .fetch(0, Long.class);
     }
 
+    @Override
     public int removeByGuildId(long guildId) {
         return removeByGuildIdWithDsl(this.dsl, guildId);
     }
@@ -307,6 +319,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .execute();
     }
 
+    @Override
     public int clearWebhookByUrls(Collection<String> webhookUrls) {
         return clearWebhookByUrlsWithDsl(this.dsl, webhookUrls);
     }
@@ -325,6 +338,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .execute();
     }
 
+    @Override
     public int setLangByGuildId(long guildId, String lang) {
         return setLangByGuildIdWithDsl(this.dsl, guildId, lang);
     }
@@ -339,6 +353,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .execute();
     }
 
+    @Override
     public Map<Long, Channel> getAllChannels() {
         return getAllChannelsWithDsl(this.dsl);
     }
@@ -406,6 +421,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         );
     }
 
+    @Override
     public boolean isWebhookForThread(long webhookId, long targetId) {
         boolean exists = this.dsl.fetchExists(
                 this.dsl.selectFrom(DESTINATIONS)
