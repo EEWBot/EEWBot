@@ -11,9 +11,10 @@ import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
 import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.registry.channel.ChannelBase;
-import net.teamfruit.eewbot.registry.channel.ChannelFilter;
-import net.teamfruit.eewbot.registry.channel.ChannelRegistry;
+import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
+import net.teamfruit.eewbot.registry.destination.model.ChannelBase;
+import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.async.methods.*;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -51,7 +52,8 @@ public class EEWService {
     private final String avatarUrl;
     private final I18n i18n;
     private final ScheduledExecutorService executor;
-    private final ChannelRegistry channels;
+    private final DestinationDeliveryRegistry deliveryRegistry;
+    private final DestinationAdminRegistry adminRegistry;
     private final HttpClient httpClient;
     private final MinimalHttpAsyncClient asyncHttpClient;
     private final URI webhookSenderAddress;
@@ -59,7 +61,8 @@ public class EEWService {
 
     public EEWService(EEWBot bot) {
         this.gateway = bot.getClient();
-        this.channels = bot.getChannels();
+        this.deliveryRegistry = bot.getDeliveryRegistry();
+        this.adminRegistry = bot.getAdminRegistry();
         this.avatarUrl = bot.getAvatarUrl();
         this.i18n = bot.getI18n();
         this.executor = bot.getScheduledExecutor();
@@ -90,7 +93,7 @@ public class EEWService {
         Map<String, MessageCreateSpec> msgByLang = new HashMap<>();
         this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang)));
 
-        Map<Boolean, Map<Long, ChannelBase>> webhookPartitioned = this.channels.getChannelsPartitionedByWebhookPresent(filter);
+        Map<Boolean, Map<Long, ChannelBase>> webhookPartitioned = this.deliveryRegistry.getChannelsPartitionedByWebhookPresent(filter);
 
         List<DiscordWebhookRequest> webhookRequests = new ArrayList<>();
         this.i18n.getLanguages().keySet().forEach(lang -> {
@@ -139,11 +142,11 @@ public class EEWService {
                             Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
                             erroredChannels.forEach(channelId -> {
-                                this.channels.remove(channelId);
+                                this.adminRegistry.remove(channelId);
                                 Log.logger.info("Channel {} permission is missing or has been deleted, unregister", channelId);
                             });
                             try {
-                                this.channels.save();
+                                this.adminRegistry.save();
                             } catch (IOException e) {
                                 Log.logger.error("Failed to save channels", e);
                             }
@@ -206,10 +209,10 @@ public class EEWService {
 
                         erroredChannels.forEach((channelId, channel) -> {
                             Log.logger.info("Webhook {} is deleted, unregister", Objects.requireNonNull(channel.getWebhook()).id());
-                            this.channels.setWebhook(channelId, null);
+                            this.adminRegistry.setWebhook(channelId, null);
                         });
                         try {
-                            this.channels.save();
+                            this.adminRegistry.save();
                         } catch (IOException e) {
                             Log.logger.error("Failed to save channels", e);
                         }
@@ -302,7 +305,7 @@ public class EEWService {
                 return;
             }
 
-            int cleared = this.channels.clearWebhookByUrls(notFoundList);
+            int cleared = this.adminRegistry.clearWebhookByUrls(notFoundList);
             if (cleared > 0) {
                 Log.logger.info("Cleared {} channel webhook(s) for {} not-found URL(s)", cleared, notFoundList.size());
             }

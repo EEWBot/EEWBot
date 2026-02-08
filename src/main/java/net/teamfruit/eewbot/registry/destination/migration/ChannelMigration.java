@@ -1,10 +1,16 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination.migration;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
+import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
+import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryRedis;
+import net.teamfruit.eewbot.registry.destination.model.*;
+import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
+import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
@@ -39,8 +45,8 @@ public class ChannelMigration {
                 Log.logger.info("DRY RUN MODE - No changes will be made");
             }
 
-            ChannelRegistry source = createRegistry(config.sourceType, config.sourceConfig);
-            ChannelRegistry destination = createRegistry(config.destType, config.destConfig);
+            DestinationAdminRegistry source = createRegistry(config.sourceType, config.sourceConfig);
+            DestinationAdminRegistry destination = createRegistry(config.destType, config.destConfig);
 
             if (destination instanceof ChannelRegistrySql sqlDest) {
                 String migrationName = config.sourceType + "_to_sql_channels_v1";
@@ -82,7 +88,7 @@ public class ChannelMigration {
         );
     }
 
-    private static void performMigrationWithTracking(ChannelRegistry source, ChannelRegistrySql dest, String migrationName) {
+    private static void performMigrationWithTracking(DestinationAdminRegistry source, ChannelRegistrySql dest, String migrationName) {
         dest.getDsl().transaction(ctx -> {
             DSLContext tx = ctx.dsl();
 
@@ -129,12 +135,12 @@ public class ChannelMigration {
         });
     }
 
-    private static void performMigration(ChannelRegistry source, ChannelRegistry destination) {
+    private static void performMigration(DestinationAdminRegistry source, DestinationAdminRegistry destination) {
         List<Map.Entry<Long, Channel>> entries = collectChannels(source);
         migrateChannels(entries, destination);
     }
 
-    private static void performDryRun(ChannelRegistry source) {
+    private static void performDryRun(DestinationAdminRegistry source) {
         List<Map.Entry<Long, Channel>> entries = collectChannels(source);
         Log.logger.info("DRY RUN: Would migrate {} channels", entries.size());
         for (Map.Entry<Long, Channel> entry : entries) {
@@ -147,8 +153,7 @@ public class ChannelMigration {
         }
     }
 
-    // Package-private for testing
-    static List<Map.Entry<Long, Channel>> collectChannels(ChannelRegistry source) {
+    public static List<Map.Entry<Long, Channel>> collectChannels(DestinationAdminRegistry source) {
         List<Map.Entry<Long, Channel>> entries = new ArrayList<>();
 
         if (source instanceof ChannelRegistryJson jsonSource) {
@@ -163,7 +168,7 @@ public class ChannelMigration {
         return entries;
     }
 
-    private static void migrateChannels(List<Map.Entry<Long, Channel>> entries, ChannelRegistry destination) {
+    private static void migrateChannels(List<Map.Entry<Long, Channel>> entries, DestinationAdminRegistry destination) {
         if (destination instanceof ChannelRegistrySql) {
             migrateChannelsSql(entries, (ChannelRegistrySql) destination);
             return;
@@ -183,8 +188,7 @@ public class ChannelMigration {
         }
     }
 
-    // Package-private for testing
-    static void migrateChannelsSql(List<Map.Entry<Long, Channel>> entries, ChannelRegistrySql destination) {
+    public static void migrateChannelsSql(List<Map.Entry<Long, Channel>> entries, ChannelRegistrySql destination) {
         Map<Long, Channel> prepared = new LinkedHashMap<>(entries.size());
         for (Map.Entry<Long, Channel> entry : entries) {
             Channel channel = entry.getValue();
@@ -214,7 +218,7 @@ public class ChannelMigration {
         Log.logger.info("Migrated {} channels to destination", entries.size());
     }
 
-    private static ChannelRegistry createRegistry(String type, Map<String, String> config) throws IOException {
+    private static DestinationAdminRegistry createRegistry(String type, Map<String, String> config) throws IOException {
         return switch (type.toLowerCase()) {
             case "json" -> {
                 String pathStr = config.getOrDefault("path", "channels.json");
@@ -304,7 +308,7 @@ public class ChannelMigration {
     }
 
     private static void printUsage() {
-        System.out.println("Usage: java -cp eewbot.jar net.teamfruit.eewbot.registry.channel.ChannelMigration [options]");
+        System.out.println("Usage: java -cp eewbot.jar net.teamfruit.eewbot.registry.destination.migration.ChannelMigration [options]");
         System.out.println();
         System.out.println("Options:");
         System.out.println("  --source <type>           Source registry type: json, redis, sqlite, postgresql");
@@ -325,17 +329,17 @@ public class ChannelMigration {
         System.out.println();
         System.out.println("Examples:");
         System.out.println("  # JSON to SQLite");
-        System.out.println("  java -cp eewbot.jar net.teamfruit.eewbot.registry.channel.ChannelMigration \\");
+        System.out.println("  java -cp eewbot.jar net.teamfruit.eewbot.registry.destination.migration.ChannelMigration \\");
         System.out.println("    --source json --source-path channels.json \\");
         System.out.println("    --dest sqlite --dest-path channels.db");
         System.out.println();
         System.out.println("  # JSON to PostgreSQL");
-        System.out.println("  java -cp eewbot.jar net.teamfruit.eewbot.registry.channel.ChannelMigration \\");
+        System.out.println("  java -cp eewbot.jar net.teamfruit.eewbot.registry.destination.migration.ChannelMigration \\");
         System.out.println("    --source json --source-path channels.json \\");
         System.out.println("    --dest postgresql --dest-host localhost --dest-database eewbot");
         System.out.println();
         System.out.println("  # Redis to PostgreSQL");
-        System.out.println("  java -cp eewbot.jar net.teamfruit.eewbot.registry.channel.ChannelMigration \\");
+        System.out.println("  java -cp eewbot.jar net.teamfruit.eewbot.registry.destination.migration.ChannelMigration \\");
         System.out.println("    --source redis --source-address localhost:6379 \\");
         System.out.println("    --dest postgresql --dest-host localhost --dest-database eewbot");
     }

@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination.model;
 
 import reactor.util.annotation.Nullable;
 
@@ -32,7 +32,7 @@ public class ChannelBase {
         return this.webhook;
     }
 
-    void setWebhook(ChannelWebhook webhook) {
+    public void setWebhook(ChannelWebhook webhook) {
         this.webhook = webhook;
     }
 
@@ -40,7 +40,7 @@ public class ChannelBase {
         return this.lang;
     }
 
-    void setLang(String lang) {
+    public void setLang(String lang) {
         this.lang = lang;
     }
 
@@ -48,7 +48,7 @@ public class ChannelBase {
         return this.channelId;
     }
 
-    void setChannelId(Long channelId) {
+    public void setChannelId(Long channelId) {
         this.channelId = channelId;
     }
 
@@ -56,7 +56,7 @@ public class ChannelBase {
         return this.threadId;
     }
 
-    void setThreadId(Long threadId) {
+    public void setThreadId(Long threadId) {
         this.threadId = threadId;
     }
 

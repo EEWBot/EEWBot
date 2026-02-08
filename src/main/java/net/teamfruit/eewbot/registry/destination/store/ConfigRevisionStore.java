@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination.store;
 
 import org.jooq.DSLContext;
 import org.jooq.Field;

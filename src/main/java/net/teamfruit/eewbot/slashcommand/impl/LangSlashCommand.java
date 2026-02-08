@@ -11,7 +11,7 @@ import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.registry.channel.Channel;
+import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.IButtonSlashCommand;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
 import reactor.core.publisher.Mono;
@@ -68,7 +68,7 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
                         } else {
                             newChannel = Channel.createDefault(guildId, targetId, null, lang);
                         }
-                        bot.getChannels().put(targetId, newChannel);
+                        bot.getAdminRegistry().put(targetId, newChannel);
                     })
                     .then();
         } else {
@@ -80,7 +80,7 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
                         .withComponents(buildActionRows(bot, lang, event.getInteraction().getGuildId().isPresent())))
                 .then(Mono.create(sink -> {
                     try {
-                        bot.getChannels().save();
+                        bot.getAdminRegistry().save();
                         sink.success();
                     } catch (IOException e) {
                         sink.error(e);
@@ -92,9 +92,9 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
     public Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         if (event.getCustomId().equals("lang-set")) {
             String langKey = event.getValues().get(0);
-            bot.getChannels().setLang(event.getInteraction().getChannelId().asLong(), langKey);
+            bot.getAdminRegistry().setLang(event.getInteraction().getChannelId().asLong(), langKey);
             try {
-                bot.getChannels().save();
+                bot.getAdminRegistry().save();
             } catch (IOException e) {
                 return Mono.error(e);
             }
@@ -114,9 +114,9 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
             Optional<Snowflake> guildId = event.getInteraction().getGuildId();
             if (guildId.isEmpty())
                 return Mono.empty();
-            bot.getChannels().setLangByGuildId(guildId.get().asLong(), lang);
+            bot.getAdminRegistry().setLangByGuildId(guildId.get().asLong(), lang);
             try {
-                bot.getChannels().save();
+                bot.getAdminRegistry().save();
             } catch (IOException e) {
                 return Mono.error(e);
             }

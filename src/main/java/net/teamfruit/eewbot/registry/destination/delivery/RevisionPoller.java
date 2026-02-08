@@ -1,6 +1,7 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination.delivery;
 
 import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -8,33 +9,33 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Polls the config_meta.channels_revision periodically to detect external changes.
- * When a change is detected, triggers snapshot reload via ChannelRegistryCached.
+ * When a change is detected, triggers snapshot reload via SnapshotDeliveryRegistry.
  */
 public class RevisionPoller {
 
     private static final long DEFAULT_POLL_INTERVAL_MS = 2000;
 
-    private final ChannelRegistryCached cachedRegistry;
+    private final SnapshotDeliveryRegistry snapshotDeliveryRegistry;
     private final ConfigRevisionStore revisionStore;
     private final ScheduledExecutorService scheduler;
     private final long pollIntervalMs;
     private ScheduledFuture<?> pollTask;
 
     public RevisionPoller(
-            ChannelRegistryCached cachedRegistry,
+            SnapshotDeliveryRegistry snapshotDeliveryRegistry,
             ConfigRevisionStore revisionStore,
             ScheduledExecutorService scheduler
     ) {
-        this(cachedRegistry, revisionStore, scheduler, DEFAULT_POLL_INTERVAL_MS);
+        this(snapshotDeliveryRegistry, revisionStore, scheduler, DEFAULT_POLL_INTERVAL_MS);
     }
 
     public RevisionPoller(
-            ChannelRegistryCached cachedRegistry,
+            SnapshotDeliveryRegistry snapshotDeliveryRegistry,
             ConfigRevisionStore revisionStore,
             ScheduledExecutorService scheduler,
             long pollIntervalMs
     ) {
-        this.cachedRegistry = cachedRegistry;
+        this.snapshotDeliveryRegistry = snapshotDeliveryRegistry;
         this.revisionStore = revisionStore;
         this.scheduler = scheduler;
         this.pollIntervalMs = pollIntervalMs;
@@ -71,11 +72,11 @@ public class RevisionPoller {
     private void poll() {
         try {
             long dbRevision = this.revisionStore.getRevision();
-            DeliverySnapshot current = this.cachedRegistry.getSnapshot();
+            DeliverySnapshot current = this.snapshotDeliveryRegistry.getSnapshot();
             if (current == null || current.getRevision() < dbRevision) {
                 Log.logger.debug("Revision change detected: current={}, db={}",
                         current != null ? current.getRevision() : "null", dbRevision);
-                this.cachedRegistry.requestReload();
+                this.snapshotDeliveryRegistry.requestReload();
             }
         } catch (Exception e) {
             Log.logger.error("Error in revision poll", e);

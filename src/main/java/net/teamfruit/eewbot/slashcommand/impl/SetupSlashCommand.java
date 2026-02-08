@@ -18,10 +18,10 @@ import discord4j.rest.util.PermissionSet;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.registry.channel.Channel;
-import net.teamfruit.eewbot.registry.channel.ChannelSetting;
-import net.teamfruit.eewbot.registry.channel.ChannelSettingType;
-import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
+import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSetting;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSettingType;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
@@ -117,7 +117,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                     boolean isCreatedBySelf = webhook.user().toOptional()
                             .filter(user -> user.id().asLong() == event.getClient().getSelfId().asLong())
                             .isPresent();
-                    return isSameChannel && isCreatedBySelf && bot.getChannels().isWebhookForThread(webhook.id().asLong(), targetId);
+                    return isSameChannel && isCreatedBySelf && bot.getAdminRegistry().isWebhookForThread(webhook.id().asLong(), targetId);
                 })
                 .next()
                 .switchIfEmpty(bot.getClient().getSelfMember(guildId).map(PartialMember::getDisplayName)
@@ -137,7 +137,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                 webhookData.token().get(),
                 threadId
         );
-        bot.getChannels().setWebhook(targetId, webhook);
+        bot.getAdminRegistry().setWebhook(targetId, webhook);
     }
 
     /**
@@ -187,7 +187,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                                     } else {
                                                         newChannel = Channel.createDefault(guildId, targetId, null, lang);
                                                     }
-                                                    bot.getChannels().put(targetId, newChannel);
+                                                    bot.getAdminRegistry().put(targetId, newChannel);
                                                     return createWebhookWithPermCheck(bot, event, gid, guildChannel, targetId, perms, lang);
                                                 } else if (channel.getWebhook() == null) {
                                                     // Case 2: Registered, no webhook — try to create webhook
@@ -212,13 +212,13 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                         .switchIfEmpty(Mono.defer(() -> {
                             // DM
                             if (channel == null) {
-                                bot.getChannels().put(targetId, Channel.createDefault(guildId, targetId, null, lang));
+                                bot.getAdminRegistry().put(targetId, Channel.createDefault(guildId, targetId, null, lang));
                             }
                             return buildReply(bot, event, lang, targetId, false).thenReturn(true);
                         }))
                         .then(Mono.create(sink -> {
                             try {
-                                bot.getChannels().save();
+                                bot.getAdminRegistry().save();
                                 sink.success();
                             } catch (IOException e) {
                                 sink.error(e);
@@ -234,7 +234,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private SelectMenu buildSelectMenu(EEWBot bot, ChannelSettingType type, long channelId, String lang) {
-        Map<String, Boolean> fields = bot.getChannels().get(channelId).getSettingsByType(type);
+        Map<String, Boolean> fields = bot.getAdminRegistry().get(channelId).getSettingsByType(type);
         return SelectMenu.of(type.getCustomId(), fields.entrySet().stream().map(entry -> {
                     String label = bot.getI18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + "." + entry.getKey().toLowerCase() + ".label");
                     SelectMenu.Option option = entry.getValue() ? SelectMenu.Option.ofDefault(label, entry.getKey()) : SelectMenu.Option.of(label, entry.getKey());
@@ -247,7 +247,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private SelectMenu buildSensitivitySelectMenu(EEWBot bot, long channelId, String lang) {
-        Channel channel = bot.getChannels().get(channelId);
+        Channel channel = bot.getAdminRegistry().get(channelId);
         return SelectMenu.of("sensitivity", Arrays.stream(SeismicIntensity.values()).map(intensity -> {
                     String label = intensity == SeismicIntensity.UNKNOWN ? bot.getI18n().get(lang, "eewbot.scmd.setup.sensitivity.option.unknown") : bot.getI18n().format(lang, "eewbot.scmd.setup.sensitivity.option", intensity);
                     if (channel.getMinIntensity() == intensity)
@@ -278,9 +278,9 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                     return annotation != null && annotation.value().getCustomId().equals(event.getCustomId());
                 })
                 .map(Field::getName)
-                .forEach(name -> bot.getChannels().set(targetId, name, event.getValues().contains(name)));
+                .forEach(name -> bot.getAdminRegistry().set(targetId, name, event.getValues().contains(name)));
         try {
-            bot.getChannels().save();
+            bot.getAdminRegistry().save();
         } catch (IOException e) {
             return Mono.error(e);
         }
@@ -297,9 +297,9 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         long targetId = event.getInteraction().getChannelId().asLong();
         SeismicIntensity intensity = SeismicIntensity.get(event.getValues().get(0));
-        bot.getChannels().setMinIntensity(targetId, intensity);
+        bot.getAdminRegistry().setMinIntensity(targetId, intensity);
         try {
-            bot.getChannels().save();
+            bot.getAdminRegistry().save();
         } catch (IOException e) {
             return Mono.error(e);
         }

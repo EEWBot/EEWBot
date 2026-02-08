@@ -1,8 +1,13 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
+import net.teamfruit.eewbot.registry.destination.migration.ChannelMigration;
+import net.teamfruit.eewbot.registry.destination.model.*;
+import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
+import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import org.jooq.SQLDialect;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

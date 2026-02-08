@@ -1,4 +1,7 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination.delivery;
+
+import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
+import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 
 import java.util.List;
 

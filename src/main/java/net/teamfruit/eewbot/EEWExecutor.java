@@ -15,9 +15,9 @@ import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.gateway.*;
-import net.teamfruit.eewbot.registry.channel.ChannelFilter;
-import net.teamfruit.eewbot.registry.channel.ChannelRegistry;
-import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
+import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
@@ -40,11 +40,11 @@ public class EEWExecutor {
     private final ConfigV2 config;
     private final long applicationId;
     private final GatewayDiscordClient client;
-    private final ChannelRegistry channels;
+    private final DestinationAdminRegistry channels;
     private final QuakeInfoStore quakeInfoStore;
     private final ExternalWebhookService externalWebhookService;
 
-    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels, QuakeInfoStore quakeInfoStore, ExternalWebhookService externalWebhookService) {
+    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, DestinationAdminRegistry channels, QuakeInfoStore quakeInfoStore, ExternalWebhookService externalWebhookService) {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;

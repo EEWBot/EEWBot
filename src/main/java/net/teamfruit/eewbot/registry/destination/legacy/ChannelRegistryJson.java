@@ -1,10 +1,11 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination.legacy;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.JsonRegistry;
+import net.teamfruit.eewbot.registry.destination.model.*;
 
 import java.io.IOException;
 import java.nio.file.Path;

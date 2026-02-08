@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination.model;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18nKey;
@@ -70,7 +70,7 @@ public class Channel extends ChannelBase {
         return this.minIntensity;
     }
 
-    void setMinIntensity(SeismicIntensity minIntensity) {
+    public void setMinIntensity(SeismicIntensity minIntensity) {
         this.minIntensity = minIntensity;
     }
 
@@ -90,7 +90,7 @@ public class Channel extends ChannelBase {
                 .findAny().orElseThrow(IllegalArgumentException::new);
     }
 
-    void set(final String name, final boolean bool) {
+    public void set(final String name, final boolean bool) {
         Arrays.stream(getClass().getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(ChannelSetting.class) && field.getName().equals(name))
                 .findAny().ifPresent(field -> {

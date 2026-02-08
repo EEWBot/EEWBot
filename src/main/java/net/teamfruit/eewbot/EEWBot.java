@@ -20,7 +20,23 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.JsonRegistry;
-import net.teamfruit.eewbot.registry.channel.*;
+import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshotLoader;
+import net.teamfruit.eewbot.registry.destination.delivery.RevisionPoller;
+import net.teamfruit.eewbot.registry.destination.delivery.SnapshotDeliveryRegistry;
+import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
+import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryRedis;
+import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelDeserializer;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhookDeserializer;
+import net.teamfruit.eewbot.registry.destination.model.SeismicIntensityDeserializer;
+import net.teamfruit.eewbot.registry.destination.model.SeismicIntensitySerializer;
+import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
+import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
+import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
+import net.teamfruit.eewbot.registry.destination.store.SqlAdminRegistry;
 import net.teamfruit.eewbot.registry.config.Config;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
@@ -60,7 +76,9 @@ public class EEWBot {
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private GatewayDiscordClient gateway;
-    private ChannelRegistry channels;
+    private DestinationDeliveryRegistry deliveryRegistry;
+    private DestinationAdminRegistry adminRegistry;
+    private ChannelRegistrySql sqlRegistry;
     private RevisionPoller revisionPoller;
     private I18n i18n;
     private QuakeInfoStore quakeInfoStore;
@@ -91,27 +109,29 @@ public class EEWBot {
         String dbType = getConfig().getDatabase().getType();
 
         if ("postgresql".equalsIgnoreCase(dbType)) {
-            ChannelRegistrySql sqlRegistry = ChannelRegistrySql.forPostgreSQL(getConfig().getDatabase().getPostgresql());
-            DatabaseInitializer.migrate(sqlRegistry.getDataSource(), sqlRegistry.getDialect());
-            this.channels = initializeCachedRegistry(sqlRegistry);
+            ChannelRegistrySql sql = ChannelRegistrySql.forPostgreSQL(getConfig().getDatabase().getPostgresql());
+            DatabaseInitializer.migrate(sql.getDataSource(), sql.getDialect());
+            initializeSqlRegistries(sql);
         } else if ("sqlite".equalsIgnoreCase(dbType)) {
             Path sqlitePath = DATA_DIRECTORY != null
                     ? Paths.get(DATA_DIRECTORY, getConfig().getDatabase().getSqlite().getPath())
                     : Paths.get(getConfig().getDatabase().getSqlite().getPath());
-            ChannelRegistrySql sqlRegistry = ChannelRegistrySql.forSQLite(sqlitePath);
-            DatabaseInitializer.migrate(sqlRegistry.getDataSource(), sqlRegistry.getDialect());
-            this.channels = initializeCachedRegistry(sqlRegistry);
+            ChannelRegistrySql sql = ChannelRegistrySql.forSQLite(sqlitePath);
+            DatabaseInitializer.migrate(sql.getDataSource(), sql.getDialect());
+            initializeSqlRegistries(sql);
         } else if (StringUtils.isNotEmpty(getConfig().getRedis().getAddress())) {
             String redisAddress = getConfig().getRedis().getAddress();
             HostAndPort hnp = redisAddress.lastIndexOf(":") < 0 ? new HostAndPort(redisAddress, 6379) : HostAndPort.from(redisAddress);
             JedisPooled jedisPooled = new JedisPooled(hnp);
             ChannelRegistryRedis registry = new ChannelRegistryRedis(jedisPooled, GSON);
             registry.init(() -> new ChannelRegistryJson(path, GSON));
-            this.channels = registry;
+            this.deliveryRegistry = registry;
+            this.adminRegistry = registry;
         } else {
             ChannelRegistryJson registry = new ChannelRegistryJson(path, GSON);
             registry.init(false);
-            this.channels = registry;
+            this.deliveryRegistry = registry;
+            this.adminRegistry = registry;
         }
 
         final String token = System.getenv("TOKEN");
@@ -164,7 +184,7 @@ public class EEWBot {
         this.quakeInfoStore = new QuakeInfoStore();
         this.service = new EEWService(this);
         this.externalWebhookService = new ExternalWebhookService(getConfig(), getHttpClient());
-        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getChannels(), getQuakeInfoStore(), getExternalWebhookService());
+        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getAdminRegistry(), getQuakeInfoStore(), getExternalWebhookService());
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
@@ -182,14 +202,12 @@ public class EEWBot {
                 this.revisionPoller.stop();
             }
             try {
-                getChannels().save();
+                this.adminRegistry.save();
             } catch (final IOException e) {
                 Log.logger.error("Save failed", e);
             }
-            if (this.channels instanceof ChannelRegistryCached) {
-                ((ChannelRegistryCached) this.channels).getDelegate().close();
-            } else if (this.channels instanceof ChannelRegistrySql) {
-                ((ChannelRegistrySql) this.channels).close();
+            if (this.sqlRegistry != null) {
+                this.sqlRegistry.close();
             }
             this.snapshotReloadExecutor.shutdown();
             if (this.externalWebhookService != null) {
@@ -201,15 +219,15 @@ public class EEWBot {
     }
 
     /**
-     * Initialize cached registry with snapshot and revision poller.
+     * Initialize SQL-backed registries with snapshot and revision poller.
      * Fail-fast: throws exception if initialization fails.
      */
-    private ChannelRegistryCached initializeCachedRegistry(ChannelRegistrySql sqlRegistry) {
-        ConfigRevisionStore revisionStore = new ConfigRevisionStore(sqlRegistry.getDsl(), sqlRegistry.getDialect());
-        DeliverySnapshotLoader snapshotLoader = new DeliverySnapshotLoader(sqlRegistry, revisionStore);
+    private void initializeSqlRegistries(ChannelRegistrySql sql) {
+        this.sqlRegistry = sql;
+        ConfigRevisionStore revisionStore = new ConfigRevisionStore(sql.getDsl(), sql.getDialect());
+        DeliverySnapshotLoader snapshotLoader = new DeliverySnapshotLoader(sql, revisionStore);
 
-        ChannelRegistryCached cachedRegistry = new ChannelRegistryCached(
-                sqlRegistry,
+        SnapshotDeliveryRegistry delivery = new SnapshotDeliveryRegistry(
                 snapshotLoader,
                 revisionStore,
                 this.snapshotReloadExecutor
@@ -217,26 +235,29 @@ public class EEWBot {
 
         // Blocking initialization - fail fast if snapshot load fails
         try {
-            cachedRegistry.initializeSnapshot();
+            delivery.initializeSnapshot();
         } catch (Exception e) {
             Log.logger.error("Failed to initialize delivery snapshot, aborting startup", e);
             throw new RuntimeException("Snapshot initialization failed", e);
         }
 
-        // Start revision poller for external change detection
-        this.revisionPoller = new RevisionPoller(cachedRegistry, revisionStore, this.scheduledExecutor);
-        this.revisionPoller.start();
+        SqlAdminRegistry admin = new SqlAdminRegistry(sql, revisionStore, delivery::requestReload);
 
-        return cachedRegistry;
+        this.deliveryRegistry = delivery;
+        this.adminRegistry = admin;
+
+        // Start revision poller for external change detection
+        this.revisionPoller = new RevisionPoller(delivery, revisionStore, this.scheduledExecutor);
+        this.revisionPoller.start();
     }
 
     private void handleDeletion(long id, boolean isGuild) {
         if (isGuild)
-            this.channels.removeByGuildId(id);
+            this.adminRegistry.removeByGuildId(id);
         else
-            this.channels.remove(id);
+            this.adminRegistry.remove(id);
         try {
-            this.channels.save();
+            this.adminRegistry.save();
         } catch (IOException e) {
             Log.logger.error("Failed to save channels", e);
         }
@@ -254,8 +275,12 @@ public class EEWBot {
         return this.scheduledExecutor;
     }
 
-    public ChannelRegistry getChannels() {
-        return this.channels;
+    public DestinationDeliveryRegistry getDeliveryRegistry() {
+        return this.deliveryRegistry;
+    }
+
+    public DestinationAdminRegistry getAdminRegistry() {
+        return this.adminRegistry;
     }
 
     public HttpClient getHttpClient() {

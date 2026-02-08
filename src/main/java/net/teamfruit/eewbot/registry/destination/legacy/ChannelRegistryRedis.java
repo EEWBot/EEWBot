@@ -1,9 +1,10 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination.legacy;
 
 import com.google.gson.Gson;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.model.*;
 import org.apache.commons.lang3.Strings;
 import redis.clients.jedis.Connection;
 import redis.clients.jedis.JedisPooled;

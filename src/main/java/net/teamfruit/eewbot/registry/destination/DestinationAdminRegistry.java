@@ -1,20 +1,24 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-public interface ChannelRegistry {
+
+public interface DestinationAdminRegistry {
 
     Channel get(long key);
-
-    void remove(long key);
 
     boolean exists(long key);
 
     void put(long key, Channel channel);
+
+    void remove(long key);
 
     void set(long key, String name, boolean bool);
 
@@ -62,9 +66,7 @@ public interface ChannelRegistry {
      */
     Map<Long, Channel> getAllChannels();
 
-    Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter);
-
-    boolean isWebhookForThread(long webhookId, long threadId);
+    boolean isWebhookForThread(long webhookId, long targetId);
 
     default void putAll(Map<Long, Channel> channels) {
         channels.forEach(this::put);

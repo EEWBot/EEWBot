@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination.store;
 
 import net.teamfruit.eewbot.Log;
 import org.flywaydb.core.Flyway;
