@@ -159,7 +159,16 @@ public class ChannelRegistryCached implements ChannelRegistry {
 
     @Override
     public Channel get(long key) {
-        return this.channelCache.get(key, this.delegate::get);
+        Channel cached = this.channelCache.getIfPresent(key);
+        if (cached != null){
+            return cached;
+        }
+
+        Channel loaded = this.delegate.get(key);
+        if (loaded != null){
+            this.channelCache.put(key, loaded);
+        }
+        return loaded;
     }
 
     @Override
