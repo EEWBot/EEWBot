@@ -22,6 +22,10 @@ public interface DestinationAdminRegistry {
 
     void set(long key, String name, boolean bool);
 
+    default void setAll(long key, Map<String, Boolean> values) {
+        values.forEach((name, bool) -> set(key, name, bool));
+    }
+
     void setMinIntensity(long key, SeismicIntensity intensity);
 
     void setWebhook(long key, ChannelWebhook webhook);

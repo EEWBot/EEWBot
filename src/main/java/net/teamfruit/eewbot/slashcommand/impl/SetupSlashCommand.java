@@ -270,7 +270,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     private Mono<Message> applyChannel(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         long targetId = event.getInteraction().getChannelId().asLong();
-        Arrays.stream(Channel.class.getDeclaredFields())
+        Map<String, Boolean> settings = Arrays.stream(Channel.class.getDeclaredFields())
                 .filter(field -> {
                     if (!field.isAnnotationPresent(ChannelSetting.class))
                         return false;
@@ -278,7 +278,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                     return annotation != null && annotation.value().getCustomId().equals(event.getCustomId());
                 })
                 .map(Field::getName)
-                .forEach(name -> bot.getAdminRegistry().set(targetId, name, event.getValues().contains(name)));
+                .collect(Collectors.toMap(name -> name, name -> event.getValues().contains(name)));
+        bot.getAdminRegistry().setAll(targetId, settings);
         try {
             bot.getAdminRegistry().save();
         } catch (IOException e) {

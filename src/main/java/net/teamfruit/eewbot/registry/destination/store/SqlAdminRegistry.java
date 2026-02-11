@@ -113,6 +113,19 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
     }
 
     @Override
+    public void setAll(long key, java.util.Map<String, Boolean> values) {
+        if (values.isEmpty()) {
+            return;
+        }
+        this.delegate.getDsl().transaction(ctx -> {
+            org.jooq.DSLContext tx = ctx.dsl();
+            this.delegate.setAllWithDsl(tx, key, values);
+            this.revisionStore.incrementWithDsl(tx);
+        });
+        this.onWrite.run();
+    }
+
+    @Override
     public void setMinIntensity(long key, SeismicIntensity intensity) {
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();

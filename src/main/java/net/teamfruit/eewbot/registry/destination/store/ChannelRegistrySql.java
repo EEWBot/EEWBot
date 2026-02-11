@@ -16,10 +16,10 @@ import org.jooq.impl.DSL;
 import org.sqlite.SQLiteDataSource;
 
 import javax.sql.DataSource;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -233,6 +233,31 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .set(field(name(columnName), Integer.class), bool ? 1 : 0)
                 .where(TARGET_ID.eq(key))
                 .execute();
+    }
+
+    @Override
+    public void setAll(long key, Map<String, Boolean> values) {
+        setAllWithDsl(this.dsl, key, values);
+    }
+
+    /**
+     * Set multiple boolean columns in a single UPDATE using the provided DSLContext (for transactional use).
+     */
+    public void setAllWithDsl(DSLContext tx, long key, Map<String, Boolean> values) {
+        if (values.isEmpty()) {
+            return;
+        }
+        UpdateSetFirstStep<?> update = tx.update(DESTINATIONS);
+        UpdateSetMoreStep<?> step = null;
+        for (Map.Entry<String, Boolean> entry : values.entrySet()) {
+            String columnName = SETTABLE_BOOLEAN_COLUMNS.get(entry.getKey());
+            if (columnName == null) {
+                throw new IllegalArgumentException("Unknown or non-settable column: " + entry.getKey());
+            }
+            step = (step == null ? update : step)
+                    .set(field(name(columnName), Integer.class), entry.getValue() ? 1 : 0);
+        }
+        step.where(TARGET_ID.eq(key)).execute();
     }
 
     @Override
