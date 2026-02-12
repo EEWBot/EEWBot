@@ -257,7 +257,9 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
             step = (step == null ? update : step)
                     .set(field(name(columnName), Integer.class), entry.getValue() ? 1 : 0);
         }
-        step.where(TARGET_ID.eq(key)).execute();
+        if (step != null) {
+            step.where(TARGET_ID.eq(key)).execute();
+        }
     }
 
     @Override
