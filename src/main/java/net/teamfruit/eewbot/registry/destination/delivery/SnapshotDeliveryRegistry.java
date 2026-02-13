@@ -104,13 +104,4 @@ public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
         }
         return snapshot.getPartitionedByWebhook(filter);
     }
-
-    @Override
-    public boolean isWebhookForThread(long webhookId, long targetId) {
-        DeliverySnapshot snapshot = this.snapshotRef.get();
-        if (snapshot == null) {
-            throw new IllegalStateException("Snapshot not initialized. Call initializeSnapshot() first.");
-        }
-        return snapshot.isWebhookForThread(webhookId, targetId);
-    }
 }

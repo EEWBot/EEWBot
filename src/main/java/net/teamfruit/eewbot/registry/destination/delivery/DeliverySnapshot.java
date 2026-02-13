@@ -6,7 +6,6 @@ import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Immutable snapshot of all delivery channels for zero-DB-access delivery path.
@@ -129,42 +128,6 @@ public final class DeliverySnapshot {
         }
 
         return new DeliveryPartition(withWebhook, withoutWebhook);
-    }
-
-    /**
-     * Get target IDs of channels without webhook matching the filter.
-     */
-    public List<Long> getWebhookAbsentChannels(ChannelFilter filter) {
-        if (filter == null) {
-            return new ArrayList<>(this.targetsWithoutWebhook);
-        }
-
-        Predicate<DeliveryChannel> predicate = buildPredicate(filter);
-        return this.targetsWithoutWebhook.stream()
-                .filter(targetId -> predicate.test(this.byTargetId.get(targetId)))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get all target IDs of channels without webhook.
-     */
-    public List<Long> getWebhookAbsentChannels() {
-        return new ArrayList<>(this.targetsWithoutWebhook);
-    }
-
-    /**
-     * Check if a webhook is used only for a specific thread.
-     */
-    public boolean isWebhookForThread(long webhookId, long targetId) {
-        for (long tid : this.targetsWithWebhook) {
-            if (tid != targetId) {
-                DeliveryChannel channel = this.byTargetId.get(tid);
-                if (channel.webhook() != null && channel.webhook().id() == webhookId) {
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     /**

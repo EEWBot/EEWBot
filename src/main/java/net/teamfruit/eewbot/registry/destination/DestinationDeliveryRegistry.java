@@ -7,6 +7,4 @@ public interface DestinationDeliveryRegistry {
 
     DeliveryPartition getChannelsPartitionedByWebhookPresent(ChannelFilter filter);
 
-    boolean isWebhookForThread(long webhookId, long targetId);
-
 }
