@@ -8,7 +8,10 @@ import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
 import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryRedis;
-import net.teamfruit.eewbot.registry.destination.model.*;
+import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
+import net.teamfruit.eewbot.registry.destination.model.SeismicIntensityDeserializer;
+import net.teamfruit.eewbot.registry.destination.model.SeismicIntensitySerializer;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
 import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import org.jooq.DSLContext;
@@ -22,11 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.jooq.impl.DSL.*;
 
@@ -117,7 +116,7 @@ public class ChannelMigration {
 
             Log.logger.info("Performing migration: {}", migrationName);
             List<Map.Entry<Long, Channel>> entries = collectChannels(source);
-            migrateChannels(entries, dest);
+            migrateChannelsSql(entries, dest, tx);
 
             if (dest.getDialect() == org.jooq.SQLDialect.SQLITE) {
                 tx.insertInto(dataMigrations)
@@ -169,8 +168,8 @@ public class ChannelMigration {
     }
 
     private static void migrateChannels(List<Map.Entry<Long, Channel>> entries, DestinationAdminRegistry destination) {
-        if (destination instanceof ChannelRegistrySql) {
-            migrateChannelsSql(entries, (ChannelRegistrySql) destination);
+        if (destination instanceof ChannelRegistrySql sqlDest) {
+            migrateChannelsSql(entries, sqlDest, sqlDest.getDsl());
             return;
         }
 
@@ -188,7 +187,7 @@ public class ChannelMigration {
         }
     }
 
-    public static void migrateChannelsSql(List<Map.Entry<Long, Channel>> entries, ChannelRegistrySql destination) {
+    public static void migrateChannelsSql(List<Map.Entry<Long, Channel>> entries, ChannelRegistrySql destination, DSLContext tx) {
         Map<Long, Channel> prepared = new LinkedHashMap<>(entries.size());
         for (Map.Entry<Long, Channel> entry : entries) {
             Channel channel = entry.getValue();
@@ -214,7 +213,7 @@ public class ChannelMigration {
             prepared.put(targetId, preparedChannel);
         }
 
-        destination.putAll(prepared);
+        destination.putAllWithDsl(tx, prepared);
         Log.logger.info("Migrated {} channels to destination", entries.size());
     }
 

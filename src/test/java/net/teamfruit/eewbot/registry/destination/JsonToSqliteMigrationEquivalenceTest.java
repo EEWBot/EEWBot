@@ -152,7 +152,7 @@ class JsonToSqliteMigrationEquivalenceTest {
 
         // Use actual migration logic to migrate data from JSON to SQL
         List<Map.Entry<Long, Channel>> entries = ChannelMigration.collectChannels(this.jsonRegistry);
-        ChannelMigration.migrateChannelsSql(entries, this.sqlRegistry);
+        ChannelMigration.migrateChannelsSql(entries, this.sqlRegistry, this.sqlRegistry.getDsl());
     }
 
     @AfterEach
@@ -585,7 +585,7 @@ class JsonToSqliteMigrationEquivalenceTest {
 
         // Migrate with default lang
         List<Map.Entry<Long, Channel>> entries = ChannelMigration.collectChannels(nullLangJson);
-        ChannelMigration.migrateChannelsSql(entries, this.sqlRegistry);
+        ChannelMigration.migrateChannelsSql(entries, this.sqlRegistry, this.sqlRegistry.getDsl());
 
         // Verify SQL has default lang instead of null
         Channel sqlChannel = this.sqlRegistry.get(9001L);
