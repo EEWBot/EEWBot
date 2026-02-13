@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.migration.ChannelMigration;
 import net.teamfruit.eewbot.registry.destination.model.*;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
@@ -443,51 +445,42 @@ class JsonToSqliteMigrationEquivalenceTest {
     void testGetChannelsPartitionedByWebhookPresent_emptyFilter() {
         ChannelFilter filter = ChannelFilter.builder().build();
 
-        Map<Boolean, Map<Long, ChannelBase>> jsonResult = this.jsonRegistry.getChannelsPartitionedByWebhookPresent(filter);
-        Map<Boolean, Map<Long, ChannelBase>> sqlResult = this.sqlRegistry.getChannelsPartitionedByWebhookPresent(filter);
+        DeliveryPartition jsonResult = this.jsonRegistry.getChannelsPartitionedByWebhookPresent(filter);
+        DeliveryPartition sqlResult = this.sqlRegistry.getChannelsPartitionedByWebhookPresent(filter);
 
         // Compare key sets
-        assertThat(sqlResult.get(true).keySet())
+        assertThat(sqlResult.webhook().keySet())
                 .as("Channels with webhook")
-                .isEqualTo(jsonResult.get(true).keySet());
+                .isEqualTo(jsonResult.webhook().keySet());
 
-        assertThat(sqlResult.get(false).keySet())
+        assertThat(sqlResult.direct().keySet())
                 .as("Channels without webhook")
-                .isEqualTo(jsonResult.get(false).keySet());
+                .isEqualTo(jsonResult.direct().keySet());
 
-        // Deep compare ChannelBase fields (not full equality since JSON returns Channel, SQL returns ChannelBase)
-        for (Long targetId : sqlResult.get(true).keySet()) {
-            ChannelBase sqlBase = sqlResult.get(true).get(targetId);
-            ChannelBase jsonBase = jsonResult.get(true).get(targetId);
-            assertChannelBaseFieldsEqual(sqlBase, jsonBase, targetId, "webhook-present");
+        // Deep compare DeliveryTarget fields
+        for (Long targetId : sqlResult.webhook().keySet()) {
+            DeliveryTarget sqlTarget = sqlResult.webhook().get(targetId);
+            DeliveryTarget jsonTarget = jsonResult.webhook().get(targetId);
+            assertDeliveryTargetFieldsEqual(sqlTarget, jsonTarget, targetId, "webhook-present");
         }
 
-        for (Long targetId : sqlResult.get(false).keySet()) {
-            ChannelBase sqlBase = sqlResult.get(false).get(targetId);
-            ChannelBase jsonBase = jsonResult.get(false).get(targetId);
-            assertChannelBaseFieldsEqual(sqlBase, jsonBase, targetId, "webhook-absent");
+        for (Long targetId : sqlResult.direct().keySet()) {
+            DeliveryTarget sqlTarget = sqlResult.direct().get(targetId);
+            DeliveryTarget jsonTarget = jsonResult.direct().get(targetId);
+            assertDeliveryTargetFieldsEqual(sqlTarget, jsonTarget, targetId, "webhook-absent");
         }
     }
 
-    private void assertChannelBaseFieldsEqual(ChannelBase sql, ChannelBase json, Long targetId, String context) {
-        assertThat(sql.isGuild())
-                .as("isGuild for %s channel %d", context, targetId)
-                .isEqualTo(json.isGuild());
-        assertThat(sql.getGuildId())
-                .as("guildId for %s channel %d", context, targetId)
-                .isEqualTo(json.getGuildId());
-        assertThat(sql.getChannelId())
-                .as("channelId for %s channel %d", context, targetId)
-                .isEqualTo(json.getChannelId());
-        assertThat(sql.getThreadId())
-                .as("threadId for %s channel %d", context, targetId)
-                .isEqualTo(json.getThreadId());
-        assertThat(sql.getWebhook())
-                .as("webhook for %s channel %d", context, targetId)
-                .isEqualTo(json.getWebhook());
-        assertThat(sql.getLang())
+    private void assertDeliveryTargetFieldsEqual(DeliveryTarget sql, DeliveryTarget json, Long targetId, String context) {
+        assertThat(sql.targetId())
+                .as("targetId for %s channel %d", context, targetId)
+                .isEqualTo(json.targetId());
+        assertThat(sql.lang())
                 .as("lang for %s channel %d", context, targetId)
-                .isEqualTo(json.getLang());
+                .isEqualTo(json.lang());
+        assertThat(sql.webhookUrl())
+                .as("webhookUrl for %s channel %d", context, targetId)
+                .isEqualTo(json.webhookUrl());
     }
 
     @Test
@@ -495,16 +488,16 @@ class JsonToSqliteMigrationEquivalenceTest {
     void testGetChannelsPartitionedByWebhookPresent_hasGuildFilter() {
         ChannelFilter filter = ChannelFilter.builder().hasGuild(true).build();
 
-        Map<Boolean, Map<Long, ChannelBase>> jsonResult = this.jsonRegistry.getChannelsPartitionedByWebhookPresent(filter);
-        Map<Boolean, Map<Long, ChannelBase>> sqlResult = this.sqlRegistry.getChannelsPartitionedByWebhookPresent(filter);
+        DeliveryPartition jsonResult = this.jsonRegistry.getChannelsPartitionedByWebhookPresent(filter);
+        DeliveryPartition sqlResult = this.sqlRegistry.getChannelsPartitionedByWebhookPresent(filter);
 
-        assertThat(sqlResult.get(true).keySet())
+        assertThat(sqlResult.webhook().keySet())
                 .as("Guild channels with webhook")
-                .isEqualTo(jsonResult.get(true).keySet());
+                .isEqualTo(jsonResult.webhook().keySet());
 
-        assertThat(sqlResult.get(false).keySet())
+        assertThat(sqlResult.direct().keySet())
                 .as("Guild channels without webhook")
-                .isEqualTo(jsonResult.get(false).keySet());
+                .isEqualTo(jsonResult.direct().keySet());
     }
 
     @Test
@@ -512,16 +505,16 @@ class JsonToSqliteMigrationEquivalenceTest {
     void testGetChannelsPartitionedByWebhookPresent_eewAlertFilter() {
         ChannelFilter filter = ChannelFilter.builder().eewAlert(true).build();
 
-        Map<Boolean, Map<Long, ChannelBase>> jsonResult = this.jsonRegistry.getChannelsPartitionedByWebhookPresent(filter);
-        Map<Boolean, Map<Long, ChannelBase>> sqlResult = this.sqlRegistry.getChannelsPartitionedByWebhookPresent(filter);
+        DeliveryPartition jsonResult = this.jsonRegistry.getChannelsPartitionedByWebhookPresent(filter);
+        DeliveryPartition sqlResult = this.sqlRegistry.getChannelsPartitionedByWebhookPresent(filter);
 
-        assertThat(sqlResult.get(true).keySet())
+        assertThat(sqlResult.webhook().keySet())
                 .as("EewAlert channels with webhook")
-                .isEqualTo(jsonResult.get(true).keySet());
+                .isEqualTo(jsonResult.webhook().keySet());
 
-        assertThat(sqlResult.get(false).keySet())
+        assertThat(sqlResult.direct().keySet())
                 .as("EewAlert channels without webhook")
-                .isEqualTo(jsonResult.get(false).keySet());
+                .isEqualTo(jsonResult.direct().keySet());
     }
 
     // ===== isWebhookForThread(long webhookId, long threadId) tests =====

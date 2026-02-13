@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.*;
 import org.apache.commons.lang3.Strings;
 import redis.clients.jedis.Connection;
@@ -336,15 +338,12 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
-    public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
-        Map<Boolean, Map<Long, ChannelBase>> map = new HashMap<>();
-        Map<Long, ChannelBase> webhookPresent = new HashMap<>();
-        Map<Long, ChannelBase> webhookAbsent = new HashMap<>();
-        map.put(true, webhookPresent);
-        map.put(false, webhookAbsent);
+    public DeliveryPartition getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
+        Map<Long, DeliveryTarget> webhookPresent = new HashMap<>();
+        Map<Long, DeliveryTarget> webhookAbsent = new HashMap<>();
 
         AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder(filter.toQueryString())
-                .load("__key", "$.guildId", "$.channelId", "$.threadId", "$.webhook", "$.lang")
+                .load("__key", "$.webhook", "$.lang")
                 .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
         long cursorId;
         do {
@@ -359,38 +358,19 @@ public class ChannelRegistryRedis implements ChannelRegistry {
                     return;
                 }
 
-                Long guildId = null;
-                Long channelId = null;
-                Long threadId = null;
-                try {
-                    if (row.get("$.guildId") != null) {
-                        guildId = Long.parseLong(row.getString("$.guildId"));
-                    }
-                    if (row.get("$.channelId") != null) {
-                        channelId = Long.parseLong(row.getString("$.channelId"));
-                    }
-                    if (row.get("$.threadId") != null) {
-                        threadId = Long.parseLong(row.getString("$.threadId"));
-                    }
-                } catch (NumberFormatException e) {
-                    Log.logger.warn("Invalid numeric ID in Redis channel entry for key {}: guildId='{}', channelId='{}', threadId='{}'",
-                            key, row.getString("$.guildId"), row.getString("$.channelId"), row.getString("$.threadId"), e);
-                    return;
-                }
-
                 String lang = row.getString("$.lang");
 
                 if (row.get("$.webhook") != null) {
                     ChannelWebhook webhook = EEWBot.GSON.fromJson(row.getString("$.webhook"), ChannelWebhook.class);
-                    webhookPresent.put(targetId, new ChannelBase(guildId, channelId, threadId, webhook, lang));
+                    webhookPresent.put(targetId, new DeliveryTarget(targetId, lang, webhook.getUrl()));
                 } else {
-                    webhookAbsent.put(targetId, new ChannelBase(guildId, channelId, threadId, null, lang));
+                    webhookAbsent.put(targetId, new DeliveryTarget(targetId, lang, null));
                 }
             });
             if (cursorId != 0)
                 aggregationResult = this.jedisPool.ftCursorRead(CHANNEL_INDEX, cursorId, AGGREGATION_CURSOR_COUNT);
         } while (cursorId != 0);
-        return map;
+        return new DeliveryPartition(webhookPresent, webhookAbsent);
     }
 
     @Override

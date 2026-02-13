@@ -5,6 +5,8 @@ import com.google.gson.reflect.TypeToken;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.JsonRegistry;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.*;
 
 import java.io.IOException;
@@ -157,10 +159,22 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
-    public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
-        return getElement().entrySet().stream()
-                .filter(entry -> filter.test(entry.getValue()))
-                .collect(Collectors.partitioningBy(entry -> entry.getValue().getWebhook() != null, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    public DeliveryPartition getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
+        Map<Long, DeliveryTarget> webhook = new HashMap<>();
+        Map<Long, DeliveryTarget> direct = new HashMap<>();
+
+        getElement().forEach((targetId, channel) -> {
+            if (!filter.test(channel)) return;
+            String webhookUrl = channel.getWebhookUrl();
+            DeliveryTarget target = new DeliveryTarget(targetId, channel.getLang(), webhookUrl);
+            if (webhookUrl != null) {
+                webhook.put(targetId, target);
+            } else {
+                direct.put(targetId, target);
+            }
+        });
+
+        return new DeliveryPartition(webhook, direct);
     }
 
     @Override

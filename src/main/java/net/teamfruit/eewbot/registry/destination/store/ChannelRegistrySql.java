@@ -5,6 +5,8 @@ import com.zaxxer.hikari.HikariDataSource;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.registry.destination.model.ChannelBase;
@@ -404,14 +406,11 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         return result;
     }
 
-    public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
+    public DeliveryPartition getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
         Condition condition = buildCondition(filter);
 
-        Result<Record6<Long, Long, Long, Long, String, String>> records = this.dsl.select(
+        Result<Record3<Long, String, String>> records = this.dsl.select(
                         TARGET_ID,
-                        CHANNEL_ID,
-                        THREAD_ID,
-                        GUILD_ID,
                         LANG,
                         WEBHOOK_URL
                 )
@@ -419,33 +418,23 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 .where(condition)
                 .fetch();
 
-        Map<Boolean, List<Record6<Long, Long, Long, Long, String, String>>> partitioned = records.stream()
-                .collect(Collectors.partitioningBy(r -> r.value6() != null));
+        Map<Long, DeliveryTarget> webhook = new HashMap<>();
+        Map<Long, DeliveryTarget> direct = new HashMap<>();
 
-        return Map.of(
-                true, partitioned.get(true).stream()
-                        .collect(Collectors.toMap(
-                                Record6::value1,
-                                r -> new ChannelBase(
-                                        r.value4(),
-                                        r.value2(),
-                                        r.value3(),
-                                        new ChannelWebhook(r.value6()),
-                                        r.value5()
-                                )
-                        )),
-                false, partitioned.get(false).stream()
-                        .collect(Collectors.toMap(
-                                Record6::value1,
-                                r -> new ChannelBase(
-                                        r.value4(),
-                                        r.value2(),
-                                        r.value3(),
-                                        null,
-                                        r.value5()
-                                )
-                        ))
-        );
+        for (Record3<Long, String, String> r : records) {
+            Long targetId = toLong(r.value1());
+            if (targetId == null) continue;
+            String lang = r.value2();
+            String webhookUrl = r.value3();
+            DeliveryTarget target = new DeliveryTarget(targetId, lang, webhookUrl);
+            if (webhookUrl != null) {
+                webhook.put(targetId, target);
+            } else {
+                direct.put(targetId, target);
+            }
+        }
+
+        return new DeliveryPartition(webhook, direct);
     }
 
     @Override

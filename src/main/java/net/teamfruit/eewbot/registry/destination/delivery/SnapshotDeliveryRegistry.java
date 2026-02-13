@@ -2,11 +2,9 @@ package net.teamfruit.eewbot.registry.destination.delivery;
 
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
-import net.teamfruit.eewbot.registry.destination.model.ChannelBase;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -99,7 +97,7 @@ public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
     // ========================================
 
     @Override
-    public Map<Boolean, Map<Long, ChannelBase>> getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
+    public DeliveryPartition getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
         DeliverySnapshot snapshot = this.snapshotRef.get();
         if (snapshot == null) {
             throw new IllegalStateException("Snapshot not initialized. Call initializeSnapshot() first.");

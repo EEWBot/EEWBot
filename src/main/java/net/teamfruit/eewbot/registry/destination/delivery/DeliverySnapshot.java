@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot.registry.destination.delivery;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.registry.destination.model.ChannelBase;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 
@@ -39,10 +38,14 @@ public final class DeliverySnapshot {
         }
 
         /**
-         * Convert to ChannelBase for delivery.
+         * Convert to DeliveryTarget for delivery.
          */
-        public ChannelBase toChannelBase() {
-            return new ChannelBase(this.guildId, this.channelId, this.threadId, this.webhook, this.lang);
+        public DeliveryTarget toDeliveryTarget(long targetId) {
+            return new DeliveryTarget(
+                    targetId,
+                    this.lang,
+                    this.webhook != null ? this.webhook.getUrl() : null
+            );
         }
     }
 
@@ -104,29 +107,28 @@ public final class DeliverySnapshot {
 
     /**
      * Get channels partitioned by webhook presence, applying the given filter.
-     * Returns Map with true -> channels with webhook, false -> channels without webhook.
      */
-    public Map<Boolean, Map<Long, ChannelBase>> getPartitionedByWebhook(ChannelFilter filter) {
+    public DeliveryPartition getPartitionedByWebhook(ChannelFilter filter) {
         Predicate<DeliveryChannel> predicate = buildPredicate(filter);
 
-        Map<Long, ChannelBase> withWebhook = new HashMap<>();
-        Map<Long, ChannelBase> withoutWebhook = new HashMap<>();
+        Map<Long, DeliveryTarget> withWebhook = new HashMap<>();
+        Map<Long, DeliveryTarget> withoutWebhook = new HashMap<>();
 
         for (long targetId : this.targetsWithWebhook) {
             DeliveryChannel channel = this.byTargetId.get(targetId);
             if (predicate.test(channel)) {
-                withWebhook.put(targetId, channel.toChannelBase());
+                withWebhook.put(targetId, channel.toDeliveryTarget(targetId));
             }
         }
 
         for (long targetId : this.targetsWithoutWebhook) {
             DeliveryChannel channel = this.byTargetId.get(targetId);
             if (predicate.test(channel)) {
-                withoutWebhook.put(targetId, channel.toChannelBase());
+                withoutWebhook.put(targetId, channel.toDeliveryTarget(targetId));
             }
         }
 
-        return Map.of(true, withWebhook, false, withoutWebhook);
+        return new DeliveryPartition(withWebhook, withoutWebhook);
     }
 
     /**
