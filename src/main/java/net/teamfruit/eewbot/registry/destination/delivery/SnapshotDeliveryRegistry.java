@@ -97,7 +97,7 @@ public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
     // ========================================
 
     @Override
-    public DeliveryPartition getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
+    public DeliveryPartition getDeliveryChannels(ChannelFilter filter) {
         DeliverySnapshot snapshot = this.snapshotRef.get();
         if (snapshot == null) {
             throw new IllegalStateException("Snapshot not initialized. Call initializeSnapshot() first.");

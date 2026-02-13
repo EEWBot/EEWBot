@@ -6,7 +6,10 @@ import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
-import net.teamfruit.eewbot.registry.destination.model.*;
+import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
+import net.teamfruit.eewbot.registry.destination.model.ChannelObjectMapper;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.apache.commons.lang3.Strings;
 import redis.clients.jedis.Connection;
 import redis.clients.jedis.JedisPooled;
@@ -338,7 +341,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
     }
 
     @Override
-    public DeliveryPartition getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
+    public DeliveryPartition getDeliveryChannels(ChannelFilter filter) {
         Map<Long, DeliveryTarget> webhookPresent = new HashMap<>();
         Map<Long, DeliveryTarget> webhookAbsent = new HashMap<>();
 

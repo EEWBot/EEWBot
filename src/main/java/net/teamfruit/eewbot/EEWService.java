@@ -94,7 +94,7 @@ public class EEWService {
         Map<String, MessageCreateSpec> msgByLang = new HashMap<>();
         this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang)));
 
-        DeliveryPartition partition = this.deliveryRegistry.getChannelsPartitionedByWebhookPresent(filter);
+        DeliveryPartition partition = this.deliveryRegistry.getDeliveryChannels(filter);
 
         List<DiscordWebhookRequest> webhookRequests = new ArrayList<>();
         this.i18n.getLanguages().keySet().forEach(lang -> {

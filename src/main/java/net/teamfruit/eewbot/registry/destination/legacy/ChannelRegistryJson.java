@@ -7,7 +7,9 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.JsonRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
-import net.teamfruit.eewbot.registry.destination.model.*;
+import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -159,7 +161,7 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
     }
 
     @Override
-    public DeliveryPartition getChannelsPartitionedByWebhookPresent(ChannelFilter filter) {
+    public DeliveryPartition getDeliveryChannels(ChannelFilter filter) {
         Map<Long, DeliveryTarget> webhook = new HashMap<>();
         Map<Long, DeliveryTarget> direct = new HashMap<>();
 

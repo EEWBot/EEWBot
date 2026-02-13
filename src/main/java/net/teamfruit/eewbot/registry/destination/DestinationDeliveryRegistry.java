@@ -5,6 +5,6 @@ import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 
 public interface DestinationDeliveryRegistry {
 
-    DeliveryPartition getChannelsPartitionedByWebhookPresent(ChannelFilter filter);
+    DeliveryPartition getDeliveryChannels(ChannelFilter filter);
 
 }

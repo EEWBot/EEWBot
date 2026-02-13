@@ -3,9 +3,9 @@ package net.teamfruit.eewbot.registry.destination;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
+import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
 import net.teamfruit.eewbot.registry.destination.migration.ChannelMigration;
 import net.teamfruit.eewbot.registry.destination.model.*;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
@@ -20,7 +20,10 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -441,11 +444,11 @@ class JsonToSqliteMigrationEquivalenceTest {
     // ===== getChannelsPartitionedByWebhookPresent(ChannelFilter) tests =====
 
     @Test
-    @DisplayName("getChannelsPartitionedByWebhookPresent() with empty filter")
-    void testGetChannelsPartitionedByWebhookPresent_emptyFilter() {
+    @DisplayName("getDeliveryChannels() with empty filter")
+    void testGetDeliveryChannels_emptyFilter() {
         ChannelFilter filter = ChannelFilter.builder().build();
 
-        DeliveryPartition jsonResult = this.jsonRegistry.getChannelsPartitionedByWebhookPresent(filter);
+        DeliveryPartition jsonResult = this.jsonRegistry.getDeliveryChannels(filter);
         DeliveryPartition sqlResult = this.sqlRegistry.getChannelsPartitionedByWebhookPresent(filter);
 
         // Compare key sets
@@ -484,11 +487,11 @@ class JsonToSqliteMigrationEquivalenceTest {
     }
 
     @Test
-    @DisplayName("getChannelsPartitionedByWebhookPresent() with hasGuild filter")
-    void testGetChannelsPartitionedByWebhookPresent_hasGuildFilter() {
+    @DisplayName("getDeliveryChannels() with hasGuild filter")
+    void testGetDeliveryChannels_hasGuildFilter() {
         ChannelFilter filter = ChannelFilter.builder().hasGuild(true).build();
 
-        DeliveryPartition jsonResult = this.jsonRegistry.getChannelsPartitionedByWebhookPresent(filter);
+        DeliveryPartition jsonResult = this.jsonRegistry.getDeliveryChannels(filter);
         DeliveryPartition sqlResult = this.sqlRegistry.getChannelsPartitionedByWebhookPresent(filter);
 
         assertThat(sqlResult.webhook().keySet())
@@ -501,11 +504,11 @@ class JsonToSqliteMigrationEquivalenceTest {
     }
 
     @Test
-    @DisplayName("getChannelsPartitionedByWebhookPresent() with eewAlert filter")
-    void testGetChannelsPartitionedByWebhookPresent_eewAlertFilter() {
+    @DisplayName("getDeliveryChannels() with eewAlert filter")
+    void testGetDeliveryChannels_eewAlertFilter() {
         ChannelFilter filter = ChannelFilter.builder().eewAlert(true).build();
 
-        DeliveryPartition jsonResult = this.jsonRegistry.getChannelsPartitionedByWebhookPresent(filter);
+        DeliveryPartition jsonResult = this.jsonRegistry.getDeliveryChannels(filter);
         DeliveryPartition sqlResult = this.sqlRegistry.getChannelsPartitionedByWebhookPresent(filter);
 
         assertThat(sqlResult.webhook().keySet())
