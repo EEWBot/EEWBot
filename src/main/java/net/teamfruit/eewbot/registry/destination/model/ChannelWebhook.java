@@ -35,15 +35,6 @@ public record ChannelWebhook(String url) {
     }
 
     /**
-     * Extract webhook ID from a raw webhook URL string.
-     */
-    public static long extractId(String url) {
-        String path = url.substring(URL_PREFIX.length());
-        int slashIndex = path.indexOf('/');
-        return Long.parseLong(path.substring(0, slashIndex));
-    }
-
-    /**
      * Create ChannelWebhook from id and token (without thread_id).
      */
     public static ChannelWebhook of(long id, String token) {

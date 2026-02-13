@@ -16,7 +16,6 @@ import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
-import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.async.methods.*;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -210,7 +209,7 @@ public class EEWService {
                         Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
                         erroredChannels.forEach((channelId, channel) -> {
-                            Log.logger.info("Webhook {} is deleted, unregister", ChannelWebhook.extractId(channel.webhookUrl()));
+                            Log.logger.info("Webhook for channel {} is deleted, unregister", channelId);
                             this.adminRegistry.setWebhook(channelId, null);
                         });
                         try {
