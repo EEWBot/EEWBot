@@ -72,6 +72,7 @@ tasks {
     named<ShadowJar>("shadowJar") {
         archiveClassifier.set("")
         mergeServiceFiles()
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
         manifest {
             attributes(mapOf("Main-Class" to "net.teamfruit.eewbot.EEWBot"))
         }
