@@ -70,14 +70,10 @@ tasks {
     }
 
     named<ShadowJar>("shadowJar") {
+        archiveClassifier.set("")
+        mergeServiceFiles()
         manifest {
-            archiveClassifier.set("")
-            mergeServiceFiles()
             attributes(mapOf("Main-Class" to "net.teamfruit.eewbot.EEWBot"))
-//            minimize {
-//                exclude(dependency("ch.qos.logback:logback-classic:.*"))
-//                exclude(dependency("com.fasterxml.woodstox:woodstox-core:.*"))
-//            }
         }
     }
 

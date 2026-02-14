@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.registry.destination.store;
 
 import net.teamfruit.eewbot.Log;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.callback.Callback;
 import org.jooq.SQLDialect;
 
 import javax.sql.DataSource;
@@ -20,6 +21,7 @@ public class DatabaseInitializer {
         Flyway flyway = Flyway.configure()
                 .dataSource(dataSource)
                 .locations(location)
+                .callbacks(new Callback[0])
                 .load();
 
         flyway.migrate();
