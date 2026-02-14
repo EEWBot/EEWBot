@@ -41,6 +41,7 @@ import redis.clients.jedis.JedisPooled;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
@@ -100,33 +101,54 @@ public class EEWBot {
         this.i18n = new I18n(getConfig().getBase().getDefaultLanguage());
         this.rendererQueryFactory = new RendererQueryFactory(getConfig().getRenderer().getAddress(), getConfig().getRenderer().getKey());
 
-        Path path = DATA_DIRECTORY != null ? Paths.get(DATA_DIRECTORY, "channels.json") : Paths.get("channels.json");
+        migrateConfigIfNeeded();
+
+        Path channelsJsonPath = DATA_DIRECTORY != null
+                ? Paths.get(DATA_DIRECTORY, "channels.json")
+                : Paths.get("channels.json");
         String dbType = getConfig().getDatabase().getType();
 
-        if ("postgresql".equalsIgnoreCase(dbType)) {
-            ChannelRegistrySql sql = ChannelRegistrySql.forPostgreSQL(getConfig().getDatabase().getPostgresql());
-            DatabaseInitializer.migrate(sql.getDataSource(), sql.getDialect());
-            initializeSqlRegistries(sql);
-        } else if ("sqlite".equalsIgnoreCase(dbType)) {
-            Path sqlitePath = DATA_DIRECTORY != null
-                    ? Paths.get(DATA_DIRECTORY, getConfig().getDatabase().getSqlite().getPath())
-                    : Paths.get(getConfig().getDatabase().getSqlite().getPath());
-            ChannelRegistrySql sql = ChannelRegistrySql.forSQLite(sqlitePath);
-            DatabaseInitializer.migrate(sql.getDataSource(), sql.getDialect());
-            initializeSqlRegistries(sql);
-        } else if (StringUtils.isNotEmpty(getConfig().getRedis().getAddress())) {
-            String redisAddress = getConfig().getRedis().getAddress();
-            HostAndPort hnp = redisAddress.lastIndexOf(":") < 0 ? new HostAndPort(redisAddress, 6379) : HostAndPort.from(redisAddress);
-            JedisPooled jedisPooled = new JedisPooled(hnp);
-            ChannelRegistryRedis registry = new ChannelRegistryRedis(jedisPooled, GSON);
-            registry.init();
-            this.deliveryRegistry = registry;
-            this.adminRegistry = registry;
-        } else {
-            ChannelRegistryJson registry = new ChannelRegistryJson(path, GSON);
-            registry.init(false);
-            this.deliveryRegistry = registry;
-            this.adminRegistry = registry;
+        switch (dbType.toLowerCase()) {
+            case "postgresql" -> {
+                ChannelRegistrySql sql = ChannelRegistrySql.forPostgreSQL(getConfig().getDatabase().getPostgresql());
+                DatabaseInitializer.migrate(sql.getDataSource(), sql.getDialect());
+                initializeSqlRegistries(sql);
+            }
+            case "json" -> {
+                if (Files.notExists(channelsJsonPath)) {
+                    throw new IllegalStateException(
+                            "channels.json not found. New JSON deployments are not supported. "
+                                    + "Please use 'sqlite' or 'postgresql' as database.type.");
+                }
+                ChannelRegistryJson registry = new ChannelRegistryJson(channelsJsonPath, GSON);
+                registry.init(false);
+                this.deliveryRegistry = registry;
+                this.adminRegistry = registry;
+            }
+            case "redis" -> {
+                String redisAddress = getConfig().getRedis().getAddress();
+                if (StringUtils.isEmpty(redisAddress)) {
+                    throw new IllegalStateException(
+                            "database.type is 'redis' but redis.address is not set.");
+                }
+                HostAndPort hnp = redisAddress.lastIndexOf(":") < 0
+                        ? new HostAndPort(redisAddress, 6379)
+                        : HostAndPort.from(redisAddress);
+                JedisPooled jedisPooled = new JedisPooled(hnp);
+                ChannelRegistryRedis registry = new ChannelRegistryRedis(jedisPooled, GSON);
+                registry.init();
+                this.deliveryRegistry = registry;
+                this.adminRegistry = registry;
+            }
+            default -> {
+                // SQLite (database.type = "sqlite" or any other value)
+                Path sqlitePath = DATA_DIRECTORY != null
+                        ? Paths.get(DATA_DIRECTORY, getConfig().getDatabase().getSqlite().getPath())
+                        : Paths.get(getConfig().getDatabase().getSqlite().getPath());
+                ChannelRegistrySql sql = ChannelRegistrySql.forSQLite(sqlitePath);
+                DatabaseInitializer.migrate(sql.getDataSource(), sql.getDialect());
+                initializeSqlRegistries(sql);
+            }
         }
 
         final String token = System.getenv("TOKEN");
@@ -244,6 +266,24 @@ public class EEWBot {
         // Start revision poller for external change detection
         this.revisionPoller = new RevisionPoller(delivery, revisionStore, this.scheduledExecutor);
         this.revisionPoller.start();
+    }
+
+    private void migrateConfigIfNeeded() throws IOException {
+        if (StringUtils.isNotEmpty(getConfig().getDatabase().getType())) return;
+
+        // database.type is empty: migrating from old config or new install
+        Path channelsJsonPath = DATA_DIRECTORY != null
+                ? Paths.get(DATA_DIRECTORY, "channels.json")
+                : Paths.get("channels.json");
+
+        if (StringUtils.isNotEmpty(getConfig().getRedis().getAddress())) {
+            getConfig().getDatabase().setType("redis");
+        } else if (Files.exists(channelsJsonPath)) {
+            getConfig().getDatabase().setType("json");
+        } else {
+            getConfig().getDatabase().setType("sqlite");
+        }
+        this.config.save();
     }
 
     private void handleDeletion(long id, boolean isGuild) {

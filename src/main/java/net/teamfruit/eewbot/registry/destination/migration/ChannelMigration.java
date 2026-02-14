@@ -18,6 +18,7 @@ import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPooled;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -215,6 +216,10 @@ public class ChannelMigration {
             case "json" -> {
                 String pathStr = config.getOrDefault("path", "channels.json");
                 Path path = Paths.get(pathStr);
+                if (Files.notExists(path)) {
+                    throw new IllegalArgumentException(
+                            "JSON file not found: " + path + ". JSON can only be used as a source with an existing file.");
+                }
                 ChannelRegistryJson registry = new ChannelRegistryJson(path, GSON);
                 registry.init(false);
                 yield registry;
@@ -304,7 +309,7 @@ public class ChannelMigration {
         System.out.println();
         System.out.println("Options:");
         System.out.println("  --source <type>           Source registry type: json, redis, sqlite, postgresql");
-        System.out.println("  --dest <type>             Destination registry type: json, sqlite, postgresql");
+        System.out.println("  --dest <type>             Destination registry type: sqlite, postgresql");
         System.out.println("  --source-path <path>      Source file path (for json/sqlite)");
         System.out.println("  --source-address <addr>   Source Redis address (host:port)");
         System.out.println("  --source-host <host>      Source PostgreSQL host");
