@@ -8,10 +8,7 @@ import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
 import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryRedis;
-import net.teamfruit.eewbot.registry.destination.model.Channel;
-import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
-import net.teamfruit.eewbot.registry.destination.model.SeismicIntensityDeserializer;
-import net.teamfruit.eewbot.registry.destination.model.SeismicIntensitySerializer;
+import net.teamfruit.eewbot.registry.destination.model.*;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
 import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import org.jooq.DSLContext;
@@ -34,6 +31,8 @@ public class ChannelMigration {
     private static final Gson GSON = new GsonBuilder()
             .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensitySerializer())
             .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensityDeserializer())
+            .registerTypeAdapter(Channel.class, new ChannelDeserializer())
+            .registerTypeAdapter(ChannelWebhook.class, new ChannelWebhookDeserializer())
             .create();
 
     public static void main(String[] args) {
@@ -91,13 +90,7 @@ public class ChannelMigration {
         dest.getDsl().transaction(ctx -> {
             DSLContext tx = ctx.dsl();
 
-            if (dest.getDialect() == org.jooq.SQLDialect.SQLITE) {
-                try {
-                    tx.connection(conn -> conn.createStatement().execute("BEGIN IMMEDIATE"));
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to start exclusive transaction", e);
-                }
-            } else if (dest.getDialect() == org.jooq.SQLDialect.POSTGRES) {
+            if (dest.getDialect() == org.jooq.SQLDialect.POSTGRES) {
                 tx.fetch("SELECT pg_advisory_xact_lock(?)", 0x454557424F54L);
             }
 

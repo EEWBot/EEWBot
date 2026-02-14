@@ -1,0 +1,110 @@
+{
+  "1366407223890280629": {
+    "eewAlert": true,
+    "eewPrediction": true,
+    "quakeInfo": false,
+    "eewDecimation": true,
+    "minIntensity": 0,
+    "isGuild": true,
+    "guildId": 564550533973540885,
+    "lang": "ja_jp"
+  },
+  "1192095535700643981": {
+    "eewAlert": true,
+    "eewPrediction": false,
+    "quakeInfo": false,
+    "eewDecimation": false,
+    "minIntensity": 0,
+    "isGuild": true,
+    "guildId": 564550533973540885,
+    "webhook": {
+      "id": 1000000000000000001,
+      "token": "testToken_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "threadId": 1192095535700643981
+    },
+    "lang": "ja_jp"
+  },
+  "1192095666147696701": {
+    "eewAlert": false,
+    "eewPrediction": false,
+    "quakeInfo": true,
+    "eewDecimation": false,
+    "minIntensity": 1,
+    "isGuild": true,
+    "guildId": 564550533973540885,
+    "webhook": {
+      "id": 1000000000000000002,
+      "token": "testToken_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      "threadId": 1192095666147696701
+    },
+    "lang": "ja_jp"
+  },
+  "1192093980859580576": {
+    "eewAlert": true,
+    "eewPrediction": true,
+    "quakeInfo": true,
+    "eewDecimation": false,
+    "minIntensity": 0,
+    "isGuild": true,
+    "guildId": 564550533973540885,
+    "webhook": {
+      "id": 1000000000000000003,
+      "token": "testToken_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+      "threadId": 1192093980859580576
+    },
+    "lang": "ja_jp"
+  },
+  "1192094468132835390": {
+    "eewAlert": true,
+    "eewPrediction": true,
+    "quakeInfo": true,
+    "eewDecimation": true,
+    "minIntensity": 0,
+    "isGuild": true,
+    "guildId": 564550533973540885,
+    "webhook": {
+      "id": 1000000000000000004,
+      "token": "testToken_DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+      "threadId": 1192094468132835390
+    },
+    "lang": "ja_jp"
+  },
+  "1192094638601949184": {
+    "eewAlert": true,
+    "eewPrediction": true,
+    "quakeInfo": true,
+    "eewDecimation": false,
+    "minIntensity": 1,
+    "isGuild": true,
+    "guildId": 564550533973540885,
+    "webhook": {
+      "id": 1000000000000000005,
+      "token": "testToken_EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+      "threadId": 1192094638601949184
+    },
+    "lang": "ja_jp"
+  },
+  "716105005957906443": {
+    "eewAlert": true,
+    "eewPrediction": true,
+    "quakeInfo": true,
+    "eewDecimation": false,
+    "minIntensity": 0,
+    "isGuild": true,
+    "guildId": 564550533973540885,
+    "webhook": {
+      "id": 1000000000000000006,
+      "token": "testToken_FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+    },
+    "lang": "ja_jp"
+  },
+  "9000000000000000001": {
+    "eewAlert": true,
+    "eewPrediction": false,
+    "quakeInfo": true,
+    "eewDecimation": false,
+    "minIntensity": 1,
+    "isGuild": false,
+    "lang": "en_us"
+  }
+}

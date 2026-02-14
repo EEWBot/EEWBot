@@ -6,15 +6,15 @@ import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
-import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
-import net.teamfruit.eewbot.registry.destination.model.ChannelBase;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.jooq.*;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
+import org.jooq.impl.SQLDataType;
 import org.sqlite.SQLiteDataSource;
 
 import javax.sql.DataSource;
@@ -43,10 +43,10 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     private static final Table<?> DESTINATIONS = table(name("destinations"));
 
     // === Unqualified Fields ===
-    private static final Field<Long> TARGET_ID = field(name("target_id"), Long.class);
-    private static final Field<Long> CHANNEL_ID = field(name("channel_id"), Long.class);
-    private static final Field<Long> THREAD_ID = field(name("thread_id"), Long.class);
-    private static final Field<Long> GUILD_ID = field(name("guild_id"), Long.class);
+    private static final Field<Long> TARGET_ID = field(name("target_id"), SQLDataType.BIGINT);
+    private static final Field<Long> CHANNEL_ID = field(name("channel_id"), SQLDataType.BIGINT);
+    private static final Field<Long> THREAD_ID = field(name("thread_id"), SQLDataType.BIGINT);
+    private static final Field<Long> GUILD_ID = field(name("guild_id"), SQLDataType.BIGINT);
     private static final Field<Integer> EEW_ALERT = field(name("eew_alert"), Integer.class);
     private static final Field<Integer> EEW_PREDICTION = field(name("eew_prediction"), Integer.class);
     private static final Field<Integer> EEW_DECIMATION = field(name("eew_decimation"), Integer.class);
@@ -54,7 +54,14 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     private static final Field<Integer> MIN_INTENSITY = field(name("min_intensity"), Integer.class);
     private static final Field<String> LANG = field(name("lang"), String.class);
     private static final Field<String> WEBHOOK_URL = field(name("webhook_url"), String.class);
-    private static final Field<Long> WEBHOOK_ID = field(name("webhook_id"), Long.class);
+    private static final Field<Long> WEBHOOK_ID = field(name("webhook_id"), SQLDataType.BIGINT);
+
+    /** All destination fields for typed SELECT (avoids SQLite INTEGER->Integer truncation in selectFrom). */
+    private static final SelectFieldOrAsterisk[] ALL_FIELDS = {
+            TARGET_ID, CHANNEL_ID, THREAD_ID, GUILD_ID,
+            EEW_ALERT, EEW_PREDICTION, EEW_DECIMATION, QUAKE_INFO,
+            MIN_INTENSITY, LANG, WEBHOOK_URL, WEBHOOK_ID
+    };
 
     private final DSLContext dsl;
     private final DataSource dataSource;
@@ -106,7 +113,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
 
     @Override
     public Channel get(long key) {
-        return this.dsl.selectFrom(DESTINATIONS)
+        return this.dsl.select(ALL_FIELDS).from(DESTINATIONS)
                 .where(TARGET_ID.eq(key))
                 .fetchOne(this::mapToChannel);
     }
@@ -128,7 +135,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     @Override
     public boolean exists(long key) {
         return this.dsl.fetchExists(
-                this.dsl.selectFrom(DESTINATIONS)
+                this.dsl.select(ALL_FIELDS).from(DESTINATIONS)
                         .where(TARGET_ID.eq(key))
         );
     }
@@ -159,7 +166,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                         channel.isEewDecimation() ? 1 : 0,
                         channel.isQuakeInfo() ? 1 : 0,
                         channel.getMinIntensity() != null ? channel.getMinIntensity().getCode() : SeismicIntensity.ONE.getCode(),
-                        channel.getLang(),
+                        channel.getLang() != null ? channel.getLang() : DEFAULT_LANG,
                         channel.getWebhook() != null ? channel.getWebhook().getUrl() : null,
                         channel.getWebhook() != null ? channel.getWebhook().id() : null
                 )
@@ -182,38 +189,8 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     }
 
     public void putAllWithDsl(DSLContext tx, Map<Long, Channel> channels) {
-        if (channels.isEmpty()) {
-            return;
-        }
-
-        int chunkSize = 500;
-        List<Map.Entry<Long, Channel>> entries = new ArrayList<>(channels.entrySet());
-        for (int i = 0; i < entries.size(); i += chunkSize) {
-            List<Map.Entry<Long, Channel>> chunk = entries.subList(i, Math.min(i + chunkSize, entries.size()));
-
-            var step = tx.insertInto(DESTINATIONS)
-                    .columns(TARGET_ID, CHANNEL_ID, THREAD_ID, GUILD_ID,
-                            EEW_ALERT, EEW_PREDICTION, EEW_DECIMATION, QUAKE_INFO,
-                            MIN_INTENSITY, LANG, WEBHOOK_URL, WEBHOOK_ID);
-
-            for (Map.Entry<Long, Channel> entry : chunk) {
-                Channel channel = entry.getValue();
-                step = step.values(Arrays.asList(
-                        entry.getKey(),
-                        channel.getChannelId(),
-                        channel.getThreadId(),
-                        channel.getGuildId(),
-                        channel.isEewAlert() ? 1 : 0,
-                        channel.isEewPrediction() ? 1 : 0,
-                        channel.isEewDecimation() ? 1 : 0,
-                        channel.isQuakeInfo() ? 1 : 0,
-                        channel.getMinIntensity() != null ? channel.getMinIntensity().getCode() : SeismicIntensity.ONE.getCode(),
-                        channel.getLang() != null ? channel.getLang() : DEFAULT_LANG,
-                        channel.getWebhook() != null ? channel.getWebhook().getUrl() : null,
-                        channel.getWebhook() != null ? channel.getWebhook().id() : null
-                ));
-            }
-            step.onConflictDoNothing().execute();
+        for (Map.Entry<Long, Channel> entry : channels.entrySet()) {
+            insertChannelIfAbsentWithDsl(tx, entry.getKey(), entry.getValue());
         }
     }
 
@@ -392,7 +369,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
      */
     public Map<Long, Channel> getAllChannelsWithDsl(DSLContext tx) {
         Map<Long, Channel> result = new HashMap<>();
-        tx.selectFrom(DESTINATIONS)
+        tx.select(ALL_FIELDS).from(DESTINATIONS)
                 .fetch()
                 .forEach(r -> {
                     Channel channel = mapToChannel(r);
@@ -440,7 +417,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     @Override
     public boolean isWebhookForThread(long webhookId, long targetId) {
         boolean exists = this.dsl.fetchExists(
-                this.dsl.selectFrom(DESTINATIONS)
+                this.dsl.select(ALL_FIELDS).from(DESTINATIONS)
                         .where(WEBHOOK_ID.eq(webhookId))
                         .and(TARGET_ID.ne(targetId))
         );
@@ -530,7 +507,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
      * Load all channels for snapshot creation using the provided DSLContext (for transactional use).
      */
     public List<DeliverySnapshot.DeliveryChannel> loadAllForSnapshotWithDsl(DSLContext tx) {
-        return tx.selectFrom(DESTINATIONS)
+        return tx.select(ALL_FIELDS).from(DESTINATIONS)
                 .fetch(this::mapToDeliveryChannel);
     }
 
