@@ -304,7 +304,7 @@ public class ChannelMigration {
         System.out.println();
         System.out.println("Options:");
         System.out.println("  --source <type>           Source registry type: json, redis, sqlite, postgresql");
-        System.out.println("  --dest <type>             Destination registry type: json, redis, sqlite, postgresql");
+        System.out.println("  --dest <type>             Destination registry type: json, sqlite, postgresql");
         System.out.println("  --source-path <path>      Source file path (for json/sqlite)");
         System.out.println("  --source-address <addr>   Source Redis address (host:port)");
         System.out.println("  --source-host <host>      Source PostgreSQL host");
@@ -312,7 +312,6 @@ public class ChannelMigration {
         System.out.println("  --source-username <user>  Source PostgreSQL username");
         System.out.println("  --source-password <pass>  Source PostgreSQL password");
         System.out.println("  --dest-path <path>        Destination file path (for json/sqlite)");
-        System.out.println("  --dest-address <addr>     Destination Redis address (host:port)");
         System.out.println("  --dest-host <host>        Destination PostgreSQL host");
         System.out.println("  --dest-database <db>      Destination PostgreSQL database");
         System.out.println("  --dest-username <user>    Destination PostgreSQL username");

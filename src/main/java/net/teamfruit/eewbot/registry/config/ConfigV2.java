@@ -3,9 +3,6 @@ package net.teamfruit.eewbot.registry.config;
 import net.teamfruit.eewbot.Log;
 import org.apache.commons.lang3.StringUtils;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
 @SuppressWarnings("FieldMayBeFinal")
 public class ConfigV2 {
 
@@ -495,14 +492,6 @@ public class ConfigV2 {
         }
         if (getLegacy().isEnableKyoshin()) {
             Log.logger.warn("Kyoshin EEW is enabled, please consider using DMDATA");
-        }
-        if (StringUtils.isNotEmpty(getRedis().getAddress())) {
-            try {
-                new URI(getRedis().getAddress());
-            } catch (URISyntaxException e) {
-                Log.logger.info("Invalid redis address: " + e.getMessage());
-                return false;
-            }
         }
         return !errored;
     }

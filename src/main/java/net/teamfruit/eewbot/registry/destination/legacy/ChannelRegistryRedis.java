@@ -17,14 +17,12 @@ import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisDataException;
 import redis.clients.jedis.json.JsonSetParams;
 import redis.clients.jedis.json.Path;
-import redis.clients.jedis.search.*;
+import redis.clients.jedis.search.Query;
+import redis.clients.jedis.search.SearchResult;
 import redis.clients.jedis.search.aggr.AggregationBuilder;
 import redis.clients.jedis.search.aggr.AggregationResult;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class ChannelRegistryRedis implements ChannelRegistry {
@@ -43,7 +41,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         this.jedisPool.setJsonObjectMapper(this.objectMapper);
     }
 
-    public void init(Supplier<ChannelRegistryJson> migrationFrom) throws IOException {
+    public void init() {
         Log.logger.info("Connecting to Redis");
 
         try {
@@ -51,21 +49,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
             // Migrate old format in existing Redis data
             migrateOldFormat();
         } catch (JedisDataException e) {
-            Log.logger.info("Creating redis index");
-            createJedisIndex();
-
-            ChannelRegistryJson registryMigrationFrom = migrationFrom.get();
-            if (Files.exists(registryMigrationFrom.getPath())) {
-                Log.logger.info("Migrating to Redis");
-                registryMigrationFrom.load(false);
-                try (Connection connection = this.jedisPool.getPool().getResource()) {
-                    Transaction transaction = new Transaction(connection);
-                    transaction.setJsonObjectMapper(this.objectMapper);
-                    registryMigrationFrom.getElement().forEach((key, channel) -> transaction.jsonSet(CHANNEL_PREFIX + key, Path.ROOT_PATH, channel));
-                    transaction.exec();
-                }
-                Log.logger.info("Migrated to Redis");
-            }
+            throw new IllegalStateException("New Redis deployments are no longer supported. Please use 'sqlite' or 'postgresql' as database.type.");
         }
     }
 
@@ -104,7 +88,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         }
     }
 
-    private void createJedisIndex() {
+/*    private void createJedisIndex() {
         Schema schema = new Schema()
                 .addNumericField("$.channelId").as("channelId")
                 .addNumericField("$.threadId").as("threadId")
@@ -118,7 +102,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         IndexDefinition indexDefinition = new IndexDefinition(IndexDefinition.Type.JSON)
                 .setPrefixes(CHANNEL_PREFIX);
         this.jedisPool.ftCreate(CHANNEL_INDEX, IndexOptions.defaultOptions().setDefinition(indexDefinition), schema);
-    }
+    }*/
 
     @Override
     public Channel get(long key) {
