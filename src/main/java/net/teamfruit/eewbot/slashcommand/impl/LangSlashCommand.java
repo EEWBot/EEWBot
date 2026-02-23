@@ -7,13 +7,14 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.SelectMenu;
-import discord4j.core.object.entity.channel.ThreadChannel;
+import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.IButtonSlashCommand;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
+import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -60,16 +61,11 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
         if (channel == null) {
             Long guildId = event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null);
             ensureRegistered = event.getInteraction().getChannel()
-                    .doOnNext(ch -> {
-                        Channel newChannel;
-                        if (ch instanceof ThreadChannel) {
-                            Long channelId = ((ThreadChannel) ch).getParentId().map(Snowflake::asLong).orElse(targetId);
-                            newChannel = Channel.createDefault(guildId, channelId, targetId, lang);
-                        } else {
-                            newChannel = Channel.createDefault(guildId, targetId, null, lang);
-                        }
-                        bot.getAdminRegistry().put(targetId, newChannel);
-                    })
+                    .filter(GuildChannel.class::isInstance)
+                    .cast(GuildChannel.class)
+                    .doOnNext(ch -> SlashCommandUtils.createAndRegisterDefault(bot.getAdminRegistry(), ch, targetId, guildId, lang))
+                    .switchIfEmpty(Mono.fromRunnable(
+                            () -> bot.getAdminRegistry().put(targetId, Channel.createDefault(guildId, targetId, null, lang))))
                     .then();
         } else {
             ensureRegistered = Mono.empty();

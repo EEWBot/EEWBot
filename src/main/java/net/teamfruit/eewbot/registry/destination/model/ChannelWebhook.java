@@ -35,6 +35,22 @@ public record ChannelWebhook(String url) {
     }
 
     /**
+     * Mask the token portion of a webhook URL for safe logging.
+     * Returns the URL with the token replaced by "***".
+     */
+    public static String maskWebhookUrl(String url) {
+        if (url == null || !url.startsWith(URL_PREFIX)) {
+            return "***";
+        }
+        String path = url.substring(URL_PREFIX.length());
+        int slashIndex = path.indexOf('/');
+        if (slashIndex < 0) {
+            return URL_PREFIX + path;
+        }
+        return URL_PREFIX + path.substring(0, slashIndex) + "/***";
+    }
+
+    /**
      * Create ChannelWebhook from id and token (without thread_id).
      */
     public static ChannelWebhook of(long id, String token) {

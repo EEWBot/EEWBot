@@ -23,6 +23,7 @@ import net.teamfruit.eewbot.registry.destination.model.ChannelSetting;
 import net.teamfruit.eewbot.registry.destination.model.ChannelSettingType;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
+import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import reactor.core.publisher.Mono;
@@ -117,7 +118,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                     boolean isCreatedBySelf = webhook.user().toOptional()
                             .filter(user -> user.id().asLong() == event.getClient().getSelfId().asLong())
                             .isPresent();
-                    return isSameChannel && isCreatedBySelf && bot.getAdminRegistry().isWebhookForThread(webhook.id().asLong(), targetId);
+                    boolean hasToken = webhook.token().isPresent();
+                    return isSameChannel && isCreatedBySelf && hasToken && bot.getAdminRegistry().isWebhookForThread(webhook.id().asLong(), targetId);
                 })
                 .next()
                 .switchIfEmpty(bot.getClient().getSelfMember(guildId).map(PartialMember::getDisplayName)
@@ -180,14 +182,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                                             .flatMap(perms -> {
                                                 if (channel == null) {
                                                     // Case 1: Not registered — register target and create webhook
-                                                    Channel newChannel;
-                                                    if (guildChannel instanceof ThreadChannel) {
-                                                        Long channelId = ((ThreadChannel) guildChannel).getParentId().map(Snowflake::asLong).orElse(targetId);
-                                                        newChannel = Channel.createDefault(guildId, channelId, targetId, lang);
-                                                    } else {
-                                                        newChannel = Channel.createDefault(guildId, targetId, null, lang);
-                                                    }
-                                                    bot.getAdminRegistry().put(targetId, newChannel);
+                                                    SlashCommandUtils.createAndRegisterDefault(bot.getAdminRegistry(), guildChannel, targetId, guildId, lang);
                                                     return createWebhookWithPermCheck(bot, event, gid, guildChannel, targetId, perms, lang);
                                                 } else if (channel.getWebhook() == null) {
                                                     // Case 2: Registered, no webhook — try to create webhook

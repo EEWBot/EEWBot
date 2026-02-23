@@ -140,8 +140,7 @@ public class EEWBot {
                 this.deliveryRegistry = registry;
                 this.adminRegistry = registry;
             }
-            default -> {
-                // SQLite (database.type = "sqlite" or any other value)
+            case "sqlite" -> {
                 Path sqlitePath = DATA_DIRECTORY != null
                         ? Paths.get(DATA_DIRECTORY, getConfig().getDatabase().getSqlite().getPath())
                         : Paths.get(getConfig().getDatabase().getSqlite().getPath());
@@ -149,6 +148,8 @@ public class EEWBot {
                 DatabaseInitializer.migrate(sql.getDataSource(), sql.getDialect());
                 initializeSqlRegistries(sql);
             }
+            default -> throw new IllegalStateException(
+                    "Unknown database.type: '" + dbType + "'. Supported values: sqlite, postgresql, json, redis");
         }
 
         final String token = System.getenv("TOKEN");

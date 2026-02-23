@@ -12,6 +12,7 @@ import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -128,8 +129,19 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
             return 0;
         }
         Set<Long> webhookIds = webhookUrls.stream()
-                .map(url -> new ChannelWebhook(url).id())
+                .map(url -> {
+                    try {
+                        return new ChannelWebhook(url).id();
+                    } catch (Exception e) {
+                        Log.logger.warn("Failed to parse webhook URL, skipping: {}", ChannelWebhook.maskWebhookUrl(url), e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+        if (webhookIds.isEmpty()) {
+            return 0;
+        }
 
         int count = 0;
         for (Map.Entry<Long, Channel> entry : getElement().entrySet()) {
@@ -137,6 +149,14 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
             if (webhook != null && webhookIds.contains(webhook.id())) {
                 entry.getValue().setWebhook(null);
                 count++;
+            }
+        }
+        if (count > 0) {
+            try {
+                save();
+            } catch (IOException e) {
+                Log.logger.error("Failed to save after clearing webhooks", e);
+                throw new UncheckedIOException("Failed to persist webhook clearing", e);
             }
         }
         return count;

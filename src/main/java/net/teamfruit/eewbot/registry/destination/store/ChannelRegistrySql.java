@@ -335,8 +335,19 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
             return 0;
         }
         Set<Long> webhookIds = webhookUrls.stream()
-                .map(url -> new ChannelWebhook(url).id())
+                .map(url -> {
+                    try {
+                        return new ChannelWebhook(url).id();
+                    } catch (Exception e) {
+                        Log.logger.warn("Failed to parse webhook URL, skipping: {}", ChannelWebhook.maskWebhookUrl(url), e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+        if (webhookIds.isEmpty()) {
+            return 0;
+        }
         return tx.update(DESTINATIONS)
                 .set(WEBHOOK_URL, (String) null)
                 .set(WEBHOOK_ID, (Long) null)

@@ -52,7 +52,6 @@ public final class DeliverySnapshot {
     private final Map<Long, DeliveryChannel> byTargetId;
 
     // Pre-computed indexes for efficient lookup
-    private final Map<Long, List<Long>> targetsByChannelId;
     private final List<Long> targetsWithWebhook;
     private final List<Long> targetsWithoutWebhook;
 
@@ -65,18 +64,6 @@ public final class DeliverySnapshot {
             targetMap.put(channel.targetId(), channel);
         }
         this.byTargetId = Collections.unmodifiableMap(targetMap);
-
-        // Build channel_id -> target_id index
-        Map<Long, List<Long>> channelIndex = new HashMap<>();
-        for (DeliveryChannel channel : channels) {
-            channelIndex.computeIfAbsent(channel.channelId(), k -> new ArrayList<>())
-                    .add(channel.targetId());
-        }
-        // Make inner lists immutable
-        for (Map.Entry<Long, List<Long>> entry : channelIndex.entrySet()) {
-            entry.setValue(Collections.unmodifiableList(entry.getValue()));
-        }
-        this.targetsByChannelId = Collections.unmodifiableMap(channelIndex);
 
         // Build webhook presence partitions
         List<Long> withWebhook = new ArrayList<>();

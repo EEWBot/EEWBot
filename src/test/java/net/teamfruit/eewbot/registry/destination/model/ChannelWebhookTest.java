@@ -123,6 +123,43 @@ class ChannelWebhookTest {
         }
     }
 
+    @Nested
+    @DisplayName("maskWebhookUrl()")
+    class MaskWebhookUrlTests {
+
+        @Test
+        @DisplayName("should mask token in standard webhook URL")
+        void standardUrl() {
+            String url = BASE_URL + "123456789/abcdefToken";
+            assertThat(ChannelWebhook.maskWebhookUrl(url)).isEqualTo(BASE_URL + "123456789/***");
+        }
+
+        @Test
+        @DisplayName("null should return ***")
+        void nullUrl() {
+            assertThat(ChannelWebhook.maskWebhookUrl(null)).isEqualTo("***");
+        }
+
+        @Test
+        @DisplayName("non-Discord URL should return ***")
+        void nonDiscordUrl() {
+            assertThat(ChannelWebhook.maskWebhookUrl("https://example.com/webhook/123/token")).isEqualTo("***");
+        }
+
+        @Test
+        @DisplayName("prefix-only URL without slash should return as-is")
+        void prefixOnlyNoSlash() {
+            assertThat(ChannelWebhook.maskWebhookUrl(BASE_URL + "123")).isEqualTo(BASE_URL + "123");
+        }
+
+        @Test
+        @DisplayName("URL with thread_id should mask token and query string")
+        void urlWithThreadId() {
+            String url = BASE_URL + "123456789/secretToken?thread_id=999";
+            assertThat(ChannelWebhook.maskWebhookUrl(url)).isEqualTo(BASE_URL + "123456789/***");
+        }
+    }
+
     @Test
     @DisplayName("getUrl() should return the original URL")
     void getUrl() {
