@@ -3,9 +3,7 @@ package net.teamfruit.eewbot.registry.destination.delivery;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -19,6 +17,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SnapshotDeliveryRegistryTest {
+
+    private ExecutorService reloadExecutor;
+
+    @BeforeEach
+    void setUp() {
+        this.reloadExecutor = Executors.newSingleThreadExecutor();
+    }
+
+    @AfterEach
+    void tearDown() {
+        this.reloadExecutor.shutdownNow();
+    }
 
     private static DeliverySnapshot.DeliveryChannel simpleDc(long targetId) {
         return new DeliverySnapshot.DeliveryChannel(
@@ -75,15 +85,12 @@ class SnapshotDeliveryRegistryTest {
         void throwsBeforeInit() {
             TestSnapshotLoader loader = new TestSnapshotLoader(() -> new DeliverySnapshot(1L, List.of()));
             StubRevisionStore revisionStore = new StubRevisionStore(0L);
-            ExecutorService executor = Executors.newSingleThreadExecutor();
 
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, executor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
 
             assertThatThrownBy(() -> registry.getDeliveryChannels(ChannelFilter.builder().build()))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("Snapshot not initialized");
-
-            executor.shutdown();
         }
     }
 
@@ -97,15 +104,12 @@ class SnapshotDeliveryRegistryTest {
             TestSnapshotLoader loader = new TestSnapshotLoader(
                     () -> new DeliverySnapshot(1L, List.of(simpleDc(10L), simpleDc(20L))));
             StubRevisionStore revisionStore = new StubRevisionStore(1L);
-            ExecutorService executor = Executors.newSingleThreadExecutor();
 
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, executor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
             registry.initializeSnapshot();
 
             DeliveryPartition partition = registry.getDeliveryChannels(ChannelFilter.builder().build());
             assertThat(partition.direct()).hasSize(2);
-
-            executor.shutdown();
         }
 
         @Test
@@ -114,16 +118,13 @@ class SnapshotDeliveryRegistryTest {
             TestSnapshotLoader loader = new TestSnapshotLoader(
                     () -> new DeliverySnapshot(5L, List.of(simpleDc(1L))));
             StubRevisionStore revisionStore = new StubRevisionStore(5L);
-            ExecutorService executor = Executors.newSingleThreadExecutor();
 
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, executor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
             registry.initializeSnapshot();
 
             assertThat(registry.getSnapshot()).isNotNull();
             assertThat(registry.getSnapshot().getRevision()).isEqualTo(5L);
             assertThat(registry.getSnapshot().size()).isEqualTo(1);
-
-            executor.shutdown();
         }
     }
 
@@ -134,16 +135,20 @@ class SnapshotDeliveryRegistryTest {
         @Test
         @DisplayName("should reload snapshot when revision changes")
         void reloadOnRevisionChange() throws Exception {
+            CountDownLatch reloadDone = new CountDownLatch(1);
             AtomicInteger loadCount = new AtomicInteger(0);
             StubRevisionStore revisionStore = new StubRevisionStore(1L);
 
             TestSnapshotLoader loader = new TestSnapshotLoader(() -> {
                 int count = loadCount.incrementAndGet();
-                return new DeliverySnapshot(revisionStore.getRevision(), List.of(simpleDc(count)));
+                long rev = revisionStore.getRevision();
+                if (rev == 2L) {
+                    reloadDone.countDown();
+                }
+                return new DeliverySnapshot(rev, List.of(simpleDc(count)));
             });
 
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, executor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
             registry.initializeSnapshot();
 
             assertThat(registry.getSnapshot().getRevision()).isEqualTo(1L);
@@ -153,8 +158,7 @@ class SnapshotDeliveryRegistryTest {
             registry.requestReload();
 
             // Wait for async reload
-            executor.shutdown();
-            executor.awaitTermination(5, TimeUnit.SECONDS);
+            assertThat(reloadDone.await(5, TimeUnit.SECONDS)).isTrue();
 
             assertThat(registry.getSnapshot().getRevision()).isEqualTo(2L);
         }
@@ -164,6 +168,7 @@ class SnapshotDeliveryRegistryTest {
         void coalesceReloads() throws Exception {
             CountDownLatch loadStarted = new CountDownLatch(1);
             CountDownLatch proceedLoad = new CountDownLatch(1);
+            CountDownLatch allDone = new CountDownLatch(1);
             AtomicInteger loadCount = new AtomicInteger(0);
             StubRevisionStore revisionStore = new StubRevisionStore(1L);
 
@@ -178,11 +183,15 @@ class SnapshotDeliveryRegistryTest {
                         Thread.currentThread().interrupt();
                     }
                 }
-                return new DeliverySnapshot(revisionStore.getRevision(), List.of());
+                DeliverySnapshot snapshot = new DeliverySnapshot(revisionStore.getRevision(), List.of());
+                // Signal completion once we've processed beyond the blocked load
+                if (count > 2) {
+                    allDone.countDown();
+                }
+                return snapshot;
             });
 
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, executor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
             registry.initializeSnapshot(); // loadCount = 1
 
             // Trigger first reload (will block in loader)
@@ -201,8 +210,10 @@ class SnapshotDeliveryRegistryTest {
             // Let the blocked load complete
             proceedLoad.countDown();
 
-            executor.shutdown();
-            executor.awaitTermination(5, TimeUnit.SECONDS);
+            // Wait for coalesced reloads to finish
+            allDone.await(5, TimeUnit.SECONDS);
+            // Small delay to let any additional loads settle
+            Thread.sleep(100);
 
             // loadCount should be much less than 1 (init) + 1 (first reload) + 3 (all requests) = 5
             // Due to coalescing, extra requests are merged. Post-reload revision check
@@ -221,15 +232,14 @@ class SnapshotDeliveryRegistryTest {
                 return new DeliverySnapshot(1L, List.of(simpleDc(1L)));
             });
 
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, executor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
             registry.initializeSnapshot();
 
             // Request reload without changing revision - snapshot should not change
             registry.requestReload();
 
-            executor.shutdown();
-            executor.awaitTermination(5, TimeUnit.SECONDS);
+            // Wait for async reload to complete
+            Thread.sleep(200);
 
             assertThat(registry.getSnapshot().getRevision()).isEqualTo(1L);
         }

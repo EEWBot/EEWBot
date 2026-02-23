@@ -1,11 +1,23 @@
 package net.teamfruit.eewbot.registry.destination.model;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
+import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.jooq.impl.DSL.*;
 
 class ChannelFilterTest {
 
@@ -175,72 +187,128 @@ class ChannelFilterTest {
     }
 
     @Nested
-    @DisplayName("toCondition()")
+    @DisplayName("toCondition() - SQL equivalence with test()")
     class ToConditionTests {
 
+        @TempDir
+        Path tempDir;
+
+        private DSLContext dsl;
+        private ChannelRegistrySql sqlRegistry;
+
+        /**
+         * Test channels covering guild/DM, thread/non-thread, webhook/no-webhook,
+         * various boolean flag combinations, and different intensity levels.
+         */
+        private final Map<Long, Channel> testChannels = Map.of(
+                // Guild channel, eewAlert=true, quakeInfo=true, intensity=ONE, no webhook, no thread
+                1001L, new Channel(100L, 1001L, null, true, false, false, true, SeismicIntensity.ONE, null, "ja_jp"),
+                // DM channel, eewPrediction=true, intensity=FOUR, no webhook, no thread
+                2001L, new Channel(null, 2001L, null, false, true, false, false, SeismicIntensity.FOUR, null, "en_us"),
+                // Guild channel with thread, eewDecimation=true, intensity=FIVE_MINUS
+                3001L, new Channel(200L, 3000L, 3001L, false, false, true, false, SeismicIntensity.FIVE_MINUS, null, "ja_jp"),
+                // Guild channel with webhook, eewAlert=true, eewPrediction=true, intensity=TWO
+                4001L, new Channel(100L, 4001L, null, true, true, false, false, SeismicIntensity.TWO,
+                        ChannelWebhook.of(555L, "token"), "ja_jp"),
+                // DM channel, all flags false, intensity=THREE
+                5001L, new Channel(null, 5001L, null, false, false, false, false, SeismicIntensity.THREE, null, "ja_jp"),
+                // Guild channel with thread and webhook, quakeInfo=true, intensity=ONE
+                6001L, new Channel(300L, 6000L, 6001L, false, false, false, true, SeismicIntensity.ONE,
+                        ChannelWebhook.of(666L, "token2"), "ja_jp")
+        );
+
+        @BeforeEach
+        void setUp() {
+            Path dbPath = this.tempDir.resolve("filter_test.db");
+            this.sqlRegistry = ChannelRegistrySql.forSQLite(dbPath);
+            DatabaseInitializer.migrate(this.sqlRegistry.getDataSource(), SQLDialect.SQLITE);
+            this.dsl = this.sqlRegistry.getDsl();
+
+            // Insert all test channels
+            for (Map.Entry<Long, Channel> entry : this.testChannels.entrySet()) {
+                this.sqlRegistry.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        private Set<Long> queryTargetIds(ChannelFilter filter) {
+            return this.dsl.select(field(name("target_id"), Long.class))
+                    .from(table(name("destinations")))
+                    .where(filter.toCondition())
+                    .fetchSet(field(name("target_id"), Long.class));
+        }
+
+        private Set<Long> filterTargetIds(ChannelFilter filter) {
+            return this.testChannels.entrySet().stream()
+                    .filter(e -> filter.test(e.getValue()))
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toSet());
+        }
+
+        private void assertConditionMatchesTest(ChannelFilter filter) {
+            Set<Long> sqlResult = queryTargetIds(filter);
+            Set<Long> javaResult = filterTargetIds(filter);
+            assertThat(sqlResult).as("toCondition() SQL result should match test() result for filter: %s", filter)
+                    .isEqualTo(javaResult);
+        }
+
         @Test
-        @DisplayName("empty filter should produce noCondition")
+        @DisplayName("empty filter should match all rows")
         void emptyFilter() {
             ChannelFilter filter = ChannelFilter.builder().build();
-            // noCondition renders as TRUE
-            String sql = filter.toCondition().toString();
-            assertThat(sql).containsIgnoringCase("true").doesNotContain("guild_id");
+            assertConditionMatchesTest(filter);
+            // Additionally verify it returns all channels
+            assertThat(queryTargetIds(filter)).hasSize(this.testChannels.size());
         }
 
         @Test
-        @DisplayName("hasGuild=true should produce guild_id is not null condition")
+        @DisplayName("hasGuild=true should match guild channels only")
         void hasGuildTrue() {
-            ChannelFilter filter = ChannelFilter.builder().hasGuild(true).build();
-            String sql = filter.toCondition().toString();
-            assertThat(sql).containsIgnoringCase("guild_id").containsIgnoringCase("is not null");
+            assertConditionMatchesTest(ChannelFilter.builder().hasGuild(true).build());
         }
 
         @Test
-        @DisplayName("hasGuild=false should produce guild_id is null condition")
+        @DisplayName("hasGuild=false should match DM channels only")
         void hasGuildFalse() {
-            ChannelFilter filter = ChannelFilter.builder().hasGuild(false).build();
-            String sql = filter.toCondition().toString();
-            assertThat(sql).containsIgnoringCase("guild_id").containsIgnoringCase("is null");
+            assertConditionMatchesTest(ChannelFilter.builder().hasGuild(false).build());
         }
 
         @Test
-        @DisplayName("eewAlert=true should produce eew_alert = 1")
-        void eewAlertCondition() {
-            ChannelFilter filter = ChannelFilter.builder().eewAlert(true).build();
-            String sql = filter.toCondition().toString();
-            assertThat(sql).containsIgnoringCase("eew_alert").contains("1");
+        @DisplayName("eewAlert=true should match alert-enabled channels")
+        void eewAlertTrue() {
+            assertConditionMatchesTest(ChannelFilter.builder().eewAlert(true).build());
         }
 
         @Test
-        @DisplayName("eewAlert=false should produce eew_alert = 0")
-        void eewAlertFalseCondition() {
-            ChannelFilter filter = ChannelFilter.builder().eewAlert(false).build();
-            String sql = filter.toCondition().toString();
-            assertThat(sql).containsIgnoringCase("eew_alert").contains("0");
+        @DisplayName("eewAlert=false should match alert-disabled channels")
+        void eewAlertFalse() {
+            assertConditionMatchesTest(ChannelFilter.builder().eewAlert(false).build());
         }
 
         @Test
-        @DisplayName("intensity filter should produce min_intensity <= code")
-        void intensityCondition() {
-            ChannelFilter filter = ChannelFilter.builder().intensity(SeismicIntensity.FOUR).build();
-            String sql = filter.toCondition().toString();
-            assertThat(sql).containsIgnoringCase("min_intensity");
+        @DisplayName("intensity filter should match channels with min_intensity <= threshold")
+        void intensityFilter() {
+            assertConditionMatchesTest(ChannelFilter.builder().intensity(SeismicIntensity.FOUR).build());
         }
 
         @Test
-        @DisplayName("threadId=null should produce thread_id is null")
-        void threadIdNullCondition() {
-            ChannelFilter filter = ChannelFilter.builder().threadId(null).build();
-            String sql = filter.toCondition().toString();
-            assertThat(sql).containsIgnoringCase("thread_id").containsIgnoringCase("is null");
+        @DisplayName("threadId=null should match non-thread channels")
+        void threadIdNull() {
+            assertConditionMatchesTest(ChannelFilter.builder().threadId(null).build());
         }
 
         @Test
-        @DisplayName("threadId=value should produce thread_id = value")
-        void threadIdValueCondition() {
-            ChannelFilter filter = ChannelFilter.builder().threadId(999L).build();
-            String sql = filter.toCondition().toString();
-            assertThat(sql).containsIgnoringCase("thread_id").contains("999");
+        @DisplayName("threadId=value should match specific thread")
+        void threadIdValue() {
+            assertConditionMatchesTest(ChannelFilter.builder().threadId(3001L).build());
+        }
+
+        @Test
+        @DisplayName("combined filter should match intersection")
+        void combinedFilter() {
+            assertConditionMatchesTest(ChannelFilter.builder()
+                    .hasGuild(true)
+                    .eewAlert(true)
+                    .build());
         }
     }
 

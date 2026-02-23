@@ -7,10 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -19,15 +16,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RevisionPollerTest {
 
     private ScheduledExecutorService scheduler;
+    private ExecutorService reloadExecutor;
 
     @BeforeEach
     void setUp() {
         this.scheduler = Executors.newScheduledThreadPool(2);
+        this.reloadExecutor = Executors.newSingleThreadExecutor();
     }
 
     @AfterEach
     void tearDown() {
         this.scheduler.shutdownNow();
+        this.reloadExecutor.shutdownNow();
     }
 
     @Test
@@ -41,7 +41,7 @@ class RevisionPollerTest {
                 () -> new DeliverySnapshot(revisionStore.getRevision(), List.of()));
 
         SnapshotDeliveryRegistry deliveryRegistry = new SnapshotDeliveryRegistry(
-                loader, revisionStore, Executors.newSingleThreadExecutor()) {
+                loader, revisionStore, this.reloadExecutor) {
             @Override
             public void requestReload() {
                 reloadCount.incrementAndGet();
@@ -66,20 +66,39 @@ class RevisionPollerTest {
 
     @Test
     @DisplayName("start() should be idempotent - double start does not create duplicate tasks")
-    void doubleStartIsIdempotent() {
+    void doubleStartIsIdempotent() throws Exception {
         StubRevisionStore revisionStore = new StubRevisionStore(1L);
+        AtomicInteger reloadCount = new AtomicInteger(0);
         TestSnapshotLoader loader = new TestSnapshotLoader(
-                () -> new DeliverySnapshot(1L, List.of()));
+                () -> new DeliverySnapshot(revisionStore.getRevision(), List.of()));
 
         SnapshotDeliveryRegistry deliveryRegistry = new SnapshotDeliveryRegistry(
-                loader, revisionStore, Executors.newSingleThreadExecutor());
+                loader, revisionStore, this.reloadExecutor) {
+            @Override
+            public void requestReload() {
+                reloadCount.incrementAndGet();
+                super.requestReload();
+            }
+        };
         deliveryRegistry.initializeSnapshot();
 
         RevisionPoller poller = new RevisionPoller(deliveryRegistry, revisionStore, this.scheduler, 100);
 
-        // Start twice - should not throw
+        // Start twice - should not throw and should not create duplicate scheduled tasks
         poller.start();
         poller.start();
+
+        // Change revision to trigger reload detection
+        revisionStore.setRevision(2L);
+
+        // Wait for polls to fire
+        Thread.sleep(350);
+
+        // With 100ms poll interval and ~350ms wait, expect ~3 polls.
+        // If double-scheduled, reload count would be roughly doubled (~6+).
+        // Allow up to 5 as a safe upper bound for single schedule.
+        assertThat(reloadCount.get()).as("reload count should be consistent with single schedule")
+                .isLessThanOrEqualTo(5);
 
         poller.stop();
     }
@@ -94,7 +113,7 @@ class RevisionPollerTest {
                 () -> new DeliverySnapshot(revisionStore.getRevision(), List.of()));
 
         SnapshotDeliveryRegistry deliveryRegistry = new SnapshotDeliveryRegistry(
-                loader, revisionStore, Executors.newSingleThreadExecutor()) {
+                loader, revisionStore, this.reloadExecutor) {
             @Override
             public void requestReload() {
                 reloadCount.incrementAndGet();
@@ -124,7 +143,7 @@ class RevisionPollerTest {
                 () -> new DeliverySnapshot(1L, List.of()));
 
         SnapshotDeliveryRegistry deliveryRegistry = new SnapshotDeliveryRegistry(
-                loader, revisionStore, Executors.newSingleThreadExecutor());
+                loader, revisionStore, this.reloadExecutor);
 
         RevisionPoller poller = new RevisionPoller(deliveryRegistry, revisionStore, this.scheduler, 100);
         // Should not throw
@@ -153,7 +172,7 @@ class RevisionPollerTest {
                 () -> new DeliverySnapshot(1L, List.of()));
 
         SnapshotDeliveryRegistry deliveryRegistry = new SnapshotDeliveryRegistry(
-                loader, throwingStore, Executors.newSingleThreadExecutor());
+                loader, throwingStore, this.reloadExecutor);
         deliveryRegistry.initializeSnapshot();
 
         RevisionPoller poller = new RevisionPoller(deliveryRegistry, throwingStore, this.scheduler, 50);
