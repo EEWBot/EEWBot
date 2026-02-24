@@ -12,7 +12,11 @@ public class ChannelWebhookDeserializer implements JsonDeserializer<ChannelWebho
 
         // New format: { "url": "https://discord.com/api/webhooks/..." }
         if (obj.has("url")) {
-            return new ChannelWebhook(obj.get("url").getAsString());
+            try {
+                return new ChannelWebhook(obj.get("url").getAsString());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
         }
 
         // Old format: { "id": 123, "token": "xxx", "threadId": 456 }

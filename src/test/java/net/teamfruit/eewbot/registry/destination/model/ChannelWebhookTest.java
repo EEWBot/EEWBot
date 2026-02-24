@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ChannelWebhookTest {
 
@@ -157,6 +158,39 @@ class ChannelWebhookTest {
         void urlWithThreadId() {
             String url = BASE_URL + "123456789/secretToken?thread_id=999";
             assertThat(ChannelWebhook.maskWebhookUrl(url)).isEqualTo(BASE_URL + "123456789/***");
+        }
+    }
+
+    @Nested
+    @DisplayName("URL validation")
+    class ValidationTests {
+
+        @Test
+        @DisplayName("null URL should throw IllegalArgumentException")
+        void nullUrl() {
+            assertThatThrownBy(() -> new ChannelWebhook(null))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("non-Discord URL should throw IllegalArgumentException")
+        void nonDiscordUrl() {
+            assertThatThrownBy(() -> new ChannelWebhook("https://evil.com/steal"))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("http scheme should throw IllegalArgumentException")
+        void httpScheme() {
+            assertThatThrownBy(() -> new ChannelWebhook("http://discord.com/api/webhooks/123/tok"))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("valid Discord webhook URL should succeed")
+        void validUrl() {
+            ChannelWebhook webhook = new ChannelWebhook(BASE_URL + "123/tok");
+            assertThat(webhook.url()).isEqualTo(BASE_URL + "123/tok");
         }
     }
 

@@ -545,7 +545,11 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         ChannelWebhook webhook = null;
         String webhookUrl = r.get(WEBHOOK_URL);
         if (webhookUrl != null) {
-            webhook = new ChannelWebhook(webhookUrl);
+            try {
+                webhook = new ChannelWebhook(webhookUrl);
+            } catch (IllegalArgumentException e) {
+                Log.logger.warn("Ignoring invalid webhook URL for snapshot: {}", ChannelWebhook.maskWebhookUrl(webhookUrl), e);
+            }
         }
 
         // TARGET_ID is used as long primitive, must not be null
@@ -582,7 +586,11 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         ChannelWebhook webhook = null;
         String webhookUrl = r.get(WEBHOOK_URL);
         if (webhookUrl != null) {
-            webhook = new ChannelWebhook(webhookUrl);
+            try {
+                webhook = new ChannelWebhook(webhookUrl);
+            } catch (IllegalArgumentException e) {
+                Log.logger.warn("Ignoring invalid webhook URL for channel: {}", ChannelWebhook.maskWebhookUrl(webhookUrl), e);
+            }
         }
 
         return new Channel(

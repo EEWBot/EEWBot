@@ -250,6 +250,21 @@ class ChannelDeserializerTest {
         }
 
         @Test
+        @DisplayName("invalid webhook URL should result in null webhook")
+        void invalidWebhookUrl() {
+            String json = """
+                    {
+                      "channelId": 1,
+                      "webhook": {
+                        "url": "https://evil.com/hook"
+                      }
+                    }
+                    """;
+            Channel channel = gson.fromJson(json, Channel.class);
+            assertThat(channel.getWebhook()).isNull();
+        }
+
+        @Test
         @DisplayName("null webhook should result in null")
         void nullWebhook() {
             String json = """

@@ -6,6 +6,12 @@ public record ChannelWebhook(String url) {
 
     private static final String URL_PREFIX = "https://discord.com/api/webhooks/";
 
+    public ChannelWebhook {
+        if (url == null || !url.startsWith(URL_PREFIX)) {
+            throw new IllegalArgumentException("Invalid Discord webhook URL: " + maskWebhookUrl(url));
+        }
+    }
+
     /**
      * Extract webhook_id from URL.
      * URL format: https://discord.com/api/webhooks/{id}/{token}[?thread_id={threadId}]
