@@ -48,11 +48,19 @@ public class ChannelMigration {
      * Extracted from main() for testability.
      */
     static int run(String[] args) {
+        MigrationConfig config;
+        try {
+            config = parseArguments(args);
+            validateConfig(config);
+        } catch (IllegalArgumentException e) {
+            Log.logger.error("Invalid arguments: {}", e.getMessage());
+            printUsage();
+            return 1;
+        }
+
         DestinationAdminRegistry source = null;
         ChannelRegistrySql destination = null;
         try {
-            MigrationConfig config = parseArguments(args);
-
             if (config.dryRun) {
                 Log.logger.info("DRY RUN MODE - No changes will be made");
             }
@@ -76,10 +84,6 @@ public class ChannelMigration {
             Log.logger.info("Migration completed successfully");
             return 0;
 
-        } catch (IllegalArgumentException e) {
-            Log.logger.error("Invalid arguments: {}", e.getMessage());
-            printUsage();
-            return 1;
         } catch (Exception e) {
             Log.logger.error("Migration failed", e);
             return 1;
@@ -311,6 +315,34 @@ public class ChannelMigration {
         }
 
         return config;
+    }
+
+    private static void validateConfig(MigrationConfig config) {
+        Set<String> validSourceTypes = Set.of("json", "redis", "sqlite", "postgresql");
+        Set<String> validDestTypes = Set.of("sqlite", "postgresql");
+
+        if (!validSourceTypes.contains(config.sourceType.toLowerCase())) {
+            throw new IllegalArgumentException("Unknown source type: " + config.sourceType
+                    + ". Must be one of: " + validSourceTypes);
+        }
+        if (!validDestTypes.contains(config.destType.toLowerCase())) {
+            throw new IllegalArgumentException("Unknown destination type: " + config.destType
+                    + ". Must be one of: " + validDestTypes);
+        }
+
+        validatePort(config.sourceConfig, "--source-port");
+        validatePort(config.destConfig, "--dest-port");
+    }
+
+    private static void validatePort(Map<String, String> config, String flag) {
+        String port = config.get("port");
+        if (port != null) {
+            try {
+                Integer.parseInt(port);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid value for " + flag + ": " + port + " (must be an integer)");
+            }
+        }
     }
 
     private static void printUsage() {
