@@ -354,11 +354,13 @@ public class ChannelMigration {
         System.out.println("  --source-path <path>      Source file path (for json/sqlite)");
         System.out.println("  --source-address <addr>   Source Redis address (host:port)");
         System.out.println("  --source-host <host>      Source PostgreSQL host");
+        System.out.println("  --source-port <port>      Source PostgreSQL port");
         System.out.println("  --source-database <db>    Source PostgreSQL database");
         System.out.println("  --source-username <user>  Source PostgreSQL username");
         System.out.println("  --source-password <pass>  Source PostgreSQL password");
-        System.out.println("  --dest-path <path>        Destination file path (for json/sqlite)");
+        System.out.println("  --dest-path <path>        Destination file path (for sqlite)");
         System.out.println("  --dest-host <host>        Destination PostgreSQL host");
+        System.out.println("  --dest-port <port>        Destination PostgreSQL port");
         System.out.println("  --dest-database <db>      Destination PostgreSQL database");
         System.out.println("  --dest-username <user>    Destination PostgreSQL username");
         System.out.println("  --dest-password <pass>    Destination PostgreSQL password");

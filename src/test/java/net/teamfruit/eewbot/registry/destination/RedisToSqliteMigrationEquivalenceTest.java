@@ -57,6 +57,7 @@ class RedisToSqliteMigrationEquivalenceTest {
     private ChannelRegistryJson jsonRegistry;
     private ChannelRegistrySql sqlRegistry;
     private JedisPooled jedis;
+    private Gson gson;
 
     /** Channels loaded from JSON reference, used for dynamic assertions. */
     private Map<Long, Channel> testChannels;
@@ -64,7 +65,7 @@ class RedisToSqliteMigrationEquivalenceTest {
     @BeforeEach
     void setUp() throws IOException {
         // Setup Gson with full deserialization support (including old format migration)
-        Gson gson = new GsonBuilder()
+        this.gson = new GsonBuilder()
                 .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensitySerializer())
                 .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensityDeserializer())
                 .registerTypeAdapter(Channel.class, new ChannelDeserializer())
@@ -76,12 +77,12 @@ class RedisToSqliteMigrationEquivalenceTest {
         try (InputStream is = getClass().getResourceAsStream("/migration/channels_old_format.json")) {
             Files.copy(is, jsonPath);
         }
-        this.jsonRegistry = new ChannelRegistryJson(jsonPath, gson);
+        this.jsonRegistry = new ChannelRegistryJson(jsonPath, this.gson);
         this.jsonRegistry.load(false);
 
         // Connect to Redis (do NOT call init() — same as ChannelMigration CLI)
         this.jedis = new JedisPooled(REDIS.getHost(), REDIS.getFirstMappedPort());
-        ChannelRegistryRedis redisRegistry = new ChannelRegistryRedis(this.jedis, gson);
+        ChannelRegistryRedis redisRegistry = new ChannelRegistryRedis(this.jedis, this.gson);
 
         // Pre-verification: RediSearch index is restored from dump.rdb
         this.jedis.ftInfo("channel-index");
@@ -117,15 +118,8 @@ class RedisToSqliteMigrationEquivalenceTest {
     @Test
     @DisplayName("Redis getAllChannels() should match JSON reference (excluding channelId)")
     void testRedisAllChannelsMatchJsonReference() {
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensitySerializer())
-                .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensityDeserializer())
-                .registerTypeAdapter(Channel.class, new ChannelDeserializer())
-                .registerTypeAdapter(ChannelWebhook.class, new ChannelWebhookDeserializer())
-                .create();
-
         try (JedisPooled jedis = new JedisPooled(REDIS.getHost(), REDIS.getFirstMappedPort())) {
-            ChannelRegistryRedis redisRegistry = new ChannelRegistryRedis(jedis, gson);
+            ChannelRegistryRedis redisRegistry = new ChannelRegistryRedis(jedis, this.gson);
 
             Map<Long, Channel> redisChannels = redisRegistry.getAllChannels();
             Map<Long, Channel> jsonChannels = this.jsonRegistry.getAllChannels();
@@ -429,6 +423,65 @@ class RedisToSqliteMigrationEquivalenceTest {
                 .isEqualTo(0);
     }
 
+    @Test
+    @DisplayName("clearWebhookByUrls() in Redis with all invalid URLs should return 0")
+    void testRedisClearWebhookByUrls_allInvalidUrls() {
+        ChannelRegistryRedis redisRegistry = new ChannelRegistryRedis(this.jedis, this.gson);
+
+        int cleared = redisRegistry.clearWebhookByUrls(List.of(
+                "not-a-url",
+                "",
+                "https://example.com/webhook/123/token"
+        ));
+
+        assertThat(cleared)
+                .as("Redis cleared count for all invalid URLs")
+                .isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("clearWebhookByUrls() in Redis with mixed valid and invalid URLs should clear only valid")
+    void testRedisClearWebhookByUrls_mixedValidAndInvalidUrls() {
+        ChannelRegistryRedis redisRegistry = new ChannelRegistryRedis(this.jedis, this.gson);
+
+        long tempTargetId = 999999001L;
+        long tempWebhookId = 880001L;
+        Map<String, Object> legacyChannel = new HashMap<>();
+        legacyChannel.put("isGuild", true);
+        legacyChannel.put("guildId", 12345L);
+        legacyChannel.put("eewAlert", true);
+        legacyChannel.put("eewPrediction", false);
+        legacyChannel.put("eewDecimation", false);
+        legacyChannel.put("quakeInfo", false);
+        legacyChannel.put("minIntensity", SeismicIntensity.ONE.getCode());
+        legacyChannel.put("lang", "ja_jp");
+        legacyChannel.put("webhook", Map.of(
+                "id", tempWebhookId,
+                "token", "temporary-token"
+        ));
+        this.jedis.jsonSet(
+                "channel:" + tempTargetId,
+                redis.clients.jedis.json.Path.ROOT_PATH,
+                legacyChannel
+        );
+
+        try {
+            int cleared = redisRegistry.clearWebhookByUrls(List.of(
+                    "not-a-url",
+                    "https://discord.com/api/webhooks/" + tempWebhookId + "/temporary-token"
+            ));
+
+            assertThat(cleared)
+                    .as("Redis cleared count for mixed valid/invalid URLs")
+                    .isEqualTo(1);
+            assertThat(redisRegistry.get(tempTargetId).getWebhook())
+                    .as("Temporary channel webhook should be cleared")
+                    .isNull();
+        } finally {
+            redisRegistry.remove(tempTargetId);
+        }
+    }
+
     // ===== setLangByGuildId() tests =====
 
     @Test
@@ -520,6 +573,33 @@ class RedisToSqliteMigrationEquivalenceTest {
             DeliveryTarget jsonTarget = jsonResult.direct().get(targetId);
             assertDeliveryTargetFieldsEqual(sqlTarget, jsonTarget, targetId, "webhook-absent");
         }
+    }
+
+    @Test
+    @DisplayName("getDeliveryChannels(null) in JSON should return all channels")
+    void testGetDeliveryChannels_nullFilterJson() {
+        DeliveryPartition jsonResult = this.jsonRegistry.getDeliveryChannels(null);
+
+        Set<Long> allFromPartition = new HashSet<>(jsonResult.webhook().keySet());
+        allFromPartition.addAll(jsonResult.direct().keySet());
+
+        assertThat(allFromPartition)
+                .as("JSON delivery partition keys with null filter")
+                .isEqualTo(this.jsonRegistry.getAllChannels().keySet());
+    }
+
+    @Test
+    @DisplayName("getDeliveryChannels(null) in Redis should return all channels")
+    void testGetDeliveryChannels_nullFilterRedis() {
+        ChannelRegistryRedis redisRegistry = new ChannelRegistryRedis(this.jedis, this.gson);
+        DeliveryPartition redisResult = redisRegistry.getDeliveryChannels(null);
+
+        Set<Long> allFromPartition = new HashSet<>(redisResult.webhook().keySet());
+        allFromPartition.addAll(redisResult.direct().keySet());
+
+        assertThat(allFromPartition)
+                .as("Redis delivery partition keys with null filter")
+                .isEqualTo(redisRegistry.getAllChannels().keySet());
     }
 
     private void assertDeliveryTargetFieldsEqual(DeliveryTarget sql, DeliveryTarget json, Long targetId, String context) {

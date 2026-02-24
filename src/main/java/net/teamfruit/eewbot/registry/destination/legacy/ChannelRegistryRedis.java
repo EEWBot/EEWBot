@@ -256,8 +256,19 @@ public class ChannelRegistryRedis implements ChannelRegistry {
             return 0;
         }
         Set<Long> webhookIds = webhookUrls.stream()
-                .map(url -> new ChannelWebhook(url).id())
+                .map(url -> {
+                    try {
+                        return new ChannelWebhook(url).id();
+                    } catch (Exception e) {
+                        Log.logger.warn("Failed to parse webhook URL, skipping: {}", ChannelWebhook.maskWebhookUrl(url), e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+        if (webhookIds.isEmpty()) {
+            return 0;
+        }
 
         List<String> keysToUpdate = new ArrayList<>();
         for (long webhookId : webhookIds) {
@@ -329,7 +340,8 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         Map<Long, DeliveryTarget> webhookPresent = new HashMap<>();
         Map<Long, DeliveryTarget> webhookAbsent = new HashMap<>();
 
-        AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder(filter.toQueryString())
+        String query = filter != null ? filter.toQueryString() : "*";
+        AggregationResult aggregationResult = this.jedisPool.ftAggregate(CHANNEL_INDEX, new AggregationBuilder(query)
                 .load("__key", "$.webhook", "$.lang")
                 .cursor(AGGREGATION_CURSOR_COUNT, AGGREGATION_CURSOR_TIMEOUT));
         long cursorId;

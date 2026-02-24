@@ -186,7 +186,7 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
         Map<Long, DeliveryTarget> direct = new HashMap<>();
 
         getElement().forEach((targetId, channel) -> {
-            if (!filter.test(channel)) return;
+            if (filter != null && !filter.test(channel)) return;
             String webhookUrl = channel.getWebhookUrl();
             DeliveryTarget target = new DeliveryTarget(targetId, channel.getLang(), webhookUrl);
             if (webhookUrl != null) {
