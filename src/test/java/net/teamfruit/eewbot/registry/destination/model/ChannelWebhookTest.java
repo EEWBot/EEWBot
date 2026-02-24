@@ -114,7 +114,7 @@ class ChannelWebhookTest {
         void roundtripWithThread() {
             long id = 111222333L;
             String token = "abc";
-            Long threadId = 444555666L;
+            long threadId = 444555666L;
             ChannelWebhook webhook = ChannelWebhook.of(id, token, threadId);
 
             assertThat(webhook.id()).isEqualTo(id);
