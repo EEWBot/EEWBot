@@ -19,7 +19,11 @@ public record ChannelWebhook(String url) {
     public long id() {
         String path = this.url.substring(URL_PREFIX.length());
         int slashIndex = path.indexOf('/');
-        return Long.parseLong(path.substring(0, slashIndex));
+        try {
+            return Long.parseLong(path.substring(0, slashIndex));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid Discord webhook URL: " + maskWebhookUrl(this.url), e);
+        }
     }
 
     /**
