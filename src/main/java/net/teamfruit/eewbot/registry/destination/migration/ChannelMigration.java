@@ -37,6 +37,19 @@ public class ChannelMigration {
             .create();
 
     public static void main(String[] args) {
+        int code = run(args);
+        if (code != 0) {
+            System.exit(code);
+        }
+    }
+
+    /**
+     * Run the migration and return an exit code (0 = success, 1 = failure).
+     * Extracted from main() for testability.
+     */
+    static int run(String[] args) {
+        DestinationAdminRegistry source = null;
+        ChannelRegistrySql destination = null;
         try {
             MigrationConfig config = parseArguments(args);
 
@@ -44,14 +57,14 @@ public class ChannelMigration {
                 Log.logger.info("DRY RUN MODE - No changes will be made");
             }
 
-            DestinationAdminRegistry source = createSourceRegistry(config.sourceType, config.sourceConfig);
-            ChannelRegistrySql destination = createDestinationRegistry(config.destType, config.destConfig);
+            source = createSourceRegistry(config.sourceType, config.sourceConfig);
+            destination = createDestinationRegistry(config.destType, config.destConfig);
 
             String migrationName = config.sourceType + "_to_sql_channels_v1";
 
             if (isMigrationApplied(destination, migrationName)) {
                 Log.logger.info("Migration '{}' already applied. Skipping.", migrationName);
-                return;
+                return 0;
             }
 
             if (config.dryRun) {
@@ -61,14 +74,32 @@ public class ChannelMigration {
             }
 
             Log.logger.info("Migration completed successfully");
+            return 0;
 
+        } catch (IllegalArgumentException e) {
+            Log.logger.error("Invalid arguments: {}", e.getMessage());
+            printUsage();
+            return 1;
         } catch (Exception e) {
             Log.logger.error("Migration failed", e);
-            System.exit(1);
+            return 1;
+        } finally {
+            closeSource(source);
+            if (destination != null) {
+                destination.close();
+            }
         }
     }
 
-    private static boolean isMigrationApplied(ChannelRegistrySql registry, String migrationName) {
+    private static void closeSource(DestinationAdminRegistry source) {
+        if (source instanceof ChannelRegistrySql sqlSource) {
+            sqlSource.close();
+        } else if (source instanceof ChannelRegistryRedis redisSource) {
+            redisSource.close();
+        }
+    }
+
+    static boolean isMigrationApplied(ChannelRegistrySql registry, String migrationName) {
         DSLContext dsl = registry.getDsl();
         Table<?> dataMigrations = table(name("data_migrations"));
         Field<String> nameField = field(name("name"), String.class);
@@ -79,7 +110,7 @@ public class ChannelMigration {
         );
     }
 
-    private static void performMigrationWithTracking(DestinationAdminRegistry source, ChannelRegistrySql dest, String migrationName) {
+    static void performMigrationWithTracking(DestinationAdminRegistry source, ChannelRegistrySql dest, String migrationName) {
         dest.getDsl().transaction(ctx -> {
             DSLContext tx = ctx.dsl();
 
@@ -239,9 +270,7 @@ public class ChannelMigration {
 
     private static String nextArg(String[] args, int index, String flag) {
         if (index >= args.length) {
-            Log.logger.error("Missing value for argument: {}", flag);
-            printUsage();
-            System.exit(1);
+            throw new IllegalArgumentException("Missing value for argument: " + flag);
         }
         return args[index];
     }
@@ -277,8 +306,8 @@ public class ChannelMigration {
         }
 
         if (config.sourceType == null || config.destType == null) {
-            printUsage();
-            System.exit(1);
+            throw new IllegalArgumentException("Both --source and --dest are required. " +
+                    "Usage: --source <type> --dest <type> [options]");
         }
 
         return config;

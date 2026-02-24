@@ -382,4 +382,7 @@ public class ChannelRegistryRedis implements ChannelRegistry {
         return true;
     }
 
+    public void close() {
+        this.jedisPool.close();
+    }
 }

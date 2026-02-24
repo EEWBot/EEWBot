@@ -160,6 +160,11 @@ class SnapshotDeliveryRegistryTest {
             // Wait for async reload
             assertThat(reloadDone.await(5, TimeUnit.SECONDS)).isTrue();
 
+            // snapshotRef update may lag behind loader return; poll briefly
+            long deadline = System.currentTimeMillis() + 2000;
+            while (registry.getSnapshot().getRevision() < 2L && System.currentTimeMillis() < deadline) {
+                Thread.sleep(10);
+            }
             assertThat(registry.getSnapshot().getRevision()).isEqualTo(2L);
         }
 

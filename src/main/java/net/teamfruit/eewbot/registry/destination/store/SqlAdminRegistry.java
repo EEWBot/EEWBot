@@ -84,32 +84,50 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
 
     @Override
     public void remove(long key) {
+        AtomicInteger affected = new AtomicInteger();
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
-            this.delegate.removeWithDsl(tx, key);
-            this.revisionStore.incrementWithDsl(tx);
+            int rows = this.delegate.removeWithDsl(tx, key);
+            if (rows > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+                affected.set(rows);
+            }
         });
-        this.onWrite.run();
+        if (affected.get() > 0) {
+            this.onWrite.run();
+        }
     }
 
     @Override
     public void put(long key, Channel channel) {
+        AtomicInteger affected = new AtomicInteger();
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
-            this.delegate.putWithDsl(tx, key, channel);
-            this.revisionStore.incrementWithDsl(tx);
+            int rows = this.delegate.insertChannelIfAbsentWithDsl(tx, key, channel);
+            if (rows > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+                affected.set(rows);
+            }
         });
-        this.onWrite.run();
+        if (affected.get() > 0) {
+            this.onWrite.run();
+        }
     }
 
     @Override
     public void set(long key, String name, boolean bool) {
+        AtomicInteger affected = new AtomicInteger();
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
-            this.delegate.setWithDsl(tx, key, name, bool);
-            this.revisionStore.incrementWithDsl(tx);
+            int rows = this.delegate.setWithDsl(tx, key, name, bool);
+            if (rows > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+                affected.set(rows);
+            }
         });
-        this.onWrite.run();
+        if (affected.get() > 0) {
+            this.onWrite.run();
+        }
     }
 
     @Override
@@ -117,42 +135,66 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
         if (values.isEmpty()) {
             return;
         }
+        AtomicInteger affected = new AtomicInteger();
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
-            this.delegate.setAllWithDsl(tx, key, values);
-            this.revisionStore.incrementWithDsl(tx);
+            int rows = this.delegate.setAllWithDsl(tx, key, values);
+            if (rows > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+                affected.set(rows);
+            }
         });
-        this.onWrite.run();
+        if (affected.get() > 0) {
+            this.onWrite.run();
+        }
     }
 
     @Override
     public void setMinIntensity(long key, SeismicIntensity intensity) {
+        AtomicInteger affected = new AtomicInteger();
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
-            this.delegate.setMinIntensityWithDsl(tx, key, intensity);
-            this.revisionStore.incrementWithDsl(tx);
+            int rows = this.delegate.setMinIntensityWithDsl(tx, key, intensity);
+            if (rows > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+                affected.set(rows);
+            }
         });
-        this.onWrite.run();
+        if (affected.get() > 0) {
+            this.onWrite.run();
+        }
     }
 
     @Override
     public void setWebhook(long key, ChannelWebhook webhook) {
+        AtomicInteger affected = new AtomicInteger();
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
-            this.delegate.setWebhookWithDsl(tx, key, webhook);
-            this.revisionStore.incrementWithDsl(tx);
+            int rows = this.delegate.setWebhookWithDsl(tx, key, webhook);
+            if (rows > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+                affected.set(rows);
+            }
         });
-        this.onWrite.run();
+        if (affected.get() > 0) {
+            this.onWrite.run();
+        }
     }
 
     @Override
     public void setLang(long key, String lang) {
+        AtomicInteger affected = new AtomicInteger();
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
-            this.delegate.setLangWithDsl(tx, key, lang);
-            this.revisionStore.incrementWithDsl(tx);
+            int rows = this.delegate.setLangWithDsl(tx, key, lang);
+            if (rows > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+                affected.set(rows);
+            }
         });
-        this.onWrite.run();
+        if (affected.get() > 0) {
+            this.onWrite.run();
+        }
     }
 
     @Override
@@ -160,12 +202,18 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
         if (channels.isEmpty()) {
             return;
         }
+        AtomicInteger affected = new AtomicInteger();
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
-            this.delegate.putAllWithDsl(tx, channels);
-            this.revisionStore.incrementWithDsl(tx);
+            int rows = this.delegate.putAllWithDsl(tx, channels);
+            if (rows > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+                affected.set(rows);
+            }
         });
-        this.onWrite.run();
+        if (affected.get() > 0) {
+            this.onWrite.run();
+        }
     }
 
     // ========================================

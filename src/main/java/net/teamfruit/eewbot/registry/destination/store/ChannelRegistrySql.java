@@ -125,9 +125,11 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
 
     /**
      * Remove a channel using the provided DSLContext (for transactional use).
+     *
+     * @return number of rows deleted
      */
-    public void removeWithDsl(DSLContext tx, long key) {
-        tx.deleteFrom(DESTINATIONS)
+    public int removeWithDsl(DSLContext tx, long key) {
+        return tx.deleteFrom(DESTINATIONS)
                 .where(TARGET_ID.eq(key))
                 .execute();
     }
@@ -140,8 +142,13 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         );
     }
 
-    private void insertChannelIfAbsentWithDsl(DSLContext tx, long targetId, Channel channel) {
-        tx.insertInto(DESTINATIONS)
+    /**
+     * Insert a channel if absent (on conflict do nothing).
+     *
+     * @return number of rows inserted (0 if already exists, 1 if inserted)
+     */
+    int insertChannelIfAbsentWithDsl(DSLContext tx, long targetId, Channel channel) {
+        return tx.insertInto(DESTINATIONS)
                 .columns(
                         TARGET_ID,
                         CHANNEL_ID,
@@ -179,8 +186,8 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         insertChannelIfAbsentWithDsl(this.dsl, key, channel);
     }
 
-    public void putWithDsl(DSLContext tx, long key, Channel channel) {
-        insertChannelIfAbsentWithDsl(tx, key, channel);
+    public int putWithDsl(DSLContext tx, long key, Channel channel) {
+        return insertChannelIfAbsentWithDsl(tx, key, channel);
     }
 
     @Override
@@ -188,10 +195,12 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         putAllWithDsl(this.dsl, channels);
     }
 
-    public void putAllWithDsl(DSLContext tx, Map<Long, Channel> channels) {
+    public int putAllWithDsl(DSLContext tx, Map<Long, Channel> channels) {
+        int total = 0;
         for (Map.Entry<Long, Channel> entry : channels.entrySet()) {
-            insertChannelIfAbsentWithDsl(tx, entry.getKey(), entry.getValue());
+            total += insertChannelIfAbsentWithDsl(tx, entry.getKey(), entry.getValue());
         }
+        return total;
     }
 
     @Override
@@ -201,14 +210,16 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
 
     /**
      * Set a boolean column using the provided DSLContext (for transactional use).
+     *
+     * @return number of rows updated
      */
-    public void setWithDsl(DSLContext tx, long key, String name, boolean bool) {
+    public int setWithDsl(DSLContext tx, long key, String name, boolean bool) {
         String columnName = SETTABLE_BOOLEAN_COLUMNS.get(name);
         if (columnName == null) {
             throw new IllegalArgumentException("Unknown or non-settable column: " + name);
         }
 
-        tx.update(DESTINATIONS)
+        return tx.update(DESTINATIONS)
                 .set(field(name(columnName), Integer.class), bool ? 1 : 0)
                 .where(TARGET_ID.eq(key))
                 .execute();
@@ -221,10 +232,12 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
 
     /**
      * Set multiple boolean columns in a single UPDATE using the provided DSLContext (for transactional use).
+     *
+     * @return number of rows updated
      */
-    public void setAllWithDsl(DSLContext tx, long key, Map<String, Boolean> values) {
+    public int setAllWithDsl(DSLContext tx, long key, Map<String, Boolean> values) {
         if (values.isEmpty()) {
-            return;
+            return 0;
         }
         UpdateSetFirstStep<?> update = tx.update(DESTINATIONS);
         UpdateSetMoreStep<?> step = null;
@@ -237,8 +250,9 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                     .set(field(name(columnName), Integer.class), entry.getValue() ? 1 : 0);
         }
         if (step != null) {
-            step.where(TARGET_ID.eq(key)).execute();
+            return step.where(TARGET_ID.eq(key)).execute();
         }
+        return 0;
     }
 
     @Override
@@ -248,9 +262,11 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
 
     /**
      * Set min intensity using the provided DSLContext (for transactional use).
+     *
+     * @return number of rows updated
      */
-    public void setMinIntensityWithDsl(DSLContext tx, long key, SeismicIntensity intensity) {
-        tx.update(DESTINATIONS)
+    public int setMinIntensityWithDsl(DSLContext tx, long key, SeismicIntensity intensity) {
+        return tx.update(DESTINATIONS)
                 .set(MIN_INTENSITY, intensity.getCode())
                 .where(TARGET_ID.eq(key))
                 .execute();
@@ -263,10 +279,12 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
 
     /**
      * Set webhook using the provided DSLContext (for transactional use).
+     *
+     * @return number of rows updated
      */
-    public void setWebhookWithDsl(DSLContext tx, long key, ChannelWebhook webhook) {
+    public int setWebhookWithDsl(DSLContext tx, long key, ChannelWebhook webhook) {
         final Long webhookId = webhook != null ? webhook.id() : null;
-        tx.update(DESTINATIONS)
+        return tx.update(DESTINATIONS)
                 .set(WEBHOOK_URL, webhook != null ? webhook.getUrl() : null)
                 .set(WEBHOOK_ID, webhookId)
                 .where(TARGET_ID.eq(key))
@@ -281,13 +299,14 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     /**
      * Set lang using the provided DSLContext (for transactional use).
      *
+     * @return number of rows updated
      * @throws IllegalArgumentException if lang is null
      */
-    public void setLangWithDsl(DSLContext tx, long key, String lang) {
+    public int setLangWithDsl(DSLContext tx, long key, String lang) {
         if (lang == null) {
             throw new IllegalArgumentException("lang cannot be null");
         }
-        tx.update(DESTINATIONS)
+        return tx.update(DESTINATIONS)
                 .set(LANG, lang)
                 .where(TARGET_ID.eq(key))
                 .execute();

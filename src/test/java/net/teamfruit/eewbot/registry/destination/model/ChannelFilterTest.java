@@ -310,6 +310,99 @@ class ChannelFilterTest {
                     .eewAlert(true)
                     .build());
         }
+
+        @Test
+        @DisplayName("guildId filter should match exact guild")
+        void guildIdFilter() {
+            assertConditionMatchesTest(ChannelFilter.builder().guildId(100L).build());
+        }
+
+        @Test
+        @DisplayName("channelId filter should match exact channel")
+        void channelIdFilter() {
+            assertConditionMatchesTest(ChannelFilter.builder().channelId(1001L).build());
+        }
+
+        @Test
+        @DisplayName("isThread=true should match channels with threadId")
+        void isThreadTrue() {
+            assertConditionMatchesTest(ChannelFilter.builder().isThread(true).build());
+        }
+
+        @Test
+        @DisplayName("isThread=false should match channels without threadId")
+        void isThreadFalse() {
+            assertConditionMatchesTest(ChannelFilter.builder().isThread(false).build());
+        }
+
+        @Test
+        @DisplayName("eewPrediction=true filter")
+        void eewPredictionTrue() {
+            assertConditionMatchesTest(ChannelFilter.builder().eewPrediction(true).build());
+        }
+
+        @Test
+        @DisplayName("eewPrediction=false filter")
+        void eewPredictionFalse() {
+            assertConditionMatchesTest(ChannelFilter.builder().eewPrediction(false).build());
+        }
+
+        @Test
+        @DisplayName("eewDecimation=true filter")
+        void eewDecimationTrue() {
+            assertConditionMatchesTest(ChannelFilter.builder().eewDecimation(true).build());
+        }
+
+        @Test
+        @DisplayName("eewDecimation=false filter")
+        void eewDecimationFalse() {
+            assertConditionMatchesTest(ChannelFilter.builder().eewDecimation(false).build());
+        }
+
+        @Test
+        @DisplayName("quakeInfo=true filter")
+        void quakeInfoTrue() {
+            assertConditionMatchesTest(ChannelFilter.builder().quakeInfo(true).build());
+        }
+
+        @Test
+        @DisplayName("quakeInfo=false filter")
+        void quakeInfoFalse() {
+            assertConditionMatchesTest(ChannelFilter.builder().quakeInfo(false).build());
+        }
+
+        @Test
+        @DisplayName("webhookId filter should match channel with matching webhook")
+        void webhookIdFilter() {
+            assertConditionMatchesTest(ChannelFilter.builder().webhookId(555L).build());
+        }
+
+        @Test
+        @DisplayName("webhookId filter with non-existent ID returns empty")
+        void webhookIdNonExistent() {
+            ChannelFilter filter = ChannelFilter.builder().webhookId(999999L).build();
+            assertConditionMatchesTest(filter);
+            assertThat(queryTargetIds(filter)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("combined guildId + eewPrediction + intensity filter")
+        void combinedGuildPredictionIntensity() {
+            assertConditionMatchesTest(ChannelFilter.builder()
+                    .guildId(100L)
+                    .eewPrediction(true)
+                    .intensity(SeismicIntensity.THREE)
+                    .build());
+        }
+
+        @Test
+        @DisplayName("combined isThread + quakeInfo filter")
+        void combinedIsThreadQuakeInfo() {
+            assertConditionMatchesTest(ChannelFilter.builder()
+                    .isThread(true)
+                    .quakeInfo(true)
+                    .build());
+        }
     }
 
     @Nested

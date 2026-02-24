@@ -269,6 +269,53 @@ class ChannelRegistrySqlEdgeCaseTest {
     }
 
     @Nested
+    @DisplayName("clearWebhookByUrls() invalid URL handling")
+    class ClearWebhookInvalidUrlTests {
+
+        @Test
+        @DisplayName("invalid URL returns 0 and does not crash")
+        void invalidUrlReturnsZeroNoCrash() {
+            // Insert a channel with valid webhook so DB isn't empty
+            ChannelWebhook webhook = ChannelWebhook.of(555L, "tok");
+            sqlRegistry.put(1L, new Channel(100L, 1L, null, true, false, false, false,
+                    SeismicIntensity.ONE, webhook, "ja_jp"));
+
+            int cleared = sqlRegistry.clearWebhookByUrls(List.of("not-a-url"));
+
+            assertThat(cleared).isZero();
+            // Webhook should remain untouched
+            assertThat(sqlRegistry.get(1L).getWebhook()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("mix of valid and invalid URLs clears only valid matches")
+        void mixValidInvalidUrls() {
+            ChannelWebhook webhook = ChannelWebhook.of(555L, "tok");
+            sqlRegistry.put(1L, new Channel(100L, 1L, null, true, false, false, false,
+                    SeismicIntensity.ONE, webhook, "ja_jp"));
+
+            int cleared = sqlRegistry.clearWebhookByUrls(
+                    List.of("not-a-url", "https://discord.com/api/webhooks/555/tok"));
+
+            assertThat(cleared).isEqualTo(1);
+            assertThat(sqlRegistry.get(1L).getWebhook()).isNull();
+        }
+
+        @Test
+        @DisplayName("empty string URL is skipped, returns 0")
+        void emptyStringUrlSkipped() {
+            ChannelWebhook webhook = ChannelWebhook.of(555L, "tok");
+            sqlRegistry.put(1L, new Channel(100L, 1L, null, true, false, false, false,
+                    SeismicIntensity.ONE, webhook, "ja_jp"));
+
+            int cleared = sqlRegistry.clearWebhookByUrls(List.of(""));
+
+            assertThat(cleared).isZero();
+            assertThat(sqlRegistry.get(1L).getWebhook()).isNotNull();
+        }
+    }
+
+    @Nested
     @DisplayName("put() with onConflictDoNothing")
     class PutConflictTests {
 
