@@ -92,6 +92,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         hikariConfig.setConnectionTimeout(30000);
         hikariConfig.setIdleTimeout(600000);
         hikariConfig.setMaxLifetime(1800000);
+        hikariConfig.setLeakDetectionThreshold(60000);
 
         HikariDataSource ds = new HikariDataSource(hikariConfig);
         DSLContext dsl = DSL.using(ds, SQLDialect.POSTGRES);
@@ -137,7 +138,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     @Override
     public boolean exists(long key) {
         return this.dsl.fetchExists(
-                this.dsl.select(ALL_FIELDS).from(DESTINATIONS)
+                this.dsl.selectOne().from(DESTINATIONS)
                         .where(TARGET_ID.eq(key))
         );
     }
@@ -447,7 +448,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     @Override
     public boolean isWebhookForThread(long webhookId, long targetId) {
         boolean exists = this.dsl.fetchExists(
-                this.dsl.select(ALL_FIELDS).from(DESTINATIONS)
+                this.dsl.selectOne().from(DESTINATIONS)
                         .where(WEBHOOK_ID.eq(webhookId))
                         .and(TARGET_ID.ne(targetId))
         );

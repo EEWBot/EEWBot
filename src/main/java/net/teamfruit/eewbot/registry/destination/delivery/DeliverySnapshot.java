@@ -114,7 +114,10 @@ public final class DeliverySnapshot {
             }
         }
 
-        return new DeliveryPartition(withWebhook, withoutWebhook);
+        return new DeliveryPartition(
+                Collections.unmodifiableMap(withWebhook),
+                Collections.unmodifiableMap(withoutWebhook)
+        );
     }
 
     /**
