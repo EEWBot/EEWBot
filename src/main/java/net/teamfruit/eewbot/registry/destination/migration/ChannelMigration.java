@@ -135,6 +135,13 @@ public class ChannelMigration {
                 return;
             }
 
+            boolean hasExistingData = tx.fetchExists(tx.selectOne().from(table(name("destinations"))));
+            if (hasExistingData) {
+                throw new IllegalStateException(
+                        "Destination database already contains data in 'destinations' table. "
+                                + "Migration requires an empty destination. Clear the table first or use a fresh database.");
+            }
+
             Log.logger.info("Performing migration: {}", migrationName);
             List<Map.Entry<Long, Channel>> entries = collectChannels(source);
             migrateChannelsSql(entries, dest, tx);
@@ -209,8 +216,13 @@ public class ChannelMigration {
             prepared.put(targetId, preparedChannel);
         }
 
-        destination.putAllWithDsl(tx, prepared);
-        Log.logger.info("Migrated {} channels to destination", entries.size());
+        int insertedCount = destination.putAllWithDsl(tx, prepared);
+        Log.logger.info("Migrated {}/{} channels to destination", insertedCount, prepared.size());
+        if (insertedCount != prepared.size()) {
+            throw new IllegalStateException(
+                    "Expected to insert " + prepared.size() + " channels but only " + insertedCount
+                            + " were inserted. This may indicate duplicate target IDs in the source data.");
+        }
     }
 
     private static DestinationAdminRegistry createSourceRegistry(String type, Map<String, String> config) throws IOException {
