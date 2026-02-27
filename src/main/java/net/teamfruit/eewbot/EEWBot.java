@@ -103,6 +103,18 @@ public class EEWBot {
 
         migrateConfigIfNeeded();
 
+        final String token = System.getenv("TOKEN");
+        if (token != null)
+            getConfig().getBase().setDiscordToken(token);
+
+        String dmdataAPIKey = System.getenv("DMDATA_API_KEY");
+        if (dmdataAPIKey != null)
+            getConfig().getDmdata().setAPIKey(dmdataAPIKey);
+
+        if (!getConfig().isValid()) {
+            return;
+        }
+
         Path channelsJsonPath = DATA_DIRECTORY != null
                 ? Paths.get(DATA_DIRECTORY, "channels.json")
                 : Paths.get("channels.json");
@@ -150,18 +162,6 @@ public class EEWBot {
             }
             default -> throw new IllegalStateException(
                     "Unknown database.type: '" + dbType + "'. Supported values: sqlite, postgresql, json, redis");
-        }
-
-        final String token = System.getenv("TOKEN");
-        if (token != null)
-            getConfig().getBase().setDiscordToken(token);
-
-        String dmdataAPIKey = System.getenv("DMDATA_API_KEY");
-        if (dmdataAPIKey != null)
-            getConfig().getDmdata().setAPIKey(dmdataAPIKey);
-
-        if (!getConfig().isValid()) {
-            return;
         }
 
         this.gateway = DiscordClient.create(getConfig().getBase().getDiscordToken())
