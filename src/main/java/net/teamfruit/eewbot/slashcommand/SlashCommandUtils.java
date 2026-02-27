@@ -55,7 +55,8 @@ public class SlashCommandUtils {
         Channel newChannel;
         if (guildChannel instanceof ThreadChannel) {
             Long channelId = ((ThreadChannel) guildChannel).getParentId()
-                    .map(Snowflake::asLong).orElse(targetId);
+                    .map(Snowflake::asLong)
+                    .orElseThrow(() -> new IllegalStateException("Thread channel does not have a parentId"));
             newChannel = Channel.createDefault(guildId, channelId, targetId, lang);
         } else {
             newChannel = Channel.createDefault(guildId, targetId, null, lang);
