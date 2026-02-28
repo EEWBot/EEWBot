@@ -23,7 +23,7 @@ hikaricp = "7.0.2"
 jooq = "3.20.11"
 flyway = "12.0.1"
 caffeine = "3.2.3"
-testcontainers = "1.21.4"
+testcontainers = "2.0.3"
 
 [libraries]
 ch-qos-logback-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "ch-qos-logback-logback-classic" }
