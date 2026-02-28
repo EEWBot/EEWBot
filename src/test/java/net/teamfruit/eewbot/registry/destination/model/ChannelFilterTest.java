@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.registry.destination.model;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
 import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import org.jooq.DSLContext;
@@ -184,6 +185,174 @@ class ChannelFilterTest {
             assertThat(filter.test(channel(100L, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
             // Guild mismatch
             assertThat(filter.test(channel(null, 1L, null, true, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+    }
+
+    private DeliverySnapshot.DeliveryChannel deliveryChannel(Long guildId, long channelId, Long threadId,
+                                                              boolean eewAlert, boolean eewPrediction, boolean eewDecimation, boolean quakeInfo,
+                                                              SeismicIntensity minIntensity, ChannelWebhook webhook) {
+        return new DeliverySnapshot.DeliveryChannel(0L, channelId, threadId, guildId,
+                eewAlert, eewPrediction, eewDecimation, quakeInfo, minIntensity, "ja_jp", webhook);
+    }
+
+    @Nested
+    @DisplayName("test(DeliveryChannel)")
+    class TestDeliveryChannelMethod {
+
+        @Test
+        @DisplayName("empty filter should match any delivery channel")
+        void emptyFilterMatchesAll() {
+            ChannelFilter filter = ChannelFilter.builder().build();
+            DeliverySnapshot.DeliveryChannel ch = deliveryChannel(100L, 1L, null, true, false, false, true, SeismicIntensity.ONE, null);
+            assertThat(filter.test(ch)).isTrue();
+        }
+
+        @Test
+        @DisplayName("hasGuild=true should match guild delivery channel")
+        void hasGuildTrue() {
+            ChannelFilter filter = ChannelFilter.builder().hasGuild(true).build();
+            assertThat(filter.test(deliveryChannel(100L, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("hasGuild=false should match DM delivery channel")
+        void hasGuildFalse() {
+            ChannelFilter filter = ChannelFilter.builder().hasGuild(false).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(100L, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("guildId filter should match exact guild")
+        void guildIdExact() {
+            ChannelFilter filter = ChannelFilter.builder().guildId(100L).build();
+            assertThat(filter.test(deliveryChannel(100L, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(200L, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("channelId filter should match exact channel")
+        void channelIdExact() {
+            ChannelFilter filter = ChannelFilter.builder().channelId(50L).build();
+            assertThat(filter.test(deliveryChannel(null, 50L, null, false, false, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 99L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("threadId=null filter should match non-thread channels")
+        void threadIdNull() {
+            ChannelFilter filter = ChannelFilter.builder().threadId(null).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 1L, 999L, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("threadId=value filter should match specific thread")
+        void threadIdValue() {
+            ChannelFilter filter = ChannelFilter.builder().threadId(999L).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, 999L, false, false, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("isThread=true should match channels with threadId")
+        void isThreadTrue() {
+            ChannelFilter filter = ChannelFilter.builder().isThread(true).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, 123L, false, false, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("isThread=false should match channels without threadId")
+        void isThreadFalse() {
+            ChannelFilter filter = ChannelFilter.builder().isThread(false).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 1L, 123L, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("eewAlert filter")
+        void eewAlertFilter() {
+            ChannelFilter filter = ChannelFilter.builder().eewAlert(true).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, true, false, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("eewPrediction filter")
+        void eewPredictionFilter() {
+            ChannelFilter filter = ChannelFilter.builder().eewPrediction(true).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, true, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("eewDecimation filter")
+        void eewDecimationFilter() {
+            ChannelFilter filter = ChannelFilter.builder().eewDecimation(true).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, true, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("quakeInfo filter")
+        void quakeInfoFilter() {
+            ChannelFilter filter = ChannelFilter.builder().quakeInfo(true).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, true, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("intensity filter should match channels with minIntensity <= threshold")
+        void intensityFilter() {
+            ChannelFilter filter = ChannelFilter.builder().intensity(SeismicIntensity.FOUR).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.FOUR, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.FIVE_MINUS, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("intensity filter should reject null minIntensity")
+        void intensityFilterNullIntensity() {
+            ChannelFilter filter = ChannelFilter.builder().intensity(SeismicIntensity.FOUR).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, null, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("webhookId filter should match channel with matching webhook ID")
+        void webhookIdFilter() {
+            ChannelWebhook wh = ChannelWebhook.of(555L, "token");
+            ChannelFilter filter = ChannelFilter.builder().webhookId(555L).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, wh))).isTrue();
+        }
+
+        @Test
+        @DisplayName("webhookId filter should reject channel without webhook")
+        void webhookIdFilterNoWebhook() {
+            ChannelFilter filter = ChannelFilter.builder().webhookId(555L).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+        }
+
+        @Test
+        @DisplayName("webhookId filter should reject channel with different webhook ID")
+        void webhookIdFilterMismatch() {
+            ChannelWebhook wh = ChannelWebhook.of(666L, "token");
+            ChannelFilter filter = ChannelFilter.builder().webhookId(555L).build();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, false, false, false, false, SeismicIntensity.ONE, wh))).isFalse();
+        }
+
+        @Test
+        @DisplayName("multiple filters should be ANDed together")
+        void multipleFilters() {
+            ChannelFilter filter = ChannelFilter.builder()
+                    .hasGuild(true)
+                    .eewAlert(true)
+                    .build();
+            assertThat(filter.test(deliveryChannel(100L, 1L, null, true, false, false, false, SeismicIntensity.ONE, null))).isTrue();
+            assertThat(filter.test(deliveryChannel(100L, 1L, null, false, false, false, false, SeismicIntensity.ONE, null))).isFalse();
+            assertThat(filter.test(deliveryChannel(null, 1L, null, true, false, false, false, SeismicIntensity.ONE, null))).isFalse();
         }
     }
 

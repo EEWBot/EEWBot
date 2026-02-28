@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.registry.destination.model;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
 import org.jooq.Condition;
 import org.jooq.Field;
 
@@ -214,6 +215,45 @@ public class ChannelFilter {
         if (this.webhookIdPresent && channel.getWebhook() == null)
             return false;
         return !this.webhookIdPresent || channel.getWebhook().id() == this.webhookId;
+    }
+
+    public boolean test(DeliverySnapshot.DeliveryChannel channel) {
+        if (this.hasGuildPresent && this.hasGuild != null && channel.isGuild() != this.hasGuild)
+            return false;
+        if (this.guildIdPresent && (channel.guildId() == null || channel.guildId() != this.guildId))
+            return false;
+        if (this.channelIdPresent && channel.channelId() != this.channelId)
+            return false;
+        if (this.threadIdPresent) {
+            if (this.threadId == null) {
+                if (channel.threadId() != null) return false;
+            } else if (!this.threadId.equals(channel.threadId())) {
+                return false;
+            }
+        }
+        if (this.isThreadPresent) {
+            boolean channelIsThread = channel.threadId() != null;
+            if (this.isThread != null && this.isThread != channelIsThread)
+                return false;
+        }
+        if (this.eewAlertPresent && channel.eewAlert() != this.eewAlert)
+            return false;
+        if (this.eewPredictionPresent && channel.eewPrediction() != this.eewPrediction)
+            return false;
+        if (this.eewDecimationPresent && channel.eewDecimation() != this.eewDecimation)
+            return false;
+        if (this.quakeInfoPresent && channel.quakeInfo() != this.quakeInfo)
+            return false;
+        if (this.intensityPresent) {
+            SeismicIntensity minIntensity = channel.minIntensity();
+            if (minIntensity == null || minIntensity.getCode() > this.intensity.getCode())
+                return false;
+        }
+        if (this.webhookIdPresent) {
+            if (channel.webhook() == null || channel.webhook().id() != this.webhookId)
+                return false;
+        }
+        return true;
     }
 
     public String toQueryString() {

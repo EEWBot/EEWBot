@@ -5,7 +5,6 @@ import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 
 import java.util.*;
-import java.util.function.Predicate;
 
 /**
  * Immutable snapshot of all delivery channels for zero-DB-access delivery path.
@@ -95,21 +94,19 @@ public final class DeliverySnapshot {
      * Get channels partitioned by webhook presence, applying the given filter.
      */
     public DeliveryPartition getPartitionedByWebhook(ChannelFilter filter) {
-        Predicate<DeliveryChannel> predicate = buildPredicate(filter);
-
         Map<Long, DeliveryTarget> withWebhook = new HashMap<>();
         Map<Long, DeliveryTarget> withoutWebhook = new HashMap<>();
 
         for (long targetId : this.targetsWithWebhook) {
             DeliveryChannel channel = this.byTargetId.get(targetId);
-            if (predicate.test(channel)) {
+            if (filter == null || filter.test(channel)) {
                 withWebhook.put(targetId, channel.toDeliveryTarget(targetId));
             }
         }
 
         for (long targetId : this.targetsWithoutWebhook) {
             DeliveryChannel channel = this.byTargetId.get(targetId);
-            if (predicate.test(channel)) {
+            if (filter == null || filter.test(channel)) {
                 withoutWebhook.put(targetId, channel.toDeliveryTarget(targetId));
             }
         }
@@ -118,79 +115,5 @@ public final class DeliverySnapshot {
                 Collections.unmodifiableMap(withWebhook),
                 Collections.unmodifiableMap(withoutWebhook)
         );
-    }
-
-    /**
-     * Build a predicate from ChannelFilter for in-memory filtering.
-     */
-    private Predicate<DeliveryChannel> buildPredicate(ChannelFilter filter) {
-        if (filter == null) {
-            return ch -> true;
-        }
-
-        return ch -> {
-            if (filter.isHasGuildPresent()) {
-                Boolean filterHasGuild = filter.getHasGuild();
-                if (filterHasGuild != null && filterHasGuild != ch.isGuild()) {
-                    return false;
-                }
-            }
-
-            if (filter.isGuildIdPresent() && (ch.guildId() == null || ch.guildId() != filter.getGuildId())) {
-                return false;
-            }
-
-            if (filter.isChannelIdPresent() && ch.channelId() != filter.getChannelId()) {
-                return false;
-            }
-
-            if (filter.isThreadIdPresent()) {
-                Long filterThreadId = filter.getThreadId();
-                if (filterThreadId == null) {
-                    if (ch.threadId() != null) return false;
-                } else if (!filterThreadId.equals(ch.threadId())) {
-                    return false;
-                }
-            }
-
-            if (filter.isIsThreadPresent()) {
-                Boolean isThread = filter.getIsThread();
-                boolean channelIsThread = ch.threadId() != null;
-                if (isThread != null && isThread != channelIsThread) {
-                    return false;
-                }
-            }
-
-            if (filter.isEewAlertPresent() && ch.eewAlert() != filter.getEewAlert()) {
-                return false;
-            }
-
-            if (filter.isEewPredictionPresent() && ch.eewPrediction() != filter.getEewPrediction()) {
-                return false;
-            }
-
-            if (filter.isEewDecimationPresent() && ch.eewDecimation() != filter.getEewDecimation()) {
-                return false;
-            }
-
-            if (filter.isQuakeInfoPresent() && ch.quakeInfo() != filter.getQuakeInfo()) {
-                return false;
-            }
-
-            if (filter.isIntensityPresent()) {
-                SeismicIntensity minIntensity = ch.minIntensity();
-                if (minIntensity == null || minIntensity.getCode() > filter.getIntensity().getCode()) {
-                    return false;
-                }
-            }
-
-            if (filter.isWebhookIdPresent()) {
-                if (ch.webhook() == null || ch.webhook().id() != filter.getWebhookId()) {
-                    return false;
-                }
-            }
-
-            return true;
-        };
     }
 }
