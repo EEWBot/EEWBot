@@ -10,6 +10,11 @@ public record ChannelWebhook(String url) {
         if (url == null || !url.startsWith(URL_PREFIX)) {
             throw new IllegalArgumentException("Invalid Discord webhook URL: " + maskWebhookUrl(url));
         }
+        String path = url.substring(URL_PREFIX.length());
+        int slashIndex = path.indexOf('/');
+        if (slashIndex <= 0 || slashIndex >= path.length() - 1) {
+            throw new IllegalArgumentException("Invalid Discord webhook URL: " + maskWebhookUrl(url));
+        }
     }
 
     /**
