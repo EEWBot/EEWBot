@@ -17,9 +17,9 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import redis.clients.jedis.JedisPooled;
 
 import java.io.IOException;
@@ -51,7 +51,7 @@ class RedisToPostgresMigrationEquivalenceTest {
             .withClasspathResourceMapping("migration/dump.rdb", "/data/dump.rdb", BindMode.READ_ONLY);
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine");
+    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
 
     private static ChannelRegistrySql sqlRegistry;
 

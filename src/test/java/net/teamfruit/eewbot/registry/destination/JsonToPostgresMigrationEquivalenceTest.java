@@ -14,9 +14,9 @@ import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import org.jooq.SQLDialect;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JsonToPostgresMigrationEquivalenceTest {
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine");
+    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
 
     private static ChannelRegistrySql sqlRegistry;
 
