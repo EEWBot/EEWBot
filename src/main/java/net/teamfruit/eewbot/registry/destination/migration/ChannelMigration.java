@@ -146,6 +146,10 @@ public class ChannelMigration {
             Log.logger.info("Performing migration: {}", migrationName);
             List<Map.Entry<Long, Channel>> entries = collectChannels(source);
             migrateChannelsSql(entries, dest, tx);
+            tx.update(table(name("destinations")))
+                    .set(field(name("tsunami"), Integer.class), 1)
+                    .where(field(name("quake_info"), Integer.class).eq(1))
+                    .execute();
             new ConfigRevisionStore(tx, dest.getDialect()).incrementWithDsl(tx);
 
             if (dest.getDialect() == org.jooq.SQLDialect.SQLITE) {
