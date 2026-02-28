@@ -15,13 +15,13 @@ class DeliverySnapshotTest {
 
     private static DeliverySnapshot.DeliveryChannel dc(long targetId, long channelId, Long threadId, Long guildId,
                                                         boolean eewAlert, boolean eewPrediction, boolean eewDecimation, boolean quakeInfo,
-                                                        SeismicIntensity minIntensity, String lang, ChannelWebhook webhook) {
+                                                        boolean tsunami, SeismicIntensity minIntensity, String lang, ChannelWebhook webhook) {
         return new DeliverySnapshot.DeliveryChannel(targetId, channelId, threadId, guildId,
-                eewAlert, eewPrediction, eewDecimation, quakeInfo, minIntensity, lang, webhook);
+                eewAlert, eewPrediction, eewDecimation, quakeInfo, tsunami, minIntensity, lang, webhook);
     }
 
     private static DeliverySnapshot.DeliveryChannel simple(long targetId, long channelId, Long guildId, boolean eewAlert, ChannelWebhook webhook) {
-        return dc(targetId, channelId, null, guildId, eewAlert, false, false, false, SeismicIntensity.ONE, "ja_jp", webhook);
+        return dc(targetId, channelId, null, guildId, eewAlert, false, false, false, false, SeismicIntensity.ONE, "ja_jp", webhook);
     }
 
     @Nested
@@ -125,9 +125,9 @@ class DeliverySnapshotTest {
         @DisplayName("should filter by intensity threshold")
         void filterByIntensity() {
             DeliverySnapshot snapshot = new DeliverySnapshot(1L, List.of(
-                    dc(1L, 1L, null, null, true, false, false, false, SeismicIntensity.ONE, "ja_jp", null),
-                    dc(2L, 2L, null, null, true, false, false, false, SeismicIntensity.FOUR, "ja_jp", null),
-                    dc(3L, 3L, null, null, true, false, false, false, SeismicIntensity.SEVEN, "ja_jp", null)
+                    dc(1L, 1L, null, null, true, false, false, false, false, SeismicIntensity.ONE, "ja_jp", null),
+                    dc(2L, 2L, null, null, true, false, false, false, false, SeismicIntensity.FOUR, "ja_jp", null),
+                    dc(3L, 3L, null, null, true, false, false, false, false, SeismicIntensity.SEVEN, "ja_jp", null)
             ));
 
             ChannelFilter filter = ChannelFilter.builder().intensity(SeismicIntensity.FOUR).build();
@@ -160,11 +160,25 @@ class DeliverySnapshotTest {
         @DisplayName("should filter by threadId presence (isThread)")
         void filterByIsThread() {
             DeliverySnapshot snapshot = new DeliverySnapshot(1L, List.of(
-                    dc(1L, 1L, 999L, null, true, false, false, false, SeismicIntensity.ONE, "ja_jp", null),
-                    dc(2L, 2L, null, null, true, false, false, false, SeismicIntensity.ONE, "ja_jp", null)
+                    dc(1L, 1L, 999L, null, true, false, false, false, false, SeismicIntensity.ONE, "ja_jp", null),
+                    dc(2L, 2L, null, null, true, false, false, false, false, SeismicIntensity.ONE, "ja_jp", null)
             ));
 
             ChannelFilter filter = ChannelFilter.builder().isThread(true).build();
+            DeliveryPartition partition = snapshot.getPartitionedByWebhook(filter);
+            assertThat(partition.direct()).hasSize(1);
+            assertThat(partition.direct()).containsKey(1L);
+        }
+
+        @Test
+        @DisplayName("should filter by tsunami")
+        void filterByTsunami() {
+            DeliverySnapshot snapshot = new DeliverySnapshot(1L, List.of(
+                    dc(1L, 1L, null, null, false, false, false, false, true, SeismicIntensity.ONE, "ja_jp", null),
+                    dc(2L, 2L, null, null, false, false, false, false, false, SeismicIntensity.ONE, "ja_jp", null)
+            ));
+
+            ChannelFilter filter = ChannelFilter.builder().tsunami(true).build();
             DeliveryPartition partition = snapshot.getPartitionedByWebhook(filter);
             assertThat(partition.direct()).hasSize(1);
             assertThat(partition.direct()).containsKey(1L);
@@ -193,7 +207,7 @@ class DeliverySnapshotTest {
         @DisplayName("toDeliveryTarget should create target with correct fields")
         void toDeliveryTarget() {
             ChannelWebhook wh = ChannelWebhook.of(555L, "tok");
-            DeliverySnapshot.DeliveryChannel ch = dc(10L, 10L, null, null, true, false, false, false, SeismicIntensity.ONE, "en_us", wh);
+            DeliverySnapshot.DeliveryChannel ch = dc(10L, 10L, null, null, true, false, false, false, false, SeismicIntensity.ONE, "en_us", wh);
             DeliveryTarget target = ch.toDeliveryTarget(10L);
 
             assertThat(target.targetId()).isEqualTo(10L);

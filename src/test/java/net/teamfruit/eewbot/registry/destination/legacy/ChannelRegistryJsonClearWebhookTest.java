@@ -46,7 +46,7 @@ class ChannelRegistryJsonClearWebhookTest {
         // Create a valid JSON file with a webhook-bearing channel
         ChannelWebhook webhook = ChannelWebhook.of(555L, "secretToken");
         Channel channel = new Channel(100L, 1L, null, true, false, false, false,
-                SeismicIntensity.ONE, webhook, "ja_jp");
+                false, SeismicIntensity.ONE, webhook, "ja_jp");
         String json = GSON.toJson(java.util.Map.of(1L, channel));
         Files.writeString(jsonPath, json);
 

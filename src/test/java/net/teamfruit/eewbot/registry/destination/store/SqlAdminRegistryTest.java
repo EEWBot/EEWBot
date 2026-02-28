@@ -183,7 +183,7 @@ class SqlAdminRegistryTest {
         @DisplayName("clearWebhookByUrls() should trigger onWrite only when rows updated")
         void clearWebhookByUrlsTriggersOnWrite() {
             Channel ch = new Channel(100L, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, ChannelWebhook.of(555L, "tok"), "ja_jp");
+                    false, SeismicIntensity.ONE, ChannelWebhook.of(555L, "tok"), "ja_jp");
             adminRegistry.put(1L, ch);
             onWriteCount.set(0);
 

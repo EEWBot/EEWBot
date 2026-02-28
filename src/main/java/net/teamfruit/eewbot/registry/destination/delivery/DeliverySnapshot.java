@@ -24,6 +24,7 @@ public final class DeliverySnapshot {
             boolean eewPrediction,
             boolean eewDecimation,
             boolean quakeInfo,
+            boolean tsunami,
             SeismicIntensity minIntensity,
             String lang,
             ChannelWebhook webhook

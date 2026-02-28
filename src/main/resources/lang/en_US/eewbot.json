@@ -55,6 +55,8 @@
   "eewbot.scmd.setup.base.eewprediction.desc": "EEW for M3.5 or greater and maximum intensity of 3 or greater",
   "eewbot.scmd.setup.base.quakeinfo.label": "Earthquake Information",
   "eewbot.scmd.setup.base.quakeinfo.desc": "Seismic intensity information and more",
+  "eewbot.scmd.setup.base.tsunami.label": "Tsunami Information",
+  "eewbot.scmd.setup.base.tsunami.desc": "Tsunami warnings and advisories",
   "eewbot.scmd.setup.base.followup.none": "All settings have been cleared! Nothing will be sent to this channel from now on.",
   "eewbot.scmd.setup.base.followup.any": "Settings have been applied! The following information will be sent to this channel hereafter.\n%s",
   "eewbot.scmd.setup.modifier.placeholder": "Customize (multiple selection allowed)",

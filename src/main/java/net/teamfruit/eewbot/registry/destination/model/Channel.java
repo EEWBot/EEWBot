@@ -4,7 +4,10 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.i18n.I18nKey;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("FieldMayBeFinal")
@@ -31,23 +34,28 @@ public class Channel extends ChannelBase {
     @I18nKey("eewbot.scmd.setup.base.quakeinfo.label")
     private boolean quakeInfo;
 
+    @ChannelSetting(ChannelSettingType.BASE)
+    @I18nKey("eewbot.scmd.setup.base.tsunami.label")
+    private boolean tsunami;
+
     @ChannelSetting(ChannelSettingType.MODIFIER)
     @I18nKey("eewbot.scmd.setup.modifier.eewdecimation.label")
     private boolean eewDecimation;
 
     private SeismicIntensity minIntensity;
 
-    public Channel(final Long guildId, final Long channelId, final Long threadId, final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final SeismicIntensity minIntensity, ChannelWebhook webhook, String lang) {
+    public Channel(final Long guildId, final Long channelId, final Long threadId, final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final boolean tsunami, final SeismicIntensity minIntensity, ChannelWebhook webhook, String lang) {
         super(guildId, channelId, threadId, webhook, lang);
         this.eewAlert = eewAlert;
         this.eewPrediction = eewPrediction;
         this.eewDecimation = eewDecimation;
         this.quakeInfo = quakeInfo;
+        this.tsunami = tsunami;
         this.minIntensity = minIntensity;
     }
 
     public static Channel createDefault(Long guildId, Long channelId, Long threadId, String lang) {
-        return new Channel(guildId, channelId, threadId, false, false, false, false, SeismicIntensity.ONE, null, lang);
+        return new Channel(guildId, channelId, threadId, false, false, false, false, false, SeismicIntensity.ONE, null, lang);
     }
 
     public boolean isEewAlert() {
@@ -64,6 +72,10 @@ public class Channel extends ChannelBase {
 
     public boolean isQuakeInfo() {
         return this.quakeInfo;
+    }
+
+    public boolean isTsunami() {
+        return this.tsunami;
     }
 
     public SeismicIntensity getMinIntensity() {
@@ -131,6 +143,7 @@ public class Channel extends ChannelBase {
                 && this.eewPrediction == channel.eewPrediction
                 && this.eewDecimation == channel.eewDecimation
                 && this.quakeInfo == channel.quakeInfo
+                && this.tsunami == channel.tsunami
                 && this.minIntensity == channel.minIntensity;
     }
 
@@ -141,6 +154,7 @@ public class Channel extends ChannelBase {
         result = 31 * result + (this.eewPrediction ? 1 : 0);
         result = 31 * result + (this.eewDecimation ? 1 : 0);
         result = 31 * result + (this.quakeInfo ? 1 : 0);
+        result = 31 * result + (this.tsunami ? 1 : 0);
         result = 31 * result + (this.minIntensity != null ? this.minIntensity.hashCode() : 0);
         return result;
     }
@@ -152,6 +166,7 @@ public class Channel extends ChannelBase {
                 ", eewPrediction=" + this.eewPrediction +
                 ", eewDecimation=" + this.eewDecimation +
                 ", quakeInfo=" + this.quakeInfo +
+                ", tsunami=" + this.tsunami +
                 ", minIntensity=" + this.minIntensity +
                 '}';
     }

@@ -213,7 +213,7 @@ public class ChannelMigration {
             Channel preparedChannel = new Channel(
                     channel.getGuildId(), effectiveChannelId, threadId,
                     channel.isEewAlert(), channel.isEewPrediction(), channel.isEewDecimation(), channel.isQuakeInfo(),
-                    channel.getMinIntensity(), webhook, channel.getLang()
+                    channel.isTsunami(), channel.getMinIntensity(), webhook, channel.getLang()
             );
             prepared.put(targetId, preparedChannel);
         }

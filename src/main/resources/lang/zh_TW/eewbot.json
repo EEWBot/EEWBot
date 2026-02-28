@@ -41,6 +41,8 @@
   "eewbot.scmd.setup.base.eewprediction.desc": "預測M3.5以上/最大震度3以上的緊急地震速報等",
   "eewbot.scmd.setup.base.quakeinfo.label": "地震資訊",
   "eewbot.scmd.setup.base.quakeinfo.desc": "震度速報・各地的震度的資訊等",
+  "eewbot.scmd.setup.base.tsunami.label": "海嘯資訊",
+  "eewbot.scmd.setup.base.tsunami.desc": "海嘯警報・注意報等",
   "eewbot.scmd.setup.base.followup.none": "已解除所有設定！此頻道之後不會再推送訊息。",
   "eewbot.scmd.setup.base.followup.any": "設定完成！此頻道之後會發送以下的資訊。\n%s",
   "eewbot.scmd.setup.sensitivity.option": "最小通知震度 %s",

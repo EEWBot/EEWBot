@@ -55,6 +55,8 @@
   "eewbot.scmd.setup.base.eewprediction.desc": "M3.5以上/最大震度3以上と予想される緊急地震速報など",
   "eewbot.scmd.setup.base.quakeinfo.label": "地震情報",
   "eewbot.scmd.setup.base.quakeinfo.desc": "震度速報・各地の震度に関する情報など",
+  "eewbot.scmd.setup.base.tsunami.label": "津波情報",
+  "eewbot.scmd.setup.base.tsunami.desc": "津波警報・注意報など",
   "eewbot.scmd.setup.base.followup.none": "すべての設定が解除されました！今後このチャンネルには何も送信されません。",
   "eewbot.scmd.setup.base.followup.any": "設定しました！今後このチャンネルに以下の情報が送信されます。\n%s",
   "eewbot.scmd.setup.modifier.placeholder": "カスタマイズ（複数選択可）",

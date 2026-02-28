@@ -661,7 +661,7 @@ class RedisToPostgresMigrationEquivalenceTest {
         data.put(9001L, new Channel(
                 null, 9001L, null,
                 false, false, false, false,
-                SeismicIntensity.ONE,
+                false, SeismicIntensity.ONE,
                 null,
                 null
         ));

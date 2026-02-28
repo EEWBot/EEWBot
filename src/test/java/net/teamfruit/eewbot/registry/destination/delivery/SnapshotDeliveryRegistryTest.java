@@ -33,7 +33,7 @@ class SnapshotDeliveryRegistryTest {
     private static DeliverySnapshot.DeliveryChannel simpleDc(long targetId) {
         return new DeliverySnapshot.DeliveryChannel(
                 targetId, targetId, null, null,
-                true, false, false, false,
+                true, false, false, false, false,
                 SeismicIntensity.ONE, "ja_jp", null
         );
     }

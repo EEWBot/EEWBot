@@ -31,6 +31,8 @@ public class ChannelFilter {
     private boolean eewDecimationPresent;
     private boolean quakeInfo;
     private boolean quakeInfoPresent;
+    private boolean tsunami;
+    private boolean tsunamiPresent;
     private SeismicIntensity intensity;
     private boolean intensityPresent;
     private long webhookId;
@@ -70,6 +72,10 @@ public class ChannelFilter {
 
     public boolean isQuakeInfoPresent() {
         return this.quakeInfoPresent;
+    }
+
+    public boolean isTsunamiPresent() {
+        return this.tsunamiPresent;
     }
 
     public boolean isIntensityPresent() {
@@ -114,6 +120,10 @@ public class ChannelFilter {
 
     public boolean getQuakeInfo() {
         return this.quakeInfo;
+    }
+
+    public boolean getTsunami() {
+        return this.tsunami;
     }
 
     public SeismicIntensity getIntensity() {
@@ -175,6 +185,9 @@ public class ChannelFilter {
         if (this.quakeInfoPresent) {
             conditions.add(field(name("quake_info"), Integer.class).eq(this.quakeInfo ? 1 : 0));
         }
+        if (this.tsunamiPresent) {
+            conditions.add(field(name("tsunami"), Integer.class).eq(this.tsunami ? 1 : 0));
+        }
         if (this.intensityPresent) {
             conditions.add(field(name("min_intensity"), Integer.class).le(this.intensity.getCode()));
         }
@@ -210,6 +223,8 @@ public class ChannelFilter {
             return false;
         if (this.quakeInfoPresent && channel.isQuakeInfo() != this.quakeInfo)
             return false;
+        if (this.tsunamiPresent && channel.isTsunami() != this.tsunami)
+            return false;
         if (this.intensityPresent && channel.getMinIntensity().getCode() > this.intensity.getCode())
             return false;
         if (this.webhookIdPresent && channel.getWebhook() == null)
@@ -243,6 +258,8 @@ public class ChannelFilter {
         if (this.eewDecimationPresent && channel.eewDecimation() != this.eewDecimation)
             return false;
         if (this.quakeInfoPresent && channel.quakeInfo() != this.quakeInfo)
+            return false;
+        if (this.tsunamiPresent && channel.tsunami() != this.tsunami)
             return false;
         if (this.intensityPresent) {
             SeismicIntensity minIntensity = channel.minIntensity();
@@ -288,6 +305,8 @@ public class ChannelFilter {
             builder.append("@eewDecimation:{").append(this.eewDecimation).append("} ");
         if (this.quakeInfoPresent)
             builder.append("@quakeInfo:{").append(this.quakeInfo).append("} ");
+        if (this.tsunamiPresent)
+            builder.append("@tsunami:{").append(this.tsunami).append("} ");
         if (this.intensityPresent)
             builder.append("@minIntensity:[0 ").append(this.intensity.getCode()).append("] ");
         if (this.webhookIdPresent)
@@ -354,6 +373,12 @@ public class ChannelFilter {
         public Builder quakeInfo(boolean quakeInfo) {
             this.filter.quakeInfo = quakeInfo;
             this.filter.quakeInfoPresent = true;
+            return this;
+        }
+
+        public Builder tsunami(boolean tsunami) {
+            this.filter.tsunami = tsunami;
+            this.filter.tsunamiPresent = true;
             return this;
         }
 
