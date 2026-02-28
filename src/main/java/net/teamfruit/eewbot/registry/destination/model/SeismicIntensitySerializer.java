@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination.model;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
@@ -12,6 +12,6 @@ public class SeismicIntensitySerializer implements JsonSerializer<SeismicIntensi
 
     @Override
     public JsonElement serialize(SeismicIntensity seismicIntensity, Type type, JsonSerializationContext jsonSerializationContext) {
-        return new JsonPrimitive(seismicIntensity.ordinal());
+        return new JsonPrimitive(seismicIntensity.getCode());
     }
 }

@@ -15,10 +15,10 @@ import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.gateway.*;
-import net.teamfruit.eewbot.registry.channel.ChannelFilter;
-import net.teamfruit.eewbot.registry.channel.ChannelRegistry;
-import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
+import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import reactor.core.publisher.Mono;
@@ -40,11 +40,11 @@ public class EEWExecutor {
     private final ConfigV2 config;
     private final long applicationId;
     private final GatewayDiscordClient client;
-    private final ChannelRegistry channels;
+    private final DestinationAdminRegistry adminRegistry;
     private final QuakeInfoStore quakeInfoStore;
     private final ExternalWebhookService externalWebhookService;
 
-    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels, QuakeInfoStore quakeInfoStore, ExternalWebhookService externalWebhookService) {
+    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, DestinationAdminRegistry adminRegistry, QuakeInfoStore quakeInfoStore, ExternalWebhookService externalWebhookService) {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;
@@ -53,7 +53,7 @@ public class EEWExecutor {
         this.messageExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "eewbot-send-message-thread"));
         this.timeProvider = new TimeProvider(this.scheduledExecutor);
         this.client = client;
-        this.channels = channels;
+        this.adminRegistry = adminRegistry;
         this.quakeInfoStore = quakeInfoStore;
         this.externalWebhookService = externalWebhookService;
     }
@@ -185,7 +185,7 @@ public class EEWExecutor {
             this.scheduledExecutor.scheduleWithFixedDelay(() -> {
                 Thread.currentThread().setName("eewbot-webhook-migration-thread");
 
-                this.channels.getWebhookAbsentChannels()
+                this.adminRegistry.getWebhookAbsentChannels()
                         .forEach(channelId -> {
                             this.client.getChannelById(Snowflake.of(channelId))
                                     .filter(GuildChannel.class::isInstance)
@@ -218,17 +218,23 @@ public class EEWExecutor {
                                                         .createWebhook(guildChannel.getId().asLong(), WebhookCreateRequest.builder()
                                                                 .name(name)
                                                                 .build(), "Create EEWBot webhook");
-                                            }).flatMap(webhookData -> Mono.fromRunnable(() -> {
-                                                boolean isThread = guildChannel instanceof ThreadChannel;
-                                                ChannelWebhook webhook = new ChannelWebhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
-                                                this.channels.setWebhook(channelId, webhook);
-                                                try {
-                                                    this.channels.save();
-                                                } catch (IOException e) {
-                                                    Log.logger.error("Failed to save channels during webhook creation batch", e);
-                                                }
-                                                Log.logger.info("Created webhook for " + channelId);
-                                            })))
+                                            }).flatMap(webhookData -> guildChannel.getClient().getChannelById(Snowflake.of(channelId))
+                                                    .map(channel -> channel instanceof ThreadChannel ? channelId : null)
+                                                    .defaultIfEmpty((Long) null)
+                                                    .flatMap(threadId -> Mono.fromRunnable(() -> {
+                                                        ChannelWebhook webhook = ChannelWebhook.of(
+                                                                webhookData.id().asLong(),
+                                                                webhookData.token().get(),
+                                                                threadId
+                                                        );
+                                                        this.adminRegistry.setWebhook(channelId, webhook);
+                                                        try {
+                                                            this.adminRegistry.save();
+                                                        } catch (IOException e) {
+                                                            Log.logger.error("Failed to save channels during webhook creation batch", e);
+                                                        }
+                                                        Log.logger.info("Created webhook for " + channelId);
+                                                    }))))
                                     .subscribe();
                             try {
                                 Thread.sleep(10000);

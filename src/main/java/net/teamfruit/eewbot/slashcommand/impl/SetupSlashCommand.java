@@ -11,20 +11,29 @@ import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.WebhookCreateRequest;
+import discord4j.discordjson.json.WebhookData;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.Permission;
+import discord4j.rest.util.PermissionSet;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.registry.channel.Channel;
-import net.teamfruit.eewbot.registry.channel.ChannelSetting;
-import net.teamfruit.eewbot.registry.channel.ChannelSettingType;
-import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
+import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSetting;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSettingType;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
+import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -72,12 +81,95 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                 .build();
     }
 
+    /**
+     * Validates a webhook URL by sending an HTTP HEAD request.
+     * Returns true if the webhook is valid (non-404), false if 404 (deleted).
+     * On network errors, assumes valid to avoid unnecessary recreation.
+     */
+    private Mono<Boolean> validateWebhookUrl(EEWBot bot, ChannelWebhook webhook) {
+        return Mono.fromCallable(() -> {
+            // Use base URL without thread_id query parameter
+            String baseUrl = ChannelWebhook.of(webhook.id(), webhook.token()).url();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl))
+                    .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                    .build();
+            HttpResponse<Void> response = bot.getHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
+            int status = response.statusCode();
+            return status >= 200 && status < 300;
+        }).subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(e -> {
+                    Log.logger.warn("Failed to validate webhook URL, assuming valid", e);
+                    return Mono.just(true);
+                });
+    }
+
+    /**
+     * Finds an existing bot-created webhook dedicated to this destination, or creates a new one.
+     * Parent channels and threads intentionally do not share webhook IDs, even under the same
+     * parent channel, so Discord webhook rate limits are distributed per destination.
+     */
+    private Mono<WebhookData> findOrCreateWebhook(EEWBot bot, ApplicationCommandInteractionEvent event, Snowflake guildId, GuildChannel guildChannel, long targetId) {
+        boolean isThreadChannel = guildChannel instanceof ThreadChannel;
+        long parentChannelId = isThreadChannel
+                ? ((ThreadChannel) guildChannel).getParentId().map(Snowflake::asLong).orElseThrow()
+                : targetId;
+
+        return bot.getClient().getRestClient().getWebhookService().getGuildWebhooks(guildId.asLong())
+                .filter(webhook -> {
+                    boolean isSameChannel = webhook.channelId().isPresent() && (webhook.channelId().get().asLong() == parentChannelId);
+                    boolean isCreatedBySelf = webhook.user().toOptional()
+                            .filter(user -> user.id().asLong() == event.getClient().getSelfId().asLong())
+                            .isPresent();
+                    boolean hasToken = webhook.token().isPresent();
+                    // Webhooks are not shared across destinations. If a parent channel webhook is
+                    // already assigned to one of its threads (or vice versa), create a fresh one.
+                    return isSameChannel && isCreatedBySelf && hasToken && bot.getAdminRegistry().isWebhookExclusiveToTarget(webhook.id().asLong(), targetId);
+                })
+                .next()
+                .switchIfEmpty(bot.getClient().getSelfMember(guildId).map(PartialMember::getDisplayName)
+                        .flatMap(name -> event.getClient().getRestClient().getWebhookService()
+                                .createWebhook(parentChannelId, WebhookCreateRequest.builder()
+                                        .name(removeUnusableName(name, bot.getUsername()))
+                                        .build(), "Create EEWBot webhook")));
+    }
+
+    /**
+     * Registers a webhook for a target by converting WebhookData to ChannelWebhook and storing it.
+     */
+    private void registerWebhook(EEWBot bot, GuildChannel guildChannel, long targetId, WebhookData webhookData) {
+        Long threadId = guildChannel instanceof ThreadChannel ? targetId : null;
+        ChannelWebhook webhook = ChannelWebhook.of(
+                webhookData.id().asLong(),
+                webhookData.token().get(),
+                threadId
+        );
+        bot.getAdminRegistry().setWebhook(targetId, webhook);
+    }
+
+    /**
+     * Checks MANAGE_WEBHOOKS permission; if present, finds/creates webhook and registers it.
+     * If permission missing, shows reply with webhook warning.
+     */
+    private Mono<Message> createWebhookWithPermCheck(EEWBot bot, ApplicationCommandInteractionEvent event, Snowflake guildId, GuildChannel guildChannel, long targetId, PermissionSet perms, String lang) {
+        if (!perms.contains(Permission.MANAGE_WEBHOOKS)) {
+            return buildReply(bot, event, lang, targetId, true);
+        }
+        return findOrCreateWebhook(bot, event, guildId, guildChannel, targetId)
+                .flatMap(webhookData -> {
+                    registerWebhook(bot, guildChannel, targetId, webhookData);
+                    return buildReply(bot, event, lang, targetId, false);
+                });
+    }
+
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
-        long channelId = event.getInteraction().getChannelId().asLong();
-        bot.getChannels().computeIfAbsent(channelId, key -> Channel.createDefault(event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null), lang));
+        // channel id or thread id
+        long targetId = event.getInteraction().getChannelId().asLong();
+        Long guildId = event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null);
+
         return Mono.justOrEmpty(event.getInteraction().getGuildId())
-                .flatMap(guildId -> event.getInteraction().getChannel()
+                .flatMap(gid -> event.getInteraction().getChannel()
                         .filter(GuildChannel.class::isInstance)
                         .cast(GuildChannel.class)
                         .flatMap(guildChannel -> {
@@ -92,43 +184,41 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                             return permissionCheckChannel.flatMap(target -> target.getEffectivePermissions(event.getClient().getSelfId())
                                             .filterWhen(perms -> perms.contains(Permission.SEND_MESSAGES) ? Mono.just(true)
                                                     : event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.setup.permserror.sendmessages")).thenReturn(false))
-                                            .filterWhen(perms -> perms.contains(Permission.MANAGE_WEBHOOKS) ? Mono.just(true)
-                                                    : buildReply(bot, event, lang, channelId, true).thenReturn(false)) // No webhook perm
-                                            .flatMap(perms -> event.getInteraction().getGuild()
-                                                    .flatMap(guild -> bot.getClient().getRestClient().getWebhookService().getGuildWebhooks(guildId.asLong())
-                                                            .filter(webhook -> {
-                                                                boolean isThreadChannel = guildChannel instanceof ThreadChannel;
-                                                                long targetChannelId = isThreadChannel
-                                                                        ? ((ThreadChannel) guildChannel).getParentId().map(Snowflake::asLong).orElseThrow()
-                                                                        : channelId;
-                                                                boolean isSameChannel = webhook.channelId().isPresent() && (webhook.channelId().get().asLong() == targetChannelId);
-                                                                boolean isCreatedBySelf = webhook.user().toOptional()
-                                                                        .filter(user -> user.id().asLong() == event.getClient().getSelfId().asLong())
-                                                                        .isPresent();
-                                                                return isThreadChannel
-                                                                        ? isSameChannel && isCreatedBySelf && bot.getChannels().isWebhookForThread(webhook.id().asLong(), targetChannelId)
-                                                                        : isSameChannel && isCreatedBySelf;
-                                                            })
-                                                            .next()
-                                                            .switchIfEmpty(bot.getClient().getSelfMember(guildId).map(PartialMember::getDisplayName)
-                                                                    .flatMap(name -> event.getClient().getRestClient().getWebhookService()
-                                                                            .createWebhook(guildChannel instanceof ThreadChannel
-                                                                                    ? ((ThreadChannel) guildChannel).getParentId().map(Snowflake::asLong).orElseThrow()
-                                                                                    : channelId, WebhookCreateRequest.builder()
-                                                                                    .name(removeUnusableName(name, bot.getUsername()))
-                                                                                    .build(), "Create EEWBot webhook")))
-                                                            .flatMap(webhookData -> Mono.fromRunnable(() -> {
-                                                                ChannelWebhook webhook = new ChannelWebhook(webhookData.id().asLong(), webhookData.token().get(), guildChannel instanceof ThreadChannel ? channelId : null);
-                                                                bot.getChannels().setWebhook(channelId, webhook);
-                                                            })).then(buildReply(bot, event, lang, channelId, false))
-                                                    )))
+                                            .flatMap(perms -> {
+                                                if (channel == null) {
+                                                    // Case 1: Not registered — register target and create webhook
+                                                    SlashCommandUtils.createAndRegisterDefault(bot.getAdminRegistry(), guildChannel, targetId, guildId, lang);
+                                                    return createWebhookWithPermCheck(bot, event, gid, guildChannel, targetId, perms, lang);
+                                                } else if (channel.getWebhook() == null) {
+                                                    // Case 2: Registered, no webhook — try to create webhook
+                                                    return createWebhookWithPermCheck(bot, event, gid, guildChannel, targetId, perms, lang);
+                                                } else {
+                                                    // Case 3: Registered, has webhook — validate with HEAD request
+                                                    return validateWebhookUrl(bot, channel.getWebhook())
+                                                            .flatMap(valid -> {
+                                                                if (valid) {
+                                                                    // Webhook is valid, just show the menu
+                                                                    return buildReply(bot, event, lang, targetId, false);
+                                                                } else {
+                                                                    // Webhook returned 404, recreate it
+                                                                    return createWebhookWithPermCheck(bot, event, gid, guildChannel, targetId, perms, lang);
+                                                                }
+                                                            });
+                                                }
+                                            }))
                                     .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.setup.permserror.viewchannel")))
                                     .thenReturn(true);
                         })
-                        .switchIfEmpty(buildReply(bot, event, lang, channelId, false).thenReturn(true)) // DM
+                        .switchIfEmpty(Mono.defer(() -> {
+                            // DM
+                            if (channel == null) {
+                                bot.getAdminRegistry().put(targetId, Channel.createDefault(guildId, targetId, null, lang));
+                            }
+                            return buildReply(bot, event, lang, targetId, false).thenReturn(true);
+                        }))
                         .then(Mono.create(sink -> {
                             try {
-                                bot.getChannels().save();
+                                bot.getAdminRegistry().save();
                                 sink.success();
                             } catch (IOException e) {
                                 sink.error(e);
@@ -144,7 +234,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private SelectMenu buildSelectMenu(EEWBot bot, ChannelSettingType type, long channelId, String lang) {
-        Map<String, Boolean> fields = bot.getChannels().get(channelId).getSettingsByType(type);
+        Map<String, Boolean> fields = bot.getAdminRegistry().get(channelId).getSettingsByType(type);
         return SelectMenu.of(type.getCustomId(), fields.entrySet().stream().map(entry -> {
                     String label = bot.getI18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + "." + entry.getKey().toLowerCase() + ".label");
                     SelectMenu.Option option = entry.getValue() ? SelectMenu.Option.ofDefault(label, entry.getKey()) : SelectMenu.Option.of(label, entry.getKey());
@@ -157,7 +247,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private SelectMenu buildSensitivitySelectMenu(EEWBot bot, long channelId, String lang) {
-        Channel channel = bot.getChannels().get(channelId);
+        Channel channel = bot.getAdminRegistry().get(channelId);
         return SelectMenu.of("sensitivity", Arrays.stream(SeismicIntensity.values()).map(intensity -> {
                     String label = intensity == SeismicIntensity.UNKNOWN ? bot.getI18n().get(lang, "eewbot.scmd.setup.sensitivity.option.unknown") : bot.getI18n().format(lang, "eewbot.scmd.setup.sensitivity.option", intensity);
                     if (channel.getMinIntensity() == intensity)
@@ -179,8 +269,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private Mono<Message> applyChannel(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
-        long channelId = event.getInteraction().getChannelId().asLong();
-        Arrays.stream(Channel.class.getDeclaredFields())
+        long targetId = event.getInteraction().getChannelId().asLong();
+        Map<String, Boolean> settings = Arrays.stream(Channel.class.getDeclaredFields())
                 .filter(field -> {
                     if (!field.isAnnotationPresent(ChannelSetting.class))
                         return false;
@@ -188,9 +278,10 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                     return annotation != null && annotation.value().getCustomId().equals(event.getCustomId());
                 })
                 .map(Field::getName)
-                .forEach(name -> bot.getChannels().set(channelId, name, event.getValues().contains(name)));
+                .collect(Collectors.toMap(name -> name, name -> event.getValues().contains(name)));
+        bot.getAdminRegistry().setAll(targetId, settings);
         try {
-            bot.getChannels().save();
+            bot.getAdminRegistry().save();
         } catch (IOException e) {
             return Mono.error(e);
         }
@@ -205,11 +296,11 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
-        long channelId = event.getInteraction().getChannelId().asLong();
+        long targetId = event.getInteraction().getChannelId().asLong();
         SeismicIntensity intensity = SeismicIntensity.get(event.getValues().get(0));
-        bot.getChannels().setMinIntensity(channelId, intensity);
+        bot.getAdminRegistry().setMinIntensity(targetId, intensity);
         try {
-            bot.getChannels().save();
+            bot.getAdminRegistry().save();
         } catch (IOException e) {
             return Mono.error(e);
         }
@@ -218,7 +309,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     public static String removeStringsIgnoreCase(String source, String... stringsToRemove) {
         for (String remove : stringsToRemove) {
-            source = StringUtils.removeIgnoreCase(source, remove);
+            source = Strings.CI.remove(source, remove);
         }
         return source;
     }

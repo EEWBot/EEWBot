@@ -1,4 +1,4 @@
-package net.teamfruit.eewbot.registry.channel;
+package net.teamfruit.eewbot.registry.destination.model;
 
 public enum ChannelSettingType {
     BASE("base"),

@@ -18,7 +18,7 @@ import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
 import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
 import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
-import net.teamfruit.eewbot.registry.channel.Channel;
+import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -86,7 +86,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                             .build()).then();
                 }
             }
-            return executeWebhook(event.getClient().getCoreResources().getRouter(), channel.getWebhook().getId(), channel.getWebhook().getToken(), true, channel.getWebhook().getThreadId(),
+            return executeWebhook(event.getClient().getCoreResources().getRouter(), channel.getWebhook().id(), channel.getWebhook().token(), true, channel.getThreadId(),
                     MultipartRequest.ofRequest(WebhookExecuteRequest.builder()
                             .addEmbed(SlashCommandUtils.createEmbed(lang)
                                     .title("eewbot.scmd.testmessage.title")
