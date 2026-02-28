@@ -70,7 +70,17 @@ public interface DestinationAdminRegistry {
      */
     Map<Long, Channel> getAllChannels();
 
-    boolean isWebhookForThread(long webhookId, long targetId);
+    /**
+     * Check whether the webhook ID is exclusive to the specified destination target.
+     * This applies to both parent channels and threads. Even threads under the same parent
+     * intentionally use separate webhooks so Discord webhook rate limits are distributed
+     * per destination rather than shared across related channels.
+     *
+     * @param webhookId the webhook ID to inspect
+     * @param targetId the destination target ID that is allowed to own the webhook
+     * @return {@code true} if no other destination uses the webhook ID
+     */
+    boolean isWebhookExclusiveToTarget(long webhookId, long targetId);
 
     default void putAll(Map<Long, Channel> channels) {
         channels.forEach(this::put);

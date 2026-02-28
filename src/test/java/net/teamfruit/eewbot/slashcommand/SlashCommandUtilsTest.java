@@ -149,7 +149,7 @@ class SlashCommandUtilsTest {
         }
 
         @Override
-        public boolean isWebhookForThread(long webhookId, long targetId) {
+        public boolean isWebhookExclusiveToTarget(long webhookId, long targetId) {
             return false;
         }
     }

@@ -338,7 +338,7 @@ class ChannelRegistrySqlEdgeCaseTest {
     }
 
     @Nested
-    @DisplayName("isWebhookForThread()")
+    @DisplayName("isWebhookExclusiveToTarget()")
     class IsWebhookForThreadTests {
 
         @Test
@@ -348,7 +348,7 @@ class ChannelRegistrySqlEdgeCaseTest {
             sqlRegistry.put(1L, new Channel(100L, 1L, null, true, false, false, false,
                     SeismicIntensity.ONE, webhook, "ja_jp"));
 
-            assertThat(sqlRegistry.isWebhookForThread(555L, 1L)).isTrue();
+            assertThat(sqlRegistry.isWebhookExclusiveToTarget(555L, 1L)).isTrue();
         }
 
         @Test
@@ -363,8 +363,8 @@ class ChannelRegistrySqlEdgeCaseTest {
                     SeismicIntensity.ONE, wh2, "ja_jp"));
 
             // webhookId 555 is used by both target 1 and 999
-            assertThat(sqlRegistry.isWebhookForThread(555L, 1L)).isFalse();
-            assertThat(sqlRegistry.isWebhookForThread(555L, 999L)).isFalse();
+            assertThat(sqlRegistry.isWebhookExclusiveToTarget(555L, 1L)).isFalse();
+            assertThat(sqlRegistry.isWebhookExclusiveToTarget(555L, 999L)).isFalse();
         }
 
         @Test
@@ -373,7 +373,7 @@ class ChannelRegistrySqlEdgeCaseTest {
             sqlRegistry.put(1L, Channel.createDefault(100L, 1L, null, "ja_jp"));
 
             // No conflict found → true
-            assertThat(sqlRegistry.isWebhookForThread(999L, 1L)).isTrue();
+            assertThat(sqlRegistry.isWebhookExclusiveToTarget(999L, 1L)).isTrue();
         }
     }
 }

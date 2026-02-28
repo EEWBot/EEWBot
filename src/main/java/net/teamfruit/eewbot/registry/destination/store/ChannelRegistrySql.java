@@ -451,8 +451,12 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         return new DeliveryPartition(webhook, direct);
     }
 
+    /**
+     * Webhook IDs are exclusive to a single destination target so parent channels and
+     * sibling threads do not share the same Discord webhook rate limit bucket.
+     */
     @Override
-    public boolean isWebhookForThread(long webhookId, long targetId) {
+    public boolean isWebhookExclusiveToTarget(long webhookId, long targetId) {
         boolean exists = this.dsl.fetchExists(
                 this.dsl.selectOne().from(DESTINATIONS)
                         .where(WEBHOOK_ID.eq(webhookId))

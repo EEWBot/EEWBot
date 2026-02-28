@@ -586,10 +586,10 @@ class RedisToPostgresMigrationEquivalenceTest {
                 .isEqualTo(jsonResult.direct().keySet());
     }
 
-    // ===== isWebhookForThread(long webhookId, long threadId) tests =====
+    // ===== isWebhookExclusiveToTarget(long webhookId, long targetId) tests =====
 
     @Test
-    @DisplayName("isWebhookForThread() for webhook used by single destination")
+    @DisplayName("isWebhookExclusiveToTarget() for webhook used by single destination")
     void testIsWebhookForThread_singleDestination() {
         Map.Entry<Long, Channel> withWebhook = this.testChannels.entrySet().stream()
                 .filter(e -> e.getValue().getWebhook() != null)
@@ -598,17 +598,17 @@ class RedisToPostgresMigrationEquivalenceTest {
         long webhookId = withWebhook.getValue().getWebhook().id();
         long targetId = withWebhook.getKey();
 
-        boolean jsonResult = this.jsonRegistry.isWebhookForThread(webhookId, targetId);
-        boolean sqlResult = sqlRegistry.isWebhookForThread(webhookId, targetId);
+        boolean jsonResult = this.jsonRegistry.isWebhookExclusiveToTarget(webhookId, targetId);
+        boolean sqlResult = sqlRegistry.isWebhookExclusiveToTarget(webhookId, targetId);
 
         assertThat(sqlResult)
-                .as("isWebhookForThread(%d, %d)", webhookId, targetId)
+                .as("isWebhookExclusiveToTarget(%d, %d)", webhookId, targetId)
                 .isEqualTo(jsonResult)
                 .isTrue();
     }
 
     @Test
-    @DisplayName("isWebhookForThread() for webhook used by different destination")
+    @DisplayName("isWebhookExclusiveToTarget() for webhook used by different destination")
     void testIsWebhookForThread_differentDestination() {
         Map.Entry<Long, Channel> withWebhook = this.testChannels.entrySet().stream()
                 .filter(e -> e.getValue().getWebhook() != null)
@@ -622,25 +622,25 @@ class RedisToPostgresMigrationEquivalenceTest {
                 .findFirst()
                 .orElseThrow();
 
-        boolean jsonResult = this.jsonRegistry.isWebhookForThread(webhookId, differentTargetId);
-        boolean sqlResult = sqlRegistry.isWebhookForThread(webhookId, differentTargetId);
+        boolean jsonResult = this.jsonRegistry.isWebhookExclusiveToTarget(webhookId, differentTargetId);
+        boolean sqlResult = sqlRegistry.isWebhookExclusiveToTarget(webhookId, differentTargetId);
 
         assertThat(sqlResult)
-                .as("isWebhookForThread(%d, %d)", webhookId, differentTargetId)
+                .as("isWebhookExclusiveToTarget(%d, %d)", webhookId, differentTargetId)
                 .isEqualTo(jsonResult)
                 .isFalse();
     }
 
     @Test
-    @DisplayName("isWebhookForThread() for non-existent webhook")
+    @DisplayName("isWebhookExclusiveToTarget() for non-existent webhook")
     void testIsWebhookForThread_nonExistentWebhook() {
         Long anyTargetId = this.testChannels.keySet().iterator().next();
 
-        boolean jsonResult = this.jsonRegistry.isWebhookForThread(99999L, anyTargetId);
-        boolean sqlResult = sqlRegistry.isWebhookForThread(99999L, anyTargetId);
+        boolean jsonResult = this.jsonRegistry.isWebhookExclusiveToTarget(99999L, anyTargetId);
+        boolean sqlResult = sqlRegistry.isWebhookExclusiveToTarget(99999L, anyTargetId);
 
         assertThat(sqlResult)
-                .as("isWebhookForThread(99999, %d)", anyTargetId)
+                .as("isWebhookExclusiveToTarget(99999, %d)", anyTargetId)
                 .isEqualTo(jsonResult)
                 .isTrue(); // No conflict found
     }

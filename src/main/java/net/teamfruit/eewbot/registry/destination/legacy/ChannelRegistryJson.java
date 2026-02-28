@@ -201,8 +201,12 @@ public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channe
         return new DeliveryPartition(webhook, direct);
     }
 
+    /**
+     * Webhook IDs are exclusive to a single destination target so parent channels and
+     * sibling threads do not share the same Discord webhook rate limit bucket.
+     */
     @Override
-    public boolean isWebhookForThread(long webhookId, long targetId) {
+    public boolean isWebhookExclusiveToTarget(long webhookId, long targetId) {
         // Check if this webhook is used by a different destination
         return getElement().entrySet().stream().noneMatch(entry -> {
             Long entryTargetId = entry.getKey();

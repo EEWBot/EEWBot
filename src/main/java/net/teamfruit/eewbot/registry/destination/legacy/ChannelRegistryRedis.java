@@ -374,8 +374,12 @@ public class ChannelRegistryRedis implements DestinationDeliveryRegistry, Destin
         return new DeliveryPartition(webhookPresent, webhookAbsent);
     }
 
+    /**
+     * Webhook IDs are exclusive to a single destination target so parent channels and
+     * sibling threads do not share the same Discord webhook rate limit bucket.
+     */
     @Override
-    public boolean isWebhookForThread(long webhookId, long targetId) {
+    public boolean isWebhookExclusiveToTarget(long webhookId, long targetId) {
         // Check if this webhook is used by a different destination
         Query query = new Query("@webhookId:[" + webhookId + " " + webhookId + "]").setNoContent();
         SearchResult searchResult = this.jedisPool.ftSearch(CHANNEL_INDEX, query);

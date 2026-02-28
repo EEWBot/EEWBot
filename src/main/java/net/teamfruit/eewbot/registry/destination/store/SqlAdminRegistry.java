@@ -74,8 +74,8 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
     }
 
     @Override
-    public boolean isWebhookForThread(long webhookId, long targetId) {
-        return this.delegate.isWebhookForThread(webhookId, targetId);
+    public boolean isWebhookExclusiveToTarget(long webhookId, long targetId) {
+        return this.delegate.isWebhookExclusiveToTarget(webhookId, targetId);
     }
 
     // ========================================

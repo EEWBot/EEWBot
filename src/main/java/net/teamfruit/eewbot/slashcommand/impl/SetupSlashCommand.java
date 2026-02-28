@@ -105,7 +105,9 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     /**
-     * Finds an existing bot-created webhook matching the channel/thread, or creates a new one.
+     * Finds an existing bot-created webhook dedicated to this destination, or creates a new one.
+     * Parent channels and threads intentionally do not share webhook IDs, even under the same
+     * parent channel, so Discord webhook rate limits are distributed per destination.
      */
     private Mono<WebhookData> findOrCreateWebhook(EEWBot bot, ApplicationCommandInteractionEvent event, Snowflake guildId, GuildChannel guildChannel, long targetId) {
         boolean isThreadChannel = guildChannel instanceof ThreadChannel;
@@ -120,7 +122,9 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                             .filter(user -> user.id().asLong() == event.getClient().getSelfId().asLong())
                             .isPresent();
                     boolean hasToken = webhook.token().isPresent();
-                    return isSameChannel && isCreatedBySelf && hasToken && bot.getAdminRegistry().isWebhookForThread(webhook.id().asLong(), targetId);
+                    // Webhooks are not shared across destinations. If a parent channel webhook is
+                    // already assigned to one of its threads (or vice versa), create a fresh one.
+                    return isSameChannel && isCreatedBySelf && hasToken && bot.getAdminRegistry().isWebhookExclusiveToTarget(webhook.id().asLong(), targetId);
                 })
                 .next()
                 .switchIfEmpty(bot.getClient().getSelfMember(guildId).map(PartialMember::getDisplayName)
