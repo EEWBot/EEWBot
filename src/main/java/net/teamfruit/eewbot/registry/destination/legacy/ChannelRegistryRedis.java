@@ -121,20 +121,6 @@ public class ChannelRegistryRedis implements DestinationDeliveryRegistry, Destin
         return this.jedisPool.exists(CHANNEL_PREFIX + key);
     }
 
-    @Override
-    public void putAll(Map<Long, Channel> channels) {
-        if (channels.isEmpty()) {
-            return;
-        }
-        try (Connection connection = this.jedisPool.getPool().getResource()) {
-            Transaction transaction = new Transaction(connection);
-            transaction.setJsonObjectMapper(this.objectMapper);
-            channels.forEach((key, channel) ->
-                    transaction.jsonSet(CHANNEL_PREFIX + key, Path.ROOT_PATH, channel, new JsonSetParams().nx())
-            );
-            transaction.exec();
-        }
-    }
 
     @Override
     public void put(long key, Channel channel) {

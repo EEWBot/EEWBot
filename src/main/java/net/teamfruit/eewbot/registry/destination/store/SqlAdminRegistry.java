@@ -197,25 +197,6 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
         }
     }
 
-    @Override
-    public void putAll(Map<Long, Channel> channels) {
-        if (channels.isEmpty()) {
-            return;
-        }
-        AtomicInteger affected = new AtomicInteger();
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            int rows = this.delegate.putAllWithDsl(tx, channels);
-            if (rows > 0) {
-                this.revisionStore.incrementWithDsl(tx);
-                affected.set(rows);
-            }
-        });
-        if (affected.get() > 0) {
-            this.onWrite.run();
-        }
-    }
-
     // ========================================
     // Batch write methods
     // ========================================

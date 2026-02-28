@@ -197,11 +197,6 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         return insertChannelIfAbsentWithDsl(tx, key, channel);
     }
 
-    @Override
-    public void putAll(Map<Long, Channel> channels) {
-        putAllWithDsl(this.dsl, channels);
-    }
-
     public int putAllWithDsl(DSLContext tx, Map<Long, Channel> channels) {
         int total = 0;
         for (Map.Entry<Long, Channel> entry : channels.entrySet()) {

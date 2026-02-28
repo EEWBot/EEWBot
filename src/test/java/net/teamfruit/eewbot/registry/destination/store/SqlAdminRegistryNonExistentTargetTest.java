@@ -140,39 +140,6 @@ class SqlAdminRegistryNonExistentTargetTest {
         }
 
         @Test
-        @DisplayName("putAll() with all existing keys is a no-op")
-        void putAllAllExistingIsNoop() {
-            Channel channel = Channel.createDefault(100L, 1L, null, "ja_jp");
-            adminRegistry.put(1L, channel);
-            onWriteCount.set(0);
-            long revisionBefore = revisionStore.getRevision();
-
-            // putAll with same key — onConflictDoNothing → 0 rows affected
-            Channel channel2 = Channel.createDefault(200L, 2L, null, "en_us");
-            adminRegistry.putAll(Map.of(1L, channel2));
-
-            assertThat(revisionStore.getRevision()).isEqualTo(revisionBefore);
-            assertThat(onWriteCount.get()).isZero();
-        }
-
-        @Test
-        @DisplayName("putAll() with mixed new and existing keys increments revision once")
-        void putAllMixedNewAndExisting() {
-            Channel existing = Channel.createDefault(100L, 1L, null, "ja_jp");
-            adminRegistry.put(1L, existing);
-            onWriteCount.set(0);
-            long revisionBefore = revisionStore.getRevision();
-
-            // 1L already exists (no-op), 2L is new (insert)
-            Channel dup = Channel.createDefault(200L, 2L, null, "en_us");
-            Channel fresh = Channel.createDefault(300L, 3L, null, "en_us");
-            adminRegistry.putAll(Map.of(1L, dup, 2L, fresh));
-
-            assertThat(revisionStore.getRevision()).isEqualTo(revisionBefore + 1);
-            assertThat(onWriteCount.get()).isEqualTo(1);
-        }
-
-        @Test
         @DisplayName("Same-value update on existing row still increments revision (affected > 0)")
         void sameValueUpdateDoesIncrement() {
             Channel channel = Channel.createDefault(100L, 1L, null, "ja_jp");

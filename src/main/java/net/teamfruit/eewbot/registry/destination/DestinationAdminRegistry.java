@@ -82,10 +82,6 @@ public interface DestinationAdminRegistry {
      */
     boolean isWebhookExclusiveToTarget(long webhookId, long targetId);
 
-    default void putAll(Map<Long, Channel> channels) {
-        channels.forEach(this::put);
-    }
-
     default void save() throws IOException {
     }
 

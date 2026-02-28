@@ -147,25 +147,6 @@ class SqlAdminRegistryTest {
             assertThat(adminRegistry.get(1L).getLang()).isEqualTo("en_us");
         }
 
-        @Test
-        @DisplayName("putAll() should trigger onWrite")
-        void putAllTriggersOnWrite() {
-            adminRegistry.putAll(Map.of(
-                    1L, defaultChannel(),
-                    2L, Channel.createDefault(100L, 2L, null, "ja_jp")
-            ));
-
-            assertThat(onWriteCount.get()).isEqualTo(1);
-            assertThat(adminRegistry.exists(1L)).isTrue();
-            assertThat(adminRegistry.exists(2L)).isTrue();
-        }
-
-        @Test
-        @DisplayName("putAll() with empty map should not trigger onWrite")
-        void putAllEmptyNoOnWrite() {
-            adminRegistry.putAll(Map.of());
-            assertThat(onWriteCount.get()).isZero();
-        }
     }
 
     @Nested
