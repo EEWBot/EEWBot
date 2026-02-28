@@ -246,7 +246,16 @@ public class ChannelMigration {
                 JedisPooled jedisPooled = new JedisPooled(hnp);
                 yield new ChannelRegistryRedis(jedisPooled, GSON);
             }
-            case "sqlite", "postgresql" -> createSqlRegistry(type, config);
+            case "sqlite" -> {
+                String pathStr = config.getOrDefault("path", "channels.db");
+                Path path = Paths.get(pathStr);
+                if (Files.notExists(path)) {
+                    throw new IllegalArgumentException(
+                            "SQLite file not found: " + path + ". SQLite can only be used as a source with an existing database file.");
+                }
+                yield createSqlRegistry(type, config);
+            }
+            case "postgresql" -> createSqlRegistry(type, config);
             default -> throw new IllegalArgumentException("Unknown source registry type: " + type);
         };
     }
