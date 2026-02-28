@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
@@ -25,7 +27,7 @@ import redis.clients.jedis.search.aggr.AggregationResult;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ChannelRegistryRedis implements ChannelRegistry {
+public class ChannelRegistryRedis implements DestinationDeliveryRegistry, DestinationAdminRegistry {
 
     private static final String CHANNEL_PREFIX = "channel:";
     private static final String CHANNEL_INDEX = "channel-index";

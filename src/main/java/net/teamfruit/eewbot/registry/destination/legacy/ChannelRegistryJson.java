@@ -5,6 +5,8 @@ import com.google.gson.reflect.TypeToken;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.JsonRegistry;
+import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
@@ -19,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
-public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channel>> implements ChannelRegistry {
+public class ChannelRegistryJson extends JsonRegistry<ConcurrentMap<Long, Channel>> implements DestinationDeliveryRegistry, DestinationAdminRegistry {
 
     public ChannelRegistryJson(Path path, Gson gson) {
         super(path, ConcurrentHashMap::new, new TypeToken<ConcurrentHashMap<Long, Channel>>() {
