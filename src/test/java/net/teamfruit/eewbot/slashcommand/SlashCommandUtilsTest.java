@@ -1,17 +1,13 @@
 package net.teamfruit.eewbot.slashcommand;
 
 import discord4j.core.object.entity.channel.GuildChannel;
-import discord4j.core.object.entity.channel.ThreadChannel;
-import discord4j.discordjson.json.ChannelData;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.junit.jupiter.api.Test;
-import sun.misc.Unsafe;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,8 +19,26 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SlashCommandUtilsTest {
 
-    private static final Unsafe UNSAFE = lookupUnsafe();
-    private static final Class<?> BASE_CHANNEL_CLASS = loadBaseChannelClass();
+    @Test
+    void createDefaultChannelForTargetUsesTargetIdForNonThreadChannels() {
+        Channel registered = SlashCommandUtils.createDefaultChannelForTarget(200L, 100L, "ja", false, null);
+
+        assertThat(registered).isEqualTo(Channel.createDefault(100L, 200L, null, "ja"));
+    }
+
+    @Test
+    void createDefaultChannelForTargetUsesParentIdForThreadChannels() {
+        Channel registered = SlashCommandUtils.createDefaultChannelForTarget(200L, 100L, "ja", true, 300L);
+
+        assertThat(registered).isEqualTo(Channel.createDefault(100L, 300L, 200L, "ja"));
+    }
+
+    @Test
+    void createDefaultChannelForTargetThrowsWhenThreadParentIdIsMissing() {
+        assertThatThrownBy(() -> SlashCommandUtils.createDefaultChannelForTarget(200L, 100L, "ja", true, null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Thread channel does not have a parentId");
+    }
 
     @Test
     void createAndRegisterDefaultUsesTargetIdForNonThreadChannels() {
@@ -36,30 +50,6 @@ class SlashCommandUtilsTest {
         assertThat(registered).isEqualTo(Channel.createDefault(100L, 200L, null, "ja"));
         assertThat(registry.lastKey).isEqualTo(200L);
         assertThat(registry.lastChannel).isEqualTo(registered);
-    }
-
-    @Test
-    void createAndRegisterDefaultUsesParentIdForThreadChannels() throws InstantiationException, NoSuchFieldException {
-        RecordingRegistry registry = new RecordingRegistry();
-        ThreadChannel threadChannel = createThreadChannel(200L, 300L);
-
-        Channel registered = SlashCommandUtils.createAndRegisterDefault(registry, threadChannel, 200L, 100L, "ja");
-
-        assertThat(registered).isEqualTo(Channel.createDefault(100L, 300L, 200L, "ja"));
-        assertThat(registry.lastKey).isEqualTo(200L);
-        assertThat(registry.lastChannel).isEqualTo(registered);
-    }
-
-    @Test
-    void createAndRegisterDefaultThrowsWhenThreadParentIdIsMissing() throws InstantiationException, NoSuchFieldException {
-        RecordingRegistry registry = new RecordingRegistry();
-        ThreadChannel threadChannel = createThreadChannel(200L, null);
-
-        assertThatThrownBy(() -> SlashCommandUtils.createAndRegisterDefault(registry, threadChannel, 200L, 100L, "ja"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Thread channel does not have a parentId");
-        assertThat(registry.lastKey).isNull();
-        assertThat(registry.getAllChannels()).isEmpty();
     }
 
     private static GuildChannel createGuildChannelProxy() {
@@ -78,47 +68,6 @@ class SlashCommandUtilsTest {
                     }
                     throw new UnsupportedOperationException(method.getName());
                 });
-    }
-
-    private static ThreadChannel createThreadChannel(long threadId, Long parentId) throws InstantiationException, NoSuchFieldException {
-        ThreadChannel threadChannel = (ThreadChannel) UNSAFE.allocateInstance(ThreadChannel.class);
-        ChannelData data = buildThreadChannelData(threadId, parentId);
-        Field dataField = BASE_CHANNEL_CLASS.getDeclaredField("data");
-        dataField.setAccessible(true);
-        try {
-            dataField.set(threadChannel, data);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException("Failed to set ThreadChannel data", e);
-        }
-        return threadChannel;
-    }
-
-    private static ChannelData buildThreadChannelData(long threadId, Long parentId) {
-        var builder = ChannelData.builder()
-                .id(threadId)
-                .type(11);
-        if (parentId != null) {
-            builder.parentId(parentId);
-        }
-        return builder.build();
-    }
-
-    private static Unsafe lookupUnsafe() {
-        try {
-            Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-            unsafeField.setAccessible(true);
-            return (Unsafe) unsafeField.get(null);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Failed to access Unsafe", e);
-        }
-    }
-
-    private static Class<?> loadBaseChannelClass() {
-        try {
-            return Class.forName("discord4j.core.object.entity.channel.BaseChannel");
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Failed to load BaseChannel class", e);
-        }
     }
 
     private static class RecordingRegistry implements DestinationAdminRegistry {

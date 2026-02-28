@@ -52,16 +52,22 @@ public class SlashCommandUtils {
      * and register it in the admin registry.
      */
     public static Channel createAndRegisterDefault(DestinationAdminRegistry registry, GuildChannel guildChannel, long targetId, Long guildId, String lang) {
-        Channel newChannel;
-        if (guildChannel instanceof ThreadChannel) {
-            Long channelId = ((ThreadChannel) guildChannel).getParentId()
-                    .map(Snowflake::asLong)
-                    .orElseThrow(() -> new IllegalStateException("Thread channel does not have a parentId"));
-            newChannel = Channel.createDefault(guildId, channelId, targetId, lang);
-        } else {
-            newChannel = Channel.createDefault(guildId, targetId, null, lang);
-        }
+        boolean isThreadChannel = guildChannel instanceof ThreadChannel;
+        Long parentChannelId = isThreadChannel
+                ? ((ThreadChannel) guildChannel).getParentId().map(Snowflake::asLong).orElse(null)
+                : null;
+        Channel newChannel = createDefaultChannelForTarget(targetId, guildId, lang, isThreadChannel, parentChannelId);
         registry.put(targetId, newChannel);
         return newChannel;
+    }
+
+    static Channel createDefaultChannelForTarget(long targetId, Long guildId, String lang, boolean isThreadChannel, Long parentChannelId) {
+        if (isThreadChannel) {
+            if (parentChannelId == null) {
+                throw new IllegalStateException("Thread channel does not have a parentId");
+            }
+            return Channel.createDefault(guildId, parentChannelId, targetId, lang);
+        }
+        return Channel.createDefault(guildId, targetId, null, lang);
     }
 }
