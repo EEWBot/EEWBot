@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.registry.destination.migration;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
+import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import org.jooq.Field;
 import org.jooq.SQLDialect;
@@ -112,6 +113,26 @@ class ChannelMigrationE2ETest {
                                 .where(NAME_FIELD.eq("json_to_sql_channels_v1"))
                 );
                 assertThat(exists).isTrue();
+            } finally {
+                registry.close();
+            }
+        }
+
+        @Test
+        @DisplayName("Migration increments channels_revision")
+        void migrationIncrementsRevision() throws IOException {
+            Path source = writeSourceJson(TWO_CHANNEL_JSON);
+            String destPath = destDbPath();
+
+            String[] args = {"--source", "json", "--source-path", source.toString(),
+                    "--dest", "sqlite", "--dest-path", destPath};
+
+            ChannelMigration.run(args);
+
+            ChannelRegistrySql registry = ChannelRegistrySql.forSQLite(Path.of(destPath));
+            try {
+                long revision = new ConfigRevisionStore(registry.getDsl(), SQLDialect.SQLITE).getRevision();
+                assertThat(revision).isGreaterThan(0);
             } finally {
                 registry.close();
             }

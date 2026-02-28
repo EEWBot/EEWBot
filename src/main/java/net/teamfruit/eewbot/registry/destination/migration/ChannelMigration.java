@@ -10,6 +10,7 @@ import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
 import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryRedis;
 import net.teamfruit.eewbot.registry.destination.model.*;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
+import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -145,6 +146,7 @@ public class ChannelMigration {
             Log.logger.info("Performing migration: {}", migrationName);
             List<Map.Entry<Long, Channel>> entries = collectChannels(source);
             migrateChannelsSql(entries, dest, tx);
+            new ConfigRevisionStore(tx, dest.getDialect()).incrementWithDsl(tx);
 
             if (dest.getDialect() == org.jooq.SQLDialect.SQLITE) {
                 tx.insertInto(dataMigrations)
