@@ -4,7 +4,7 @@ import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE53;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumMap;
 import java.util.HashMap;

@@ -6,7 +6,7 @@ import net.teamfruit.eewbot.entity.jma.telegram.VXSE51Impl;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE52Impl;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE53Impl;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE61Impl;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public enum JMAXmlType {
     VGSK50("季節観測"),

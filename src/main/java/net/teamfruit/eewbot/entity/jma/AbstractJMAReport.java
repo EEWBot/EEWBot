@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import net.teamfruit.eewbot.entity.Entity;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 

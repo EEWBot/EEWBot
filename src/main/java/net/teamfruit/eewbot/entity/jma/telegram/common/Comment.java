@@ -2,7 +2,7 @@ package net.teamfruit.eewbot.entity.jma.telegram.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 @SuppressWarnings("unused")
 public class Comment {

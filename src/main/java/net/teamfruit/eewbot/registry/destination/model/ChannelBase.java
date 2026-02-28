@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.registry.destination.model;
 
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 

@@ -8,11 +8,11 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityArea;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.net.URIBuilder;
+import org.jetbrains.annotations.Nullable;
 import quake_prefecture_v0.CodeArray;
 import quake_prefecture_v0.Epicenter;
 import quake_prefecture_v0.QuakePrefectureData;
 import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;

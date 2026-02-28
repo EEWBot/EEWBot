@@ -4,7 +4,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
