@@ -34,7 +34,6 @@ CREATE TABLE data_migrations (
 CREATE INDEX idx_destinations_channel_id ON destinations(channel_id);
 CREATE INDEX idx_destinations_thread_id ON destinations(thread_id);
 CREATE INDEX idx_destinations_guild_id ON destinations(guild_id);
-CREATE INDEX idx_destinations_delivery_filter ON destinations(eew_alert, eew_prediction, eew_decimation, quake_info, min_intensity);
 CREATE INDEX idx_destinations_webhook_url ON destinations(webhook_url);
 CREATE INDEX idx_destinations_webhook_id ON destinations(webhook_id);
 
