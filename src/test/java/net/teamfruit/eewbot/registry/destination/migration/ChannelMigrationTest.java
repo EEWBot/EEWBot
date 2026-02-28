@@ -9,6 +9,7 @@ import org.jooq.SQLDialect;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.List;
@@ -24,7 +25,7 @@ class ChannelMigrationTest {
     private ChannelRegistrySql destination;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         Path dbPath = this.tempDir.resolve("migration_test.db");
         this.destination = ChannelRegistrySql.forSQLite(dbPath);
         DatabaseInitializer.migrate(this.destination.getDataSource(), SQLDialect.SQLITE);

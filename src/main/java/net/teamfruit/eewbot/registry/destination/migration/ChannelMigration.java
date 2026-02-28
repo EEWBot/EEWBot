@@ -251,7 +251,7 @@ public class ChannelMigration {
         };
     }
 
-    private static ChannelRegistrySql createSqlRegistry(String type, Map<String, String> config) {
+    private static ChannelRegistrySql createSqlRegistry(String type, Map<String, String> config) throws IOException {
         return switch (type.toLowerCase()) {
             case "sqlite" -> {
                 String pathStr = config.getOrDefault("path", "channels.db");
@@ -277,7 +277,7 @@ public class ChannelMigration {
         };
     }
 
-    private static ChannelRegistrySql createDestinationRegistry(String type, Map<String, String> config) {
+    private static ChannelRegistrySql createDestinationRegistry(String type, Map<String, String> config) throws IOException {
         return switch (type.toLowerCase()) {
             case "sqlite", "postgresql" -> createSqlRegistry(type, config);
             default -> throw new IllegalArgumentException("Unsupported destination type: " + type + ". Destination must be sqlite or postgresql.");

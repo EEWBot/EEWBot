@@ -7,6 +7,7 @@ import org.jooq.SQLDialect;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,7 @@ class SqlAdminRegistryTest {
     private SqlAdminRegistry adminRegistry;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         Path dbPath = this.tempDir.resolve("test.db");
         this.delegate = ChannelRegistrySql.forSQLite(dbPath);
         DatabaseInitializer.migrate(this.delegate.getDataSource(), SQLDialect.SQLITE);

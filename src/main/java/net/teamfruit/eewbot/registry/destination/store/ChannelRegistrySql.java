@@ -18,6 +18,8 @@ import org.jooq.impl.SQLDataType;
 import org.sqlite.SQLiteDataSource;
 
 import javax.sql.DataSource;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -73,7 +75,11 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         this.dialect = dialect;
     }
 
-    public static ChannelRegistrySql forSQLite(Path dbPath) {
+    public static ChannelRegistrySql forSQLite(Path dbPath) throws IOException {
+        Path parent = dbPath.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
         SQLiteDataSource ds = new SQLiteDataSource();
         ds.setUrl("jdbc:sqlite:" + dbPath);
         DataSource wrapped = wrapSqliteDataSource(ds);

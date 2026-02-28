@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
@@ -218,7 +219,7 @@ class ChannelFilterTest {
         );
 
         @BeforeEach
-        void setUp() {
+        void setUp() throws IOException {
             Path dbPath = this.tempDir.resolve("filter_test.db");
             this.sqlRegistry = ChannelRegistrySql.forSQLite(dbPath);
             DatabaseInitializer.migrate(this.sqlRegistry.getDataSource(), SQLDialect.SQLITE);

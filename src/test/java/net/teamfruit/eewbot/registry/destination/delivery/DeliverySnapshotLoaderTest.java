@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +31,7 @@ class DeliverySnapshotLoaderTest {
     private DeliverySnapshotLoader loader;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         Path dbPath = this.tempDir.resolve("test.db");
         this.sqlRegistry = ChannelRegistrySql.forSQLite(dbPath);
         DatabaseInitializer.migrate(this.sqlRegistry.getDataSource(), SQLDialect.SQLITE);
