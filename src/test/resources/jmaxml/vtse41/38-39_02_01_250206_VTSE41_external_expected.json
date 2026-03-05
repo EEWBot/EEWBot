@@ -1,0 +1,93 @@
+{
+  "type": "tsunami",
+  "timestamp": 1234567890000,
+  "data": "\u003c?xml version\u003d\"1.0\" encoding\u003d\"UTF-8\"?\u003e\n\u003cReport xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/\" xmlns:jmx\u003d\"http://xml.kishou.go.jp/jmaxml1/\"\u003e\n  \u003cControl\u003e\n    \u003cTitle\u003e津波警報・注意報・予報a\u003c/Title\u003e\n    \u003cDateTime\u003e2015-11-13T20:56:28Z\u003c/DateTime\u003e\n    \u003cStatus\u003e通常\u003c/Status\u003e\n    \u003cEditorialOffice\u003e大阪管区気象台\u003c/EditorialOffice\u003e\n    \u003cPublishingOffice\u003e気象庁\u003c/PublishingOffice\u003e\n  \u003c/Control\u003e\n  \u003cHead xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/informationBasis1/\"\u003e\n    \u003cTitle\u003e津波注意報・津波予報\u003c/Title\u003e\n    \u003cReportDateTime\u003e2015-11-14T05:56:00+09:00\u003c/ReportDateTime\u003e\n    \u003cTargetDateTime\u003e2015-11-14T05:56:00+09:00\u003c/TargetDateTime\u003e\n    \u003cEventID\u003e20151114055157\u003c/EventID\u003e\n    \u003cInfoType\u003e発表\u003c/InfoType\u003e\n    \u003cSerial\u003e\u003c/Serial\u003e\n    \u003cInfoKind\u003e津波警報・注意報・予報\u003c/InfoKind\u003e\n    \u003cInfoKindVersion\u003e1.0_1\u003c/InfoKindVersion\u003e\n    \u003cHeadline\u003e\n      \u003cText\u003e津波注意報を発表しました。\u003c/Text\u003e\n      \u003cInformation type\u003d\"津波予報領域表現\"\u003e\n        \u003cItem\u003e\n          \u003cKind\u003e\n            \u003cName\u003e津波注意報\u003c/Name\u003e\n            \u003cCode\u003e62\u003c/Code\u003e\n          \u003c/Kind\u003e\n          \u003cAreas codeType\u003d\"津波予報区\"\u003e\n            \u003cArea\u003e\n              \u003cName\u003e鹿児島県西部\u003c/Name\u003e\n              \u003cCode\u003e773\u003c/Code\u003e\n            \u003c/Area\u003e\n            \u003cArea\u003e\n              \u003cName\u003e薩南諸島\u003c/Name\u003e\n              \u003cCode\u003e793\u003c/Code\u003e\n            \u003c/Area\u003e\n          \u003c/Areas\u003e\n        \u003c/Item\u003e\n      \u003c/Information\u003e\n    \u003c/Headline\u003e\n  \u003c/Head\u003e\n  \u003cBody xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/body/seismology1/\" xmlns:jmx_eb\u003d\"http://xml.kishou.go.jp/jmaxml1/elementBasis1/\"\u003e\n    \u003cTsunami\u003e\n      \u003cForecast\u003e\n        \u003cCodeDefine\u003e\n          \u003cType xpath\u003d\"Item/Area/Code\"\u003e津波予報区\u003c/Type\u003e\n          \u003cType xpath\u003d\"Item/Category/Kind/Code\"\u003e警報等情報要素／津波警報・注意報・予報\u003c/Type\u003e\n          \u003cType xpath\u003d\"Item/Category/LastKind/Code\"\u003e警報等情報要素／津波警報・注意報・予報\u003c/Type\u003e\n        \u003c/CodeDefine\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e種子島・屋久島地方\u003c/Name\u003e\n            \u003cCode\u003e771\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波注意報\u003c/Name\u003e\n              \u003cCode\u003e62\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波なし\u003c/Name\u003e\n              \u003cCode\u003e00\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n          \u003cFirstHeight\u003e\n            \u003cArrivalTime\u003e2015-11-14T06:10:00+09:00\u003c/ArrivalTime\u003e\n          \u003c/FirstHeight\u003e\n          \u003cMaxHeight\u003e\n            \u003cjmx_eb:TsunamiHeight type\u003d\"津波の高さ\" unit\u003d\"m\" description\u003d\"１ｍ\"\u003e1\u003c/jmx_eb:TsunamiHeight\u003e\n          \u003c/MaxHeight\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e奄美群島・トカラ列島\u003c/Name\u003e\n            \u003cCode\u003e772\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波注意報\u003c/Name\u003e\n              \u003cCode\u003e62\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波なし\u003c/Name\u003e\n              \u003cCode\u003e00\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n          \u003cFirstHeight\u003e\n            \u003cArrivalTime\u003e2015-11-14T06:10:00+09:00\u003c/ArrivalTime\u003e\n          \u003c/FirstHeight\u003e\n          \u003cMaxHeight\u003e\n            \u003cjmx_eb:TsunamiHeight type\u003d\"津波の高さ\" unit\u003d\"m\" description\u003d\"１ｍ\"\u003e1\u003c/jmx_eb:TsunamiHeight\u003e\n          \u003c/MaxHeight\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e鹿児島県西部\u003c/Name\u003e\n            \u003cCode\u003e773\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波注意報\u003c/Name\u003e\n              \u003cCode\u003e62\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波なし\u003c/Name\u003e\n              \u003cCode\u003e00\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n          \u003cFirstHeight\u003e\n            \u003cArrivalTime\u003e2015-11-14T06:10:00+09:00\u003c/ArrivalTime\u003e\n          \u003c/FirstHeight\u003e\n          \u003cMaxHeight\u003e\n            \u003cjmx_eb:TsunamiHeight type\u003d\"津波の高さ\" unit\u003d\"m\" description\u003d\"１ｍ\"\u003e1\u003c/jmx_eb:TsunamiHeight\u003e\n          \u003c/MaxHeight\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e高知県\u003c/Name\u003e\n            \u003cCode\u003e610\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\n              \u003cCode\u003e71\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波なし\u003c/Name\u003e\n              \u003cCode\u003e00\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n          \u003cMaxHeight\u003e\n            \u003cjmx_eb:TsunamiHeight type\u003d\"津波の高さ\" unit\u003d\"m\" description\u003d\"０．２ｍ未満\"\u003e0.2\u003c/jmx_eb:TsunamiHeight\u003e\n          \u003c/MaxHeight\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e有明・八代海\u003c/Name\u003e\n            \u003cCode\u003e712\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\n              \u003cCode\u003e71\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波なし\u003c/Name\u003e\n              \u003cCode\u003e00\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n          \u003cMaxHeight\u003e\n            \u003cjmx_eb:TsunamiHeight type\u003d\"津波の高さ\" unit\u003d\"m\" description\u003d\"０．２ｍ未満\"\u003e0.2\u003c/jmx_eb:TsunamiHeight\u003e\n          \u003c/MaxHeight\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e長崎県西方\u003c/Name\u003e\n            \u003cCode\u003e730\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\n              \u003cCode\u003e71\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波なし\u003c/Name\u003e\n              \u003cCode\u003e00\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n          \u003cMaxHeight\u003e\n            \u003cjmx_eb:TsunamiHeight type\u003d\"津波の高さ\" unit\u003d\"m\" description\u003d\"０．２ｍ未満\"\u003e0.2\u003c/jmx_eb:TsunamiHeight\u003e\n          \u003c/MaxHeight\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e熊本県天草灘沿岸\u003c/Name\u003e\n            \u003cCode\u003e740\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\n              \u003cCode\u003e71\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波なし\u003c/Name\u003e\n              \u003cCode\u003e00\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n          \u003cMaxHeight\u003e\n            \u003cjmx_eb:TsunamiHeight type\u003d\"津波の高さ\" unit\u003d\"m\" description\u003d\"０．２ｍ未満\"\u003e0.2\u003c/jmx_eb:TsunamiHeight\u003e\n          \u003c/MaxHeight\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e宮崎県\u003c/Name\u003e\n            \u003cCode\u003e760\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\n              \u003cCode\u003e71\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波なし\u003c/Name\u003e\n              \u003cCode\u003e00\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n          \u003cMaxHeight\u003e\n            \u003cjmx_eb:TsunamiHeight type\u003d\"津波の高さ\" unit\u003d\"m\" description\u003d\"０．２ｍ未満\"\u003e0.2\u003c/jmx_eb:TsunamiHeight\u003e\n          \u003c/MaxHeight\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e鹿児島県東部\u003c/Name\u003e\n            \u003cCode\u003e770\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\n              \u003cCode\u003e71\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波なし\u003c/Name\u003e\n              \u003cCode\u003e00\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n          \u003cMaxHeight\u003e\n            \u003cjmx_eb:TsunamiHeight type\u003d\"津波の高さ\" unit\u003d\"m\" description\u003d\"０．２ｍ未満\"\u003e0.2\u003c/jmx_eb:TsunamiHeight\u003e\n          \u003c/MaxHeight\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e沖縄本島地方\u003c/Name\u003e\n            \u003cCode\u003e800\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\n              \u003cCode\u003e71\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波なし\u003c/Name\u003e\n              \u003cCode\u003e00\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n          \u003cMaxHeight\u003e\n            \u003cjmx_eb:TsunamiHeight type\u003d\"津波の高さ\" unit\u003d\"m\" description\u003d\"０．２ｍ未満\"\u003e0.2\u003c/jmx_eb:TsunamiHeight\u003e\n          \u003c/MaxHeight\u003e\n        \u003c/Item\u003e\n      \u003c/Forecast\u003e\n    \u003c/Tsunami\u003e\n    \u003cEarthquake\u003e\n      \u003cOriginTime\u003e2015-11-14T05:51:00+09:00\u003c/OriginTime\u003e\n      \u003cArrivalTime\u003e2015-11-14T05:51:00+09:00\u003c/ArrivalTime\u003e\n      \u003cHypocenter\u003e\n        \u003cArea\u003e\n          \u003cName\u003e薩摩半島西方沖\u003c/Name\u003e\n          \u003cCode type\u003d\"震央地名\"\u003e797\u003c/Code\u003e\n          \u003cjmx_eb:Coordinate description\u003d\"北緯３０．９度　東経１２８．７度　深さ　１０ｋｍ\"\u003e+30.9+128.7-10000/\u003c/jmx_eb:Coordinate\u003e\n          \u003cNameFromMark\u003e枕崎の西南西１６０ｋｍ付近\u003c/NameFromMark\u003e\n          \u003cMarkCode type\u003d\"震央補助\"\u003e701\u003c/MarkCode\u003e\n          \u003cDirection\u003e西南西\u003c/Direction\u003e\n          \u003cDistance unit\u003d\"km\"\u003e160\u003c/Distance\u003e\n        \u003c/Area\u003e\n      \u003c/Hypocenter\u003e\n      \u003cjmx_eb:Magnitude type\u003d\"Mj\" description\u003d\"Ｍ７．０\"\u003e7.0\u003c/jmx_eb:Magnitude\u003e\n    \u003c/Earthquake\u003e\n    \u003cComments\u003e\n      \u003cWarningComment codeType\u003d\"固定付加文\"\u003e\n        \u003cText\u003e＜津波注意報＞\n海の中や海岸付近は危険です。\n海の中にいる人はただちに海から上がって、海岸から離れてください。\n潮の流れが速い状態が続きますので、注意報が解除されるまで海に入ったり海岸に近づいたりしないようにしてください。\n　\n＜津波予報（若干の海面変動）＞\n若干の海面変動が予想されますが、被害の心配はありません。\n　\n場所によっては津波の高さが「予想される津波の高さ」より高くなる可能性があります。\u003c/Text\u003e\n        \u003cCode\u003e0123 0124 0132\u003c/Code\u003e\n      \u003c/WarningComment\u003e\n      \u003cFreeFormComment\u003e［予想される津波の高さの解説］\n予想される津波が高いほど、より甚大な被害が生じます。\n１０ｍ超　　巨大な津波が襲い壊滅的な被害が生じる。木造家屋が全壊・流失し、人は津波による流れに巻き込まれる。\n１０ｍ　　　巨大な津波が襲い甚大な被害が生じる。木造家屋が全壊・流失し、人は津波による流れに巻き込まれる。\n　５ｍ　　　津波が襲い甚大な被害が生じる。木造家屋が全壊・流失し、人は津波による流れに巻き込まれる。\n　３ｍ　　　標高の低いところでは津波が襲い被害が生じる。木造家屋で浸水被害が発生し、人は津波による流れに巻き込まれる。\n　１ｍ　　　海の中では人は速い流れに巻き込まれる。養殖いかだが流失し小型船舶が転覆する。\u003c/FreeFormComment\u003e\n    \u003c/Comments\u003e\n  \u003c/Body\u003e\n\u003c/Report\u003e",
+  "eewbot": {
+    "title": "津波注意報・津波予報",
+    "dateTime": 1447448188,
+    "status": "通常",
+    "editorialOffice": "大阪管区気象台",
+    "publishingOffice": "気象庁",
+    "reportDateTime": 1447448160,
+    "eventId": 20151114055157,
+    "infoType": "発表",
+    "serial": "",
+    "forecastAreas": [
+      {
+        "areaName": "種子島・屋久島地方",
+        "areaCode": "771",
+        "categoryName": "津波注意報",
+        "categoryCode": "62",
+        "maxHeightDescription": "１ｍ",
+        "arrivalTime": 1447449000
+      },
+      {
+        "areaName": "奄美群島・トカラ列島",
+        "areaCode": "772",
+        "categoryName": "津波注意報",
+        "categoryCode": "62",
+        "maxHeightDescription": "１ｍ",
+        "arrivalTime": 1447449000
+      },
+      {
+        "areaName": "鹿児島県西部",
+        "areaCode": "773",
+        "categoryName": "津波注意報",
+        "categoryCode": "62",
+        "maxHeightDescription": "１ｍ",
+        "arrivalTime": 1447449000
+      },
+      {
+        "areaName": "高知県",
+        "areaCode": "610",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71",
+        "maxHeightDescription": "０．２ｍ未満"
+      },
+      {
+        "areaName": "有明・八代海",
+        "areaCode": "712",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71",
+        "maxHeightDescription": "０．２ｍ未満"
+      },
+      {
+        "areaName": "長崎県西方",
+        "areaCode": "730",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71",
+        "maxHeightDescription": "０．２ｍ未満"
+      },
+      {
+        "areaName": "熊本県天草灘沿岸",
+        "areaCode": "740",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71",
+        "maxHeightDescription": "０．２ｍ未満"
+      },
+      {
+        "areaName": "宮崎県",
+        "areaCode": "760",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71",
+        "maxHeightDescription": "０．２ｍ未満"
+      },
+      {
+        "areaName": "鹿児島県東部",
+        "areaCode": "770",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71",
+        "maxHeightDescription": "０．２ｍ未満"
+      },
+      {
+        "areaName": "沖縄本島地方",
+        "areaCode": "800",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71",
+        "maxHeightDescription": "０．２ｍ未満"
+      }
+    ],
+    "warningComment": "＜津波注意報＞\n海の中や海岸付近は危険です。\n海の中にいる人はただちに海から上がって、海岸から離れてください。\n潮の流れが速い状態が続きますので、注意報が解除されるまで海に入ったり海岸に近づいたりしないようにしてください。\n　\n＜津波予報（若干の海面変動）＞\n若干の海面変動が予想されますが、被害の心配はありません。\n　\n場所によっては津波の高さが「予想される津波の高さ」より高くなる可能性があります。",
+    "freeFormComment": "［予想される津波の高さの解説］\n予想される津波が高いほど、より甚大な被害が生じます。\n１０ｍ超　　巨大な津波が襲い壊滅的な被害が生じる。木造家屋が全壊・流失し、人は津波による流れに巻き込まれる。\n１０ｍ　　　巨大な津波が襲い甚大な被害が生じる。木造家屋が全壊・流失し、人は津波による流れに巻き込まれる。\n　５ｍ　　　津波が襲い甚大な被害が生じる。木造家屋が全壊・流失し、人は津波による流れに巻き込まれる。\n　３ｍ　　　標高の低いところでは津波が襲い被害が生じる。木造家屋で浸水被害が発生し、人は津波による流れに巻き込まれる。\n　１ｍ　　　海の中では人は速い流れに巻き込まれる。養殖いかだが流失し小型船舶が転覆する。"
+  }
+}

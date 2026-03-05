@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://xml.kishou.go.jp/jmaxml1/">
+  <Control>
+    <Title>津波警報・注意報・予報a</Title>
+    <DateTime>2018-12-04T10:30:00Z</DateTime>
+    <Status>訓練</Status>
+    <EditorialOffice>気象庁本庁</EditorialOffice>
+    <PublishingOffice>気象庁</PublishingOffice>
+  </Control>
+  <Head xmlns="http://xml.kishou.go.jp/jmaxml1/informationBasis1/">
+    <Title>津波予報</Title>
+    <ReportDateTime>2018-12-04T19:30:00+09:00</ReportDateTime>
+    <TargetDateTime>2018-12-04T19:30:00+09:00</TargetDateTime>
+    <EventID>20181204180000</EventID>
+    <InfoType>発表</InfoType>
+    <Serial></Serial>
+    <InfoKind>津波警報・注意報・予報</InfoKind>
+    <InfoKindVersion>1.0_1</InfoKindVersion>
+    <Headline>
+      <Text>＊＊＊これは訓練です＊＊＊
+津波注意報を解除しました。</Text>
+    </Headline>
+  </Head>
+  <Body xmlns="http://xml.kishou.go.jp/jmaxml1/body/seismology1/" xmlns:jmx_eb="http://xml.kishou.go.jp/jmaxml1/elementBasis1/">
+    <Tsunami>
+      <Forecast>
+        <CodeDefine>
+          <Type xpath="Item/Area/Code">津波予報区</Type>
+          <Type xpath="Item/Category/Kind/Code">警報等情報要素／津波警報・注意報・予報</Type>
+          <Type xpath="Item/Category/LastKind/Code">警報等情報要素／津波警報・注意報・予報</Type>
+        </CodeDefine>
+        <Item>
+          <Area>
+            <Name>千葉県内房</Name>
+            <Code>311</Code>
+          </Area>
+          <Category>
+            <Kind>
+              <Name>津波注意報解除</Name>
+              <Code>60</Code>
+            </Kind>
+            <LastKind>
+              <Name>津波注意報</Name>
+              <Code>62</Code>
+            </LastKind>
+          </Category>
+        </Item>
+        <Item>
+          <Area>
+            <Name>東京湾内湾</Name>
+            <Code>312</Code>
+          </Area>
+          <Category>
+            <Kind>
+              <Name>津波注意報解除</Name>
+              <Code>60</Code>
+            </Kind>
+            <LastKind>
+              <Name>津波注意報</Name>
+              <Code>62</Code>
+            </LastKind>
+          </Category>
+        </Item>
+        <Item>
+          <Area>
+            <Name>伊豆諸島</Name>
+            <Code>320</Code>
+          </Area>
+          <Category>
+            <Kind>
+              <Name>津波注意報解除</Name>
+              <Code>60</Code>
+            </Kind>
+            <LastKind>
+              <Name>津波注意報</Name>
+              <Code>62</Code>
+            </LastKind>
+          </Category>
+        </Item>
+        <Item>
+          <Area>
+            <Name>相模湾・三浦半島</Name>
+            <Code>330</Code>
+          </Area>
+          <Category>
+            <Kind>
+              <Name>津波注意報解除</Name>
+              <Code>60</Code>
+            </Kind>
+            <LastKind>
+              <Name>津波注意報</Name>
+              <Code>62</Code>
+            </LastKind>
+          </Category>
+        </Item>
+        <Item>
+          <Area>
+            <Name>静岡県</Name>
+            <Code>380</Code>
+          </Area>
+          <Category>
+            <Kind>
+              <Name>津波注意報解除</Name>
+              <Code>60</Code>
+            </Kind>
+            <LastKind>
+              <Name>津波注意報</Name>
+              <Code>62</Code>
+            </LastKind>
+          </Category>
+        </Item>
+      </Forecast>
+    </Tsunami>
+    <Earthquake>
+      <OriginTime>2018-12-04T18:00:00+09:00</OriginTime>
+      <ArrivalTime>2018-12-04T18:00:00+09:00</ArrivalTime>
+      <Hypocenter>
+        <Area>
+          <Name>東京都２３区</Name>
+          <Code type="震央地名">350</Code>
+          <jmx_eb:Coordinate description="北緯３５．６度　東経１３９．７度　深さ　３０ｋｍ">+35.6+139.7-30000/</jmx_eb:Coordinate>
+          <NameFromMark>館山の北北西７０ｋｍ付近</NameFromMark>
+          <MarkCode type="震央補助">301</MarkCode>
+          <Direction>北北西</Direction>
+          <Distance unit="km">70</Distance>
+        </Area>
+      </Hypocenter>
+      <jmx_eb:Magnitude type="Mj" description="Ｍ７．３">7.3</jmx_eb:Magnitude>
+    </Earthquake>
+    <Comments>
+      <WarningComment codeType="固定付加文">
+        <Text>現在、大津波警報・津波警報・津波注意報を発表している沿岸はありません。</Text>
+        <Code>0107</Code>
+      </WarningComment>
+    </Comments>
+  </Body>
+</Report>

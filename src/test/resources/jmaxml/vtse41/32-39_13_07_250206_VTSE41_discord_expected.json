@@ -1,0 +1,44 @@
+{
+  "embeds": [
+    {
+      "title": "津波警報・注意報・予報",
+      "timestamp": "2018-12-04T10:30:00Z",
+      "color": 8359053,
+      "footer": {
+        "text": "気象庁"
+      },
+      "fields": [
+        {
+          "name": "津波注意報解除 千葉県内房",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波注意報解除 東京湾内湾",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波注意報解除 伊豆諸島",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波注意報解除 相模湾・三浦半島",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波注意報解除 静岡県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "",
+          "value": "現在、大津波警報・津波警報・津波注意報を発表している沿岸はありません。",
+          "inline": false
+        }
+      ]
+    }
+  ]
+}

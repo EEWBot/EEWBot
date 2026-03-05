@@ -1,0 +1,349 @@
+{
+  "embeds": [
+    {
+      "title": "津波警報・注意報・予報",
+      "timestamp": "2011-03-13T08:58:00Z",
+      "color": 49151,
+      "footer": {
+        "text": "気象庁"
+      },
+      "fields": [
+        {
+          "name": "津波予報（若干の海面変動） 北海道太平洋沿岸東部",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 北海道太平洋沿岸中部",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 北海道太平洋沿岸西部",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 北海道日本海沿岸北部",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 北海道日本海沿岸南部",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） オホーツク海沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 青森県日本海沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 青森県太平洋沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 陸奥湾",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 岩手県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 宮城県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 秋田県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 山形県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 福島県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 茨城県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 千葉県九十九里・外房",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 千葉県内房",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 東京湾内湾",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 伊豆諸島",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 小笠原諸島",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 相模湾・三浦半島",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 新潟県上中下越",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 佐渡",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 富山県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 石川県能登",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 石川県加賀",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 福井県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 静岡県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 愛知県外海",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 伊勢・三河湾",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 三重県南部",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 京都府",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 大阪府",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 兵庫県北部",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 兵庫県瀬戸内海沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 淡路島南部",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 和歌山県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 鳥取県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 島根県出雲・石見",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 隠岐",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 岡山県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 広島県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 徳島県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 香川県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 愛媛県宇和海沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 愛媛県瀬戸内海沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 高知県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 山口県日本海沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 山口県瀬戸内海沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 福岡県瀬戸内海沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 福岡県日本海沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 有明・八代海",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 佐賀県北部",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 長崎県西方",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 壱岐・対馬",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 熊本県天草灘沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 大分県瀬戸内海沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 大分県豊後水道沿岸",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 宮崎県",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 鹿児島県東部",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 種子島・屋久島地方",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 奄美諸島・トカラ列島",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 鹿児島県西部",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 沖縄本島地方",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 大東島地方",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "津波予報（若干の海面変動） 宮古島・八重山地方",
+          "value": "-",
+          "inline": false
+        },
+        {
+          "name": "",
+          "value": "＜津波予報（若干の海面変動）＞\n若干の海面変動が予想されますが、被害の心配はありません。\n\n今後もしばらく海面変動が続くと思われますので、海水浴や磯釣り等を行う際は注意してください。\n\n現在、大津波警報・津波警報・津波注意報を発表している沿岸はありません。",
+          "inline": false
+        }
+      ]
+    }
+  ]
+}
