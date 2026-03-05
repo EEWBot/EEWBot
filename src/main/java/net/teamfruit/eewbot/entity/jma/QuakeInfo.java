@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface QuakeInfo extends Entity {
 
-    long getEventId();
+    String getEventId();
 
     Optional<SeismicIntensity> getQuakeInfoMaxInt();
 

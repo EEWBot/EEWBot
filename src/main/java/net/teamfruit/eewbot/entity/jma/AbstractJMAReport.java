@@ -68,7 +68,7 @@ public abstract class AbstractJMAReport implements Entity, JMAReport {
     }
 
     @Override
-    public long getEventId() {
+    public String getEventId() {
         return getHead().getEventID();
     }
 
@@ -162,7 +162,7 @@ public abstract class AbstractJMAReport implements Entity, JMAReport {
         private @Nullable String validDateTime;
 
         @JacksonXmlProperty(localName = "EventID")
-        private long eventID;
+        private String eventID;
 
         @JacksonXmlProperty(localName = "InfoType")
         private JMAInfoType infoType;
@@ -207,7 +207,7 @@ public abstract class AbstractJMAReport implements Entity, JMAReport {
             return this.validDateTime;
         }
 
-        public long getEventID() {
+        public String getEventID() {
             return this.eventID;
         }
 

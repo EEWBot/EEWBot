@@ -13,7 +13,7 @@ import java.util.Optional;
 
 public class QuakeInfoStore {
 
-    private final Map<Long, Map<JMAXmlType, QuakeInfo>> reports = new HashMap<>();
+    private final Map<String, Map<JMAXmlType, QuakeInfo>> reports = new HashMap<>();
     private @Nullable QuakeInfo lastReport;
 
     public void putReport(QuakeInfo report) {
@@ -27,7 +27,7 @@ public class QuakeInfoStore {
         }
     }
 
-    public Optional<QuakeInfo> getReport(long eventId, JMAXmlType type) {
+    public Optional<QuakeInfo> getReport(String eventId, JMAXmlType type) {
         return Optional.ofNullable(this.reports.get(eventId)).flatMap(m -> Optional.ofNullable(m.get(type)));
     }
 

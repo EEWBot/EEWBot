@@ -13,9 +13,7 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.TsunamiItem;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public interface VTSE41 extends JMAReport, ExternalData {
 
@@ -37,6 +35,9 @@ public interface VTSE41 extends JMAReport, ExternalData {
             Color highestColor = TsunamiCategory.NONE.getColor();
             int highestPriority = -1;
 
+            // Group items by category kind name to avoid exceeding Discord's 25-field limit
+            LinkedHashMap<String, List<String>> groupedAreas = new LinkedHashMap<>();
+
             for (TsunamiItem item : items) {
                 Category category = item.getCategory();
                 if (category == null)
@@ -48,36 +49,62 @@ public interface VTSE41 extends JMAReport, ExternalData {
                     highestColor = tsunamiCategory.getColor();
                 }
 
-                String fieldName = category.getKind().getName() + " " + item.getArea().getName();
-                StringBuilder fieldValue = new StringBuilder();
+                String categoryName = category.getKind().getName();
+                StringBuilder line = new StringBuilder(item.getArea().getName());
 
+                String maxHeightStr = null;
                 MaxHeight maxHeight = item.getMaxHeight();
                 if (maxHeight != null) {
                     if (maxHeight.getTsunamiHeight() != null && maxHeight.getTsunamiHeight().getDescription() != null) {
-                        fieldValue.append(maxHeight.getTsunamiHeight().getDescription());
+                        maxHeightStr = maxHeight.getTsunamiHeight().getDescription();
                     } else if (maxHeight.getCondition() != null) {
-                        fieldValue.append(maxHeight.getCondition());
+                        maxHeightStr = maxHeight.getCondition();
                     }
                 }
 
+                String firstHeightStr = null;
                 FirstHeight firstHeight = item.getFirstHeight();
                 if (firstHeight != null) {
                     Instant arrivalTime = firstHeight.getArrivalTime();
                     if (arrivalTime != null) {
-                        if (!fieldValue.isEmpty())
-                            fieldValue.append("\n");
-                        fieldValue.append("<t:").append(arrivalTime.getEpochSecond()).append(":f>");
+                        firstHeightStr = "<t:" + arrivalTime.getEpochSecond() + ":f>";
                     } else if (firstHeight.getCondition() != null) {
-                        if (!fieldValue.isEmpty())
-                            fieldValue.append("\n");
-                        fieldValue.append(firstHeight.getCondition());
+                        firstHeightStr = firstHeight.getCondition();
                     }
                 }
 
-                if (fieldValue.isEmpty())
-                    fieldValue.append("-");
+                if (maxHeightStr != null && firstHeightStr != null) {
+                    line.append(": ").append(maxHeightStr).append(" / ").append(firstHeightStr);
+                } else if (maxHeightStr != null) {
+                    line.append(": ").append(maxHeightStr);
+                } else if (firstHeightStr != null) {
+                    line.append(": ").append(firstHeightStr);
+                }
 
-                builder.addField(fieldName, fieldValue.toString(), false);
+                groupedAreas.computeIfAbsent(categoryName, k -> new ArrayList<>()).add(line.toString());
+            }
+
+            for (Map.Entry<String, List<String>> entry : groupedAreas.entrySet()) {
+                String fieldName = entry.getKey();
+                List<String> lines = entry.getValue();
+
+                // Split into multiple fields if value exceeds Discord's 1024 char limit
+                StringBuilder fieldValue = new StringBuilder();
+                boolean first = true;
+                for (String areaLine : lines) {
+                    if (!first && fieldValue.length() + 1 + areaLine.length() > 1024) {
+                        builder.addField(fieldName, fieldValue.toString(), false);
+                        fieldValue = new StringBuilder();
+                        fieldName = "";
+                    }
+                    if (!fieldValue.isEmpty())
+                        fieldValue.append("\n");
+                    fieldValue.append(areaLine);
+                    first = false;
+                }
+                if (!fieldValue.isEmpty()) {
+                    builder.addField(fieldName, fieldValue.toString(), false);
+                }
             }
 
             builder.color(highestColor);

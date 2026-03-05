@@ -18,7 +18,7 @@ public interface JMAReport extends Entity {
 
     Instant getReportDateTime();
 
-    long getEventId();
+    String getEventId();
 
     JMAInfoType getInfoType();
 

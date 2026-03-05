@@ -11,7 +11,7 @@ public class TsunamiExternalData {
     private String publishingOffice;
 
     private long reportDateTime;
-    private long eventId;
+    private String eventId;
     private String infoType;
     private String serial;
 
@@ -63,7 +63,7 @@ public class TsunamiExternalData {
         return this.reportDateTime;
     }
 
-    public long getEventId() {
+    public String getEventId() {
         return this.eventId;
     }
 
@@ -112,7 +112,7 @@ public class TsunamiExternalData {
         private String editorialOffice;
         private String publishingOffice;
         private long reportDateTime;
-        private long eventId;
+        private String eventId;
         private String infoType;
         private String serial;
         private List<ForecastAreaInfo> forecastAreas;
@@ -149,7 +149,7 @@ public class TsunamiExternalData {
             return this;
         }
 
-        public Builder eventId(long eventId) {
+        public Builder eventId(String eventId) {
             this.eventId = eventId;
             return this;
         }
