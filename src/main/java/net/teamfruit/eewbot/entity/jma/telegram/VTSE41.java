@@ -11,6 +11,7 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.FirstHeight;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.MaxHeight;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.TsunamiItem;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
 import java.util.*;
@@ -73,11 +74,11 @@ public interface VTSE41 extends JMAReport, ExternalData {
                     }
                 }
 
-                if (maxHeightStr != null && firstHeightStr != null) {
+                if (StringUtils.isNotEmpty(maxHeightStr) && StringUtils.isNotEmpty(firstHeightStr)) {
                     line.append(": ").append(maxHeightStr).append(" / ").append(firstHeightStr);
-                } else if (maxHeightStr != null) {
+                } else if (StringUtils.isNotEmpty(maxHeightStr)) {
                     line.append(": ").append(maxHeightStr);
-                } else if (firstHeightStr != null) {
+                } else if (StringUtils.isNotEmpty(firstHeightStr)) {
                     line.append(": ").append(firstHeightStr);
                 }
 
