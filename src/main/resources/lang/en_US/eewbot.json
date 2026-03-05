@@ -43,6 +43,8 @@
   "eewbot.quakeinfo.epicenter.cancel": "The previous epicenter information has been cancelled.",
   "eewbot.quakeinfo.detail.cancel": "The previous earthquake information has been cancelled.",
   "eewbot.quakeinfo.hypocenterupdate.cancel": "The previous significant earthquake hypocenter update has been cancelled.",
+  "eewbot.tsunami.title": "Tsunami Warning/Advisory",
+  "eewbot.tsunami.cancel": "The previous tsunami warning/advisory has been cancelled.",
   "eewbot.scmd.error": "An error has occurred!",
   "eewbot.scmd.setup.reply": "Setting up the bot's operation for this channel.\n[Please read the disclaimer regarding the use of the bot.](<https://github.com/EEWBot/EEWBot/wiki/Bot%E3%81%AE%E5%88%A9%E7%94%A8%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8B%E5%85%8D%E8%B2%AC%E4%BA%8B%E9%A0%85>)",
   "eewbot.scmd.setup.permserror.viewchannel": "The bot does not have permission to view this channel!",

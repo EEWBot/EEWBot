@@ -2,10 +2,7 @@ package net.teamfruit.eewbot.entity.jma;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import net.teamfruit.eewbot.entity.jma.telegram.VXSE51Impl;
-import net.teamfruit.eewbot.entity.jma.telegram.VXSE52Impl;
-import net.teamfruit.eewbot.entity.jma.telegram.VXSE53Impl;
-import net.teamfruit.eewbot.entity.jma.telegram.VXSE61Impl;
+import net.teamfruit.eewbot.entity.jma.telegram.*;
 import org.jetbrains.annotations.Nullable;
 
 public enum JMAXmlType {
@@ -107,7 +104,7 @@ public enum JMAXmlType {
     VXSE44("緊急地震速報（予報）"),
     VXSE43("緊急地震速報（警報）"),
     VTSE51("津波情報a"),
-    VTSE41("津波警報・注意報・予報a"),
+    VTSE41("津波警報・注意報・予報a", VTSE41Impl.class),
     VZSE40("地震・津波に関するお知らせ"),
     VZVO40("火山に関するお知らせ"),
     VFVO52("噴火に関する火山観測報"),
