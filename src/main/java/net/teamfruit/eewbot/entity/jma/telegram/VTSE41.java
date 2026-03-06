@@ -20,6 +20,8 @@ public interface VTSE41 extends JMAReport, ExternalData {
 
     List<TsunamiItem> getForecastItems();
 
+    Optional<String> getText();
+
     Optional<Comment.CommentForm> getWarningComment();
 
     Optional<String> getFreeFormComment();
@@ -29,7 +31,7 @@ public interface VTSE41 extends JMAReport, ExternalData {
         builder.title("eewbot.tsunami.title");
 
         if (isCancelReport()) {
-            builder.description("eewbot.tsunami.cancel");
+            getText().ifPresentOrElse(builder::description, () -> builder.description("eewbot.tsunami.cancel"));
             builder.color(TsunamiCategory.NONE.getColor());
         } else {
             List<TsunamiItem> items = getForecastItems();
@@ -110,8 +112,9 @@ public interface VTSE41 extends JMAReport, ExternalData {
 
             builder.color(highestColor);
 
-            getWarningComment().ifPresent(comment -> builder.addField("", comment.getText(), false));
+//            getWarningComment().ifPresent(comment -> builder.addField("", comment.getText(), false));
             getFreeFormComment().ifPresent(comment -> builder.addField("", comment, false));
+            getText().ifPresent(text -> builder.addField("", text, false));
         }
 
         builder.footer(getPublishingOffice(), null);

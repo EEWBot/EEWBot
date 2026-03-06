@@ -2,7 +2,7 @@
   "embeds": [
     {
       "title": "津波警報・注意報・予報",
-      "description": "先程の津波警報・注意報・予報を取り消します。",
+      "description": "先ほどの、津波注意報を取り消します。",
       "timestamp": "2021-08-05T03:56:00Z",
       "color": 8359053,
       "footer": {

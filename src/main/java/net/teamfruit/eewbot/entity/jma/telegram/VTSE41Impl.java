@@ -32,19 +32,20 @@ public class VTSE41Impl extends JmxSeis implements VTSE41 {
     }
 
     @Override
+    public Optional<String> getText() {
+        return Optional.ofNullable(getBody().getText());
+    }
+
+    @Override
     public Optional<Comment.CommentForm> getWarningComment() {
-        if (isCancelReport())
-            return Optional.empty();
         Comment comments = getBody().getComments();
         if (comments == null)
             return Optional.empty();
-        return Optional.ofNullable(comments.getWarningComment());
+        return Optional.ofNullable(getBody().getComments().getWarningComment());
     }
 
     @Override
     public Optional<String> getFreeFormComment() {
-        if (isCancelReport())
-            return Optional.empty();
         Comment comments = getBody().getComments();
         if (comments == null)
             return Optional.empty();
