@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.entity.renderer;
 
-import net.eewbot.base65536j.Base65536;
+import net.eewbot.base32768j.Base32768;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import quake_prefecture_v0.CodeArray;
 import quake_prefecture_v0.Epicenter;
 import quake_prefecture_v0.QuakePrefectureData;
-import reactor.util.annotation.NonNull;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -130,7 +129,7 @@ public class RendererQueryFactory {
         return buffer.array();
     }
 
-    private String generateQuakePrefectureData(@NonNull Instant time, @Nullable Coordinate coordinate, @Nullable Intensity.IntensityDetail observation) {
+    private String generateQuakePrefectureData(Instant time, @Nullable Coordinate coordinate, @Nullable Intensity.IntensityDetail observation) {
         if (coordinate == null && observation == null) {
             throw new IllegalArgumentException("Either coordinate or observation is required");
         }
@@ -147,7 +146,7 @@ public class RendererQueryFactory {
 
         byte[] body = QuakePrefectureData.ADAPTER.encode(builder.build());
         byte[] query = computeQuery(body);
-        return Base65536.getEncoder().encodeToString(query);
+        return Base32768.getEncoder().encodeToString(query);
     }
 
     public String generateURL(RenderQuakePrefecture renderQuakePrefecture) throws URISyntaxException {

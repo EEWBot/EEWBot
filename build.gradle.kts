@@ -28,7 +28,7 @@ dependencies {
     api(libs.redis.clients.jedis)
 
     implementation(libs.wire.runtime)
-    implementation(libs.net.eewbot.base65536j)
+    implementation(libs.net.eewbot.base32768j)
 
     // SQL Database dependencies
     implementation(libs.sqlite.jdbc)
