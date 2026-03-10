@@ -28,12 +28,12 @@ public enum TsunamiCategory {
     津波予報_大津波警報または津波警報解除("73", 1, Color.of(0, 191, 255));
 
     private final String code;
-    private final int priority;
+    private final int level;
     private final Color color;
 
-    TsunamiCategory(String code, int priority, Color color) {
+    TsunamiCategory(String code, int level, Color color) {
         this.code = code;
-        this.priority = priority;
+        this.level = level;
         this.color = color;
     }
 
@@ -48,8 +48,8 @@ public enum TsunamiCategory {
         return this.code;
     }
 
-    public int getPriority() {
-        return this.priority;
+    public int getLevel() {
+        return this.level;
     }
 
     public Color getColor() {

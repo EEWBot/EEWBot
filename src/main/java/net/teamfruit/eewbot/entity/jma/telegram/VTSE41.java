@@ -1,6 +1,8 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import discord4j.rest.util.Color;
+import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.TsunamiCategory;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.TsunamiExternalData;
@@ -50,8 +52,8 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
                     continue;
 
                 TsunamiCategory tsunamiCategory = TsunamiCategory.fromCode(category.getKind().getCode());
-                if (tsunamiCategory.getPriority() > highestPriority) {
-                    highestPriority = tsunamiCategory.getPriority();
+                if (tsunamiCategory.getLevel() > highestPriority) {
+                    highestPriority = tsunamiCategory.getLevel();
                     highestColor = tsunamiCategory.getColor();
                 }
 
@@ -114,6 +116,14 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
             }
 
             builder.color(highestColor);
+
+            if (highestPriority > 0 && EEWBot.instance.getRendererQueryFactory().isAvailable()) {
+                try {
+                    builder.image(EEWBot.instance.getRendererQueryFactory().generateURL(this));
+                } catch (Exception e) {
+                    Log.logger.error("Failed to generate renderer query", e);
+                }
+            }
 
 //            getWarningComment().ifPresent(comment -> builder.addField("", comment.getText(), false));
             getFreeFormComment().ifPresent(comment -> builder.addField("", comment, false));
