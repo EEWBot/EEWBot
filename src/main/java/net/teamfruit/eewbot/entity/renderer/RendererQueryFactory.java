@@ -123,9 +123,10 @@ public class RendererQueryFactory {
     }
 
     private byte[] computeQuery(byte[] body) {
-        byte[] hmac = this.threadLocalMac.get().doFinal(body);
-        ByteBuffer buffer = ByteBuffer.allocate(1 + hmac.length + body.length);
-        buffer.put(VERSION).put(hmac).put(body);
+        byte[] signingTarget = ByteBuffer.allocate(1 + body.length).put(VERSION).put(body).array();
+        byte[] hmac = this.threadLocalMac.get().doFinal(signingTarget);
+        ByteBuffer buffer = ByteBuffer.allocate(1 + 1 + hmac.length + body.length);
+        buffer.put(VERSION).put((byte) 0xFF).put(hmac).put(body);
         return buffer.array();
     }
 
