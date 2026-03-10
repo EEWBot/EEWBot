@@ -79,7 +79,7 @@ public class ChannelMigration {
             if (config.dryRun) {
                 performDryRun(source);
             } else {
-                performMigrationWithTracking(source, destination, migrationName);
+                performMigrationWithTracking(source, destination, migrationName, config.initTsunami);
             }
 
             Log.logger.info("Migration completed successfully");
@@ -115,7 +115,7 @@ public class ChannelMigration {
         );
     }
 
-    static void performMigrationWithTracking(DestinationAdminRegistry source, ChannelRegistrySql dest, String migrationName) {
+    static void performMigrationWithTracking(DestinationAdminRegistry source, ChannelRegistrySql dest, String migrationName, boolean initTsunami) {
         dest.getDsl().transaction(ctx -> {
             DSLContext tx = ctx.dsl();
 
@@ -146,10 +146,12 @@ public class ChannelMigration {
             Log.logger.info("Performing migration: {}", migrationName);
             List<Map.Entry<Long, Channel>> entries = collectChannels(source);
             migrateChannelsSql(entries, dest, tx);
-            tx.update(table(name("destinations")))
-                    .set(field(name("tsunami"), Integer.class), 1)
-                    .where(field(name("quake_info"), Integer.class).eq(1))
-                    .execute();
+            if (initTsunami) {
+                tx.update(table(name("destinations")))
+                        .set(field(name("tsunami"), Integer.class), 1)
+                        .where(field(name("quake_info"), Integer.class).eq(1))
+                        .execute();
+            }
             new ConfigRevisionStore(tx, dest.getDialect()).incrementWithDsl(tx);
 
             if (dest.getDialect() == org.jooq.SQLDialect.SQLITE) {
@@ -328,6 +330,7 @@ public class ChannelMigration {
                 case "--dest-username" -> config.destConfig.put("username", nextArg(args, ++i, "--dest-username"));
                 case "--dest-password" -> config.destConfig.put("password", nextArg(args, ++i, "--dest-password"));
                 case "--dry-run" -> config.dryRun = true;
+                case "--init-tsunami" -> config.initTsunami = true;
                 default -> {
                     if (arg.startsWith("--")) {
                         Log.logger.warn("Unknown argument: {}", arg);
@@ -392,6 +395,7 @@ public class ChannelMigration {
         System.out.println("  --dest-username <user>    Destination PostgreSQL username");
         System.out.println("  --dest-password <pass>    Destination PostgreSQL password");
         System.out.println("  --dry-run                 Preview migration without making changes");
+        System.out.println("  --init-tsunami            Set tsunami=1 for all channels with quake_info=1");
         System.out.println();
         System.out.println("Examples:");
         System.out.println("  # JSON to SQLite");
@@ -416,5 +420,6 @@ public class ChannelMigration {
         Map<String, String> sourceConfig = new HashMap<>();
         Map<String, String> destConfig = new HashMap<>();
         boolean dryRun = false;
+        boolean initTsunami = false;
     }
 }
