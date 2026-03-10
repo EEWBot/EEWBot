@@ -10,14 +10,16 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.Category;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.FirstHeight;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.MaxHeight;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.TsunamiItem;
+import net.teamfruit.eewbot.entity.renderer.RenderTsunami;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
 import java.util.*;
 
-public interface VTSE41 extends JMAReport, ExternalData {
+public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
 
+    @Override
     List<TsunamiItem> getForecastItems();
 
     Optional<String> getText();

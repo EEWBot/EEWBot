@@ -1,11 +1,11 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.JmxSeis;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.Tsunami;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.TsunamiDetail;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.TsunamiItem;
+import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
+import net.teamfruit.eewbot.entity.jma.telegram.seis.*;
+import org.jspecify.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -50,5 +50,30 @@ public class VTSE41Impl extends JmxSeis implements VTSE41 {
         if (comments == null)
             return Optional.empty();
         return Optional.ofNullable(comments.getFreeFormComment());
+    }
+
+    @Override
+    public Instant getTime() {
+        return getHead().getTargetDateTime();
+    }
+
+    @Override
+    public @Nullable Coordinate getCoordinate() {
+        if (isCancelReport())
+            return null;
+
+        List<Earthquake> earthquakes = getBody().getEarthquakes();
+        if (earthquakes.isEmpty())
+            return null;
+
+        Hypocenter hypocenter = earthquakes.getFirst().getHypocenter();
+        if (hypocenter == null)
+            return null;
+
+        List<Coordinate> coordinates =  hypocenter.getArea().getCoordinate();
+        if (coordinates.isEmpty())
+            return null;
+
+        return coordinates.getFirst();
     }
 }
