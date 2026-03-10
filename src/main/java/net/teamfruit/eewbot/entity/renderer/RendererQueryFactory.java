@@ -155,8 +155,8 @@ public class RendererQueryFactory {
         }
 
         String base32768Str =generateQuakePrefectureData(renderQuakePrefecture.getTime(), renderQuakePrefecture.getCoordinate(), renderQuakePrefecture.getIntensityDetail());
-        String baseURL = this.baseURL.endsWith("/") ? this.baseURL : this.baseURL + "/";
-        return baseURL + base32768Str;
+        String normalizedBaseURL = this.baseURL.endsWith("/") ? this.baseURL : this.baseURL + "/";
+        return normalizedBaseURL + base32768Str;
     }
 
     private tsunami_v0.Epicenter buildTsunamiEpicenter(Coordinate coordinate) {
@@ -217,7 +217,7 @@ public class RendererQueryFactory {
         }
 
         String base32768Str = generateTsunamiData(renderTsunami.getTime(), renderTsunami.getCoordinate(), renderTsunami.getForecastItems());
-        String baseURL = this.baseURL.endsWith("/") ? this.baseURL : this.baseURL + "/";
-        return baseURL + base32768Str;
+        String normalizedBaseURL = this.baseURL.endsWith("/") ? this.baseURL : this.baseURL + "/";
+        return normalizedBaseURL + base32768Str;
     }
 }
