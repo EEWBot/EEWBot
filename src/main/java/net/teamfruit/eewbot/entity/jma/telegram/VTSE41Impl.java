@@ -54,13 +54,20 @@ public class VTSE41Impl extends JmxSeis implements VTSE41 {
 
     @Override
     public Instant getTime() {
-        return getHead().getTargetDateTime();
+        if (isCancelReport())
+            throw new IllegalStateException("Cancel report");
+
+        List<Earthquake> earthquakes = getBody().getEarthquakes();
+        if (earthquakes.isEmpty())
+            return null;
+
+        return earthquakes.getFirst().getOriginTime();
     }
 
     @Override
     public @Nullable Coordinate getCoordinate() {
         if (isCancelReport())
-            return null;
+            throw new IllegalStateException("Cancel report");
 
         List<Earthquake> earthquakes = getBody().getEarthquakes();
         if (earthquakes.isEmpty())
