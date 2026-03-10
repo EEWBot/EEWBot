@@ -29,15 +29,16 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
     Optional<String> getFreeFormComment();
 
     @Override
+    @SuppressWarnings("NonAsciiCharacters")
     default <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
         builder.title("eewbot.tsunami.title");
 
         if (isCancelReport()) {
             getText().ifPresentOrElse(builder::description, () -> builder.description("eewbot.tsunami.cancel"));
-            builder.color(TsunamiCategory.NONE.getColor());
+            builder.color(TsunamiCategory.津波なし.getColor());
         } else {
             List<TsunamiItem> items = getForecastItems();
-            Color highestColor = TsunamiCategory.NONE.getColor();
+            Color highestColor = TsunamiCategory.津波なし.getColor();
             int highestPriority = -1;
 
             // Group items by category kind name to avoid exceeding Discord's 25-field limit
