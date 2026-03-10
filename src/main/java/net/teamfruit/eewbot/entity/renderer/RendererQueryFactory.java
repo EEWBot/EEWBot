@@ -26,7 +26,8 @@ import java.util.function.BiConsumer;
 
 public class RendererQueryFactory {
 
-    private static final byte VERSION = 0;
+    private static final byte VERSIONED_TYPE_QUAKE_PREFECTURE = 0;
+    private static final byte VERSIONED_TYPE_TSUNAMI = 1;
     private static final String HMAC_ALGO = "HmacSHA1";
 
     private static final EnumMap<SeismicIntensity, BiConsumer<QuakePrefectureData.Builder, CodeArray>> SETTER_MAP =
@@ -120,11 +121,11 @@ public class RendererQueryFactory {
         });
     }
 
-    private byte[] computeQuery(byte[] body) {
-        byte[] signingTarget = ByteBuffer.allocate(1 + body.length).put(VERSION).put(body).array();
+    private byte[] computeQuery(byte versionedTypeId, byte[] body) {
+        byte[] signingTarget = ByteBuffer.allocate(1 + body.length).put(versionedTypeId).put(body).array();
         byte[] hmac = this.threadLocalMac.get().doFinal(signingTarget);
         ByteBuffer buffer = ByteBuffer.allocate(1 + 1 + hmac.length + body.length);
-        buffer.put(VERSION).put((byte) 0xFF).put(hmac).put(body);
+        buffer.put(versionedTypeId).put((byte) 0xFF).put(hmac).put(body);
         return buffer.array();
     }
 
@@ -144,7 +145,7 @@ public class RendererQueryFactory {
         applyCodeMap(builder, codeMap);
 
         byte[] body = QuakePrefectureData.ADAPTER.encode(builder.build());
-        byte[] query = computeQuery(body);
+        byte[] query = computeQuery(VERSIONED_TYPE_QUAKE_PREFECTURE, body);
         return Base32768.getEncoder().encodeToString(query);
     }
 
@@ -206,7 +207,7 @@ public class RendererQueryFactory {
         builder.major_warning(new tsunami_v0.CodeArray.Builder().codes(majorWarningCodes).build());
 
         byte[] body = TsunamiForecastData.ADAPTER.encode(builder.build());
-        byte[] query = computeQuery(body);
+        byte[] query = computeQuery(VERSIONED_TYPE_TSUNAMI, body);
         return Base32768.getEncoder().encodeToString(query);
     }
 

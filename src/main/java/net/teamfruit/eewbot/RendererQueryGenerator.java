@@ -1,7 +1,7 @@
 package net.teamfruit.eewbot;
 
-import net.teamfruit.eewbot.entity.jma.telegram.VXSE53;
-import net.teamfruit.eewbot.entity.jma.telegram.VXSE53Impl;
+import net.teamfruit.eewbot.entity.jma.telegram.VTSE41;
+import net.teamfruit.eewbot.entity.jma.telegram.VTSE41Impl;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 
 import java.io.FileInputStream;
@@ -18,7 +18,7 @@ public class RendererQueryGenerator {
         RendererQueryFactory rendererQueryFactory = new RendererQueryFactory("http://localhost:3000", hmacKey);
 
         try (var inputStream = new FileInputStream(path)) {
-            VXSE53 report = EEWBot.XML_MAPPER.readValue(inputStream, VXSE53Impl.class);
+            VTSE41 report = EEWBot.XML_MAPPER.readValue(inputStream, VTSE41Impl.class);
             String data = rendererQueryFactory.generateURL(report);
             Log.logger.info(data);
         }
