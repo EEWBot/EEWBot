@@ -52,7 +52,7 @@ public class RendererQueryFactory {
     private final ThreadLocal<Mac> threadLocalMac;
 
     public RendererQueryFactory(String baseURL, String hmacKey) {
-        if (StringUtils.isEmpty(hmacKey)) {
+        if (baseURL == null || StringUtils.isEmpty(hmacKey)) {
             this.baseURL = null;
             this.hmacKey = null;
             this.threadLocalMac = null;
