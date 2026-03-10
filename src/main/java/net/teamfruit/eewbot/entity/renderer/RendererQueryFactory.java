@@ -7,7 +7,6 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityArea;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hc.core5.net.URIBuilder;
 import org.jetbrains.annotations.Nullable;
 import quake_prefecture_v0.CodeArray;
 import quake_prefecture_v0.Epicenter;
@@ -15,7 +14,6 @@ import quake_prefecture_v0.QuakePrefectureData;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -53,7 +51,7 @@ public class RendererQueryFactory {
     private final ThreadLocal<Mac> threadLocalMac;
 
     public RendererQueryFactory(String baseURL, String hmacKey) {
-        if (StringUtils.isEmpty(baseURL) || StringUtils.isEmpty(hmacKey)) {
+        if (StringUtils.isEmpty(hmacKey)) {
             this.baseURL = null;
             this.hmacKey = null;
             this.threadLocalMac = null;
@@ -150,11 +148,13 @@ public class RendererQueryFactory {
         return Base32768.getEncoder().encodeToString(query);
     }
 
-    public String generateURL(RenderQuakePrefecture renderQuakePrefecture) throws URISyntaxException {
+    public String generateURL(RenderQuakePrefecture renderQuakePrefecture) {
         if (!isAvailable()) {
             throw new IllegalStateException("Renderer is not available");
         }
 
-        return new URIBuilder(this.baseURL).setPath(generateQuakePrefectureData(renderQuakePrefecture.getTime(), renderQuakePrefecture.getCoordinate(), renderQuakePrefecture.getIntensityDetail())).toString();
+        String base32768Str =generateQuakePrefectureData(renderQuakePrefecture.getTime(), renderQuakePrefecture.getCoordinate(), renderQuakePrefecture.getIntensityDetail());
+        String baseURL = this.baseURL.endsWith("/") ? this.baseURL : this.baseURL + "/";
+        return baseURL + base32768Str;
     }
 }
