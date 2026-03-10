@@ -6,7 +6,7 @@ import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.JmxSeis;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.List;

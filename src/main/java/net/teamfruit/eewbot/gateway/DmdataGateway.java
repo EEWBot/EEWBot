@@ -10,7 +10,7 @@ import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketList;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketStart;
 import net.teamfruit.eewbot.entity.dmdata.ws.*;
 import org.apache.commons.lang3.StringUtils;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

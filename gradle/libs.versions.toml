@@ -11,7 +11,7 @@ commons-net-commons-net = "3.12.0"
 org-apache-commons-commons-lang3 = "3.20.0"
 org-apache-httpcomponents-client5-httpclient5 = "5.6"
 redis-clients-jedis = "4.4.8"
-net-eewbot-base65536j = "0.1.0"
+net-eewbot-base32768j = "0.1.0"
 shadow-jar = "9.3.2"
 wire = "5.5.1"
 junit-jupiter = "6.0.3"
@@ -35,7 +35,7 @@ commons-net-commons-net = { module = "commons-net:commons-net", version.ref = "c
 org-apache-commons-commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "org-apache-commons-commons-lang3" }
 org-apache-httpcomponents-client5-httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version.ref = "org-apache-httpcomponents-client5-httpclient5" }
 redis-clients-jedis = { module = "redis.clients:jedis", version.ref = "redis-clients-jedis" }
-net-eewbot-base65536j = { module = "net.eewbot:base65536j", version.ref = "net-eewbot-base65536j" }
+net-eewbot-base32768j = { module = "net.eewbot:base32768j", version.ref = "net-eewbot-base32768j" }
 wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }

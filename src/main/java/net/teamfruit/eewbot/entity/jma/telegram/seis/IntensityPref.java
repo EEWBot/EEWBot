@@ -4,7 +4,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import net.teamfruit.eewbot.entity.LgIntensity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.List;

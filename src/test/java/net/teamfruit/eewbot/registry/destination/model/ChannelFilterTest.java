@@ -26,7 +26,7 @@ class ChannelFilterTest {
     private Channel channel(Long guildId, Long channelId, Long threadId,
                             boolean eewAlert, boolean eewPrediction, boolean eewDecimation, boolean quakeInfo,
                             SeismicIntensity minIntensity, ChannelWebhook webhook) {
-        return new Channel(guildId, channelId, threadId, eewAlert, eewPrediction, eewDecimation, quakeInfo, minIntensity, webhook, "ja_jp");
+        return new Channel(guildId, channelId, threadId, eewAlert, eewPrediction, eewDecimation, quakeInfo, false, minIntensity, webhook, "ja_jp");
     }
 
     @Nested
@@ -192,7 +192,7 @@ class ChannelFilterTest {
                                                               boolean eewAlert, boolean eewPrediction, boolean eewDecimation, boolean quakeInfo,
                                                               SeismicIntensity minIntensity, ChannelWebhook webhook) {
         return new DeliverySnapshot.DeliveryChannel(0L, channelId, threadId, guildId,
-                eewAlert, eewPrediction, eewDecimation, quakeInfo, minIntensity, "ja_jp", webhook);
+                eewAlert, eewPrediction, eewDecimation, quakeInfo, false, minIntensity, "ja_jp", webhook);
     }
 
     @Nested
@@ -372,18 +372,18 @@ class ChannelFilterTest {
          */
         private final Map<Long, Channel> testChannels = Map.of(
                 // Guild channel, eewAlert=true, quakeInfo=true, intensity=ONE, no webhook, no thread
-                1001L, new Channel(100L, 1001L, null, true, false, false, true, SeismicIntensity.ONE, null, "ja_jp"),
+                1001L, new Channel(100L, 1001L, null, true, false, false, true, false, SeismicIntensity.ONE, null, "ja_jp"),
                 // DM channel, eewPrediction=true, intensity=FOUR, no webhook, no thread
-                2001L, new Channel(null, 2001L, null, false, true, false, false, SeismicIntensity.FOUR, null, "en_us"),
+                2001L, new Channel(null, 2001L, null, false, true, false, false, false, SeismicIntensity.FOUR, null, "en_us"),
                 // Guild channel with thread, eewDecimation=true, intensity=FIVE_MINUS
-                3001L, new Channel(200L, 3000L, 3001L, false, false, true, false, SeismicIntensity.FIVE_MINUS, null, "ja_jp"),
+                3001L, new Channel(200L, 3000L, 3001L, false, false, true, false, false, SeismicIntensity.FIVE_MINUS, null, "ja_jp"),
                 // Guild channel with webhook, eewAlert=true, eewPrediction=true, intensity=TWO
-                4001L, new Channel(100L, 4001L, null, true, true, false, false, SeismicIntensity.TWO,
+                4001L, new Channel(100L, 4001L, null, true, true, false, false, false, SeismicIntensity.TWO,
                         ChannelWebhook.of(555L, "token"), "ja_jp"),
                 // DM channel, all flags false, intensity=THREE
-                5001L, new Channel(null, 5001L, null, false, false, false, false, SeismicIntensity.THREE, null, "ja_jp"),
+                5001L, new Channel(null, 5001L, null, false, false, false, false, false, SeismicIntensity.THREE, null, "ja_jp"),
                 // Guild channel with thread and webhook, quakeInfo=true, intensity=ONE
-                6001L, new Channel(300L, 6000L, 6001L, false, false, false, true, SeismicIntensity.ONE,
+                6001L, new Channel(300L, 6000L, 6001L, false, false, false, true, false, SeismicIntensity.ONE,
                         ChannelWebhook.of(666L, "token2"), "ja_jp")
         );
 

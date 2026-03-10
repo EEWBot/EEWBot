@@ -46,7 +46,7 @@ class ChannelMigrationTest {
         @DisplayName("channel with channelId and no threadId: targetId = channelId")
         void channelWithChannelIdNoThread() {
             Channel ch = new Channel(100L, 500L, null, true, false, false, false,
-                    SeismicIntensity.ONE, null, "ja_jp");
+                    false, SeismicIntensity.ONE, null, "ja_jp");
             List<Map.Entry<Long, Channel>> entries = List.of(entry(500L, ch));
 
             ChannelMigration.migrateChannelsSql(entries, destination, destination.getDsl());
@@ -61,7 +61,7 @@ class ChannelMigrationTest {
         @DisplayName("channel with threadId: targetId = threadId")
         void channelWithThreadId() {
             Channel ch = new Channel(100L, 500L, 999L, true, false, false, false,
-                    SeismicIntensity.ONE, null, "ja_jp");
+                    false, SeismicIntensity.ONE, null, "ja_jp");
             List<Map.Entry<Long, Channel>> entries = List.of(entry(500L, ch));
 
             ChannelMigration.migrateChannelsSql(entries, destination, destination.getDsl());
@@ -78,7 +78,7 @@ class ChannelMigrationTest {
         void oldFormatNullChannelId() {
             // Old format: channelId is null (not yet set by migration code)
             Channel ch = new Channel(100L, null, null, true, false, false, false,
-                    SeismicIntensity.ONE, null, "ja_jp");
+                    false, SeismicIntensity.ONE, null, "ja_jp");
             List<Map.Entry<Long, Channel>> entries = List.of(entry(777L, ch));
 
             ChannelMigration.migrateChannelsSql(entries, destination, destination.getDsl());
@@ -95,7 +95,7 @@ class ChannelMigrationTest {
         void oldFormatWithThreadIdNullChannelId() {
             // Old format: channelId null, threadId from webhook
             Channel ch = new Channel(100L, null, 888L, true, false, false, false,
-                    SeismicIntensity.ONE, null, "ja_jp");
+                    false, SeismicIntensity.ONE, null, "ja_jp");
             List<Map.Entry<Long, Channel>> entries = List.of(entry(500L, ch));
 
             ChannelMigration.migrateChannelsSql(entries, destination, destination.getDsl());
@@ -118,7 +118,7 @@ class ChannelMigrationTest {
         void webhookWithThreadId() {
             ChannelWebhook originalWh = ChannelWebhook.of(555L, "tok");
             Channel ch = new Channel(100L, 500L, 999L, true, false, false, false,
-                    SeismicIntensity.ONE, originalWh, "ja_jp");
+                    false, SeismicIntensity.ONE, originalWh, "ja_jp");
             List<Map.Entry<Long, Channel>> entries = List.of(entry(500L, ch));
 
             ChannelMigration.migrateChannelsSql(entries, destination, destination.getDsl());
@@ -135,7 +135,7 @@ class ChannelMigrationTest {
         void webhookWithoutThreadId() {
             ChannelWebhook originalWh = ChannelWebhook.of(555L, "tok");
             Channel ch = new Channel(100L, 500L, null, true, false, false, false,
-                    SeismicIntensity.ONE, originalWh, "ja_jp");
+                    false, SeismicIntensity.ONE, originalWh, "ja_jp");
             List<Map.Entry<Long, Channel>> entries = List.of(entry(500L, ch));
 
             ChannelMigration.migrateChannelsSql(entries, destination, destination.getDsl());
@@ -149,7 +149,7 @@ class ChannelMigrationTest {
         @DisplayName("channel without webhook should migrate with null webhook")
         void noWebhook() {
             Channel ch = new Channel(100L, 500L, null, true, false, false, false,
-                    SeismicIntensity.ONE, null, "ja_jp");
+                    false, SeismicIntensity.ONE, null, "ja_jp");
             List<Map.Entry<Long, Channel>> entries = List.of(entry(500L, ch));
 
             ChannelMigration.migrateChannelsSql(entries, destination, destination.getDsl());
@@ -167,7 +167,7 @@ class ChannelMigrationTest {
         @DisplayName("should preserve all boolean flags and settings")
         void preserveAllFields() {
             Channel ch = new Channel(100L, 1L, null, true, true, true, true,
-                    SeismicIntensity.SIX_PLUS, null, "en_us");
+                    false, SeismicIntensity.SIX_PLUS, null, "en_us");
             List<Map.Entry<Long, Channel>> entries = List.of(entry(1L, ch));
 
             ChannelMigration.migrateChannelsSql(entries, destination, destination.getDsl());
@@ -186,7 +186,7 @@ class ChannelMigrationTest {
         @DisplayName("should handle null lang by using database default")
         void nullLangUsesDefault() {
             Channel ch = new Channel(100L, 1L, null, false, false, false, false,
-                    SeismicIntensity.ONE, null, null);
+                    false, SeismicIntensity.ONE, null, null);
             List<Map.Entry<Long, Channel>> entries = List.of(entry(1L, ch));
 
             ChannelMigration.migrateChannelsSql(entries, destination, destination.getDsl());
@@ -199,7 +199,7 @@ class ChannelMigrationTest {
         @DisplayName("should handle null minIntensity by using ONE")
         void nullMinIntensityUsesDefault() {
             Channel ch = new Channel(100L, 1L, null, false, false, false, false,
-                    null, null, "ja_jp");
+                    false, null, null, "ja_jp");
             List<Map.Entry<Long, Channel>> entries = List.of(entry(1L, ch));
 
             ChannelMigration.migrateChannelsSql(entries, destination, destination.getDsl());
@@ -229,7 +229,7 @@ class ChannelMigrationTest {
         @DisplayName("should preserve DM channel (null guildId)")
         void preserveDmChannel() {
             Channel ch = new Channel(null, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, null, "ja_jp");
+                    false, SeismicIntensity.ONE, null, "ja_jp");
             List<Map.Entry<Long, Channel>> entries = List.of(entry(1L, ch));
 
             ChannelMigration.migrateChannelsSql(entries, destination, destination.getDsl());

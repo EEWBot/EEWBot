@@ -48,7 +48,7 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
             JMAFeed feed = EEWBot.XML_MAPPER.readValue(new InputStreamReader(feedResponse.body()), JMAFeed.class);
 
             boolean searchVXSE51 = false;
-            long searchEventId = -1;
+            String searchEventId = null;
             for (JMAFeed.Entry entry : feed.getEntries()) {
                 if (entry.getTitle().isEmpty()) {
                     Log.logger.warn("Unknown JMA XML Activity: {}", entry);
@@ -75,7 +75,7 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
                 }
 
                 AbstractJMAReport report = EEWBot.XML_MAPPER.readValue(new InputStreamReader(reportResponse.body()), reportClass);
-                if (report.getControl().getStatus() == JMAStatus.通常 && (searchEventId < 0 || searchEventId == report.getEventId())) {
+                if (report.getControl().getStatus() == JMAStatus.通常 && (searchEventId == null || searchEventId.equals(report.getEventId()))) {
                     QuakeInfo quakeInfo = (QuakeInfo) report;
                     this.store.putReport(quakeInfo);
                     if (report instanceof VXSE52) {

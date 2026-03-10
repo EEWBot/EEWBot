@@ -12,6 +12,7 @@ import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
+import net.teamfruit.eewbot.entity.jma.telegram.VTSE41;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.gateway.*;
@@ -168,6 +169,12 @@ public class EEWExecutor {
                                 .build();
                         EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(filter, data));
                     }
+                }
+                if (data instanceof VTSE41) {
+                    ChannelFilter filter = ChannelFilter.builder()
+                            .tsunami(true)
+                            .build();
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(filter, data));
                 }
                 if (data instanceof ExternalData externalData) {
                     EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.externalWebhookService.sendExternalWebhook(externalData));

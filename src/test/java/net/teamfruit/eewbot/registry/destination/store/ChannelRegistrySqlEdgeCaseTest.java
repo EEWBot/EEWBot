@@ -140,7 +140,7 @@ class ChannelRegistrySqlEdgeCaseTest {
             // Insert channel with webhook URL that includes thread_id
             ChannelWebhook webhookWithThread = ChannelWebhook.of(555L, "tok", 999L);
             Channel ch = new Channel(100L, 1L, 999L, true, false, false, false,
-                    SeismicIntensity.ONE, webhookWithThread, "ja_jp");
+                    false, SeismicIntensity.ONE, webhookWithThread, "ja_jp");
             sqlRegistry.put(999L, ch);
 
             // Clear using URL WITHOUT thread_id - should still match because it extracts webhook ID
@@ -157,7 +157,7 @@ class ChannelRegistrySqlEdgeCaseTest {
             // The clear URL has same webhook ID but different token
             ChannelWebhook webhook = ChannelWebhook.of(555L, "originalToken");
             Channel ch = new Channel(100L, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, webhook, "ja_jp");
+                    false, SeismicIntensity.ONE, webhook, "ja_jp");
             sqlRegistry.put(1L, ch);
 
             // Clear using URL with same ID but different token
@@ -176,9 +176,9 @@ class ChannelRegistrySqlEdgeCaseTest {
             ChannelWebhook wh2 = ChannelWebhook.of(555L, "tok", 999L);
 
             sqlRegistry.put(1L, new Channel(100L, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, wh1, "ja_jp"));
+                    false, SeismicIntensity.ONE, wh1, "ja_jp"));
             sqlRegistry.put(999L, new Channel(100L, 1L, 999L, true, false, false, false,
-                    SeismicIntensity.ONE, wh2, "ja_jp"));
+                    false, SeismicIntensity.ONE, wh2, "ja_jp"));
 
             int cleared = sqlRegistry.clearWebhookByUrls(
                     List.of("https://discord.com/api/webhooks/555/tok"));
@@ -230,7 +230,7 @@ class ChannelRegistrySqlEdgeCaseTest {
         @DisplayName("should map boolean fields correctly (0/1 to false/true)")
         void booleanFieldMapping() {
             Channel ch = new Channel(100L, 1L, null, true, false, true, false,
-                    SeismicIntensity.FOUR, null, "en_us");
+                    false, SeismicIntensity.FOUR, null, "en_us");
             sqlRegistry.put(1L, ch);
 
             List<DeliverySnapshot.DeliveryChannel> channels = sqlRegistry.loadAllForSnapshot();
@@ -249,7 +249,7 @@ class ChannelRegistrySqlEdgeCaseTest {
         void webhookIncluded() {
             ChannelWebhook webhook = ChannelWebhook.of(555L, "myToken");
             Channel ch = new Channel(100L, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, webhook, "ja_jp");
+                    false, SeismicIntensity.ONE, webhook, "ja_jp");
             sqlRegistry.put(1L, ch);
 
             List<DeliverySnapshot.DeliveryChannel> channels = sqlRegistry.loadAllForSnapshot();
@@ -279,7 +279,7 @@ class ChannelRegistrySqlEdgeCaseTest {
             // Insert a channel with valid webhook so DB isn't empty
             ChannelWebhook webhook = ChannelWebhook.of(555L, "tok");
             sqlRegistry.put(1L, new Channel(100L, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, webhook, "ja_jp"));
+                    false, SeismicIntensity.ONE, webhook, "ja_jp"));
 
             int cleared = sqlRegistry.clearWebhookByUrls(List.of("not-a-url"));
 
@@ -293,7 +293,7 @@ class ChannelRegistrySqlEdgeCaseTest {
         void mixValidInvalidUrls() {
             ChannelWebhook webhook = ChannelWebhook.of(555L, "tok");
             sqlRegistry.put(1L, new Channel(100L, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, webhook, "ja_jp"));
+                    false, SeismicIntensity.ONE, webhook, "ja_jp"));
 
             int cleared = sqlRegistry.clearWebhookByUrls(
                     List.of("not-a-url", "https://discord.com/api/webhooks/555/tok"));
@@ -307,7 +307,7 @@ class ChannelRegistrySqlEdgeCaseTest {
         void emptyStringUrlSkipped() {
             ChannelWebhook webhook = ChannelWebhook.of(555L, "tok");
             sqlRegistry.put(1L, new Channel(100L, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, webhook, "ja_jp"));
+                    false, SeismicIntensity.ONE, webhook, "ja_jp"));
 
             int cleared = sqlRegistry.clearWebhookByUrls(List.of(""));
 
@@ -324,9 +324,9 @@ class ChannelRegistrySqlEdgeCaseTest {
         @DisplayName("duplicate put should not overwrite existing channel")
         void duplicatePutDoesNotOverwrite() {
             Channel original = new Channel(100L, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, null, "ja_jp");
+                    false, SeismicIntensity.ONE, null, "ja_jp");
             Channel duplicate = new Channel(200L, 2L, null, false, true, true, true,
-                    SeismicIntensity.SEVEN, null, "en_us");
+                    false, SeismicIntensity.SEVEN, null, "en_us");
 
             sqlRegistry.put(1L, original);
             sqlRegistry.put(1L, duplicate); // onConflictDoNothing
@@ -346,7 +346,7 @@ class ChannelRegistrySqlEdgeCaseTest {
         void singleUse() {
             ChannelWebhook webhook = ChannelWebhook.of(555L, "tok");
             sqlRegistry.put(1L, new Channel(100L, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, webhook, "ja_jp"));
+                    false, SeismicIntensity.ONE, webhook, "ja_jp"));
 
             assertThat(sqlRegistry.isWebhookExclusiveToTarget(555L, 1L)).isTrue();
         }
@@ -358,9 +358,9 @@ class ChannelRegistrySqlEdgeCaseTest {
             ChannelWebhook wh2 = ChannelWebhook.of(555L, "tok", 999L);
 
             sqlRegistry.put(1L, new Channel(100L, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, wh1, "ja_jp"));
+                    false, SeismicIntensity.ONE, wh1, "ja_jp"));
             sqlRegistry.put(999L, new Channel(100L, 1L, 999L, true, false, false, false,
-                    SeismicIntensity.ONE, wh2, "ja_jp"));
+                    false, SeismicIntensity.ONE, wh2, "ja_jp"));
 
             // webhookId 555 is used by both target 1 and 999
             assertThat(sqlRegistry.isWebhookExclusiveToTarget(555L, 1L)).isFalse();

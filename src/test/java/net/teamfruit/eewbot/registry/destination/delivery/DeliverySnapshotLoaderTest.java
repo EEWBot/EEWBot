@@ -96,7 +96,7 @@ class DeliverySnapshotLoaderTest {
     void snapshotFieldsMatchDb() {
         ChannelWebhook webhook = ChannelWebhook.of(555L, "myToken");
         Channel ch = new Channel(100L, 1L, 999L, true, false, true, false,
-                SeismicIntensity.FOUR, webhook, "en_us");
+                false, SeismicIntensity.FOUR, webhook, "en_us");
         this.sqlRegistry.put(999L, ch);
         this.revisionStore.incrementRevision();
 

@@ -3,11 +3,11 @@ package net.teamfruit.eewbot.entity.dmdata;
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.EEWExternalData;
+import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Comparator;

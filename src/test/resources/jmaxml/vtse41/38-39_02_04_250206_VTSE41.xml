@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://xml.kishou.go.jp/jmaxml1/">
+  <Control>
+    <Title>津波警報・注意報・予報a</Title>
+    <DateTime>2015-11-13T22:20:01Z</DateTime>
+    <Status>通常</Status>
+    <EditorialOffice>大阪管区気象台</EditorialOffice>
+    <PublishingOffice>気象庁</PublishingOffice>
+  </Control>
+  <Head xmlns="http://xml.kishou.go.jp/jmaxml1/informationBasis1/">
+    <Title>津波予報</Title>
+    <ReportDateTime>2015-11-14T07:20:00+09:00</ReportDateTime>
+    <TargetDateTime>2015-11-14T07:20:00+09:00</TargetDateTime>
+    <EventID>20151114055157 20151114061750</EventID>
+    <InfoType>発表</InfoType>
+    <Serial></Serial>
+    <InfoKind>津波警報・注意報・予報</InfoKind>
+    <InfoKindVersion>1.0_1</InfoKindVersion>
+    <Headline>
+      <Text>津波注意報を解除しました。</Text>
+    </Headline>
+  </Head>
+  <Body xmlns="http://xml.kishou.go.jp/jmaxml1/body/seismology1/" xmlns:jmx_eb="http://xml.kishou.go.jp/jmaxml1/elementBasis1/">
+    <Tsunami>
+      <Forecast>
+        <CodeDefine>
+          <Type xpath="Item/Area/Code">津波予報区</Type>
+          <Type xpath="Item/Category/Kind/Code">警報等情報要素／津波警報・注意報・予報</Type>
+          <Type xpath="Item/Category/LastKind/Code">警報等情報要素／津波警報・注意報・予報</Type>
+        </CodeDefine>
+        <Item>
+          <Area>
+            <Name>種子島・屋久島地方</Name>
+            <Code>771</Code>
+          </Area>
+          <Category>
+            <Kind>
+              <Name>津波注意報解除</Name>
+              <Code>60</Code>
+            </Kind>
+            <LastKind>
+              <Name>津波注意報</Name>
+              <Code>62</Code>
+            </LastKind>
+          </Category>
+        </Item>
+        <Item>
+          <Area>
+            <Name>奄美群島・トカラ列島</Name>
+            <Code>772</Code>
+          </Area>
+          <Category>
+            <Kind>
+              <Name>津波注意報解除</Name>
+              <Code>60</Code>
+            </Kind>
+            <LastKind>
+              <Name>津波注意報</Name>
+              <Code>62</Code>
+            </LastKind>
+          </Category>
+        </Item>
+        <Item>
+          <Area>
+            <Name>鹿児島県西部</Name>
+            <Code>773</Code>
+          </Area>
+          <Category>
+            <Kind>
+              <Name>津波注意報解除</Name>
+              <Code>60</Code>
+            </Kind>
+            <LastKind>
+              <Name>津波注意報</Name>
+              <Code>62</Code>
+            </LastKind>
+          </Category>
+        </Item>
+      </Forecast>
+    </Tsunami>
+    <Earthquake>
+      <OriginTime>2015-11-14T05:51:00+09:00</OriginTime>
+      <ArrivalTime>2015-11-14T05:51:00+09:00</ArrivalTime>
+      <Hypocenter>
+        <Area>
+          <Name>薩摩半島西方沖</Name>
+          <Code type="震央地名">797</Code>
+          <jmx_eb:Coordinate description="北緯３０．９度　東経１２８．７度　深さ　１０ｋｍ">+30.9+128.7-10000/</jmx_eb:Coordinate>
+          <NameFromMark>枕崎の西南西１６０ｋｍ付近</NameFromMark>
+          <MarkCode type="震央補助">701</MarkCode>
+          <Direction>西南西</Direction>
+          <Distance unit="km">160</Distance>
+        </Area>
+      </Hypocenter>
+      <jmx_eb:Magnitude type="Mj" description="Ｍ７．０">7.0</jmx_eb:Magnitude>
+    </Earthquake>
+    <Earthquake>
+      <OriginTime>2015-11-14T06:17:00+09:00</OriginTime>
+      <ArrivalTime>2015-11-14T06:17:00+09:00</ArrivalTime>
+      <Hypocenter>
+        <Area>
+          <Name>薩摩半島西方沖</Name>
+          <Code type="震央地名">797</Code>
+          <jmx_eb:Coordinate description="北緯３０．９度　東経１２８．６度　深さ　１０ｋｍ">+30.9+128.6-10000/</jmx_eb:Coordinate>
+          <NameFromMark>枕崎の西南西１７０ｋｍ付近</NameFromMark>
+          <MarkCode type="震央補助">701</MarkCode>
+          <Direction>西南西</Direction>
+          <Distance unit="km">170</Distance>
+        </Area>
+      </Hypocenter>
+      <jmx_eb:Magnitude type="Mj" description="Ｍ５．１">5.1</jmx_eb:Magnitude>
+    </Earthquake>
+    <Comments>
+      <WarningComment codeType="固定付加文">
+        <Text>現在、大津波警報・津波警報・津波注意報を発表している沿岸はありません。</Text>
+        <Code>0107</Code>
+      </WarningComment>
+    </Comments>
+  </Body>
+</Report>

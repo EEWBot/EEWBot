@@ -38,7 +38,8 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
             "eewAlert", "eew_alert",
             "eewPrediction", "eew_prediction",
             "eewDecimation", "eew_decimation",
-            "quakeInfo", "quake_info"
+            "quakeInfo", "quake_info",
+            "tsunami", "tsunami"
     );
 
     // === Table ===
@@ -53,6 +54,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     private static final Field<Integer> EEW_PREDICTION = field(name("eew_prediction"), Integer.class);
     private static final Field<Integer> EEW_DECIMATION = field(name("eew_decimation"), Integer.class);
     private static final Field<Integer> QUAKE_INFO = field(name("quake_info"), Integer.class);
+    private static final Field<Integer> TSUNAMI = field(name("tsunami"), Integer.class);
     private static final Field<Integer> MIN_INTENSITY = field(name("min_intensity"), Integer.class);
     private static final Field<String> LANG = field(name("lang"), String.class);
     private static final Field<String> WEBHOOK_URL = field(name("webhook_url"), String.class);
@@ -61,7 +63,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     /** All destination fields for typed SELECT (avoids SQLite INTEGER->Integer truncation in selectFrom). */
     private static final SelectFieldOrAsterisk[] ALL_FIELDS = {
             TARGET_ID, CHANNEL_ID, THREAD_ID, GUILD_ID,
-            EEW_ALERT, EEW_PREDICTION, EEW_DECIMATION, QUAKE_INFO,
+            EEW_ALERT, EEW_PREDICTION, EEW_DECIMATION, QUAKE_INFO, TSUNAMI,
             MIN_INTENSITY, LANG, WEBHOOK_URL, WEBHOOK_ID
     };
 
@@ -165,6 +167,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                         EEW_PREDICTION,
                         EEW_DECIMATION,
                         QUAKE_INFO,
+                        TSUNAMI,
                         MIN_INTENSITY,
                         LANG,
                         WEBHOOK_URL,
@@ -179,6 +182,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                         channel.isEewPrediction() ? 1 : 0,
                         channel.isEewDecimation() ? 1 : 0,
                         channel.isQuakeInfo() ? 1 : 0,
+                        channel.isTsunami() ? 1 : 0,
                         channel.getMinIntensity() != null ? channel.getMinIntensity().getCode() : SeismicIntensity.ONE.getCode(),
                         channel.getLang() != null ? channel.getLang() : DEFAULT_LANG,
                         channel.getWebhook() != null ? channel.getWebhook().getUrl() : null,
@@ -571,6 +575,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 r.get(EEW_PREDICTION) != null && r.get(EEW_PREDICTION) == 1,
                 r.get(EEW_DECIMATION) != null && r.get(EEW_DECIMATION) == 1,
                 r.get(QUAKE_INFO) != null && r.get(QUAKE_INFO) == 1,
+                r.get(TSUNAMI) != null && r.get(TSUNAMI) == 1,
                 r.get(MIN_INTENSITY) != null ? SeismicIntensity.fromCode(r.get(MIN_INTENSITY)) : SeismicIntensity.ONE,
                 r.get(LANG),
                 webhook
@@ -607,6 +612,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 r.get(EEW_PREDICTION) != null && r.get(EEW_PREDICTION) == 1,
                 r.get(EEW_DECIMATION) != null && r.get(EEW_DECIMATION) == 1,
                 r.get(QUAKE_INFO) != null && r.get(QUAKE_INFO) == 1,
+                r.get(TSUNAMI) != null && r.get(TSUNAMI) == 1,
                 r.get(MIN_INTENSITY) != null ? SeismicIntensity.fromCode(r.get(MIN_INTENSITY)) : SeismicIntensity.ONE,
                 webhook,
                 r.get(LANG)

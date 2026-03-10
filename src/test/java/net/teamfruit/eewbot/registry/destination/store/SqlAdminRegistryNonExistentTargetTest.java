@@ -164,7 +164,7 @@ class SqlAdminRegistryNonExistentTargetTest {
         void clearWebhookByAllInvalidUrls_noRevisionNoOnWrite() {
             // Insert a channel with a valid webhook so the DB is not empty
             Channel ch = new Channel(100L, 1L, null, true, false, false, false,
-                    SeismicIntensity.ONE, ChannelWebhook.of(555L, "tok"), "ja_jp");
+                    false, SeismicIntensity.ONE, ChannelWebhook.of(555L, "tok"), "ja_jp");
             adminRegistry.put(1L, ch);
             onWriteCount.set(0);
             long revisionBefore = revisionStore.getRevision();

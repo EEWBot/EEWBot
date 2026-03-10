@@ -41,6 +41,7 @@ public class ChannelDeserializer implements JsonDeserializer<Channel> {
         boolean eewPrediction = obj.has("eewPrediction") && obj.get("eewPrediction").getAsBoolean();
         boolean eewDecimation = obj.has("eewDecimation") && obj.get("eewDecimation").getAsBoolean();
         boolean quakeInfo = obj.has("quakeInfo") && obj.get("quakeInfo").getAsBoolean();
+        boolean tsunami = obj.has("tsunami") && obj.get("tsunami").getAsBoolean();
 
         SeismicIntensity minIntensity = SeismicIntensity.ONE;
         if (obj.has("minIntensity") && !obj.get("minIntensity").isJsonNull()) {
@@ -54,6 +55,6 @@ public class ChannelDeserializer implements JsonDeserializer<Channel> {
 
         String lang = obj.has("lang") && !obj.get("lang").isJsonNull() ? obj.get("lang").getAsString() : "ja_jp";
 
-        return new Channel(guildId, channelId, threadId, eewAlert, eewPrediction, eewDecimation, quakeInfo, minIntensity, webhook, lang);
+        return new Channel(guildId, channelId, threadId, eewAlert, eewPrediction, eewDecimation, quakeInfo, tsunami, minIntensity, webhook, lang);
     }
 }
