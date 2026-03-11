@@ -3,7 +3,7 @@ FROM amazoncorretto:25.0.2-alpine AS build
 RUN apk add --no-cache binutils
 
 RUN jlink \
-         --add-modules java.base,java.compiler,java.desktop,java.naming,java.net.http,java.security.jgss,java.sql,jdk.unsupported,jdk.crypto.ec,java.management \
+         --add-modules java.base,java.compiler,java.desktop,java.naming,java.net.http,java.security.jgss,java.sql,jdk.unsupported,jdk.crypto.ec,java.management,jdk.net \
          --strip-debug \
          --no-man-pages \
          --no-header-files \
