@@ -45,14 +45,17 @@ public class EEWExecutor {
     private final QuakeInfoStore quakeInfoStore;
     private final ExternalWebhookService externalWebhookService;
 
-    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, DestinationAdminRegistry adminRegistry, QuakeInfoStore quakeInfoStore, ExternalWebhookService externalWebhookService) {
+    private final java.net.http.HttpClient httpClient;
+
+    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, java.net.http.HttpClient httpClient, GatewayDiscordClient client, DestinationAdminRegistry adminRegistry, QuakeInfoStore quakeInfoStore, ExternalWebhookService externalWebhookService) {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;
         this.scheduledExecutor = executor;
+        this.httpClient = httpClient;
 
         this.messageExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "eewbot-send-message-thread"));
-        this.timeProvider = new TimeProvider(this.scheduledExecutor);
+        this.timeProvider = new TimeProvider(this.scheduledExecutor, this.config.getLegacy().getNtpServer());
         this.client = client;
         this.adminRegistry = adminRegistry;
         this.quakeInfoStore = quakeInfoStore;
@@ -67,7 +70,7 @@ public class EEWExecutor {
         if (this.config.getLegacy().isEnableKyoshin()) {
             this.timeProvider.init();
 
-            this.scheduledExecutor.scheduleAtFixedRate(new KmoniGateway(this.timeProvider) {
+            this.scheduledExecutor.scheduleAtFixedRate(new KmoniGateway(this.httpClient, this.timeProvider) {
 
                 @Override
                 public void onNewData(final KmoniEEW eew) {
@@ -95,7 +98,7 @@ public class EEWExecutor {
                 }
             }, 0, this.config.getLegacy().getKyoshinDelay(), TimeUnit.SECONDS);
         } else {
-            DmdataGateway dmdataGateway = new DmdataGateway(new DmdataAPI(this.config.getDmdata().getAPIKey(), this.config.getDmdata().getOrigin()), this.applicationId, this.config.getDmdata().isMultiSocketConnect()) {
+            DmdataGateway dmdataGateway = new DmdataGateway(this.httpClient, new DmdataAPI(this.httpClient, this.config.getDmdata().getAPIKey(), this.config.getDmdata().getOrigin()), this.applicationId, this.config.getDmdata().isMultiSocketConnect()) {
                 @Override
                 public void onNewData(DmdataEEW eew) {
                     if (eew.getBody().getEarthquake() != null &&
@@ -158,7 +161,7 @@ public class EEWExecutor {
             jmaXMLInitialDelay += 60;
         }
 
-        this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.quakeInfoStore) {
+        this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.httpClient, this.quakeInfoStore) {
             @Override
             public void onNewData(AbstractJMAReport data) {
                 if (!EEWExecutor.this.config.getLegacy().isEnableLegacyQuakeInfo()) {
@@ -182,7 +185,7 @@ public class EEWExecutor {
             }
         }, jmaXMLInitialDelay, 60, TimeUnit.SECONDS);
 
-        this.scheduledExecutor.execute(new JMAXmlLGateway(this.quakeInfoStore));
+        this.scheduledExecutor.execute(new JMAXmlLGateway(this.httpClient, this.quakeInfoStore));
 
         if (StringUtils.isNotEmpty(this.config.getWebhookSender().getAddress())) {
             this.scheduledExecutor.scheduleAtFixedRate(EEWExecutor.this.service::handleWebhookSenderNotFounds, 15, 15, TimeUnit.SECONDS);

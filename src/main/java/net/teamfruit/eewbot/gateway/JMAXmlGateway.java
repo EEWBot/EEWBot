@@ -26,12 +26,14 @@ public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
 
     private static final String REMOTE = "eqvol.xml";
 
+    private final java.net.http.HttpClient httpClient;
     private final QuakeInfoStore store;
 
     private String lastModified;
     private List<String> lastIds;
 
-    public JMAXmlGateway(QuakeInfoStore store) {
+    public JMAXmlGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store) {
+        this.httpClient = httpClient;
         this.store = store;
     }
 
@@ -48,7 +50,7 @@ public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                 feedRequest.header("If-Modified-Since", this.lastModified);
             }
 
-            HttpResponse<InputStream> feedResponse = EEWBot.instance.getHttpClient().send(feedRequest.build(), HttpResponse.BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> feedResponse = this.httpClient.send(feedRequest.build(), HttpResponse.BodyHandlers.ofInputStream());
             if (feedResponse.statusCode() == 304) {
                 return;
             }
@@ -89,7 +91,7 @@ public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                                 .header("User-Agent", "eewbot")
                                 .GET()
                                 .build();
-                        HttpResponse<InputStream> reportResponse = EEWBot.instance.getHttpClient().send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
+                        HttpResponse<InputStream> reportResponse = this.httpClient.send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
                         if (reportResponse.statusCode() != 200) {
                             Log.logger.warn("Failed to fetch JMA XML Report: HTTP " + reportResponse.statusCode());
                             return;

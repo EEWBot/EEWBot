@@ -19,11 +19,14 @@ public class TimeProvider {
     private ZonedDateTime lastComputerTime;
     private ZonedDateTime lastNTPTime;
 
-    private final NTPGateway gateway = new Gateway();
+    private final NTPGateway gateway;
     private final ScheduledExecutorService executor;
+    private final String ntpServer;
 
-    public TimeProvider(final ScheduledExecutorService executor) {
+    public TimeProvider(final ScheduledExecutorService executor, final String ntpServer) {
         this.executor = executor;
+        this.ntpServer = ntpServer;
+        this.gateway = new Gateway();
     }
 
     public ZonedDateTime getLastComputerTime() {
@@ -75,6 +78,10 @@ public class TimeProvider {
     }
 
     public class Gateway extends NTPGateway {
+
+        Gateway() {
+            super(TimeProvider.this.ntpServer);
+        }
 
         @Override
         public void onNewData(final TimeInfo data) {

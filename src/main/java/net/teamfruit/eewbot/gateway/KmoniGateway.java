@@ -19,10 +19,12 @@ public abstract class KmoniGateway implements Gateway<KmoniEEW> {
     public static final String REMOTE = "http://www.kmoni.bosai.go.jp/webservice/hypo/eew/";
     public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
+    private final java.net.http.HttpClient httpClient;
     private final Map<Long, KmoniEEW> prev = new HashMap<>();
     private final TimeProvider time;
 
-    public KmoniGateway(final TimeProvider time) {
+    public KmoniGateway(final java.net.http.HttpClient httpClient, final TimeProvider time) {
+        this.httpClient = httpClient;
         this.time = time;
     }
 
@@ -38,7 +40,7 @@ public abstract class KmoniGateway implements Gateway<KmoniEEW> {
                     .uri(URI.create(url))
                     .GET()
                     .build();
-            HttpResponse<InputStream> response = EEWBot.instance.getHttpClient().send(request, HttpResponse.BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
             if (response.statusCode() == 200)
                 try (InputStreamReader is = new InputStreamReader(response.body())) {

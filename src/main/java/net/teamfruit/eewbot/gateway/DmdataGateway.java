@@ -10,6 +10,7 @@ import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketList;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketStart;
 import net.teamfruit.eewbot.entity.dmdata.ws.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
@@ -36,6 +37,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
     public static final String WS_BASE_TEST = "";
 
+    private final java.net.http.HttpClient httpClient;
     private final DmdataAPI dmdataAPI;
     private final String appName;
     private final boolean multiConnect;
@@ -45,7 +47,8 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
     private final Map<String, DmdataEEW> prev = new ConcurrentHashMap<>();
 
-    public DmdataGateway(DmdataAPI api, long appId, boolean multiConnect) {
+    public DmdataGateway(java.net.http.HttpClient httpClient, DmdataAPI api, long appId, boolean multiConnect) {
+        this.httpClient = httpClient;
         this.dmdataAPI = api;
         this.appName = "eewbot" + "-" + encodeAppId(appId);
         this.multiConnect = multiConnect;
@@ -136,12 +139,12 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             Log.logger.info(socketStart.toString());
 
             WebSocketConnection connection = new WebSocketConnection(connectionName, wsBaseURI, hasForecastContract);
-            CompletableFuture<WebSocket> future = EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()), connection.getListener());
+            CompletableFuture<WebSocket> future = this.httpClient.newWebSocketBuilder().buildAsync(URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()), connection.getListener());
             future.thenAccept(connection::setWebSocket);
             return connection;
         } else {
             WebSocketConnection connection = new WebSocketConnection(connectionName, wsBaseURI, hasForecastContract);
-            CompletableFuture<WebSocket> future = EEWBot.instance.getHttpClient().newWebSocketBuilder().buildAsync(URI.create(wsBaseURI), connection.getListener());
+            CompletableFuture<WebSocket> future = this.httpClient.newWebSocketBuilder().buildAsync(URI.create(wsBaseURI), connection.getListener());
             future.thenAccept(connection::setWebSocket);
             return connection;
         }
@@ -169,7 +172,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
     private void closeWebSocketIfExist(DmdataSocketList socketList, String connectionName) throws EEWGatewayException {
         try {
             for (DmdataSocketList.Item item : socketList.getItems()) {
-                if (StringUtils.equals(item.getAppName(), connectionName)) {
+                if (Strings.CS.equals(item.getAppName(), connectionName)) {
                     Log.logger.info("DMDATA Socket closing: {}", item.getId());
                     DmdataError closeError = this.dmdataAPI.socketClose(String.valueOf(item.getId()));
                     if (closeError != null) {
@@ -209,7 +212,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
     private boolean isWebSocketDead(DmdataSocketList socketList, int index) {
         return socketList.getItems().stream()
                 .map(DmdataSocketList.Item::getAppName)
-                .noneMatch(appName -> StringUtils.equals(appName, getWebSocketName(index)));
+                .noneMatch(appName -> Strings.CS.equals(appName, getWebSocketName(index)));
     }
 
     public class WebSocketConnection {
@@ -307,9 +310,9 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
                             }
 
                             String bodyString;
-                            if (StringUtils.equals(wsData.getCompression(), "gzip")) {
+                            if (Strings.CS.equals(wsData.getCompression(), "gzip")) {
                                 bodyString = decompressGZIPBase64(wsData.getBody());
-                            } else if (StringUtils.equals(wsData.getCompression(), "zip")) {
+                            } else if (Strings.CS.equals(wsData.getCompression(), "zip")) {
                                 bodyString = decompressZipBase64(wsData.getBody());
                             } else {
                                 bodyString = wsData.getBody();

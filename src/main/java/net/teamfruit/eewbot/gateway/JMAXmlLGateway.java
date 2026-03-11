@@ -23,9 +23,11 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
 
     private static final String REMOTE = "eqvol_l.xml";
 
+    private final java.net.http.HttpClient httpClient;
     private final QuakeInfoStore store;
 
-    public JMAXmlLGateway(QuakeInfoStore store) {
+    public JMAXmlLGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store) {
+        this.httpClient = httpClient;
         this.store = store;
     }
 
@@ -39,7 +41,7 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
                     .header("User-Agent", "eewbot")
                     .GET();
 
-            HttpResponse<InputStream> feedResponse = EEWBot.instance.getHttpClient().send(feedRequest.build(), HttpResponse.BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> feedResponse = this.httpClient.send(feedRequest.build(), HttpResponse.BodyHandlers.ofInputStream());
             if (feedResponse.statusCode() != 200) {
                 Log.logger.warn("Failed to fetch JMA XML: HTTP " + feedResponse.statusCode());
                 return;
@@ -68,7 +70,7 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
                         .header("User-Agent", "eewbot")
                         .GET()
                         .build();
-                HttpResponse<InputStream> reportResponse = EEWBot.instance.getHttpClient().send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
+                HttpResponse<InputStream> reportResponse = this.httpClient.send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
                 if (reportResponse.statusCode() != 200) {
                     Log.logger.warn("Failed to fetch JMA XML Report: HTTP " + reportResponse.statusCode());
                     continue;

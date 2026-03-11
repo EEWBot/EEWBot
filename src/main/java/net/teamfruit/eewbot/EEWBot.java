@@ -202,7 +202,7 @@ public class EEWBot {
         this.quakeInfoStore = new QuakeInfoStore();
         this.service = new EEWService(this);
         this.externalWebhookService = new ExternalWebhookService(getConfig(), getHttpClient());
-        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getClient(), getAdminRegistry(), getQuakeInfoStore(), getExternalWebhookService());
+        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getHttpClient(), getClient(), getAdminRegistry(), getQuakeInfoStore(), getExternalWebhookService());
         this.slashCommand = new SlashCommandHandler(this);
 
         this.executor.init();
