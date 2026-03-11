@@ -9,11 +9,10 @@ plugins {
 }
 
 repositories {
-    mavenLocal()
-    maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
+    mavenCentral()
     maven { url = uri("https://jcenter.bintray.com") }
     maven { url = uri("https://jitpack.io") }
-    mavenCentral()
+//    maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
 }
 
 dependencies {
@@ -29,13 +28,31 @@ dependencies {
     api(libs.redis.clients.jedis)
 
     implementation(libs.wire.runtime)
-    implementation(libs.net.eewbot.base65536j)
+    implementation(libs.net.eewbot.base32768j)
+
+    // SQL Database dependencies
+    implementation(libs.sqlite.jdbc)
+    implementation(libs.postgresql)
+    implementation(libs.hikaricp)
+    implementation(libs.jooq)
+    implementation(libs.flyway.core)
+    implementation(libs.flyway.database.postgresql)
+    implementation(libs.caffeine)
+
+    // Test dependencies
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation(libs.assertj.core)
+    testImplementation(libs.jsonassert)
+    testImplementation(platform(libs.testcontainers.bom))
+    testImplementation(libs.testcontainers.junit.jupiter)
+    testImplementation(libs.testcontainers.postgresql)
 }
 
 group = "net.teamfruit"
-version = "2.8.3"
+version = "2.9.0"
 description = "EEWBot"
-java.sourceCompatibility = JavaVersion.VERSION_11
+java.sourceCompatibility = JavaVersion.VERSION_17
 
 wire {
     java {
@@ -56,19 +73,19 @@ tasks {
     }
 
     named<ShadowJar>("shadowJar") {
+        archiveClassifier.set("")
+        mergeServiceFiles()
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
         manifest {
-            archiveClassifier.set("")
-            mergeServiceFiles()
             attributes(mapOf("Main-Class" to "net.teamfruit.eewbot.EEWBot"))
-//            minimize {
-//                exclude(dependency("ch.qos.logback:logback-classic:.*"))
-//                exclude(dependency("com.fasterxml.woodstox:woodstox-core:.*"))
-//            }
         }
     }
 
     build {
         dependsOn(shadowJar)
     }
-}
 
+    test {
+        useJUnitPlatform()
+    }
+}

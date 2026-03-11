@@ -1,0 +1,49 @@
+{
+  "type": "tsunami",
+  "timestamp": 1234567890000,
+  "data": "\u003c?xml version\u003d\"1.0\" encoding\u003d\"UTF-8\"?\u003e\n\u003cReport xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/\"\u003e\n  \u003cControl\u003e\n    \u003cTitle\u003e津波警報・注意報・予報a\u003c/Title\u003e\n    \u003cDateTime\u003e2018-12-04T10:30:00Z\u003c/DateTime\u003e\n    \u003cStatus\u003e訓練\u003c/Status\u003e\n    \u003cEditorialOffice\u003e気象庁本庁\u003c/EditorialOffice\u003e\n    \u003cPublishingOffice\u003e気象庁\u003c/PublishingOffice\u003e\n  \u003c/Control\u003e\n  \u003cHead xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/informationBasis1/\"\u003e\n    \u003cTitle\u003e津波予報\u003c/Title\u003e\n    \u003cReportDateTime\u003e2018-12-04T19:30:00+09:00\u003c/ReportDateTime\u003e\n    \u003cTargetDateTime\u003e2018-12-04T19:30:00+09:00\u003c/TargetDateTime\u003e\n    \u003cEventID\u003e20181204180000\u003c/EventID\u003e\n    \u003cInfoType\u003e発表\u003c/InfoType\u003e\n    \u003cSerial\u003e\u003c/Serial\u003e\n    \u003cInfoKind\u003e津波警報・注意報・予報\u003c/InfoKind\u003e\n    \u003cInfoKindVersion\u003e1.0_1\u003c/InfoKindVersion\u003e\n    \u003cHeadline\u003e\n      \u003cText\u003e＊＊＊これは訓練です＊＊＊\n津波注意報を解除しました。\u003c/Text\u003e\n    \u003c/Headline\u003e\n  \u003c/Head\u003e\n  \u003cBody xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/body/seismology1/\" xmlns:jmx_eb\u003d\"http://xml.kishou.go.jp/jmaxml1/elementBasis1/\"\u003e\n    \u003cTsunami\u003e\n      \u003cForecast\u003e\n        \u003cCodeDefine\u003e\n          \u003cType xpath\u003d\"Item/Area/Code\"\u003e津波予報区\u003c/Type\u003e\n          \u003cType xpath\u003d\"Item/Category/Kind/Code\"\u003e警報等情報要素／津波警報・注意報・予報\u003c/Type\u003e\n          \u003cType xpath\u003d\"Item/Category/LastKind/Code\"\u003e警報等情報要素／津波警報・注意報・予報\u003c/Type\u003e\n        \u003c/CodeDefine\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e千葉県内房\u003c/Name\u003e\n            \u003cCode\u003e311\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波注意報解除\u003c/Name\u003e\n              \u003cCode\u003e60\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波注意報\u003c/Name\u003e\n              \u003cCode\u003e62\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e東京湾内湾\u003c/Name\u003e\n            \u003cCode\u003e312\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波注意報解除\u003c/Name\u003e\n              \u003cCode\u003e60\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波注意報\u003c/Name\u003e\n              \u003cCode\u003e62\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e伊豆諸島\u003c/Name\u003e\n            \u003cCode\u003e320\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波注意報解除\u003c/Name\u003e\n              \u003cCode\u003e60\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波注意報\u003c/Name\u003e\n              \u003cCode\u003e62\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e相模湾・三浦半島\u003c/Name\u003e\n            \u003cCode\u003e330\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波注意報解除\u003c/Name\u003e\n              \u003cCode\u003e60\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波注意報\u003c/Name\u003e\n              \u003cCode\u003e62\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n        \u003c/Item\u003e\n        \u003cItem\u003e\n          \u003cArea\u003e\n            \u003cName\u003e静岡県\u003c/Name\u003e\n            \u003cCode\u003e380\u003c/Code\u003e\n          \u003c/Area\u003e\n          \u003cCategory\u003e\n            \u003cKind\u003e\n              \u003cName\u003e津波注意報解除\u003c/Name\u003e\n              \u003cCode\u003e60\u003c/Code\u003e\n            \u003c/Kind\u003e\n            \u003cLastKind\u003e\n              \u003cName\u003e津波注意報\u003c/Name\u003e\n              \u003cCode\u003e62\u003c/Code\u003e\n            \u003c/LastKind\u003e\n          \u003c/Category\u003e\n        \u003c/Item\u003e\n      \u003c/Forecast\u003e\n    \u003c/Tsunami\u003e\n    \u003cEarthquake\u003e\n      \u003cOriginTime\u003e2018-12-04T18:00:00+09:00\u003c/OriginTime\u003e\n      \u003cArrivalTime\u003e2018-12-04T18:00:00+09:00\u003c/ArrivalTime\u003e\n      \u003cHypocenter\u003e\n        \u003cArea\u003e\n          \u003cName\u003e東京都２３区\u003c/Name\u003e\n          \u003cCode type\u003d\"震央地名\"\u003e350\u003c/Code\u003e\n          \u003cjmx_eb:Coordinate description\u003d\"北緯３５．６度　東経１３９．７度　深さ　３０ｋｍ\"\u003e+35.6+139.7-30000/\u003c/jmx_eb:Coordinate\u003e\n          \u003cNameFromMark\u003e館山の北北西７０ｋｍ付近\u003c/NameFromMark\u003e\n          \u003cMarkCode type\u003d\"震央補助\"\u003e301\u003c/MarkCode\u003e\n          \u003cDirection\u003e北北西\u003c/Direction\u003e\n          \u003cDistance unit\u003d\"km\"\u003e70\u003c/Distance\u003e\n        \u003c/Area\u003e\n      \u003c/Hypocenter\u003e\n      \u003cjmx_eb:Magnitude type\u003d\"Mj\" description\u003d\"Ｍ７．３\"\u003e7.3\u003c/jmx_eb:Magnitude\u003e\n    \u003c/Earthquake\u003e\n    \u003cComments\u003e\n      \u003cWarningComment codeType\u003d\"固定付加文\"\u003e\n        \u003cText\u003e現在、大津波警報・津波警報・津波注意報を発表している沿岸はありません。\u003c/Text\u003e\n        \u003cCode\u003e0107\u003c/Code\u003e\n      \u003c/WarningComment\u003e\n    \u003c/Comments\u003e\n  \u003c/Body\u003e\n\u003c/Report\u003e\n",
+  "eewbot": {
+    "title": "津波予報",
+    "dateTime": 1543919400,
+    "status": "訓練",
+    "editorialOffice": "気象庁本庁",
+    "publishingOffice": "気象庁",
+    "reportDateTime": 1543919400,
+    "eventId": "20181204180000",
+    "infoType": "発表",
+    "serial": "",
+    "forecastAreas": [
+      {
+        "areaName": "千葉県内房",
+        "areaCode": "311",
+        "categoryName": "津波注意報解除",
+        "categoryCode": "60"
+      },
+      {
+        "areaName": "東京湾内湾",
+        "areaCode": "312",
+        "categoryName": "津波注意報解除",
+        "categoryCode": "60"
+      },
+      {
+        "areaName": "伊豆諸島",
+        "areaCode": "320",
+        "categoryName": "津波注意報解除",
+        "categoryCode": "60"
+      },
+      {
+        "areaName": "相模湾・三浦半島",
+        "areaCode": "330",
+        "categoryName": "津波注意報解除",
+        "categoryCode": "60"
+      },
+      {
+        "areaName": "静岡県",
+        "areaCode": "380",
+        "categoryName": "津波注意報解除",
+        "categoryCode": "60"
+      }
+    ],
+    "warningComment": "現在、大津波警報・津波警報・津波注意報を発表している沿岸はありません。"
+  }
+}

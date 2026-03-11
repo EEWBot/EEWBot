@@ -7,13 +7,14 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.SelectMenu;
+import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.EEWBot;
-import net.teamfruit.eewbot.registry.channel.Channel;
-import net.teamfruit.eewbot.registry.channel.ChannelFilter;
+import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.IButtonSlashCommand;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
+import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -55,20 +56,41 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
-        bot.getChannels().computeIfAbsent(event.getInteraction().getChannelId().asLong(), key ->
-                Channel.createDefault(event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null), lang));
-        return event.reply()
-                .withEphemeral(true)
-                .withComponents(buildActionRows(bot, lang, event.getInteraction().getGuildId().isPresent()));
+        long targetId = event.getInteraction().getChannelId().asLong();
+        Mono<Void> ensureRegistered;
+        if (channel == null) {
+            Long guildId = event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null);
+            ensureRegistered = event.getInteraction().getChannel()
+                    .filter(GuildChannel.class::isInstance)
+                    .cast(GuildChannel.class)
+                    .doOnNext(ch -> SlashCommandUtils.createAndRegisterDefault(bot.getAdminRegistry(), ch, targetId, guildId, lang))
+                    .switchIfEmpty(Mono.fromRunnable(
+                            () -> bot.getAdminRegistry().put(targetId, Channel.createDefault(guildId, targetId, null, lang))))
+                    .then();
+        } else {
+            ensureRegistered = Mono.empty();
+        }
+        return ensureRegistered
+                .then(event.reply()
+                        .withEphemeral(true)
+                        .withComponents(buildActionRows(bot, lang, event.getInteraction().getGuildId().isPresent())))
+                .then(Mono.create(sink -> {
+                    try {
+                        bot.getAdminRegistry().save();
+                        sink.success();
+                    } catch (IOException e) {
+                        sink.error(e);
+                    }
+                }));
     }
 
     @Override
     public Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
         if (event.getCustomId().equals("lang-set")) {
             String langKey = event.getValues().get(0);
-            bot.getChannels().setLang(event.getInteraction().getChannelId().asLong(), langKey);
+            bot.getAdminRegistry().setLang(event.getInteraction().getChannelId().asLong(), langKey);
             try {
-                bot.getChannels().save();
+                bot.getAdminRegistry().save();
             } catch (IOException e) {
                 return Mono.error(e);
             }
@@ -88,9 +110,9 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
             Optional<Snowflake> guildId = event.getInteraction().getGuildId();
             if (guildId.isEmpty())
                 return Mono.empty();
-            bot.getChannels().actionOnChannels(ChannelFilter.builder().guildId(guildId.get().asLong()).build(), channelId -> bot.getChannels().setLang(channelId, lang));
+            bot.getAdminRegistry().setLangByGuildId(guildId.get().asLong(), lang);
             try {
-                bot.getChannels().save();
+                bot.getAdminRegistry().save();
             } catch (IOException e) {
                 return Mono.error(e);
             }

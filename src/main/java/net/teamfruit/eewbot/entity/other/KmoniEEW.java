@@ -9,7 +9,7 @@ import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.ZoneId;

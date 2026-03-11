@@ -4,7 +4,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -20,9 +20,10 @@ public abstract class JmxSeis extends AbstractJMAReport {
 
     public static class Body {
 
-        // TODO
         // Naming
-        // Tsunami
+
+        @JacksonXmlProperty(localName = "Tsunami")
+        protected @Nullable Tsunami tsunami;
 
         @JacksonXmlProperty(localName = "Earthquake")
         @JacksonXmlElementWrapper(useWrapping = false)
@@ -43,6 +44,11 @@ public abstract class JmxSeis extends AbstractJMAReport {
 
         @JacksonXmlProperty(localName = "Comments")
         protected @Nullable Comment comments;
+
+        @Nullable
+        public Tsunami getTsunami() {
+            return this.tsunami;
+        }
 
         public List<Earthquake> getEarthquakes() {
             return this.earthquakes;
@@ -66,7 +72,8 @@ public abstract class JmxSeis extends AbstractJMAReport {
         @Override
         public String toString() {
             return "Body{" +
-                    "earthquakes=" + this.earthquakes +
+                    "tsunami=" + this.tsunami +
+                    ", earthquakes=" + this.earthquakes +
                     ", intensity=" + this.intensity +
                     ", text='" + this.text + '\'' +
                     ", comments=" + this.comments +

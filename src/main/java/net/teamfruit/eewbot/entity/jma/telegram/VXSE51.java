@@ -3,6 +3,8 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.external.ExternalData;
+import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
@@ -11,12 +13,13 @@ import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture {
+public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture, ExternalData {
 
     Instant getTargetDateTime();
 
@@ -40,7 +43,7 @@ public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture {
             getPrefs().stream().flatMap(pref -> pref.getAreas().stream())
                     .forEach(area -> {
                         StringBuilder sb = intensityMap.computeIfAbsent(area.getMaxInt(), k -> new StringBuilder());
-                        if (sb.length() > 0)
+                        if (!sb.isEmpty())
                             sb.append(" ");
                         sb.append(area.getName());
                     });
@@ -70,4 +73,57 @@ public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture {
         return builder.build();
     }
 
+    @Override
+    default String getDataType() {
+        return "quake_info";
+    }
+
+    @Override
+    default Object toExternalDto() {
+        List<QuakeInfoExternalData.IntensityAreaInfo> intensityList = null;
+        String maxIntStr = null;
+        if (!isCancelReport()) {
+            maxIntStr = getMaxInt() != null ? getMaxInt().getSymbolIntensity() : null;
+            intensityList = new ArrayList<>();
+            for (IntensityPref pref : getPrefs()) {
+                for (var area : pref.getAreas()) {
+                    intensityList.add(QuakeInfoExternalData.IntensityAreaInfo.builder()
+                            .prefName(pref.getName())
+                            .prefCode(pref.getCode())
+                            .areaName(area.getName())
+                            .areaCode(area.getCode())
+                            .maxInt(area.getMaxInt() != null ? area.getMaxInt().getSymbolIntensity() : null)
+                            .build());
+                }
+            }
+        }
+
+        return QuakeInfoExternalData.builder()
+                // Control
+                .title(getHeadTitle())
+                .dateTime(getDateTime() != null ? getDateTime().getEpochSecond() : 0)
+                .status(getStatus() != null ? getStatus().toString() : null)
+                .editorialOffice(getEditorialOffice())
+                .publishingOffice(getPublishingOffice())
+                // Head
+                .reportDateTime(getReportDateTime() != null ? getReportDateTime().getEpochSecond() : 0)
+                .eventId(getEventId())
+                .infoType(getInfoType() != null ? getInfoType().toString() : null)
+                .serial(getSerial())
+                // 震度情報
+                .maxInt(maxIntStr)
+                .intensities(intensityList)
+                // 震源情報（VXSE51にはない）
+                .originTime(null)
+                .hypocenterName(null)
+                .hypocenterDetailedName(null)
+                .latitude(null)
+                .longitude(null)
+                .depth(null)
+                .magnitude(null)
+                // コメント
+                .forecastComment(getForecastComment().map(Comment.CommentForm::getText).orElse(null))
+                .freeFormComment(getFreeFormComment().orElse(null))
+                .build();
+    }
 }

@@ -1,0 +1,23 @@
+{
+  "type": "quake_info",
+  "timestamp": 1234567890000,
+  "data": "\u003cReport xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/\" xmlns:jmx\u003d\"http://xml.kishou.go.jp/jmaxml1/\"\u003e\n    \u003cControl\u003e\n        \u003cTitle\u003e顕著な地震の震源要素更新のお知らせ\u003c/Title\u003e\n        \u003cDateTime\u003e2025-12-08T17:00:45Z\u003c/DateTime\u003e\n        \u003cStatus\u003e通常\u003c/Status\u003e\n        \u003cEditorialOffice\u003e気象庁本庁\u003c/EditorialOffice\u003e\n        \u003cPublishingOffice\u003e気象庁\u003c/PublishingOffice\u003e\n    \u003c/Control\u003e\n    \u003cHead xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/informationBasis1/\"\u003e\n        \u003cTitle\u003e顕著な地震の震源要素更新のお知らせ\u003c/Title\u003e\n        \u003cReportDateTime\u003e2025-12-09T02:00:00+09:00\u003c/ReportDateTime\u003e\n        \u003cTargetDateTime\u003e2025-12-09T02:00:00+09:00\u003c/TargetDateTime\u003e\n        \u003cEventID\u003e20251208231519\u003c/EventID\u003e\n        \u003cInfoType\u003e発表\u003c/InfoType\u003e\n        \u003cSerial/\u003e\n        \u003cInfoKind\u003e震源要素更新のお知らせ\u003c/InfoKind\u003e\n        \u003cInfoKindVersion\u003e1.0_0\u003c/InfoKindVersion\u003e\n        \u003cHeadline\u003e\n            \u003cText\u003e令和　７年１２月　９日０２時００分をもって、地震の発生場所と規模を更新します。\u003c/Text\u003e\n        \u003c/Headline\u003e\n    \u003c/Head\u003e\n    \u003cBody xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/body/seismology1/\" xmlns:jmx_eb\u003d\"http://xml.kishou.go.jp/jmaxml1/elementBasis1/\"\u003e\n        \u003cEarthquake\u003e\n            \u003cOriginTime\u003e2025-12-08T23:15:00+09:00\u003c/OriginTime\u003e\n            \u003cArrivalTime\u003e2025-12-08T23:15:00+09:00\u003c/ArrivalTime\u003e\n            \u003cHypocenter\u003e\n                \u003cArea\u003e\n                    \u003cName\u003e青森県東方沖\u003c/Name\u003e\n                    \u003cCode type\u003d\"震央地名\"\u003e285\u003c/Code\u003e\n                    \u003cjmx_eb:Coordinate description\u003d\"北緯４１．０度　東経１４２．３度　深さ　５０ｋｍ\"\u003e+41.0+142.3-50000/\u003c/jmx_eb:Coordinate\u003e\n                    \u003cjmx_eb:Coordinate type\u003d\"震源位置（度分）\" description\u003d\"北緯４０度５８．０分　東経１４２度１７．２分　深さ　５４ｋｍ\"\u003e+4058.0+14217.2-54000/\u003c/jmx_eb:Coordinate\u003e\n                \u003c/Area\u003e\n            \u003c/Hypocenter\u003e\n            \u003cjmx_eb:Magnitude type\u003d\"Mj\" description\u003d\"Ｍ７．５\"\u003e7.5\u003c/jmx_eb:Magnitude\u003e\n        \u003c/Earthquake\u003e\n        \u003cComments\u003e\n            \u003cFreeFormComment\u003e度単位の震源要素は、津波情報等を引き続き発表する場合に使用されます。なお、この地震の精査したモーメントマグニチュード（Mw）は７．４です。これを受けて北海道・三陸沖後発地震注意情報を発表しました。\u003c/FreeFormComment\u003e\n        \u003c/Comments\u003e\n    \u003c/Body\u003e\n\u003c/Report\u003e",
+  "eewbot": {
+    "title": "顕著な地震の震源要素更新のお知らせ",
+    "dateTime": 1765213245,
+    "status": "通常",
+    "editorialOffice": "気象庁本庁",
+    "publishingOffice": "気象庁",
+    "reportDateTime": 1765213200,
+    "eventId": "20251208231519",
+    "infoType": "発表",
+    "serial": "",
+    "originTime": 1765203300,
+    "hypocenterName": "青森県東方沖",
+    "latitude": 41.0,
+    "longitude": 142.3,
+    "depth": "54km",
+    "magnitude": "7.5",
+    "freeFormComment": "度単位の震源要素は、津波情報等を引き続き発表する場合に使用されます。なお、この地震の精査したモーメントマグニチュード（Mw）は７．４です。これを受けて北海道・三陸沖後発地震注意情報を発表しました。"
+  }
+}

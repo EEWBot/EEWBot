@@ -4,6 +4,8 @@ import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
+import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
+import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Earthquake;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Hypocenter;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
@@ -64,4 +66,17 @@ public class VXSE61Impl extends JmxSeis implements VXSE61 {
         return Objects.requireNonNull(getEarthquake().getHypocenter());
     }
 
+    @Override
+    public Coordinate getCoordinate() {
+        return getHypocenter().getArea().getCoordinate().getFirst();
+    }
+
+    @Override
+    public Optional<String> getFreeFormComment() {
+        Comment comments = getBody().getComments();
+        if (comments == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(comments.getFreeFormComment());
+    }
 }

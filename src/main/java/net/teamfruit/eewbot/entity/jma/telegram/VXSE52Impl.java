@@ -89,5 +89,4 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
             throw new IllegalStateException("Cancel report");
         return getVXSE51().map(QuakeInfo::getIntensityDetail).orElse(null);
     }
-
 }

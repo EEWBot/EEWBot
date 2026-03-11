@@ -9,16 +9,19 @@ import discord4j.discordjson.json.WebhookCreateRequest;
 import discord4j.rest.util.Permission;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
+import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
+import net.teamfruit.eewbot.entity.jma.telegram.VTSE41;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.gateway.*;
-import net.teamfruit.eewbot.registry.channel.ChannelFilter;
-import net.teamfruit.eewbot.registry.channel.ChannelRegistry;
-import net.teamfruit.eewbot.registry.channel.ChannelWebhook;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
+import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -38,10 +41,11 @@ public class EEWExecutor {
     private final ConfigV2 config;
     private final long applicationId;
     private final GatewayDiscordClient client;
-    private final ChannelRegistry channels;
+    private final DestinationAdminRegistry adminRegistry;
     private final QuakeInfoStore quakeInfoStore;
+    private final ExternalWebhookService externalWebhookService;
 
-    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, ChannelRegistry channels, QuakeInfoStore quakeInfoStore) {
+    public EEWExecutor(final EEWService service, final ConfigV2 config, long applicationId, ScheduledExecutorService executor, GatewayDiscordClient client, DestinationAdminRegistry adminRegistry, QuakeInfoStore quakeInfoStore, ExternalWebhookService externalWebhookService) {
         this.service = service;
         this.config = config;
         this.applicationId = applicationId;
@@ -50,8 +54,9 @@ public class EEWExecutor {
         this.messageExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "eewbot-send-message-thread"));
         this.timeProvider = new TimeProvider(this.scheduledExecutor);
         this.client = client;
-        this.channels = channels;
+        this.adminRegistry = adminRegistry;
         this.quakeInfoStore = quakeInfoStore;
+        this.externalWebhookService = externalWebhookService;
     }
 
     public TimeProvider getTimeProvider() {
@@ -94,7 +99,7 @@ public class EEWExecutor {
                 @Override
                 public void onNewData(DmdataEEW eew) {
                     if (eew.getBody().getEarthquake() != null &&
-                            StringUtils.equals(eew.getBody().getEarthquake().getCondition(), "仮定震源要素") &&
+                            Strings.CS.equals(eew.getBody().getEarthquake().getCondition(), "仮定震源要素") &&
                             eew.getBody().getIntensity() == null)
                         return;
 
@@ -122,7 +127,10 @@ public class EEWExecutor {
                     if (!isImportant)
                         builder.eewDecimation(false);
                     builder.intensity(maxIntensity);
-                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), eew));
+                    EEWExecutor.this.messageExecutor.submit(() -> {
+                        EEWExecutor.this.service.sendMessage(builder.build(), eew);
+                        EEWExecutor.this.externalWebhookService.sendExternalWebhook(eew);
+                    });
                 }
             };
             this.scheduledExecutor.execute(dmdataGateway);
@@ -153,11 +161,23 @@ public class EEWExecutor {
         this.scheduledExecutor.scheduleAtFixedRate(new JMAXmlGateway(this.quakeInfoStore) {
             @Override
             public void onNewData(AbstractJMAReport data) {
-                if (!EEWExecutor.this.config.getLegacy().isEnableLegacyQuakeInfo() && data instanceof QuakeInfo) {
-                    ChannelFilter.Builder builder = ChannelFilter.builder();
-                    builder.quakeInfo(true);
-                    builder.intensity(((QuakeInfo) data).getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
-                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(builder.build(), data));
+                if (!EEWExecutor.this.config.getLegacy().isEnableLegacyQuakeInfo()) {
+                    if (data instanceof QuakeInfo quakeInfo) {
+                        ChannelFilter filter = ChannelFilter.builder()
+                                .quakeInfo(true)
+                                .intensity(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN))
+                                .build();
+                        EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(filter, data));
+                    }
+                }
+                if (data instanceof VTSE41) {
+                    ChannelFilter filter = ChannelFilter.builder()
+                            .tsunami(true)
+                            .build();
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.service.sendMessage(filter, data));
+                }
+                if (data instanceof ExternalData externalData) {
+                    EEWExecutor.this.messageExecutor.submit(() -> EEWExecutor.this.externalWebhookService.sendExternalWebhook(externalData));
                 }
             }
         }, jmaXMLInitialDelay, 60, TimeUnit.SECONDS);
@@ -172,7 +192,7 @@ public class EEWExecutor {
             this.scheduledExecutor.scheduleWithFixedDelay(() -> {
                 Thread.currentThread().setName("eewbot-webhook-migration-thread");
 
-                this.channels.getWebhookAbsentChannels()
+                this.adminRegistry.getWebhookAbsentChannels()
                         .forEach(channelId -> {
                             this.client.getChannelById(Snowflake.of(channelId))
                                     .filter(GuildChannel.class::isInstance)
@@ -192,8 +212,7 @@ public class EEWExecutor {
                                     .flatMap(guildChannel -> guildChannel.getGuild()
                                             .flatMap(guild -> guild.getSelfMember().map(PartialMember::getDisplayName))
                                             .flatMap(name -> {
-                                                if (guildChannel instanceof ThreadChannel) {
-                                                    ThreadChannel threadChannel = (ThreadChannel) guildChannel;
+                                                if (guildChannel instanceof ThreadChannel threadChannel) {
                                                     Optional<Snowflake> parentId = threadChannel.getParentId();
                                                     if (parentId.isEmpty())
                                                         return Mono.empty();
@@ -206,17 +225,23 @@ public class EEWExecutor {
                                                         .createWebhook(guildChannel.getId().asLong(), WebhookCreateRequest.builder()
                                                                 .name(name)
                                                                 .build(), "Create EEWBot webhook");
-                                            }).flatMap(webhookData -> Mono.fromRunnable(() -> {
-                                                boolean isThread = guildChannel instanceof ThreadChannel;
-                                                ChannelWebhook webhook = new ChannelWebhook(webhookData.id().asLong(), webhookData.token().get(), isThread ? channelId : null);
-                                                this.channels.setWebhook(channelId, webhook);
-                                                try {
-                                                    this.channels.save();
-                                                } catch (IOException e) {
-                                                    Log.logger.error("Failed to save channels during webhook creation batch", e);
-                                                }
-                                                Log.logger.info("Created webhook for " + channelId);
-                                            })))
+                                            }).flatMap(webhookData -> guildChannel.getClient().getChannelById(Snowflake.of(channelId))
+                                                    .map(channel -> channel instanceof ThreadChannel ? channelId : null)
+                                                    .defaultIfEmpty((Long) null)
+                                                    .flatMap(threadId -> Mono.fromRunnable(() -> {
+                                                        ChannelWebhook webhook = ChannelWebhook.of(
+                                                                webhookData.id().asLong(),
+                                                                webhookData.token().get(),
+                                                                threadId
+                                                        );
+                                                        this.adminRegistry.setWebhook(channelId, webhook);
+                                                        try {
+                                                            this.adminRegistry.save();
+                                                        } catch (IOException e) {
+                                                            Log.logger.error("Failed to save channels during webhook creation batch", e);
+                                                        }
+                                                        Log.logger.info("Created webhook for " + channelId);
+                                                    }))))
                                     .subscribe();
                             try {
                                 Thread.sleep(10000);

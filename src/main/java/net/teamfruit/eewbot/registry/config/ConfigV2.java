@@ -3,22 +3,25 @@ package net.teamfruit.eewbot.registry.config;
 import net.teamfruit.eewbot.Log;
 import org.apache.commons.lang3.StringUtils;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
 @SuppressWarnings("FieldMayBeFinal")
 public class ConfigV2 {
 
     private Base base = new Base();
+    private Database database = new Database();
     private Redis redis = new Redis();
     private DMData dmdata = new DMData();
     private Renderer renderer = new Renderer();
     private WebhookSender webhookSender = new WebhookSender();
+    private ExternalWebhook externalWebhook = new ExternalWebhook();
     private Advanced advanced = new Advanced();
     private Legacy legacy = new Legacy();
 
     public Base getBase() {
         return this.base;
+    }
+
+    public Database getDatabase() {
+        return this.database;
     }
 
     public Redis getRedis() {
@@ -35,6 +38,10 @@ public class ConfigV2 {
 
     public WebhookSender getWebhookSender() {
         return this.webhookSender;
+    }
+
+    public ExternalWebhook getExternalWebhook() {
+        return this.externalWebhook;
     }
 
     public Advanced getAdvanced() {
@@ -71,6 +78,149 @@ public class ConfigV2 {
             return "Base{" +
                     "discordToken='" + this.discordToken + '\'' +
                     ", defaultLanguage='" + this.defaultLanguage + '\'' +
+                    '}';
+        }
+    }
+
+    public static class Database {
+
+        private String type = "";
+        private SQLite sqlite = new SQLite();
+        private PostgreSQL postgresql = new PostgreSQL();
+
+        public String getType() {
+            return this.type;
+        }
+
+        public void setType(final String type) {
+            this.type = type;
+        }
+
+        public SQLite getSqlite() {
+            return this.sqlite;
+        }
+
+        public void setSqlite(final SQLite sqlite) {
+            this.sqlite = sqlite;
+        }
+
+        public PostgreSQL getPostgresql() {
+            return this.postgresql;
+        }
+
+        public void setPostgresql(final PostgreSQL postgresql) {
+            this.postgresql = postgresql;
+        }
+
+        @Override
+        public String toString() {
+            return "Database{" +
+                    "type='" + this.type + '\'' +
+                    ", sqlite=" + this.sqlite +
+                    ", postgresql=" + this.postgresql +
+                    '}';
+        }
+    }
+
+    public static class SQLite {
+
+        private String path = "channels.db";
+
+        public String getPath() {
+            return this.path;
+        }
+
+        public void setPath(final String path) {
+            this.path = path;
+        }
+
+        @Override
+        public String toString() {
+            return "SQLite{" +
+                    "path='" + this.path + '\'' +
+                    '}';
+        }
+    }
+
+    public static class PostgreSQL {
+
+        private String host = "localhost";
+        private int port = 5432;
+        private String database = "eewbot";
+        private String username = "";
+        private String password = "";
+        private int maxPoolSize = 10;
+        private int minIdle = 2;
+
+        public String getHost() {
+            return this.host;
+        }
+
+        public void setHost(final String host) {
+            this.host = host;
+        }
+
+        public int getPort() {
+            return this.port;
+        }
+
+        public void setPort(final int port) {
+            this.port = port;
+        }
+
+        public String getDatabase() {
+            return this.database;
+        }
+
+        public void setDatabase(final String database) {
+            this.database = database;
+        }
+
+        public String getUsername() {
+            return this.username;
+        }
+
+        public void setUsername(final String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return this.password;
+        }
+
+        public void setPassword(final String password) {
+            this.password = password;
+        }
+
+        public int getMaxPoolSize() {
+            return this.maxPoolSize;
+        }
+
+        public void setMaxPoolSize(final int maxPoolSize) {
+            this.maxPoolSize = maxPoolSize;
+        }
+
+        public int getMinIdle() {
+            return this.minIdle;
+        }
+
+        public void setMinIdle(final int minIdle) {
+            this.minIdle = minIdle;
+        }
+
+        public String getJdbcUrl() {
+            return "jdbc:postgresql://" + this.host + ":" + this.port + "/" + this.database;
+        }
+
+        @Override
+        public String toString() {
+            return "PostgreSQL{" +
+                    "host='" + this.host + '\'' +
+                    ", port=" + this.port +
+                    ", database='" + this.database + '\'' +
+                    ", username='" + this.username + '\'' +
+                    ", maxPoolSize=" + this.maxPoolSize +
+                    ", minIdle=" + this.minIdle +
                     '}';
         }
     }
@@ -292,13 +442,35 @@ public class ConfigV2 {
         }
     }
 
+    public static class ExternalWebhook {
+
+        private java.util.List<String> urls = new java.util.ArrayList<>();
+
+        public java.util.List<String> getUrls() {
+            return this.urls;
+        }
+
+        public void setUrls(java.util.List<String> urls) {
+            this.urls = urls;
+        }
+
+        @Override
+        public String toString() {
+            return "ExternalWebhook{" +
+                    "urls=" + this.urls +
+                    '}';
+        }
+    }
+
     @Override
     public String toString() {
         return "ConfigV2{" +
                 "base=" + this.base +
+                ", database=" + this.database +
                 ", dmdata=" + this.dmdata +
                 ", renderer=" + this.renderer +
                 ", webhookSender=" + this.webhookSender +
+                ", externalWebhook=" + this.externalWebhook +
                 ", advanced=" + this.advanced +
                 ", legacy=" + this.legacy +
                 '}';
@@ -320,14 +492,6 @@ public class ConfigV2 {
         }
         if (getLegacy().isEnableKyoshin()) {
             Log.logger.warn("Kyoshin EEW is enabled, please consider using DMDATA");
-        }
-        if (StringUtils.isNotEmpty(getRedis().getAddress())) {
-            try {
-                new URI(getRedis().getAddress());
-            } catch (URISyntaxException e) {
-                Log.logger.info("Invalid redis address: " + e.getMessage());
-                return false;
-            }
         }
         return !errored;
     }

@@ -1,0 +1,415 @@
+{
+  "type": "tsunami",
+  "timestamp": 1234567890000,
+  "data": "\u003c?xml version\u003d\"1.0\" encoding\u003d\"UTF-8\"?\u003e\n\u003cReport xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/\"\u003e\n\u003cControl\u003e\n\t\u003cTitle\u003e津波警報・注意報・予報a\u003c/Title\u003e\n\t\u003cDateTime\u003e2011-03-13T08:58:18Z\u003c/DateTime\u003e\n\t\u003cStatus\u003e通常\u003c/Status\u003e\n\t\u003cEditorialOffice\u003e大阪管区気象台\u003c/EditorialOffice\u003e\n\t\u003cPublishingOffice\u003e気象庁\u003c/PublishingOffice\u003e\n\u003c/Control\u003e\n\u003cHead xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/informationBasis1/\"\u003e\n\t\u003cTitle\u003e津波予報\u003c/Title\u003e\n\t\u003cReportDateTime\u003e2011-03-13T17:58:00+09:00\u003c/ReportDateTime\u003e\n\t\u003cTargetDateTime\u003e2011-03-13T17:58:00+09:00\u003c/TargetDateTime\u003e\n\t\u003cValidDateTime\u003e2011-03-14T18:00:00+09:00\u003c/ValidDateTime\u003e\n\t\u003cEventID\u003e20110311144640\u003c/EventID\u003e\n\t\u003cInfoType\u003e発表\u003c/InfoType\u003e\n\t\u003cSerial\u003e\u003c/Serial\u003e\n\t\u003cInfoKind\u003e津波警報・注意報・予報\u003c/InfoKind\u003e\n\t\u003cInfoKindVersion\u003e1.0_1\u003c/InfoKindVersion\u003e\n\t\u003cHeadline\u003e\n\t\t\u003cText\u003e津波注意報を解除しました。\u003c/Text\u003e\n\t\u003c/Headline\u003e\n\u003c/Head\u003e\n\u003cBody xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/body/seismology1/\" xmlns:jmx_eb\u003d\"http://xml.kishou.go.jp/jmaxml1/elementBasis1/\"\u003e\n\t\u003cTsunami\u003e\n\t\u003cForecast\u003e\n\t\t\u003cCodeDefine\u003e\n\t\t\t\u003cType xpath\u003d\"Item/Area/Code\"\u003e津波予報区\u003c/Type\u003e\n\t\t\t\u003cType xpath\u003d\"Item/Category/Kind/Code\"\u003e警報等情報要素／津波警報・注意報・予報\u003c/Type\u003e\n\t\t\t\u003cType xpath\u003d\"Item/Category/LastKind/Code\"\u003e警報等情報要素／津波警報・注意報・予報\u003c/Type\u003e\n\t\t\u003c/CodeDefine\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e北海道太平洋沿岸東部\u003c/Name\u003e\u003cCode\u003e100\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e北海道太平洋沿岸中部\u003c/Name\u003e\u003cCode\u003e101\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e北海道太平洋沿岸西部\u003c/Name\u003e\u003cCode\u003e102\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e北海道日本海沿岸北部\u003c/Name\u003e\u003cCode\u003e110\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e北海道日本海沿岸南部\u003c/Name\u003e\u003cCode\u003e111\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003eオホーツク海沿岸\u003c/Name\u003e\u003cCode\u003e120\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e青森県日本海沿岸\u003c/Name\u003e\u003cCode\u003e200\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e青森県太平洋沿岸\u003c/Name\u003e\u003cCode\u003e201\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e陸奥湾\u003c/Name\u003e\u003cCode\u003e202\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e岩手県\u003c/Name\u003e\u003cCode\u003e210\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e宮城県\u003c/Name\u003e\u003cCode\u003e220\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e秋田県\u003c/Name\u003e\u003cCode\u003e230\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e山形県\u003c/Name\u003e\u003cCode\u003e240\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e福島県\u003c/Name\u003e\u003cCode\u003e250\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e茨城県\u003c/Name\u003e\u003cCode\u003e300\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e千葉県九十九里・外房\u003c/Name\u003e\u003cCode\u003e310\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e千葉県内房\u003c/Name\u003e\u003cCode\u003e311\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e東京湾内湾\u003c/Name\u003e\u003cCode\u003e312\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e伊豆諸島\u003c/Name\u003e\u003cCode\u003e320\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e小笠原諸島\u003c/Name\u003e\u003cCode\u003e321\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e相模湾・三浦半島\u003c/Name\u003e\u003cCode\u003e330\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e新潟県上中下越\u003c/Name\u003e\u003cCode\u003e340\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e佐渡\u003c/Name\u003e\u003cCode\u003e341\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e富山県\u003c/Name\u003e\u003cCode\u003e350\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e石川県能登\u003c/Name\u003e\u003cCode\u003e360\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e石川県加賀\u003c/Name\u003e\u003cCode\u003e361\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e福井県\u003c/Name\u003e\u003cCode\u003e370\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e静岡県\u003c/Name\u003e\u003cCode\u003e380\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e愛知県外海\u003c/Name\u003e\u003cCode\u003e390\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e伊勢・三河湾\u003c/Name\u003e\u003cCode\u003e391\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e三重県南部\u003c/Name\u003e\u003cCode\u003e400\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e京都府\u003c/Name\u003e\u003cCode\u003e500\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e大阪府\u003c/Name\u003e\u003cCode\u003e510\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e兵庫県北部\u003c/Name\u003e\u003cCode\u003e520\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e兵庫県瀬戸内海沿岸\u003c/Name\u003e\u003cCode\u003e521\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e淡路島南部\u003c/Name\u003e\u003cCode\u003e522\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e和歌山県\u003c/Name\u003e\u003cCode\u003e530\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e鳥取県\u003c/Name\u003e\u003cCode\u003e540\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e島根県出雲・石見\u003c/Name\u003e\u003cCode\u003e550\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e隠岐\u003c/Name\u003e\u003cCode\u003e551\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e岡山県\u003c/Name\u003e\u003cCode\u003e560\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e広島県\u003c/Name\u003e\u003cCode\u003e570\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e徳島県\u003c/Name\u003e\u003cCode\u003e580\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e香川県\u003c/Name\u003e\u003cCode\u003e590\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e愛媛県宇和海沿岸\u003c/Name\u003e\u003cCode\u003e600\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e愛媛県瀬戸内海沿岸\u003c/Name\u003e\u003cCode\u003e601\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e高知県\u003c/Name\u003e\u003cCode\u003e610\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e山口県日本海沿岸\u003c/Name\u003e\u003cCode\u003e700\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e山口県瀬戸内海沿岸\u003c/Name\u003e\u003cCode\u003e701\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e福岡県瀬戸内海沿岸\u003c/Name\u003e\u003cCode\u003e710\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e福岡県日本海沿岸\u003c/Name\u003e\u003cCode\u003e711\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e有明・八代海\u003c/Name\u003e\u003cCode\u003e712\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e佐賀県北部\u003c/Name\u003e\u003cCode\u003e720\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e長崎県西方\u003c/Name\u003e\u003cCode\u003e730\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e壱岐・対馬\u003c/Name\u003e\u003cCode\u003e731\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e熊本県天草灘沿岸\u003c/Name\u003e\u003cCode\u003e740\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e大分県瀬戸内海沿岸\u003c/Name\u003e\u003cCode\u003e750\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e大分県豊後水道沿岸\u003c/Name\u003e\u003cCode\u003e751\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e宮崎県\u003c/Name\u003e\u003cCode\u003e760\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波注意報\u003c/Name\u003e\u003cCode\u003e62\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e鹿児島県東部\u003c/Name\u003e\u003cCode\u003e770\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e種子島・屋久島地方\u003c/Name\u003e\u003cCode\u003e771\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e奄美諸島・トカラ列島\u003c/Name\u003e\u003cCode\u003e772\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e鹿児島県西部\u003c/Name\u003e\u003cCode\u003e773\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e72\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e沖縄本島地方\u003c/Name\u003e\u003cCode\u003e800\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e大東島地方\u003c/Name\u003e\u003cCode\u003e801\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\t\u003cItem\u003e\n\t\t\t\u003cArea\u003e\u003cName\u003e宮古島・八重山地方\u003c/Name\u003e\u003cCode\u003e802\u003c/Code\u003e\u003c/Area\u003e\n\t\t\t\u003cCategory\u003e\n\t\t\t\t\u003cKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/Kind\u003e\n\t\t\t\t\u003cLastKind\u003e\u003cName\u003e津波予報（若干の海面変動）\u003c/Name\u003e\u003cCode\u003e71\u003c/Code\u003e\u003c/LastKind\u003e\n\t\t\t\u003c/Category\u003e\n\t\t\u003c/Item\u003e\n\t\u003c/Forecast\u003e\n\t\u003c/Tsunami\u003e\n\t\u003cEarthquake\u003e\n\t\t\u003cOriginTime\u003e2011-03-11T14:46:00+09:00\u003c/OriginTime\u003e\n\t\t\u003cArrivalTime\u003e2011-03-11T14:46:00+09:00\u003c/ArrivalTime\u003e\n\t\t\u003cHypocenter\u003e\n\t\t\t\u003cArea\u003e\n\t\t\t\t\u003cName\u003e三陸沖\u003c/Name\u003e\n\t\t\t\t\u003cCode type\u003d\"震央地名\"\u003e288\u003c/Code\u003e\n\t\t\t\t\u003cjmx_eb:Coordinate description\u003d\"北緯３８．１度　東経１４２．９度　深さ　２０ｋｍ\"\u003e+38.1+142.9-20000/\u003c/jmx_eb:Coordinate\u003e\n\t\t\t\t\u003cNameFromMark\u003e牡鹿半島の東１２０ｋｍ付近\u003c/NameFromMark\u003e\n\t\t\t\t\u003cMarkCode type\u003d\"震央補助\"\u003e202\u003c/MarkCode\u003e\n\t\t\t\t\u003cDirection\u003e東\u003c/Direction\u003e\n\t\t\t\t\u003cDistance unit\u003d\"km\"\u003e120\u003c/Distance\u003e\n\t\t\t\u003c/Area\u003e\n\t\t\u003c/Hypocenter\u003e\n\t\t\u003cjmx_eb:Magnitude type\u003d\"Mj\" description\u003d\"Ｍ９．０\"\u003e9.0\u003c/jmx_eb:Magnitude\u003e\n\t\u003c/Earthquake\u003e\n\t\u003cText\u003e［海面変動の見通し］\n　１１日１４時４６分に発生した三陸沖を震源とする地震の津波注意報は、これ以上津波が大きくならないと判断し、１７時５８分に全て解除しました。\n　これらの沿岸では津波に伴う海面変動が観測されておりますので、今後１日程度は若干の海面変動が継続する可能性が高いと考えられます。\n［留意事項］\n　津波注意報が発表されていたことや、津波が観測されていることについては、これまでの情報等により十分に認識されていると考えられます。\nまた、これ以上津波が高くなる可能性は小さくなったと見られます。\n今後１日程度は海面変動が継続すると考えられますが、そのことを十分認識した上で行動頂ければ、津波による災害のおそれはないと見られることから津波注意報を解除しました。\n　海に入っての作業や釣り、海水浴などに際しては十分な留意が必要です。\n\u003c/Text\u003e\n\t\u003cComments\u003e\n\t\t\u003cWarningComment codeType\u003d\"固定付加文\"\u003e\n\t\t\t\u003cText\u003e＜津波予報（若干の海面変動）＞\n若干の海面変動が予想されますが、被害の心配はありません。\n\n今後もしばらく海面変動が続くと思われますので、海水浴や磯釣り等を行う際は注意してください。\n\n現在、大津波警報・津波警報・津波注意報を発表している沿岸はありません。\u003c/Text\u003e\n\t\t\t\u003cCode\u003e0124 0104 0107\u003c/Code\u003e\n\t\t\u003c/WarningComment\u003e\n\t\u003c/Comments\u003e\n\u003c/Body\u003e\n\u003c/Report\u003e\n",
+  "eewbot": {
+    "title": "津波予報",
+    "dateTime": 1300006698,
+    "status": "通常",
+    "editorialOffice": "大阪管区気象台",
+    "publishingOffice": "気象庁",
+    "reportDateTime": 1300006680,
+    "eventId": "20110311144640",
+    "infoType": "発表",
+    "serial": "",
+    "forecastAreas": [
+      {
+        "areaName": "北海道太平洋沿岸東部",
+        "areaCode": "100",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "北海道太平洋沿岸中部",
+        "areaCode": "101",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "北海道太平洋沿岸西部",
+        "areaCode": "102",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "北海道日本海沿岸北部",
+        "areaCode": "110",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "北海道日本海沿岸南部",
+        "areaCode": "111",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "オホーツク海沿岸",
+        "areaCode": "120",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "青森県日本海沿岸",
+        "areaCode": "200",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "青森県太平洋沿岸",
+        "areaCode": "201",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "陸奥湾",
+        "areaCode": "202",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "岩手県",
+        "areaCode": "210",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "宮城県",
+        "areaCode": "220",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "秋田県",
+        "areaCode": "230",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "山形県",
+        "areaCode": "240",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "福島県",
+        "areaCode": "250",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "茨城県",
+        "areaCode": "300",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "千葉県九十九里・外房",
+        "areaCode": "310",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "千葉県内房",
+        "areaCode": "311",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "東京湾内湾",
+        "areaCode": "312",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "伊豆諸島",
+        "areaCode": "320",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "小笠原諸島",
+        "areaCode": "321",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "相模湾・三浦半島",
+        "areaCode": "330",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "新潟県上中下越",
+        "areaCode": "340",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "佐渡",
+        "areaCode": "341",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "富山県",
+        "areaCode": "350",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "石川県能登",
+        "areaCode": "360",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "石川県加賀",
+        "areaCode": "361",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "福井県",
+        "areaCode": "370",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "静岡県",
+        "areaCode": "380",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "愛知県外海",
+        "areaCode": "390",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "伊勢・三河湾",
+        "areaCode": "391",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "三重県南部",
+        "areaCode": "400",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "京都府",
+        "areaCode": "500",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "大阪府",
+        "areaCode": "510",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "兵庫県北部",
+        "areaCode": "520",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "兵庫県瀬戸内海沿岸",
+        "areaCode": "521",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "淡路島南部",
+        "areaCode": "522",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "和歌山県",
+        "areaCode": "530",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "鳥取県",
+        "areaCode": "540",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "島根県出雲・石見",
+        "areaCode": "550",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "隠岐",
+        "areaCode": "551",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "岡山県",
+        "areaCode": "560",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "広島県",
+        "areaCode": "570",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "徳島県",
+        "areaCode": "580",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "香川県",
+        "areaCode": "590",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "愛媛県宇和海沿岸",
+        "areaCode": "600",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "愛媛県瀬戸内海沿岸",
+        "areaCode": "601",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "高知県",
+        "areaCode": "610",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "山口県日本海沿岸",
+        "areaCode": "700",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "山口県瀬戸内海沿岸",
+        "areaCode": "701",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "福岡県瀬戸内海沿岸",
+        "areaCode": "710",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "福岡県日本海沿岸",
+        "areaCode": "711",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "有明・八代海",
+        "areaCode": "712",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "佐賀県北部",
+        "areaCode": "720",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "長崎県西方",
+        "areaCode": "730",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "壱岐・対馬",
+        "areaCode": "731",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "熊本県天草灘沿岸",
+        "areaCode": "740",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "大分県瀬戸内海沿岸",
+        "areaCode": "750",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "大分県豊後水道沿岸",
+        "areaCode": "751",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "宮崎県",
+        "areaCode": "760",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "72"
+      },
+      {
+        "areaName": "鹿児島県東部",
+        "areaCode": "770",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "種子島・屋久島地方",
+        "areaCode": "771",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "奄美諸島・トカラ列島",
+        "areaCode": "772",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "鹿児島県西部",
+        "areaCode": "773",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "沖縄本島地方",
+        "areaCode": "800",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "大東島地方",
+        "areaCode": "801",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      },
+      {
+        "areaName": "宮古島・八重山地方",
+        "areaCode": "802",
+        "categoryName": "津波予報（若干の海面変動）",
+        "categoryCode": "71"
+      }
+    ],
+    "warningComment": "＜津波予報（若干の海面変動）＞\n若干の海面変動が予想されますが、被害の心配はありません。\n\n今後もしばらく海面変動が続くと思われますので、海水浴や磯釣り等を行う際は注意してください。\n\n現在、大津波警報・津波警報・津波注意報を発表している沿岸はありません。"
+  }
+}

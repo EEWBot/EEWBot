@@ -1,0 +1,16 @@
+{
+  "type": "tsunami",
+  "timestamp": 1234567890000,
+  "data": "\u003c?xml version\u003d\"1.0\" encoding\u003d\"UTF-8\"?\u003e\n\u003cReport xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/\"\u003e\n\u003cControl\u003e\n\t\u003cTitle\u003e津波警報・注意報・予報a\u003c/Title\u003e\n\t\u003cDateTime\u003e2021-08-05T03:56:58Z\u003c/DateTime\u003e\n\t\u003cStatus\u003e通常\u003c/Status\u003e\n\t\u003cEditorialOffice\u003e気象庁本庁\u003c/EditorialOffice\u003e\n\t\u003cPublishingOffice\u003e気象庁\u003c/PublishingOffice\u003e\n\u003c/Control\u003e\n\u003cHead xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/informationBasis1/\"\u003e\n\t\u003cTitle\u003e津波注意報・津波予報\u003c/Title\u003e\n\t\u003cReportDateTime\u003e2021-08-05T12:56:00+09:00\u003c/ReportDateTime\u003e\n\t\u003cTargetDateTime\u003e2021-08-05T12:56:00+09:00\u003c/TargetDateTime\u003e\n\t\u003cEventID\u003e20210805103531\u003c/EventID\u003e\n\t\u003cInfoType\u003e取消\u003c/InfoType\u003e\n\t\u003cSerial\u003e\u003c/Serial\u003e\n\t\u003cInfoKind\u003e津波警報・注意報・予報\u003c/InfoKind\u003e\n\t\u003cInfoKindVersion\u003e1.0_1\u003c/InfoKindVersion\u003e\n\t\u003cHeadline\u003e\n\t\t\u003cText\u003e津波注意報を取り消します。\u003c/Text\u003e\n\t\u003c/Headline\u003e\n\u003c/Head\u003e\n    \u003cBody xmlns\u003d\"http://xml.kishou.go.jp/jmaxml1/body/seismology1/\"\u003e\n\t\u003cText\u003e先ほどの、津波注意報を取り消します。\u003c/Text\u003e\n\u003c/Body\u003e\n\u003c/Report\u003e\n",
+  "eewbot": {
+    "title": "津波注意報・津波予報",
+    "dateTime": 1628135818,
+    "status": "通常",
+    "editorialOffice": "気象庁本庁",
+    "publishingOffice": "気象庁",
+    "reportDateTime": 1628135760,
+    "eventId": "20210805103531",
+    "infoType": "取消",
+    "serial": ""
+  }
+}
