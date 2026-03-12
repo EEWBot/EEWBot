@@ -6,6 +6,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
@@ -55,6 +56,7 @@ public class EEWService {
     private final ScheduledExecutorService executor;
     private final DestinationDeliveryRegistry deliveryRegistry;
     private final DestinationAdminRegistry adminRegistry;
+    private final EmbedContext embedContext;
     private final HttpClient httpClient;
     private final MinimalHttpAsyncClient asyncHttpClient;
     private final URI webhookSenderAddress;
@@ -66,6 +68,7 @@ public class EEWService {
         this.adminRegistry = bot.getAdminRegistry();
         this.avatarUrl = bot.getAvatarUrl();
         this.i18n = bot.getI18n();
+        this.embedContext = new EmbedContext(bot.getRendererQueryFactory(), bot.getQuakeInfoStore(), this.i18n);
         this.executor = bot.getScheduledExecutor();
         this.httpClient = bot.getHttpClient();
         this.webhookSenderHeader = bot.getConfig().getWebhookSender().getCustomHeader().split(":");
@@ -92,13 +95,13 @@ public class EEWService {
 
     public void sendMessage(final ChannelFilter filter, final Entity entity) {
         Map<String, MessageCreateSpec> msgByLang = new HashMap<>();
-        this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang, this.i18n)));
+        this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang, this.embedContext)));
 
         DeliveryPartition partition = this.deliveryRegistry.getDeliveryChannels(filter);
 
         List<DiscordWebhookRequest> webhookRequests = new ArrayList<>();
         this.i18n.getLanguages().keySet().forEach(lang -> {
-            DiscordWebhook webhook = entity.createWebhook(lang, this.i18n);
+            DiscordWebhook webhook = entity.createWebhook(lang, this.embedContext);
             webhook.avatar_url = this.avatarUrl;
             webhookRequests.add(new DiscordWebhookRequest(lang, webhook));
         });

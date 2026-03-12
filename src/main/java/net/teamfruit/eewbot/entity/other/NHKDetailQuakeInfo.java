@@ -11,10 +11,10 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.teamfruit.eewbot.TimeProvider;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
-import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 
@@ -345,7 +345,7 @@ public class NHKDetailQuakeInfo implements Entity {
     }
 
     @Override
-    public <T> T createEmbed(String lang, I18n i18n, IEmbedBuilder<T> builder) {
+    public <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
         Earthquake eq = getEarthquake();
         Type type = getType();
 

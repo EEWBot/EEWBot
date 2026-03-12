@@ -5,8 +5,8 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.QuakeInfoStore;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.external.ExternalData;
@@ -42,6 +42,7 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
     protected static ObjectMapper xmlMapper;
     protected static Gson gson;
     protected static I18n i18n;
+    protected static EmbedContext embedContext;
     private static boolean initialized = false;
 
     /**
@@ -60,27 +61,10 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
             return;
         }
 
-        // EEWBotインスタンスを作成してI18nを初期化
-        EEWBot eewBot = new EEWBot();
-        EEWBot.instance = eewBot;
-        try {
-            java.lang.reflect.Field i18nField = EEWBot.class.getDeclaredField("i18n");
-            i18nField.setAccessible(true);
-            i18n = new I18n("ja_jp");
-            i18nField.set(eewBot, i18n);
-
-            // RendererQueryFactoryを初期化（nullでOK - isAvailable()がfalseを返す）
-            java.lang.reflect.Field rendererField = EEWBot.class.getDeclaredField("rendererQueryFactory");
-            rendererField.setAccessible(true);
-            rendererField.set(eewBot, new RendererQueryFactory(null, null));
-
-            // QuakeInfoStoreを初期化（空のストアでOK）
-            java.lang.reflect.Field quakeInfoStoreField = EEWBot.class.getDeclaredField("quakeInfoStore");
-            quakeInfoStoreField.setAccessible(true);
-            quakeInfoStoreField.set(eewBot, new QuakeInfoStore());
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize EEWBot for test", e);
-        }
+        i18n = new I18n("ja_jp");
+        RendererQueryFactory renderer = new RendererQueryFactory(null, null);
+        QuakeInfoStore store = new QuakeInfoStore();
+        embedContext = new EmbedContext(renderer, store, i18n);
 
         xmlMapper = XmlMapper.builder()
                 .addModule(new JavaTimeModule())
@@ -134,7 +118,7 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
         assertThat(report).isNotNull();
 
         // 2. Entity → DiscordWebhook変換
-        DiscordWebhook webhook = report.createWebhook("ja_jp", i18n);
+        DiscordWebhook webhook = report.createWebhook("ja_jp", embedContext);
         assertThat(webhook).isNotNull();
 
         // 3. Webhook → JSON変換

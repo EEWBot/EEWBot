@@ -1,12 +1,12 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
-import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.time.Instant;
@@ -26,7 +26,7 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
 
     Optional<String> getFreeFormComment();
 
-    default <T> T createEmbed(String lang, I18n i18n, IEmbedBuilder<T> builder) {
+    default <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
         builder.title("eewbot.quakeinfo.hypocenterupdate.title");
         if (isCancelReport()) {
             builder.description("eewbot.quakeinfo.hypocenterupdate.cancel");

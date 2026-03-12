@@ -5,8 +5,8 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.QuakeInfoStore;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.external.ExternalData;
@@ -40,6 +40,7 @@ class AllExpectedJsonGeneratorTest {
     private static ObjectMapper xmlMapper;
     private static Gson gson;
     private static I18n i18n;
+    private static EmbedContext embedContext;
 
     // テレグラムタイプと実装クラスのマッピング
     private static final Map<String, Class<? extends AbstractJMAReport>> TELEGRAM_TYPES = new LinkedHashMap<>();
@@ -54,27 +55,10 @@ class AllExpectedJsonGeneratorTest {
 
     @BeforeAll
     static void setUp() {
-        // EEWBotインスタンスを作成してI18nを初期化
-        EEWBot eewBot = new EEWBot();
-        EEWBot.instance = eewBot;
-        try {
-            java.lang.reflect.Field i18nField = EEWBot.class.getDeclaredField("i18n");
-            i18nField.setAccessible(true);
-            i18n = new I18n("ja_jp");
-            i18nField.set(eewBot, i18n);
-
-            // RendererQueryFactoryを初期化（nullでOK - isAvailable()がfalseを返す）
-            java.lang.reflect.Field rendererField = EEWBot.class.getDeclaredField("rendererQueryFactory");
-            rendererField.setAccessible(true);
-            rendererField.set(eewBot, new RendererQueryFactory(null, null));
-
-            // QuakeInfoStoreを初期化（空のストアでOK）
-            java.lang.reflect.Field quakeInfoStoreField = EEWBot.class.getDeclaredField("quakeInfoStore");
-            quakeInfoStoreField.setAccessible(true);
-            quakeInfoStoreField.set(eewBot, new QuakeInfoStore());
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize EEWBot for test", e);
-        }
+        i18n = new I18n("ja_jp");
+        RendererQueryFactory renderer = new RendererQueryFactory(null, null);
+        QuakeInfoStore store = new QuakeInfoStore();
+        embedContext = new EmbedContext(renderer, store, i18n);
 
         xmlMapper = XmlMapper.builder()
                 .addModule(new JavaTimeModule())
@@ -207,7 +191,7 @@ class AllExpectedJsonGeneratorTest {
         if (!overwrite && Files.exists(discordPath)) {
             System.out.printf("[%s] Discord Webhook JSON: 既に存在（スキップ）%n", caseName);
         } else {
-            DiscordWebhook webhook = report.createWebhook("ja_jp", i18n);
+            DiscordWebhook webhook = report.createWebhook("ja_jp", embedContext);
             String discordJson = gson.toJson(webhook);
             Files.writeString(discordPath, discordJson, StandardCharsets.UTF_8);
             System.out.printf("[%s] Discord Webhook JSON生成: %s%n", caseName, discordPath);

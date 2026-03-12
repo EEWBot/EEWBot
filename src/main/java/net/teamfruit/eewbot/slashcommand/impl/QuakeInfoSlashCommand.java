@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.slashcommand.impl;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.entity.other.NHKQuakeInfo;
 import net.teamfruit.eewbot.gateway.QuakeInfoGateway;
@@ -36,6 +37,7 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
+        EmbedContext ctx = new EmbedContext(bot.getRendererQueryFactory(), bot.getQuakeInfoStore(), bot.getI18n());
         if (bot.getConfig().getLegacy().isEnableLegacyQuakeInfo()) {
             try {
                 NHKQuakeInfo info = EEWBot.XML_MAPPER.readValue(new URL(QuakeInfoGateway.REMOTE_ROOT + QuakeInfoGateway.REMOTE), NHKQuakeInfo.class);
@@ -47,13 +49,13 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
                     return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.error")).then();
 
                 NHKDetailQuakeInfo detail = NHKDetailQuakeInfo.DETAIL_QUAKE_INFO_MAPPER.readValue(new URL(url.get()), NHKDetailQuakeInfo.class);
-                return event.createFollowup().withEmbeds(detail.createEmbed(lang, bot.getI18n(), I18nEmbedCreateSpec.builder(lang, bot.getI18n()))).then();
+                return event.createFollowup().withEmbeds(detail.createEmbed(lang, ctx, I18nEmbedCreateSpec.builder(lang, ctx.i18n()))).then();
             } catch (IOException e) {
                 return Mono.error(e);
             }
         }
         return bot.getQuakeInfoStore().getLatestReport()
-                .map(quakeInfo -> quakeInfo.createEmbed(lang, bot.getI18n(), I18nEmbedCreateSpec.builder(lang, bot.getI18n())))
+                .map(quakeInfo -> quakeInfo.createEmbed(lang, ctx, I18nEmbedCreateSpec.builder(lang, ctx.i18n())))
                 .map(embed -> event.createFollowup().withEmbeds(embed))
                 .orElseGet(() -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.quakeinfo.error"))
                         .withEphemeral(true))

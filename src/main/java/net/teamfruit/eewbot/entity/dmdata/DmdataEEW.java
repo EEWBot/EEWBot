@@ -1,11 +1,11 @@
 package net.teamfruit.eewbot.entity.dmdata;
 
 import discord4j.rest.util.Color;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.external.EEWExternalData;
 import net.teamfruit.eewbot.entity.external.ExternalData;
-import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
@@ -810,7 +810,7 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
     }
 
     @Override
-    public <T> T createEmbed(String lang, I18n i18n, IEmbedBuilder<T> builder) {
+    public <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
         if (this.getBody().isCanceled()) {
             if (isConcurrent())
                 builder.title("eewbot.eew.eewcancel.concurrent", getConcurrentIndex());

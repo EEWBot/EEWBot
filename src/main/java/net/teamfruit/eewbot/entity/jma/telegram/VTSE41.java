@@ -1,8 +1,8 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import discord4j.rest.util.Color;
-import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.TsunamiCategory;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.TsunamiExternalData;
@@ -13,7 +13,6 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.FirstHeight;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.MaxHeight;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.TsunamiItem;
 import net.teamfruit.eewbot.entity.renderer.RenderTsunami;
-import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 
@@ -33,7 +32,7 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
 
     @Override
     @SuppressWarnings("NonAsciiCharacters")
-    default <T> T createEmbed(String lang, I18n i18n, IEmbedBuilder<T> builder) {
+    default <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
         builder.title("eewbot.tsunami.title");
 
         if (isCancelReport()) {
@@ -118,9 +117,9 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
 
             builder.color(highestColor);
 
-            if (highestPriority > 0 && EEWBot.instance.getRendererQueryFactory().isAvailable()) {
+            if (highestPriority > 0 && ctx.renderer().isAvailable()) {
                 try {
-                    builder.image(EEWBot.instance.getRendererQueryFactory().generateURL(this));
+                    builder.image(ctx.renderer().generateURL(this));
                 } catch (Exception e) {
                     Log.logger.error("Failed to generate renderer query", e);
                 }

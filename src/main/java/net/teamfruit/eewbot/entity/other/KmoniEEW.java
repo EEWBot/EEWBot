@@ -2,10 +2,10 @@ package net.teamfruit.eewbot.entity.other;
 
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.util.Color;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
-import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
@@ -217,16 +217,16 @@ public class KmoniEEW implements Entity {
     }
 
     @Override
-    public MessageCreateSpec createMessage(final String lang, final I18n i18n) {
-        return MessageCreateSpec.builder().addEmbed(createEmbed(lang, i18n, I18nEmbedCreateSpec.builder(lang, i18n))).build();
+    public MessageCreateSpec createMessage(final String lang, final EmbedContext ctx) {
+        return MessageCreateSpec.builder().addEmbed(createEmbed(lang, ctx, I18nEmbedCreateSpec.builder(lang, ctx.i18n()))).build();
     }
 
     @Override
-    public DiscordWebhook createWebhook(final String lang, final I18n i18n) {
-        return DiscordWebhook.builder().addEmbed(createEmbed(lang, i18n, I18nDiscordEmbed.builder(lang, i18n))).build();
+    public DiscordWebhook createWebhook(final String lang, final EmbedContext ctx) {
+        return DiscordWebhook.builder().addEmbed(createEmbed(lang, ctx, I18nDiscordEmbed.builder(lang, ctx.i18n()))).build();
     }
 
-    public <T> T createEmbed(String lang, I18n i18n, IEmbedBuilder<T> builder) {
+    public <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
         if (isCancel())
             return builder.title("eewbot.eew.eewcancel")
                     .timestamp(getReportTime())

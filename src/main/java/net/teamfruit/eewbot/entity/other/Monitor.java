@@ -2,9 +2,9 @@ package net.teamfruit.eewbot.entity.other;
 
 import discord4j.core.spec.MessageCreateFields;
 import discord4j.core.spec.MessageCreateSpec;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
-import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.io.ByteArrayInputStream;
@@ -32,17 +32,17 @@ public class Monitor implements Entity {
     }
 
     @Override
-    public <T> T createEmbed(String lang, I18n i18n, IEmbedBuilder<T> builder) {
+    public <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MessageCreateSpec createMessage(final String lang, final I18n i18n) {
+    public MessageCreateSpec createMessage(final String lang, final EmbedContext ctx) {
         return MessageCreateSpec.builder().addFile("kyoshinmonitor.png", new ByteArrayInputStream(getImage())).build();
     }
 
     @Override
-    public DiscordWebhook createWebhook(final String lang, final I18n i18n) {
+    public DiscordWebhook createWebhook(final String lang, final EmbedContext ctx) {
         throw new UnsupportedOperationException();
     }
 
