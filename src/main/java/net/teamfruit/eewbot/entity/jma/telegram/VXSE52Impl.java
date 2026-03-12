@@ -22,6 +22,11 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     private QuakeInfoStore quakeInfoStore;
 
     @Override
+    public void initQuakeInfoStore(QuakeInfoStore store) {
+        this.quakeInfoStore = store;
+    }
+
+    @Override
     public <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
         this.quakeInfoStore = ctx.store();
         return VXSE52.super.createEmbed(lang, ctx, builder);

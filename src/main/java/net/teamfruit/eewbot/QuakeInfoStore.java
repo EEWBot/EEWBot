@@ -17,6 +17,7 @@ public class QuakeInfoStore {
     private @Nullable QuakeInfo lastReport;
 
     public void putReport(QuakeInfo report) {
+        report.initQuakeInfoStore(this);
         this.lastReport = report;
 
         if (report instanceof VXSE53) {
