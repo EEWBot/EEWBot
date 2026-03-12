@@ -39,6 +39,7 @@ class AllExpectedJsonGeneratorTest {
 
     private static ObjectMapper xmlMapper;
     private static Gson gson;
+    private static I18n i18n;
 
     // テレグラムタイプと実装クラスのマッピング
     private static final Map<String, Class<? extends AbstractJMAReport>> TELEGRAM_TYPES = new LinkedHashMap<>();
@@ -59,7 +60,8 @@ class AllExpectedJsonGeneratorTest {
         try {
             java.lang.reflect.Field i18nField = EEWBot.class.getDeclaredField("i18n");
             i18nField.setAccessible(true);
-            i18nField.set(eewBot, new I18n("ja_jp"));
+            i18n = new I18n("ja_jp");
+            i18nField.set(eewBot, i18n);
 
             // RendererQueryFactoryを初期化（nullでOK - isAvailable()がfalseを返す）
             java.lang.reflect.Field rendererField = EEWBot.class.getDeclaredField("rendererQueryFactory");
@@ -205,7 +207,7 @@ class AllExpectedJsonGeneratorTest {
         if (!overwrite && Files.exists(discordPath)) {
             System.out.printf("[%s] Discord Webhook JSON: 既に存在（スキップ）%n", caseName);
         } else {
-            DiscordWebhook webhook = report.createWebhook("ja_jp");
+            DiscordWebhook webhook = report.createWebhook("ja_jp", i18n);
             String discordJson = gson.toJson(webhook);
             Files.writeString(discordPath, discordJson, StandardCharsets.UTF_8);
             System.out.printf("[%s] Discord Webhook JSON生成: %s%n", caseName, discordPath);

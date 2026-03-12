@@ -33,17 +33,17 @@ public class SlashCommandUtils {
                 .doOnError(err -> Log.logger.error("Error during reply", err));
     }
 
-    public static IEmbedBuilder<EmbedCreateSpec> createEmbed(final String lang) {
-        return I18nEmbedCreateSpec.builder(lang)
+    public static IEmbedBuilder<EmbedCreateSpec> createEmbed(final String lang, final EEWBot bot) {
+        return I18nEmbedCreateSpec.builder(lang, bot.getI18n())
                 .color(Color.of(7506394))
-                .author(EEWBot.instance.getUsername(), "https://github.com/EEWBot/EEWBot", EEWBot.instance.getAvatarUrl())
+                .author(bot.getUsername(), "https://github.com/EEWBot/EEWBot", bot.getAvatarUrl())
                 .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png");
     }
 
-    public static IEmbedBuilder<EmbedCreateSpec> createErrorEmbed(final String lang) {
-        return I18nEmbedCreateSpec.builder(lang)
+    public static IEmbedBuilder<EmbedCreateSpec> createErrorEmbed(final String lang, final EEWBot bot) {
+        return I18nEmbedCreateSpec.builder(lang, bot.getI18n())
                 .color(Color.of(255, 64, 64))
-                .author(EEWBot.instance.getUsername(), "https://github.com/EEWBot/EEWBot", EEWBot.instance.getAvatarUrl())
+                .author(bot.getUsername(), "https://github.com/EEWBot/EEWBot", bot.getAvatarUrl())
                 .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png");
     }
 

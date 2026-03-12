@@ -10,6 +10,7 @@ import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
+import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.time.Instant;
@@ -30,7 +31,7 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
     Optional<String> getFreeFormComment();
 
     @Override
-    default <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
+    default <T> T createEmbed(String lang, I18n i18n, IEmbedBuilder<T> builder) {
         builder.title("eewbot.quakeinfo.epicenter.title");
         if (isCancelReport()) {
             builder.description("eewbot.quakeinfo.epicenter.cancel");

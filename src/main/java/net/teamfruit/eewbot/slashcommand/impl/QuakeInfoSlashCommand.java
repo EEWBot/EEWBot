@@ -47,13 +47,13 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
                     return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.error")).then();
 
                 NHKDetailQuakeInfo detail = NHKDetailQuakeInfo.DETAIL_QUAKE_INFO_MAPPER.readValue(new URL(url.get()), NHKDetailQuakeInfo.class);
-                return event.createFollowup().withEmbeds(detail.createEmbed(lang, I18nEmbedCreateSpec.builder(lang))).then();
+                return event.createFollowup().withEmbeds(detail.createEmbed(lang, bot.getI18n(), I18nEmbedCreateSpec.builder(lang, bot.getI18n()))).then();
             } catch (IOException e) {
                 return Mono.error(e);
             }
         }
         return bot.getQuakeInfoStore().getLatestReport()
-                .map(quakeInfo -> quakeInfo.createEmbed(lang, I18nEmbedCreateSpec.builder(lang)))
+                .map(quakeInfo -> quakeInfo.createEmbed(lang, bot.getI18n(), I18nEmbedCreateSpec.builder(lang, bot.getI18n())))
                 .map(embed -> event.createFollowup().withEmbeds(embed))
                 .orElseGet(() -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.quakeinfo.error"))
                         .withEphemeral(true))

@@ -52,7 +52,7 @@ public class SlashCommandHandler {
                         })
                         .doOnError(err -> Log.logger.error("Error during {} command", event.getCommandName(), err))
                         .onErrorResume(err -> replyOrFollowUp(event, commands.get(event.getCommandName()).isDefer(),
-                                createErrorEmbed(getLanguage(bot, event))
+                                createErrorEmbed(getLanguage(bot, event), bot)
                                         .title("eewbot.scmd.error")
                                         .description(ExceptionUtils.getMessage(err))
                                         .build()

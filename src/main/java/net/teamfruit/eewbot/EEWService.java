@@ -92,13 +92,13 @@ public class EEWService {
 
     public void sendMessage(final ChannelFilter filter, final Entity entity) {
         Map<String, MessageCreateSpec> msgByLang = new HashMap<>();
-        this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang)));
+        this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang, this.i18n)));
 
         DeliveryPartition partition = this.deliveryRegistry.getDeliveryChannels(filter);
 
         List<DiscordWebhookRequest> webhookRequests = new ArrayList<>();
         this.i18n.getLanguages().keySet().forEach(lang -> {
-            DiscordWebhook webhook = entity.createWebhook(lang);
+            DiscordWebhook webhook = entity.createWebhook(lang, this.i18n);
             webhook.avatar_url = this.avatarUrl;
             webhookRequests.add(new DiscordWebhookRequest(lang, webhook));
         });

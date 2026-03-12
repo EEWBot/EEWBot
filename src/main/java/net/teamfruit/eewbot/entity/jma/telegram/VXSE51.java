@@ -10,14 +10,11 @@ import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
 import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
+import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture, ExternalData {
 
@@ -32,7 +29,7 @@ public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
     Optional<String> getFreeFormComment();
 
     @Override
-    default <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
+    default <T> T createEmbed(String lang, I18n i18n, IEmbedBuilder<T> builder) {
         builder.title("eewbot.quakeinfo.intensity.title");
         if (isCancelReport()) {
             builder.description("eewbot.quakeinfo.intensity.cancel");

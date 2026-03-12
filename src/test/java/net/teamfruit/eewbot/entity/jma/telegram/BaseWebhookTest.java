@@ -41,6 +41,7 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
 
     protected static ObjectMapper xmlMapper;
     protected static Gson gson;
+    protected static I18n i18n;
     private static boolean initialized = false;
 
     /**
@@ -65,7 +66,8 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
         try {
             java.lang.reflect.Field i18nField = EEWBot.class.getDeclaredField("i18n");
             i18nField.setAccessible(true);
-            i18nField.set(eewBot, new I18n("ja_jp"));
+            i18n = new I18n("ja_jp");
+            i18nField.set(eewBot, i18n);
 
             // RendererQueryFactoryを初期化（nullでOK - isAvailable()がfalseを返す）
             java.lang.reflect.Field rendererField = EEWBot.class.getDeclaredField("rendererQueryFactory");
@@ -132,7 +134,7 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
         assertThat(report).isNotNull();
 
         // 2. Entity → DiscordWebhook変換
-        DiscordWebhook webhook = report.createWebhook("ja_jp");
+        DiscordWebhook webhook = report.createWebhook("ja_jp", i18n);
         assertThat(webhook).isNotNull();
 
         // 3. Webhook → JSON変換

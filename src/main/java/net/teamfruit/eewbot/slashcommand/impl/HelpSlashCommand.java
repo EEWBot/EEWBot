@@ -25,7 +25,7 @@ public class HelpSlashCommand implements ISlashCommand {
 
     @Override
     public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
-        return event.reply().withEmbeds(SlashCommandUtils.createEmbed(lang)
+        return event.reply().withEmbeds(SlashCommandUtils.createEmbed(lang, bot)
                 .title("eewbot.scmd.help.title")
                 .description("eewbot.scmd.help.desc")
                 .addField("/setup", "eewbot.scmd.help.field.set.value", false)
