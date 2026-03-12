@@ -16,6 +16,7 @@ import discord4j.core.object.entity.User;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
@@ -200,7 +201,18 @@ public class EEWBot {
         }
 
         this.quakeInfoStore = new QuakeInfoStore();
-        this.service = new EEWService(this);
+        EmbedContext embedContext = new EmbedContext(this.rendererQueryFactory, this.quakeInfoStore, this.i18n);
+        this.service = new EEWService(
+                this.gateway,
+                this.deliveryRegistry,
+                this.adminRegistry,
+                this.avatarUrl,
+                this.i18n,
+                embedContext,
+                this.scheduledExecutor,
+                this.httpClient,
+                getConfig()
+        );
         this.externalWebhookService = new ExternalWebhookService(getConfig(), getHttpClient());
         this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getHttpClient(), getClient(), getAdminRegistry(), getQuakeInfoStore(), getExternalWebhookService());
         this.slashCommand = new SlashCommandHandler(this);

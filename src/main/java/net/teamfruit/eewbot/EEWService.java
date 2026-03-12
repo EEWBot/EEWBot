@@ -12,6 +12,7 @@ import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
 import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
 import net.teamfruit.eewbot.i18n.I18n;
+import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
@@ -62,19 +63,29 @@ public class EEWService {
     private final URI webhookSenderAddress;
     private final String[] webhookSenderHeader;
 
-    public EEWService(EEWBot bot) {
-        this.gateway = bot.getClient();
-        this.deliveryRegistry = bot.getDeliveryRegistry();
-        this.adminRegistry = bot.getAdminRegistry();
-        this.avatarUrl = bot.getAvatarUrl();
-        this.i18n = bot.getI18n();
-        this.embedContext = new EmbedContext(bot.getRendererQueryFactory(), bot.getQuakeInfoStore(), this.i18n);
-        this.executor = bot.getScheduledExecutor();
-        this.httpClient = bot.getHttpClient();
-        this.webhookSenderHeader = bot.getConfig().getWebhookSender().getCustomHeader().split(":");
+    public EEWService(
+            GatewayDiscordClient gateway,
+            DestinationDeliveryRegistry deliveryRegistry,
+            DestinationAdminRegistry adminRegistry,
+            String avatarUrl,
+            I18n i18n,
+            EmbedContext embedContext,
+            ScheduledExecutorService executor,
+            HttpClient httpClient,
+            ConfigV2 config
+    ) {
+        this.gateway = gateway;
+        this.deliveryRegistry = deliveryRegistry;
+        this.adminRegistry = adminRegistry;
+        this.avatarUrl = avatarUrl;
+        this.i18n = i18n;
+        this.embedContext = embedContext;
+        this.executor = executor;
+        this.httpClient = httpClient;
+        this.webhookSenderHeader = config.getWebhookSender().getCustomHeader().split(":");
 
-        int poolingMax = bot.getConfig().getAdvanced().getPoolingMax();
-        int poolingMaxPerRoute = bot.getConfig().getAdvanced().getPoolingMaxPerRoute();
+        int poolingMax = config.getAdvanced().getPoolingMax();
+        int poolingMaxPerRoute = config.getAdvanced().getPoolingMaxPerRoute();
 
         PoolingAsyncClientConnectionManager connectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
                 .setMaxConnTotal(poolingMax)
@@ -87,8 +98,8 @@ public class EEWService {
                 connectionManager);
         this.asyncHttpClient.start();
 
-        if (StringUtils.isNotEmpty(bot.getConfig().getWebhookSender().getAddress()))
-            this.webhookSenderAddress = URI.create(bot.getConfig().getWebhookSender().getAddress());
+        if (StringUtils.isNotEmpty(config.getWebhookSender().getAddress()))
+            this.webhookSenderAddress = URI.create(config.getWebhookSender().getAddress());
         else
             this.webhookSenderAddress = null;
     }
