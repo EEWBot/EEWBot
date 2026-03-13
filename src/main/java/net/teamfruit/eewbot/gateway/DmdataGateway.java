@@ -28,8 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
-// TODO: Refactor
-public abstract class DmdataGateway implements Gateway<DmdataEEW> {
+public class DmdataGateway implements Gateway<DmdataEEW> {
 
     public static final String WS_BASE = "wss://ws.api.dmdata.jp/v2/websocket";
     public static final String WS_BASE_TOKYO = "wss://ws-tokyo.api.dmdata.jp/v2/websocket";
@@ -41,17 +40,49 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
     private final DmdataAPI dmdataAPI;
     private final String appName;
     private final boolean multiConnect;
+    private final Listener listener;
+
+    private volatile boolean closed;
 
     private WebSocketConnection webSocket1;
     private WebSocketConnection webSocket2;
 
     private final Map<String, DmdataEEW> prev = new ConcurrentHashMap<>();
 
-    public DmdataGateway(java.net.http.HttpClient httpClient, DmdataAPI api, long appId, boolean multiConnect) {
+    @FunctionalInterface
+    public interface Listener {
+        void onNewData(DmdataEEW eew);
+    }
+
+    public DmdataGateway(java.net.http.HttpClient httpClient, DmdataAPI api, long appId, boolean multiConnect, Listener listener) {
         this.httpClient = httpClient;
         this.dmdataAPI = api;
         this.appName = "eewbot" + "-" + encodeAppId(appId);
         this.multiConnect = multiConnect;
+        this.listener = listener;
+    }
+
+    @Override
+    public void onNewData(DmdataEEW data) {
+        if (this.closed)
+            return;
+        this.listener.onNewData(data);
+    }
+
+    public void close() {
+        this.closed = true;
+        closeWebSocketConnection(this.webSocket1);
+        closeWebSocketConnection(this.webSocket2);
+    }
+
+    private void closeWebSocketConnection(WebSocketConnection connection) {
+        if (connection != null && connection.getWebSocket() != null) {
+            try {
+                connection.getWebSocket().sendClose(WebSocket.NORMAL_CLOSURE, "shutdown");
+            } catch (Exception e) {
+                Log.logger.debug("Error closing WebSocket: {}", e.getMessage());
+            }
+        }
     }
 
     public WebSocketConnection getWebSocket1() {
@@ -155,6 +186,8 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
     }
 
     private void reconnectWebSocket(String wsBaseURI, String connectionName, boolean hasForecastContract) throws EEWGatewayException {
+        if (this.closed)
+            return;
         try {
             Log.logger.info("DMDATA WebSocket reconnecting");
             closeWebSocketIfExist(this.dmdataAPI.openSocketList(), connectionName);
@@ -192,6 +225,8 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
     }
 
     public void reconnectDeadWebSocketsBasedOnDmData() throws EEWGatewayException {
+        if (this.closed)
+            return;
         try {
             DmdataSocketList socketList = this.dmdataAPI.openSocketList();
             if (isWebSocketDead(socketList, 1)) {
@@ -249,6 +284,14 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
         }
 
         public void setWebSocket(WebSocket webSocket) {
+            if (DmdataGateway.this.closed) {
+                try {
+                    webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "shutdown");
+                } catch (Exception e) {
+                    Log.logger.debug("Error closing late WebSocket: {}", e.getMessage());
+                }
+                return;
+            }
             this.webSocket = webSocket;
         }
 
@@ -264,6 +307,10 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
 
             @Override
             public void onOpen(WebSocket webSocket) {
+                if (DmdataGateway.this.closed) {
+                    webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "shutdown");
+                    return;
+                }
                 Log.logger.info("DMDATA WebSocket opened: {}", WebSocketConnection.this.connectionName);
                 WebSocket.Listener.super.onOpen(webSocket);
             }
@@ -389,7 +436,7 @@ public abstract class DmdataGateway implements Gateway<DmdataEEW> {
             }
 
             private void onDisconnected() {
-                if (WebSocketConnection.this.reconnecting) {
+                if (DmdataGateway.this.closed || WebSocketConnection.this.reconnecting) {
                     return;
                 }
 

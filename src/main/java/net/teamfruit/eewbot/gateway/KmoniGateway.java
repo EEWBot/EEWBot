@@ -14,7 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class KmoniGateway implements Gateway<KmoniEEW> {
+public class KmoniGateway implements Gateway<KmoniEEW> {
 
     public static final String REMOTE = "http://www.kmoni.bosai.go.jp/webservice/hypo/eew/";
     public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
@@ -22,10 +22,22 @@ public abstract class KmoniGateway implements Gateway<KmoniEEW> {
     private final java.net.http.HttpClient httpClient;
     private final Map<Long, KmoniEEW> prev = new HashMap<>();
     private final TimeProvider time;
+    private final Listener listener;
 
-    public KmoniGateway(final java.net.http.HttpClient httpClient, final TimeProvider time) {
+    @FunctionalInterface
+    public interface Listener {
+        void onNewData(KmoniEEW eew);
+    }
+
+    public KmoniGateway(final java.net.http.HttpClient httpClient, final TimeProvider time, final Listener listener) {
         this.httpClient = httpClient;
         this.time = time;
+        this.listener = listener;
+    }
+
+    @Override
+    public void onNewData(final KmoniEEW data) {
+        this.listener.onNewData(data);
     }
 
     @Override

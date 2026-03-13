@@ -24,6 +24,7 @@ jooq = "3.20.11"
 flyway = "12.1.0"
 caffeine = "3.2.3"
 testcontainers = "2.0.3"
+mockito = "5.14.2"
 
 [libraries]
 ch-qos-logback-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "ch-qos-logback-logback-classic" }
@@ -51,6 +52,8 @@ caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "c
 testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
 
 [plugins]
 shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar" }

@@ -19,7 +19,7 @@ import java.util.ListIterator;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("NonAsciiCharacters")
-public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
+public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
 
     private static final String REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
 //    private static final String REMOTE_ROOT = "http://localhost:8000/";
@@ -28,13 +28,25 @@ public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
 
     private final java.net.http.HttpClient httpClient;
     private final QuakeInfoStore store;
+    private final Listener listener;
 
     private String lastModified;
     private List<String> lastIds;
 
-    public JMAXmlGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store) {
+    @FunctionalInterface
+    public interface Listener {
+        void onNewData(AbstractJMAReport report);
+    }
+
+    public JMAXmlGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store, Listener listener) {
         this.httpClient = httpClient;
         this.store = store;
+        this.listener = listener;
+    }
+
+    @Override
+    public void onNewData(AbstractJMAReport data) {
+        this.listener.onNewData(data);
     }
 
     @Override

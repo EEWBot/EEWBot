@@ -11,12 +11,27 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
 
-public abstract class QuakeInfoGateway implements Gateway<NHKDetailQuakeInfo> {
+public class QuakeInfoGateway implements Gateway<NHKDetailQuakeInfo> {
 
     public static final String REMOTE_ROOT = "https://www3.nhk.or.jp/sokuho/jishin/";
     public static final String REMOTE = "data/JishinReport.xml";
 
+    private final Listener listener;
     private List<String> prev;
+
+    @FunctionalInterface
+    public interface Listener {
+        void onNewData(NHKDetailQuakeInfo data);
+    }
+
+    public QuakeInfoGateway(Listener listener) {
+        this.listener = listener;
+    }
+
+    @Override
+    public void onNewData(NHKDetailQuakeInfo data) {
+        this.listener.onNewData(data);
+    }
 
     @Override
     public void run() {

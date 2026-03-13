@@ -19,6 +19,7 @@ import discord4j.gateway.intent.IntentSet;
 import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
+import net.teamfruit.eewbot.gateway.GatewayManager;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.JsonRegistry;
 import net.teamfruit.eewbot.registry.config.Config;
@@ -81,7 +82,7 @@ public class EEWBot {
     private QuakeInfoStore quakeInfoStore;
     private RendererQueryFactory rendererQueryFactory;
     private EEWService service;
-    private EEWExecutor executor;
+    private GatewayManager gatewayManager;
     private SlashCommandHandler slashCommand;
     private ExternalWebhookService externalWebhookService;
 
@@ -214,10 +215,10 @@ public class EEWBot {
                 getConfig()
         );
         this.externalWebhookService = new ExternalWebhookService(getConfig(), getHttpClient());
-        this.executor = new EEWExecutor(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getHttpClient(), getClient(), getAdminRegistry(), getQuakeInfoStore(), getExternalWebhookService());
+        this.gatewayManager = new GatewayManager(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getHttpClient(), getClient(), getAdminRegistry(), getQuakeInfoStore(), getExternalWebhookService());
         this.slashCommand = new SlashCommandHandler(this);
 
-        this.executor.init();
+        this.gatewayManager.init();
 
         this.gateway.on(GuildDeleteEvent.class)
                 .subscribe(event -> handleDeletion(event.getGuildId().asLong(), true));
@@ -228,6 +229,9 @@ public class EEWBot {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             Log.logger.info("Shutdown");
+            if (this.gatewayManager != null) {
+                this.gatewayManager.close();
+            }
             if (this.revisionPoller != null) {
                 this.revisionPoller.stop();
             }
@@ -351,8 +355,8 @@ public class EEWBot {
         return this.service;
     }
 
-    public EEWExecutor getExecutor() {
-        return this.executor;
+    public TimeProvider getTimeProvider() {
+        return this.gatewayManager.getTimeProvider();
     }
 
     public long getApplicationId() {

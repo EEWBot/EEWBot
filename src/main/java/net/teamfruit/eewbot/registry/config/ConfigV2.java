@@ -346,7 +346,6 @@ public class ConfigV2 {
 
         private int poolingMax = 20;
         private int poolingMaxPerRoute = 20;
-        private boolean webhookMigration = false;
 
         public int getPoolingMax() {
             return this.poolingMax;
@@ -364,20 +363,11 @@ public class ConfigV2 {
             this.poolingMaxPerRoute = poolingMaxPerRoute;
         }
 
-        public boolean isWebhookMigration() {
-            return this.webhookMigration;
-        }
-
-        public void setWebhookMigration(boolean webhookMigration) {
-            this.webhookMigration = webhookMigration;
-        }
-
         @Override
         public String toString() {
             return "Advanced{" +
                     "poolingMax=" + this.poolingMax +
                     ", poolingMaxPerRoute=" + this.poolingMaxPerRoute +
-                    ", webhookMigration=" + this.webhookMigration +
                     '}';
         }
     }
@@ -507,7 +497,6 @@ public class ConfigV2 {
         configV2.dmdata.setMultiSocketConnect(config.isDmdataMultiSocketConnect());
         configV2.advanced.setPoolingMax(config.getPoolingMax());
         configV2.advanced.setPoolingMaxPerRoute(config.getPoolingMaxPerRoute());
-        configV2.advanced.setWebhookMigration(config.isWebhookMigration());
         configV2.legacy.setEnableKyoshin(config.isEnableKyoshin());
         configV2.legacy.setKyoshinDelay(config.getKyoshinDelay());
         configV2.legacy.setEnableLegacyQuakeInfo(config.isEnableLegacyQuakeInfo());
