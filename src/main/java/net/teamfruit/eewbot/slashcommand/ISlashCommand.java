@@ -2,7 +2,6 @@ package net.teamfruit.eewbot.slashcommand;
 
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
-import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
@@ -21,5 +20,5 @@ public interface ISlashCommand {
 
     ApplicationCommandRequest buildCommand();
 
-    Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, @Nullable Channel channel, String lang);
+    Mono<Void> on(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, @Nullable Channel channel, String lang);
 }

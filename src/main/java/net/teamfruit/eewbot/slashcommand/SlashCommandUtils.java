@@ -7,7 +7,6 @@ import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
-import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
@@ -17,10 +16,10 @@ import reactor.core.publisher.Mono;
 
 public class SlashCommandUtils {
 
-    public static String getLanguage(EEWBot bot, InteractionCreateEvent event) {
-        Channel channel = bot.getAdminRegistry().get(event.getInteraction().getChannelId().asLong());
+    public static String getLanguage(SlashCommandContext ctx, InteractionCreateEvent event) {
+        Channel channel = ctx.adminRegistry().get(event.getInteraction().getChannelId().asLong());
         if (channel == null)
-            return bot.getConfig().getBase().getDefaultLanguage();
+            return ctx.config().getBase().getDefaultLanguage();
         return channel.getLang();
     }
 
@@ -33,17 +32,17 @@ public class SlashCommandUtils {
                 .doOnError(err -> Log.logger.error("Error during reply", err));
     }
 
-    public static IEmbedBuilder<EmbedCreateSpec> createEmbed(final String lang, final EEWBot bot) {
-        return I18nEmbedCreateSpec.builder(lang, bot.getI18n())
+    public static IEmbedBuilder<EmbedCreateSpec> createEmbed(final String lang, final SlashCommandContext ctx) {
+        return I18nEmbedCreateSpec.builder(lang, ctx.i18n())
                 .color(Color.of(7506394))
-                .author(bot.getUsername(), "https://github.com/EEWBot/EEWBot", bot.getAvatarUrl())
+                .author(ctx.username(), "https://github.com/EEWBot/EEWBot", ctx.avatarUrl())
                 .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png");
     }
 
-    public static IEmbedBuilder<EmbedCreateSpec> createErrorEmbed(final String lang, final EEWBot bot) {
-        return I18nEmbedCreateSpec.builder(lang, bot.getI18n())
+    public static IEmbedBuilder<EmbedCreateSpec> createErrorEmbed(final String lang, final SlashCommandContext ctx) {
+        return I18nEmbedCreateSpec.builder(lang, ctx.i18n())
                 .color(Color.of(255, 64, 64))
-                .author(bot.getUsername(), "https://github.com/EEWBot/EEWBot", bot.getAvatarUrl())
+                .author(ctx.username(), "https://github.com/EEWBot/EEWBot", ctx.avatarUrl())
                 .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png");
     }
 

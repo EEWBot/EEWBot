@@ -43,7 +43,7 @@ public class ExternalWebhookService {
                     eewbotDto  // Processed DTO
             );
 
-            String jsonBody = EEWBot.GSON.toJson(request);
+            String jsonBody = Codecs.GSON.toJson(request);
             Log.logger.debug("External webhook JSON content: {}", jsonBody);
 
             this.webhookUrls.forEach(url -> this.executor.submit(() -> {

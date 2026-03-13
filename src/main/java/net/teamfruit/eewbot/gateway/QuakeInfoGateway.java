@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.entity.other.NHKQuakeInfo;
 import net.teamfruit.eewbot.entity.other.NHKQuakeInfo.Record.Item;
@@ -38,7 +38,7 @@ public class QuakeInfoGateway implements Gateway<NHKDetailQuakeInfo> {
         try {
             Thread.currentThread().setName("eewbot-quakeinfo-thread");
 
-            NHKQuakeInfo quakeInfo = EEWBot.XML_MAPPER.readValue(new URL(REMOTE_ROOT + REMOTE), NHKQuakeInfo.class);
+            NHKQuakeInfo quakeInfo = Codecs.XML_MAPPER.readValue(new URL(REMOTE_ROOT + REMOTE), NHKQuakeInfo.class);
 
             if (this.prev != null) {
                 final List<String> list = quakeInfo.getRecords().stream()

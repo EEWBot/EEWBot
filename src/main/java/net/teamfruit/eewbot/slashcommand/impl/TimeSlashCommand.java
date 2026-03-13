@@ -7,10 +7,10 @@ import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandRequest;
-import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.IButtonSlashCommand;
+import net.teamfruit.eewbot.slashcommand.SlashCommandContext;
 import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import reactor.core.publisher.Mono;
 
@@ -38,27 +38,27 @@ public class TimeSlashCommand implements IButtonSlashCommand {
     }
 
     @Override
-    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
-        return event.reply().withEmbeds(buildTimeEmbed(bot, bot.getTimeProvider(), lang))
-                .withComponents(ActionRow.of(Button.primary("timesync", bot.getI18n().get(lang, "eewbot.scmd.time.resync"))
-                        .disabled(!bot.getConfig().getLegacy().isEnableKyoshin())));
+    public Mono<Void> on(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
+        return event.reply().withEmbeds(buildTimeEmbed(ctx, ctx.timeProvider(), lang))
+                .withComponents(ActionRow.of(Button.primary("timesync", ctx.i18n().get(lang, "eewbot.scmd.time.resync"))
+                        .disabled(!ctx.config().getLegacy().isEnableKyoshin())));
     }
 
     @Override
-    public Mono<Void> onClick(EEWBot bot, ButtonInteractionEvent event, String lang) {
-        return event.deferEdit().then(resync(bot, event, lang).then());
+    public Mono<Void> onClick(SlashCommandContext ctx, ButtonInteractionEvent event, String lang) {
+        return event.deferEdit().then(resync(ctx, event, lang).then());
     }
 
-    private Mono<Message> resync(EEWBot bot, ButtonInteractionEvent event, String lang) {
-        return bot.getTimeProvider().fetch()
+    private Mono<Message> resync(SlashCommandContext ctx, ButtonInteractionEvent event, String lang) {
+        return ctx.timeProvider().fetch()
                 .flatMap(time -> event.editReply()
-                        .withEmbeds(buildTimeEmbed(bot, time, lang))
-                        .withComponents(ActionRow.of(Button.primary("timesync", bot.getI18n().get(lang, "eewbot.scmd.time.resync")).disabled())));
+                        .withEmbeds(buildTimeEmbed(ctx, time, lang))
+                        .withComponents(ActionRow.of(Button.primary("timesync", ctx.i18n().get(lang, "eewbot.scmd.time.resync")).disabled())));
     }
 
-    private EmbedCreateSpec buildTimeEmbed(EEWBot bot, TimeProvider time, String lang) {
+    private EmbedCreateSpec buildTimeEmbed(SlashCommandContext ctx, TimeProvider time, String lang) {
         if (time.isProviding())
-            return SlashCommandUtils.createEmbed(lang, bot)
+            return SlashCommandUtils.createEmbed(lang, ctx)
                     .title("eewbot.scmd.time.title")
                     .addField("eewbot.scmd.time.field.lastpctime.name", time.getLastComputerTime().toString(), false)
                     .addField("eewbot.scmd.time.field.lastntptime.name", time.getLastNTPTime().toString(), false)
@@ -66,7 +66,7 @@ public class TimeSlashCommand implements IButtonSlashCommand {
                     .addField("eewbot.scmd.time.field.nowoffsettime.name", time.now().toString(), false)
                     .addField("eewbot.scmd.time.field.offset.name", String.valueOf(time.getOffset()), false)
                     .build();
-        return SlashCommandUtils.createEmbed(lang, bot)
+        return SlashCommandUtils.createEmbed(lang, ctx)
                 .title("eewbot.scmd.time.title")
                 .addField("eewbot.scmd.time.field.lastpctime.name", "eewbot.scmd.time.field.nonsync.value", false)
                 .addField("eewbot.scmd.time.field.lastntptime.name", "eewbot.scmd.time.field.nonsync.value", false)

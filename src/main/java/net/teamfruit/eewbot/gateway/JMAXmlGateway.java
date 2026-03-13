@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.QuakeInfoStore;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
@@ -71,7 +71,7 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                 return;
             }
 
-        JMAFeed feed = EEWBot.XML_MAPPER.readValue(new InputStreamReader(feedResponse.body()), JMAFeed.class);
+        JMAFeed feed = Codecs.XML_MAPPER.readValue(new InputStreamReader(feedResponse.body()), JMAFeed.class);
 
             if (this.lastIds != null) {
                 final List<String> list = feed.getEntries().stream()
@@ -113,7 +113,7 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                         try (InputStream inputStream = reportResponse.body()) {
                             xmlContent = new String(inputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
                         }
-                        AbstractJMAReport report = EEWBot.XML_MAPPER.readValue(xmlContent, reportClass);
+                        AbstractJMAReport report = Codecs.XML_MAPPER.readValue(xmlContent, reportClass);
                         report.setRawData(xmlContent);
                         if (report.getControl().getStatus() == JMAStatus.通常) {
                             if (report instanceof QuakeInfo) {

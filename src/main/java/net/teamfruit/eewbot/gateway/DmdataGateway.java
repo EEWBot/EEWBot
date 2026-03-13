@@ -1,7 +1,7 @@
 package net.teamfruit.eewbot.gateway;
 
 import com.google.gson.JsonSyntaxException;
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataContract;
@@ -334,22 +334,22 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
                 }
 
                 try {
-                    DmdataWSMessage message = EEWBot.GSON.fromJson(dataString, DmdataWSMessage.class);
+                    DmdataWSMessage message = Codecs.GSON.fromJson(dataString, DmdataWSMessage.class);
                     switch (message.getType()) {
                         case START:
-                            DmdataWSStart wsStart = EEWBot.GSON.fromJson(dataString, DmdataWSStart.class);
+                            DmdataWSStart wsStart = Codecs.GSON.fromJson(dataString, DmdataWSStart.class);
                             Log.logger.info("DMDATA WebSocket {}: start: {}", WebSocketConnection.this.connectionName, wsStart);
                             break;
                         case PING:
-                            DmdataWSPing wsPing = EEWBot.GSON.fromJson(dataString, DmdataWSPing.class);
+                            DmdataWSPing wsPing = Codecs.GSON.fromJson(dataString, DmdataWSPing.class);
                             Log.logger.trace("DMDATA WebSocket {}: ping: {}", WebSocketConnection.this.connectionName, wsPing.getPingId());
 
                             DmdataWSPong wsPong = new DmdataWSPong(wsPing.getPingId());
-                            webSocket.sendText(EEWBot.GSON.toJson(wsPong), true);
+                            webSocket.sendText(Codecs.GSON.toJson(wsPong), true);
                             Log.logger.trace("DMDATA WebSocket {}: pong: {}", WebSocketConnection.this.connectionName, wsPong.getPingId());
                             break;
                         case DATA:
-                            DmdataWSData wsData = EEWBot.GSON.fromJson(dataString, DmdataWSData.class);
+                            DmdataWSData wsData = Codecs.GSON.fromJson(dataString, DmdataWSData.class);
                             Log.logger.info("DMDATA WebSocket {}: data: {}", WebSocketConnection.this.connectionName, wsData);
 
                             if (!wsData.getVersion().equals("2.0")) {
@@ -366,7 +366,7 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
                             }
                             Log.logger.debug("DMDATA WebSocket {}: data body: {}", WebSocketConnection.this.connectionName, bodyString);
 
-                            DmdataEEW eew = EEWBot.GSON.fromJson(bodyString, DmdataEEW.class);
+                            DmdataEEW eew = Codecs.GSON.fromJson(bodyString, DmdataEEW.class);
                             eew.setRawData(bodyString);
                             boolean isTest = wsData.getHead().isTest() || !eew.getStatus().equals("通常");
                             Log.logger.info(isTest ? "DMDATA WebSocket {}: test EEW: {}" : "DMDATA WebSocket {}:  EEW: {}", WebSocketConnection.this.connectionName, eew);
@@ -407,7 +407,7 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
                             }
                             break;
                         case ERROR:
-                            DmdataWSError wsError = EEWBot.GSON.fromJson(dataString, DmdataWSError.class);
+                            DmdataWSError wsError = Codecs.GSON.fromJson(dataString, DmdataWSError.class);
                             Log.logger.error("DMDATA WebSocket {}: error message: {}", WebSocketConnection.this.connectionName, wsError);
                             break;
                     }

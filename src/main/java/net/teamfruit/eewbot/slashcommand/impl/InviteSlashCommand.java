@@ -2,9 +2,9 @@ package net.teamfruit.eewbot.slashcommand.impl;
 
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
-import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
+import net.teamfruit.eewbot.slashcommand.SlashCommandContext;
 import reactor.core.publisher.Mono;
 
 public class InviteSlashCommand implements ISlashCommand {
@@ -23,7 +23,7 @@ public class InviteSlashCommand implements ISlashCommand {
     }
 
     @Override
-    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
+    public Mono<Void> on(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         return event.reply("https://discord.com/api/oauth2/authorize?client_id=" + event.getClient().getSelfId().asString() + "&permissions=275414829120&scope=bot%20applications.commands")
                 .withEphemeral(true);
     }

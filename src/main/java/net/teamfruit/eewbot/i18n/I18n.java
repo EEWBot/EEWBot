@@ -1,7 +1,7 @@
 package net.teamfruit.eewbot.i18n;
 
 import com.google.gson.reflect.TypeToken;
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.Log;
 
 import java.io.IOException;
@@ -38,7 +38,7 @@ public class I18n {
 
     private void init() {
         try (InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(I18n.class.getResourceAsStream("/lang/languages.json")))) {
-            this.languages = EEWBot.GSON.fromJson(reader, new TypeToken<Map<String, String>>() {
+            this.languages = Codecs.GSON.fromJson(reader, new TypeToken<Map<String, String>>() {
             }.getType());
         } catch (IOException e) {
             throw new RuntimeException("Failed to load language.json: ", e);
@@ -67,7 +67,7 @@ public class I18n {
                     for (Path file : ds) {
                         Log.logger.info("Loading language file: " + file);
                         try (InputStreamReader isr = new InputStreamReader(Files.newInputStream(file), StandardCharsets.UTF_8)) {
-                            Map<String, String> langMap = EEWBot.GSON.fromJson(isr, new TypeToken<Map<String, String>>() {
+                            Map<String, String> langMap = Codecs.GSON.fromJson(isr, new TypeToken<Map<String, String>>() {
                             }.getType());
                             this.langMap.put(lang.toLowerCase(), langMap);
                         } catch (IOException e) {
@@ -86,7 +86,7 @@ public class I18n {
                         if (!entry.isDirectory() && name.startsWith(prefix) && name.endsWith(".json")) {
                             Log.logger.info("Loading language file: " + name);
                             try (InputStreamReader isr = new InputStreamReader(jar.getInputStream(entry), StandardCharsets.UTF_8)) {
-                                Map<String, String> langMap = EEWBot.GSON.fromJson(isr, new TypeToken<Map<String, String>>() {
+                                Map<String, String> langMap = Codecs.GSON.fromJson(isr, new TypeToken<Map<String, String>>() {
                                 }.getType());
                                 this.langMap.put(lang.toLowerCase(), langMap);
                             } catch (IOException e) {

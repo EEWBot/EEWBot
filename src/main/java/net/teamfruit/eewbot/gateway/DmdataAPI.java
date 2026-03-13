@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataContract;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataError;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketList;
@@ -33,9 +33,9 @@ public class DmdataAPI {
         HttpRequest request = this.requestBuilder.copy().GET().uri(URI.create(API_BASE + "/contract")).build();
         HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
-            return EEWBot.GSON.fromJson(response.body(), DmdataContract.class);
+            return Codecs.GSON.fromJson(response.body(), DmdataContract.class);
         } else {
-            throw new DmdataGatewayException(EEWBot.GSON.fromJson(response.body(), DmdataError.class));
+            throw new DmdataGatewayException(Codecs.GSON.fromJson(response.body(), DmdataError.class));
         }
     }
 
@@ -43,19 +43,19 @@ public class DmdataAPI {
         HttpRequest request = this.requestBuilder.copy().GET().uri(URI.create(API_BASE + "/socket?status=open")).build();
         HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
-            return EEWBot.GSON.fromJson(response.body(), DmdataSocketList.class);
+            return Codecs.GSON.fromJson(response.body(), DmdataSocketList.class);
         } else {
-            throw new DmdataGatewayException(EEWBot.GSON.fromJson(response.body(), DmdataError.class));
+            throw new DmdataGatewayException(Codecs.GSON.fromJson(response.body(), DmdataError.class));
         }
     }
 
     public DmdataSocketStart.Response socketStart(DmdataSocketStart.Request body) throws IOException, InterruptedException, DmdataGatewayException {
-        HttpRequest request = this.requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofString(EEWBot.GSON.toJson(body))).uri(URI.create(API_BASE + "/socket")).build();
+        HttpRequest request = this.requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofString(Codecs.GSON.toJson(body))).uri(URI.create(API_BASE + "/socket")).build();
         HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
-            return EEWBot.GSON.fromJson(response.body(), DmdataSocketStart.Response.class);
+            return Codecs.GSON.fromJson(response.body(), DmdataSocketStart.Response.class);
         } else {
-            throw new DmdataGatewayException(EEWBot.GSON.fromJson(response.body(), DmdataError.class));
+            throw new DmdataGatewayException(Codecs.GSON.fromJson(response.body(), DmdataError.class));
         }
     }
 
@@ -63,7 +63,7 @@ public class DmdataAPI {
         HttpRequest request = this.requestBuilder.copy().DELETE().uri(URI.create(API_BASE + "/socket/" + socketId)).build();
         HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
-            return EEWBot.GSON.fromJson(response.body(), DmdataError.class);
+            return Codecs.GSON.fromJson(response.body(), DmdataError.class);
         }
         return null;
     }

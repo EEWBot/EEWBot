@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 
@@ -56,7 +56,7 @@ public class KmoniGateway implements Gateway<KmoniEEW> {
 
             if (response.statusCode() == 200)
                 try (InputStreamReader is = new InputStreamReader(response.body())) {
-                    final KmoniEEW eew = EEWBot.GSON.fromJson(is, KmoniEEW.class);
+                    final KmoniEEW eew = Codecs.GSON.fromJson(is, KmoniEEW.class);
 
                     if (eew != null && eew.isEEW()) {
                         final KmoniEEW prev = this.prev.get(eew.getReportId());

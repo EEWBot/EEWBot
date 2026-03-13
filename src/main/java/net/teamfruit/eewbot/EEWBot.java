@@ -1,10 +1,5 @@
 package net.teamfruit.eewbot;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
@@ -17,7 +12,6 @@ import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
 import net.teamfruit.eewbot.entity.EmbedContext;
-import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.gateway.GatewayManager;
 import net.teamfruit.eewbot.i18n.I18n;
@@ -31,11 +25,11 @@ import net.teamfruit.eewbot.registry.destination.delivery.RevisionPoller;
 import net.teamfruit.eewbot.registry.destination.delivery.SnapshotDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
 import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryRedis;
-import net.teamfruit.eewbot.registry.destination.model.*;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
 import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import net.teamfruit.eewbot.registry.destination.store.SqlAdminRegistry;
+import net.teamfruit.eewbot.slashcommand.SlashCommandContext;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.HostAndPort;
@@ -53,22 +47,10 @@ import java.util.concurrent.ScheduledExecutorService;
 public class EEWBot {
     public static EEWBot instance;
 
-    public static final Gson GSON = new GsonBuilder()
-            .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensitySerializer())
-            .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensityDeserializer())
-            .registerTypeAdapter(Channel.class, new ChannelDeserializer())
-            .registerTypeAdapter(ChannelWebhook.class, new ChannelWebhookDeserializer())
-            .create();
-    public static final Gson GSON_PRETTY = new GsonBuilder()
-            .setPrettyPrinting()
-            .create();
-
-    public static final ObjectMapper XML_MAPPER = XmlMapper.builder().addModule(new JavaTimeModule()).build();
-
     public static final String DATA_DIRECTORY = System.getenv("DATA_DIRECTORY");
     public static final String CONFIG_DIRECTORY = System.getenv("CONFIG_DIRECTORY");
 
-    private final JsonRegistry<ConfigV2> config = new JsonRegistry<>(getConfigPath(), ConfigV2::new, ConfigV2.class, GSON_PRETTY);
+    private final JsonRegistry<ConfigV2> config = new JsonRegistry<>(getConfigPath(), ConfigV2::new, ConfigV2.class, Codecs.GSON_PRETTY);
     private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
     private final ExecutorService snapshotReloadExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "eewbot-snapshot-reload"));
     private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -94,7 +76,7 @@ public class EEWBot {
         try {
             this.config.init(true);
         } catch (JsonParseException e) {
-            JsonRegistry<Config> oldConfig = new JsonRegistry<>(getConfigPath(), Config::new, Config.class, GSON_PRETTY);
+            JsonRegistry<Config> oldConfig = new JsonRegistry<>(getConfigPath(), Config::new, Config.class, Codecs.GSON_PRETTY);
             oldConfig.load(false);
             this.config.setElement(ConfigV2.fromV1(oldConfig.getElement()));
             this.config.save();
@@ -134,7 +116,7 @@ public class EEWBot {
                             "channels.json not found. New JSON deployments are not supported. "
                                     + "Please use 'sqlite' or 'postgresql' as database.type.");
                 }
-                ChannelRegistryJson registry = new ChannelRegistryJson(channelsJsonPath, GSON);
+                ChannelRegistryJson registry = new ChannelRegistryJson(channelsJsonPath, Codecs.GSON);
                 registry.init(false);
                 this.deliveryRegistry = registry;
                 this.adminRegistry = registry;
@@ -149,7 +131,7 @@ public class EEWBot {
                         ? new HostAndPort(redisAddress, 6379)
                         : HostAndPort.from(redisAddress);
                 JedisPooled jedisPooled = new JedisPooled(hnp);
-                ChannelRegistryRedis registry = new ChannelRegistryRedis(jedisPooled, GSON);
+                ChannelRegistryRedis registry = new ChannelRegistryRedis(jedisPooled, Codecs.GSON);
                 registry.init();
                 this.deliveryRegistry = registry;
                 this.adminRegistry = registry;
@@ -216,7 +198,12 @@ public class EEWBot {
         );
         this.externalWebhookService = new ExternalWebhookService(getConfig(), getHttpClient());
         this.gatewayManager = new GatewayManager(getService(), getConfig(), getApplicationId(), this.scheduledExecutor, getHttpClient(), getClient(), getAdminRegistry(), getQuakeInfoStore(), getExternalWebhookService());
-        this.slashCommand = new SlashCommandHandler(this);
+        SlashCommandContext slashCtx = new SlashCommandContext(
+                this.adminRegistry, this.i18n, getConfig(), this.gateway, this.httpClient,
+                this.service, this.userName, this.avatarUrl, this.rendererQueryFactory,
+                this.quakeInfoStore, this.gatewayManager.getTimeProvider(), this.applicationId
+        );
+        this.slashCommand = new SlashCommandHandler(slashCtx);
 
         this.gatewayManager.init();
 

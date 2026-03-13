@@ -5,7 +5,6 @@ import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.spec.InteractionCallbackSpec;
 import discord4j.rest.service.ApplicationService;
-import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.*;
@@ -30,16 +29,16 @@ public class SlashCommandHandler {
         registerCommand(new HelpSlashCommand());
     }
 
-    public SlashCommandHandler(EEWBot bot) {
-        ApplicationService service = bot.getClient().getRestClient().getApplicationService();
+    public SlashCommandHandler(SlashCommandContext ctx) {
+        ApplicationService service = ctx.client().getRestClient().getApplicationService();
 
-        service.getGlobalApplicationCommands(bot.getApplicationId())
+        service.getGlobalApplicationCommands(ctx.applicationId())
                 .filter(data -> !commands.containsKey(data.name()))
-                .flatMap(data -> service.deleteGlobalApplicationCommand(bot.getApplicationId(), data.id().asLong()))
+                .flatMap(data -> service.deleteGlobalApplicationCommand(ctx.applicationId(), data.id().asLong()))
                 .subscribe();
-        commands.values().forEach(command -> service.createGlobalApplicationCommand(bot.getApplicationId(), command.buildCommand()).subscribe());
+        commands.values().forEach(command -> service.createGlobalApplicationCommand(ctx.applicationId(), command.buildCommand()).subscribe());
 
-        bot.getClient().on(ApplicationCommandInteractionEvent.class)
+        ctx.client().on(ApplicationCommandInteractionEvent.class)
                 .flatMap(event -> Mono.just(event.getCommandName())
                         .filter(name -> commands.containsKey(name))
                         .map(commands::get)
@@ -47,12 +46,12 @@ public class SlashCommandHandler {
                                 .ephemeral(cmd.isEphemeralWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
                         .flatMap(cmd -> {
-                            Channel channel = bot.getAdminRegistry().get(event.getInteraction().getChannelId().asLong());
-                            return cmd.on(bot, event, channel, channel != null ? channel.getLang() : bot.getConfig().getBase().getDefaultLanguage());
+                            Channel channel = ctx.adminRegistry().get(event.getInteraction().getChannelId().asLong());
+                            return cmd.on(ctx, event, channel, channel != null ? channel.getLang() : ctx.config().getBase().getDefaultLanguage());
                         })
                         .doOnError(err -> Log.logger.error("Error during {} command", event.getCommandName(), err))
                         .onErrorResume(err -> replyOrFollowUp(event, commands.get(event.getCommandName()).isDefer(),
-                                createErrorEmbed(getLanguage(bot, event), bot)
+                                createErrorEmbed(getLanguage(ctx, event), ctx)
                                         .title("eewbot.scmd.error")
                                         .description(ExceptionUtils.getMessage(err))
                                         .build()
@@ -64,7 +63,7 @@ public class SlashCommandHandler {
                 .repeat()
                 .subscribe();
 
-        bot.getClient().on(SelectMenuInteractionEvent.class)
+        ctx.client().on(SelectMenuInteractionEvent.class)
                 .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
                                 .filter(ISelectMenuSlashCommand.class::isInstance)
                                 .map(ISelectMenuSlashCommand.class::cast)
@@ -73,7 +72,7 @@ public class SlashCommandHandler {
                         .flatMap(cmd -> cmd.isDeferOnSelect() ? event.deferReply(InteractionCallbackSpec.builder()
                                 .ephemeral(cmd.isEphemeralOnSelectWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
-                        .flatMap(cmd -> cmd.onSelect(bot, event, getLanguage(bot, event)))
+                        .flatMap(cmd -> cmd.onSelect(ctx, event, getLanguage(ctx, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
                 .onErrorResume(e -> {
@@ -83,7 +82,7 @@ public class SlashCommandHandler {
                 .repeat()
                 .subscribe();
 
-        bot.getClient().on(ButtonInteractionEvent.class)
+        ctx.client().on(ButtonInteractionEvent.class)
                 .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
                                 .filter(IButtonSlashCommand.class::isInstance)
                                 .map(IButtonSlashCommand.class::cast)
@@ -92,7 +91,7 @@ public class SlashCommandHandler {
                         .flatMap(cmd -> cmd.isDeferOnClick() ? event.deferReply(InteractionCallbackSpec.builder()
                                 .ephemeral(cmd.isEphemeralOnClickWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
-                        .flatMap(cmd -> cmd.onClick(bot, event, getLanguage(bot, event)))
+                        .flatMap(cmd -> cmd.onClick(ctx, event, getLanguage(ctx, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
                 .onErrorResume(e -> {

@@ -177,7 +177,7 @@ public class EEWService {
         webhookRequests.forEach(webhookRequest -> cacheReq.put(webhookRequest.getLang(), SimpleRequestBuilder.post()
                 .setHttpHost(target)
                 .addHeader("User-Agent", "EEWBot")
-                .setBody(EEWBot.GSON.toJson(webhookRequest.getWebhook()), ContentType.APPLICATION_JSON)
+                .setBody(Codecs.GSON.toJson(webhookRequest.getWebhook()), ContentType.APPLICATION_JSON)
                 .build()));
 
         try {
@@ -261,7 +261,7 @@ public class EEWService {
                     .header("User-Agent", "EEWBot")
                     .header("Content-Type", "application/json")
                     .headers(this.webhookSenderHeader)
-                    .POST(HttpRequest.BodyPublishers.ofString(EEWBot.GSON.toJson(senderRequests)))
+                    .POST(HttpRequest.BodyPublishers.ofString(Codecs.GSON.toJson(senderRequests)))
                     .build();
 
             HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -286,7 +286,7 @@ public class EEWService {
                 .header("User-Agent", "EEWBot")
                 .header("Content-Type", "application/json")
                 .headers(this.webhookSenderHeader)
-                .POST(HttpRequest.BodyPublishers.ofString(EEWBot.GSON.toJson(List.of(senderRequest))))
+                .POST(HttpRequest.BodyPublishers.ofString(Codecs.GSON.toJson(List.of(senderRequest))))
                 .build();
         HttpResponse<Void> response = this.httpClient.send(request, HttpResponse.BodyHandlers.discarding());
         return response.statusCode();
@@ -314,7 +314,7 @@ public class EEWService {
                 return;
             }
 
-            List<String> notFoundList = EEWBot.GSON.fromJson(getResponse.body(), new TypeToken<List<String>>() {
+            List<String> notFoundList = Codecs.GSON.fromJson(getResponse.body(), new TypeToken<List<String>>() {
             }.getType());
             if (notFoundList.isEmpty()) {
                 return;
