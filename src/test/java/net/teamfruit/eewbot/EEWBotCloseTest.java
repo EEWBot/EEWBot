@@ -126,12 +126,14 @@ class EEWBotCloseTest {
     }
 
     @Test
-    void handleDeletion_skipsRegistryMutationsAfterShutdown() {
+    void handleDeletion_proceedsDuringShutdown() throws Exception {
         EEWBot bot = createBot(null, null, null, new AtomicBoolean(true));
 
         bot.handleDeletion(42L, false);
 
-        verifyNoInteractions(this.mockAdminRegistry);
+        InOrder inOrder = inOrder(this.mockAdminRegistry);
+        inOrder.verify(this.mockAdminRegistry).remove(42L);
+        inOrder.verify(this.mockAdminRegistry).save();
     }
 
     @Test

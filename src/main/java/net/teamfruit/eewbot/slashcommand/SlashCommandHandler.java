@@ -39,7 +39,14 @@ public class SlashCommandHandler {
         commands.values().forEach(command -> service.createGlobalApplicationCommand(ctx.applicationId(), command.buildCommand()).subscribe());
 
         ctx.client().on(ApplicationCommandInteractionEvent.class)
-                .filter(event -> !ctx.shutdownFlag().get())
+                .flatMap(event -> {
+                    if (ctx.shutdownFlag().get()) {
+                        return event.reply("Bot is shutting down. Please try again later.")
+                                .withEphemeral(true)
+                                .then(Mono.empty());
+                    }
+                    return Mono.just(event);
+                })
                 .flatMap(event -> Mono.just(event.getCommandName())
                         .filter(name -> commands.containsKey(name))
                         .map(commands::get)
@@ -52,7 +59,9 @@ public class SlashCommandHandler {
                                     return event.createFollowup("Bot is shutting down. Please try again later.")
                                             .then(Mono.empty());
                                 }
-                                return Mono.empty();
+                                return event.reply("Bot is shutting down. Please try again later.")
+                                        .withEphemeral(true)
+                                        .then(Mono.empty());
                             }
                             return Mono.just(cmd);
                         })
@@ -75,7 +84,14 @@ public class SlashCommandHandler {
                 .subscribe();
 
         ctx.client().on(SelectMenuInteractionEvent.class)
-                .filter(event -> !ctx.shutdownFlag().get())
+                .flatMap(event -> {
+                    if (ctx.shutdownFlag().get()) {
+                        return event.reply("Bot is shutting down. Please try again later.")
+                                .withEphemeral(true)
+                                .then(Mono.empty());
+                    }
+                    return Mono.just(event);
+                })
                 .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
                                 .filter(ISelectMenuSlashCommand.class::isInstance)
                                 .map(ISelectMenuSlashCommand.class::cast)
@@ -90,7 +106,9 @@ public class SlashCommandHandler {
                                     return event.createFollowup("Bot is shutting down. Please try again later.")
                                             .then(Mono.empty());
                                 }
-                                return Mono.empty();
+                                return event.reply("Bot is shutting down. Please try again later.")
+                                        .withEphemeral(true)
+                                        .then(Mono.empty());
                             }
                             return Mono.just(cmd);
                         })
@@ -105,7 +123,14 @@ public class SlashCommandHandler {
                 .subscribe();
 
         ctx.client().on(ButtonInteractionEvent.class)
-                .filter(event -> !ctx.shutdownFlag().get())
+                .flatMap(event -> {
+                    if (ctx.shutdownFlag().get()) {
+                        return event.reply("Bot is shutting down. Please try again later.")
+                                .withEphemeral(true)
+                                .then(Mono.empty());
+                    }
+                    return Mono.just(event);
+                })
                 .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
                                 .filter(IButtonSlashCommand.class::isInstance)
                                 .map(IButtonSlashCommand.class::cast)
@@ -120,7 +145,9 @@ public class SlashCommandHandler {
                                     return event.createFollowup("Bot is shutting down. Please try again later.")
                                             .then(Mono.empty());
                                 }
-                                return Mono.empty();
+                                return event.reply("Bot is shutting down. Please try again later.")
+                                        .withEphemeral(true)
+                                        .then(Mono.empty());
                             }
                             return Mono.just(cmd);
                         })

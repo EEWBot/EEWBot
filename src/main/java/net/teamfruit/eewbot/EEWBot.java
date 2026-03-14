@@ -132,7 +132,6 @@ public class EEWBot implements AutoCloseable {
 
     // package-private: used by Factory for event listener registration
     void handleDeletion(long id, boolean isGuild) {
-        if (this.closed.get()) return;
         if (isGuild)
             this.adminRegistry.removeByGuildId(id);
         else
