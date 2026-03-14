@@ -54,9 +54,9 @@ class EEWBotCloseTest {
                 this.mockSqlRegistry,
                 this.mockExternalWebhookService
         );
-        inOrder.verify(this.mockGateway).logout();
         inOrder.verify(this.mockGatewayManager).close();
         inOrder.verify(this.mockRevisionPoller).stop();
+        inOrder.verify(this.mockGateway).logout();
         inOrder.verify(this.mockScheduledExecutor).shutdown();
         inOrder.verify(this.mockScheduledExecutor).awaitTermination(10, TimeUnit.SECONDS);
         inOrder.verify(this.mockSnapshotReloadExecutor).shutdown();

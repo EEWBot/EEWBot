@@ -46,7 +46,16 @@ public class SlashCommandHandler {
                         .flatMap(cmd -> cmd.isDefer() ? event.deferReply(InteractionCallbackSpec.builder()
                                 .ephemeral(cmd.isEphemeralWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
-                        .filter(cmd -> !ctx.shutdownFlag().get())
+                        .flatMap(cmd -> {
+                            if (ctx.shutdownFlag().get()) {
+                                if (cmd.isDefer()) {
+                                    return event.createFollowup("Bot is shutting down. Please try again later.")
+                                            .then(Mono.empty());
+                                }
+                                return Mono.empty();
+                            }
+                            return Mono.just(cmd);
+                        })
                         .flatMap(cmd -> {
                             Channel channel = ctx.adminRegistry().get(event.getInteraction().getChannelId().asLong());
                             return cmd.on(ctx, event, channel, channel != null ? channel.getLang() : ctx.config().getBase().getDefaultLanguage());
@@ -75,7 +84,16 @@ public class SlashCommandHandler {
                         .flatMap(cmd -> cmd.isDeferOnSelect() ? event.deferReply(InteractionCallbackSpec.builder()
                                 .ephemeral(cmd.isEphemeralOnSelectWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
-                        .filter(cmd -> !ctx.shutdownFlag().get())
+                        .flatMap(cmd -> {
+                            if (ctx.shutdownFlag().get()) {
+                                if (cmd.isDeferOnSelect()) {
+                                    return event.createFollowup("Bot is shutting down. Please try again later.")
+                                            .then(Mono.empty());
+                                }
+                                return Mono.empty();
+                            }
+                            return Mono.just(cmd);
+                        })
                         .flatMap(cmd -> cmd.onSelect(ctx, event, getLanguage(ctx, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
@@ -96,7 +114,16 @@ public class SlashCommandHandler {
                         .flatMap(cmd -> cmd.isDeferOnClick() ? event.deferReply(InteractionCallbackSpec.builder()
                                 .ephemeral(cmd.isEphemeralOnClickWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
-                        .filter(cmd -> !ctx.shutdownFlag().get())
+                        .flatMap(cmd -> {
+                            if (ctx.shutdownFlag().get()) {
+                                if (cmd.isDeferOnClick()) {
+                                    return event.createFollowup("Bot is shutting down. Please try again later.")
+                                            .then(Mono.empty());
+                                }
+                                return Mono.empty();
+                            }
+                            return Mono.just(cmd);
+                        })
                         .flatMap(cmd -> cmd.onClick(ctx, event, getLanguage(ctx, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))

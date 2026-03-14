@@ -86,18 +86,18 @@ public class EEWBot implements AutoCloseable {
     public void close() {
         if (!this.closed.compareAndSet(false, true)) return;
         Log.logger.info("Shutdown");
+        if (this.gatewayManager != null) {
+            this.gatewayManager.close();
+        }
+        if (this.revisionPoller != null) {
+            this.revisionPoller.stop();
+        }
         try {
             if (this.gateway != null) {
                 this.gateway.logout().block();
             }
         } catch (final Exception e) {
             Log.logger.error("Gateway logout failed", e);
-        }
-        if (this.gatewayManager != null) {
-            this.gatewayManager.close();
-        }
-        if (this.revisionPoller != null) {
-            this.revisionPoller.stop();
         }
         awaitExecutorShutdown(this.scheduledExecutor, 10, TimeUnit.SECONDS);
         awaitExecutorShutdown(this.snapshotReloadExecutor, 5, TimeUnit.SECONDS);
