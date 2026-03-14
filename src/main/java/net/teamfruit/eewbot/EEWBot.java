@@ -9,8 +9,10 @@ import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.RevisionPoller;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
+import reactor.core.Disposable;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +42,8 @@ public class EEWBot implements AutoCloseable {
     private final String avatarUrl;
 
     private final AtomicBoolean closed;
+    private volatile List<Disposable> eventSubscriptions = List.of();
+    private final AtomicBoolean listenersStopped = new AtomicBoolean(false);
 
     // package-private constructor (Factory only)
     EEWBot(
@@ -82,6 +86,10 @@ public class EEWBot implements AutoCloseable {
         this.avatarUrl = avatarUrl;
     }
 
+    void setEventSubscriptions(List<Disposable> subscriptions) {
+        this.eventSubscriptions = subscriptions;
+    }
+
     @Override
     public void close() {
         if (!this.closed.compareAndSet(false, true)) return;
@@ -99,6 +107,8 @@ public class EEWBot implements AutoCloseable {
         } catch (final Exception e) {
             Log.logger.error("Gateway logout failed", e);
         }
+        this.eventSubscriptions.forEach(Disposable::dispose);
+        this.listenersStopped.set(true);
         awaitExecutorShutdown(this.scheduledExecutor, 10, TimeUnit.SECONDS);
         awaitExecutorShutdown(this.snapshotReloadExecutor, 5, TimeUnit.SECONDS);
         try {
@@ -132,14 +142,18 @@ public class EEWBot implements AutoCloseable {
 
     // package-private: used by Factory for event listener registration
     void handleDeletion(long id, boolean isGuild) {
-        if (isGuild)
-            this.adminRegistry.removeByGuildId(id);
-        else
-            this.adminRegistry.remove(id);
         try {
+            if (isGuild)
+                this.adminRegistry.removeByGuildId(id);
+            else
+                this.adminRegistry.remove(id);
             this.adminRegistry.save();
-        } catch (IOException e) {
-            Log.logger.error("Failed to save channels", e);
+        } catch (Exception e) {
+            if (this.listenersStopped.get()) {
+                Log.logger.debug("Ignoring deletion error after listener shutdown for id={}", id, e);
+                return;
+            }
+            Log.logger.error("Failed to handle deletion for id={}", id, e);
         }
     }
 

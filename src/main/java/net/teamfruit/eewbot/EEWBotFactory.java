@@ -32,6 +32,7 @@ import net.teamfruit.eewbot.registry.destination.store.SqlAdminRegistry;
 import net.teamfruit.eewbot.slashcommand.SlashCommandContext;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
+import reactor.core.Disposable;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPooled;
 
@@ -40,6 +41,7 @@ import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -240,12 +242,13 @@ public class EEWBotFactory {
         );
 
         // 12. Event listeners (need bot instance)
-        gateway.on(GuildDeleteEvent.class)
+        Disposable guildDeleteSub = gateway.on(GuildDeleteEvent.class)
                 .subscribe(event -> bot.handleDeletion(event.getGuildId().asLong(), true));
-        gateway.on(TextChannelDeleteEvent.class)
+        Disposable textChannelDeleteSub = gateway.on(TextChannelDeleteEvent.class)
                 .subscribe(event -> bot.handleDeletion(event.getChannel().getId().asLong(), false));
-        gateway.on(ThreadChannelDeleteEvent.class)
+        Disposable threadChannelDeleteSub = gateway.on(ThreadChannelDeleteEvent.class)
                 .subscribe(event -> bot.handleDeletion(event.getChannel().getId().asLong(), false));
+        bot.setEventSubscriptions(List.of(guildDeleteSub, textChannelDeleteSub, threadChannelDeleteSub));
 
         // 13. Gateway init
         gatewayManager.init();

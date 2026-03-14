@@ -6,6 +6,7 @@ import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -57,7 +58,12 @@ public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
      */
     public void requestReload() {
         if (this.reloadScheduled.compareAndSet(false, true)) {
-            this.reloadExecutor.execute(this::reloadTask);
+            try {
+                this.reloadExecutor.execute(this::reloadTask);
+            } catch (RejectedExecutionException e) {
+                this.reloadScheduled.set(false);
+                Log.logger.debug("Snapshot reload skipped (executor shut down)");
+            }
         }
     }
 

@@ -111,7 +111,7 @@ public class GatewayManager implements AutoCloseable {
         boolean isImportant = EEWFilterClassifier.isKmoniImportant(eew);
         SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
         ChannelFilter filter = EEWFilterClassifier.classifyEEW(isWarning, isImportant, maxIntensity);
-        this.messageExecutor.submit(() -> this.service.sendMessage(filter, eew));
+        submitMessage(() -> this.service.sendMessage(filter, eew));
     }
 
     private void handleDmdataEEW(DmdataEEW eew) {
@@ -124,7 +124,7 @@ public class GatewayManager implements AutoCloseable {
         boolean isImportant = EEWFilterClassifier.isDmdataImportant(eew);
         SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
         ChannelFilter filter = EEWFilterClassifier.classifyEEW(isWarning, isImportant, maxIntensity);
-        this.messageExecutor.submit(() -> {
+        submitMessage(() -> {
             this.service.sendMessage(filter, eew);
             this.externalWebhookService.sendExternalWebhook(eew);
         });
@@ -135,7 +135,7 @@ public class GatewayManager implements AutoCloseable {
             QuakeInfoGateway quakeInfoGateway = new QuakeInfoGateway(data -> {
                 Log.logger.info(data.toString());
                 ChannelFilter filter = EEWFilterClassifier.classifyQuakeInfo(data.getEarthquake().getIntensity());
-                this.messageExecutor.submit(() -> this.service.sendMessage(filter, data));
+                submitMessage(() -> this.service.sendMessage(filter, data));
             });
             this.scheduledTasks.add(
                     this.scheduledExecutor.scheduleAtFixedRate(quakeInfoGateway, 0, this.config.getLegacy().getLegacyQuakeInfoDelay(), TimeUnit.SECONDS)
@@ -162,15 +162,15 @@ public class GatewayManager implements AutoCloseable {
         if (!this.config.getLegacy().isEnableLegacyQuakeInfo()) {
             if (data instanceof QuakeInfo quakeInfo) {
                 ChannelFilter filter = EEWFilterClassifier.classifyQuakeInfo(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
-                this.messageExecutor.submit(() -> this.service.sendMessage(filter, data));
+                submitMessage(() -> this.service.sendMessage(filter, data));
             }
         }
         if (data instanceof VTSE41) {
             ChannelFilter filter = EEWFilterClassifier.classifyTsunami();
-            this.messageExecutor.submit(() -> this.service.sendMessage(filter, data));
+            submitMessage(() -> this.service.sendMessage(filter, data));
         }
         if (data instanceof ExternalData externalData) {
-            this.messageExecutor.submit(() -> this.externalWebhookService.sendExternalWebhook(externalData));
+            submitMessage(() -> this.externalWebhookService.sendExternalWebhook(externalData));
         }
     }
 
@@ -179,6 +179,14 @@ public class GatewayManager implements AutoCloseable {
             this.scheduledTasks.add(
                     this.scheduledExecutor.scheduleAtFixedRate(this.service::handleWebhookSenderNotFounds, 15, 15, TimeUnit.SECONDS)
             );
+        }
+    }
+
+    private void submitMessage(Runnable task) {
+        try {
+            this.messageExecutor.submit(task);
+        } catch (RejectedExecutionException e) {
+            Log.logger.debug("Message dispatch skipped (executor shut down)");
         }
     }
 

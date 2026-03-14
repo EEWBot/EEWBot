@@ -10,8 +10,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +34,7 @@ class EEWBotCloseTest {
     @Mock private ScheduledExecutorService mockScheduledExecutor;
     @Mock private ExecutorService mockSnapshotReloadExecutor;
     @Mock private ExternalWebhookService mockExternalWebhookService;
+    @Mock private Disposable mockEventSub;
 
     @Test
     void close_releasesAllResources() throws Exception {
@@ -145,6 +148,35 @@ class EEWBotCloseTest {
         InOrder inOrder = inOrder(this.mockAdminRegistry);
         inOrder.verify(this.mockAdminRegistry).remove(42L);
         inOrder.verify(this.mockAdminRegistry).save();
+    }
+
+    @Test
+    void close_disposesEventSubscriptionsBeforeExecutorShutdown() throws Exception {
+        when(this.mockGateway.logout()).thenReturn(Mono.empty());
+        when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(true);
+        when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(true);
+
+        EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService, new AtomicBoolean(false));
+        bot.setEventSubscriptions(List.of(this.mockEventSub));
+        bot.close();
+
+        InOrder inOrder = inOrder(this.mockGateway, this.mockEventSub, this.mockScheduledExecutor);
+        inOrder.verify(this.mockGateway).logout();
+        inOrder.verify(this.mockEventSub).dispose();
+        inOrder.verify(this.mockScheduledExecutor).shutdown();
+    }
+
+    @Test
+    void close_disposesEventSubscriptionsEvenWhenLogoutFails() throws Exception {
+        when(this.mockGateway.logout()).thenReturn(Mono.error(new RuntimeException("logout failed")));
+        when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(true);
+        when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(true);
+
+        EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService, new AtomicBoolean(false));
+        bot.setEventSubscriptions(List.of(this.mockEventSub));
+        bot.close();
+
+        verify(this.mockEventSub).dispose();
     }
 
     private EEWBot createBot(ChannelRegistrySql sqlRegistry, RevisionPoller revisionPoller, ExternalWebhookService externalWebhookService, AtomicBoolean shutdownFlag) {

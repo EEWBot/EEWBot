@@ -136,6 +136,14 @@ public class EEWService {
         }
     }
 
+    private void submitCleanup(Runnable task) {
+        try {
+            this.executor.execute(task);
+        } catch (RejectedExecutionException e) {
+            Log.logger.debug("Cleanup task skipped (executor shut down)");
+        }
+    }
+
     private void sendMessageD4J(Map<Long, DeliveryTarget> channels, Map<String, MessageCreateSpec> msgByLang) {
         List<Long> erroredChannels = new ArrayList<>();
         Flux.merge(channels.entrySet().stream()
@@ -153,7 +161,7 @@ public class EEWService {
                 .runOn(Schedulers.parallel())
                 .doOnComplete(() -> {
                     if (!erroredChannels.isEmpty()) {
-                        this.executor.execute(() -> {
+                        submitCleanup(() -> {
                             Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
                             erroredChannels.forEach(channelId -> {
@@ -219,7 +227,7 @@ public class EEWService {
                 });
                 latch.await();
                 if (!erroredChannels.isEmpty()) {
-                    this.executor.execute(() -> {
+                    submitCleanup(() -> {
                         Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
                         erroredChannels.forEach((channelId, channel) -> {

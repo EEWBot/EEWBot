@@ -13,8 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 class SnapshotDeliveryRegistryTest {
 
@@ -224,6 +223,17 @@ class SnapshotDeliveryRegistryTest {
             // Due to coalescing, extra requests are merged. Post-reload revision check
             // may trigger at most 1 more reload, so we expect <= 4 loads total
             assertThat(loadCount.get()).isLessThanOrEqualTo(4);
+        }
+
+        @Test
+        @DisplayName("should not throw when executor is shut down")
+        void requestReload_executorShutDown() {
+            reloadExecutor.shutdownNow();
+            StubRevisionStore revisionStore = new StubRevisionStore(1L);
+            TestSnapshotLoader loader = new TestSnapshotLoader(() -> new DeliverySnapshot(1L, List.of()));
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
+
+            assertThatCode(() -> registry.requestReload()).doesNotThrowAnyException();
         }
 
         @Test
