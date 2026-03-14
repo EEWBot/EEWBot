@@ -195,5 +195,13 @@ public class GatewayManager implements AutoCloseable {
         this.timeProvider.stop();
 
         this.messageExecutor.shutdown();
+        try {
+            if (!this.messageExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                this.messageExecutor.shutdownNow();
+            }
+        } catch (final InterruptedException e) {
+            this.messageExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 }

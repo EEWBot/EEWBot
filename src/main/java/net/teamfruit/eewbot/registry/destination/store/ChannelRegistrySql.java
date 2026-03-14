@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot.registry.destination.store;
 
 import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
@@ -68,10 +67,10 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     };
 
     private final DSLContext dsl;
-    private final DataSource dataSource;
+    private final ShutdownAwareDataSource dataSource;
     private final SQLDialect dialect;
 
-    private ChannelRegistrySql(DSLContext dsl, DataSource dataSource, SQLDialect dialect) {
+    private ChannelRegistrySql(DSLContext dsl, ShutdownAwareDataSource dataSource, SQLDialect dialect) {
         this.dsl = dsl;
         this.dataSource = dataSource;
         this.dialect = dialect;
@@ -85,9 +84,10 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         SQLiteDataSource ds = new SQLiteDataSource();
         ds.setUrl("jdbc:sqlite:" + dbPath);
         DataSource wrapped = wrapSqliteDataSource(ds);
-        DSLContext dsl = DSL.using(wrapped, SQLDialect.SQLITE);
+        ShutdownAwareDataSource shutdownAwareDataSource = new ShutdownAwareDataSource(wrapped);
+        DSLContext dsl = DSL.using(shutdownAwareDataSource, SQLDialect.SQLITE);
         Log.logger.info("Initialized SQLite channel registry at: {}", dbPath);
-        return new ChannelRegistrySql(dsl, wrapped, SQLDialect.SQLITE);
+        return new ChannelRegistrySql(dsl, shutdownAwareDataSource, SQLDialect.SQLITE);
     }
 
     public static ChannelRegistrySql forPostgreSQL(ConfigV2.PostgreSQL config) {
@@ -102,10 +102,11 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         hikariConfig.setMaxLifetime(1800000);
         hikariConfig.setLeakDetectionThreshold(60000);
 
-        HikariDataSource ds = new HikariDataSource(hikariConfig);
-        DSLContext dsl = DSL.using(ds, SQLDialect.POSTGRES);
+        com.zaxxer.hikari.HikariDataSource ds = new com.zaxxer.hikari.HikariDataSource(hikariConfig);
+        ShutdownAwareDataSource shutdownAwareDataSource = new ShutdownAwareDataSource(ds);
+        DSLContext dsl = DSL.using(shutdownAwareDataSource, SQLDialect.POSTGRES);
         Log.logger.info("Initialized PostgreSQL channel registry at: {}", config.getJdbcUrl());
-        return new ChannelRegistrySql(dsl, ds, SQLDialect.POSTGRES);
+        return new ChannelRegistrySql(dsl, shutdownAwareDataSource, SQLDialect.POSTGRES);
     }
 
     public DataSource getDataSource() {
@@ -465,10 +466,8 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     }
 
     public void close() {
-        if (this.dataSource instanceof HikariDataSource) {
-            ((HikariDataSource) this.dataSource).close();
-            Log.logger.info("Closed PostgreSQL connection pool");
-        }
+        this.dataSource.shutdown();
+        Log.logger.info("Closed channel registry datasource");
     }
 
     private static DataSource wrapSqliteDataSource(DataSource delegate) {
@@ -623,15 +622,10 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
      * Safely convert a Number to Long, handling SQLite's tendency to return Integer for small values.
      */
     private static Long toLong(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Long) {
-            return (Long) value;
-        }
-        if (value instanceof Number) {
-            return ((Number) value).longValue();
-        }
-        return null;
+        return switch (value) {
+            case Long l -> l;
+            case Number number -> number.longValue();
+            case null, default -> null;
+        };
     }
 }
