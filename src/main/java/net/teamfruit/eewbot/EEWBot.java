@@ -39,7 +39,7 @@ public class EEWBot implements AutoCloseable {
     private final String userName;
     private final String avatarUrl;
 
-    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final AtomicBoolean closed;
 
     // package-private constructor (Factory only)
     EEWBot(
@@ -57,6 +57,7 @@ public class EEWBot implements AutoCloseable {
             ExternalWebhookService externalWebhookService,
             ExecutorService snapshotReloadExecutor,
             ScheduledExecutorService scheduledExecutor,
+            AtomicBoolean closed,
             long applicationId,
             String userName,
             String avatarUrl
@@ -75,6 +76,7 @@ public class EEWBot implements AutoCloseable {
         this.externalWebhookService = externalWebhookService;
         this.snapshotReloadExecutor = snapshotReloadExecutor;
         this.scheduledExecutor = scheduledExecutor;
+        this.closed = closed;
         this.applicationId = applicationId;
         this.userName = userName;
         this.avatarUrl = avatarUrl;
@@ -84,18 +86,18 @@ public class EEWBot implements AutoCloseable {
     public void close() {
         if (!this.closed.compareAndSet(false, true)) return;
         Log.logger.info("Shutdown");
-        if (this.gatewayManager != null) {
-            this.gatewayManager.close();
-        }
-        if (this.revisionPoller != null) {
-            this.revisionPoller.stop();
-        }
         try {
             if (this.gateway != null) {
                 this.gateway.logout().block();
             }
         } catch (final Exception e) {
             Log.logger.error("Gateway logout failed", e);
+        }
+        if (this.gatewayManager != null) {
+            this.gatewayManager.close();
+        }
+        if (this.revisionPoller != null) {
+            this.revisionPoller.stop();
         }
         awaitExecutorShutdown(this.scheduledExecutor, 10, TimeUnit.SECONDS);
         awaitExecutorShutdown(this.snapshotReloadExecutor, 5, TimeUnit.SECONDS);
@@ -130,6 +132,7 @@ public class EEWBot implements AutoCloseable {
 
     // package-private: used by Factory for event listener registration
     void handleDeletion(long id, boolean isGuild) {
+        if (this.closed.get()) return;
         if (isGuild)
             this.adminRegistry.removeByGuildId(id);
         else

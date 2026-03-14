@@ -43,6 +43,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EEWBotFactory {
 
@@ -84,6 +85,7 @@ public class EEWBotFactory {
         // 5. Initialize I18n and renderer
         I18n i18n = new I18n(config.getBase().getDefaultLanguage());
         RendererQueryFactory rendererQueryFactory = new RendererQueryFactory(config.getRenderer().getAddress(), config.getRenderer().getKey());
+        AtomicBoolean shutdownFlag = new AtomicBoolean(false);
 
         // 6. DB initialization
         ChannelRegistrySql sqlRegistry = null;
@@ -224,7 +226,7 @@ public class EEWBotFactory {
         SlashCommandContext slashCtx = new SlashCommandContext(
                 adminRegistry, i18n, config, gateway, httpClient,
                 service, userName, avatarUrl, rendererQueryFactory,
-                quakeInfoStore, gatewayManager.getTimeProvider(), applicationId
+                quakeInfoStore, gatewayManager.getTimeProvider(), applicationId, shutdownFlag
         );
         new SlashCommandHandler(slashCtx);
 
@@ -233,7 +235,7 @@ public class EEWBotFactory {
                 gateway, config, deliveryRegistry, adminRegistry, sqlRegistry,
                 revisionPoller, i18n, quakeInfoStore, rendererQueryFactory,
                 service, gatewayManager, externalWebhookService,
-                snapshotReloadExecutor, scheduledExecutor,
+                snapshotReloadExecutor, scheduledExecutor, shutdownFlag,
                 applicationId, userName, avatarUrl
         );
 

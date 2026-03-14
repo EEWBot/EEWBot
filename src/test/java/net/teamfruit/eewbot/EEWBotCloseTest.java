@@ -15,8 +15,10 @@ import reactor.core.publisher.Mono;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,9 +39,11 @@ class EEWBotCloseTest {
         when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(true);
         when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(true);
 
-        EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService);
+        AtomicBoolean shutdownFlag = new AtomicBoolean(false);
+        EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService, shutdownFlag);
         bot.close();
 
+        assertTrue(shutdownFlag.get());
         InOrder inOrder = inOrder(
                 this.mockGateway,
                 this.mockGatewayManager,
@@ -50,9 +54,9 @@ class EEWBotCloseTest {
                 this.mockSqlRegistry,
                 this.mockExternalWebhookService
         );
+        inOrder.verify(this.mockGateway).logout();
         inOrder.verify(this.mockGatewayManager).close();
         inOrder.verify(this.mockRevisionPoller).stop();
-        inOrder.verify(this.mockGateway).logout();
         inOrder.verify(this.mockScheduledExecutor).shutdown();
         inOrder.verify(this.mockScheduledExecutor).awaitTermination(10, TimeUnit.SECONDS);
         inOrder.verify(this.mockSnapshotReloadExecutor).shutdown();
@@ -68,7 +72,7 @@ class EEWBotCloseTest {
         when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(true);
         when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(true);
 
-        EEWBot bot = createBot(null, null, null);
+        EEWBot bot = createBot(null, null, null, new AtomicBoolean(false));
         bot.close(); // NPE should not occur
     }
 
@@ -78,7 +82,7 @@ class EEWBotCloseTest {
         when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(true);
         when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(true);
 
-        EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService);
+        EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService, new AtomicBoolean(false));
         bot.close();
         bot.close();
 
@@ -93,7 +97,7 @@ class EEWBotCloseTest {
         when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(true);
         when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(true);
 
-        EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService);
+        EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService, new AtomicBoolean(false));
 
         assertDoesNotThrow(bot::close);
 
@@ -114,14 +118,34 @@ class EEWBotCloseTest {
         when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(false);
         when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(false);
 
-        EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService);
+        EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService, new AtomicBoolean(false));
         bot.close();
 
         verify(this.mockScheduledExecutor).shutdownNow();
         verify(this.mockSnapshotReloadExecutor).shutdownNow();
     }
 
-    private EEWBot createBot(ChannelRegistrySql sqlRegistry, RevisionPoller revisionPoller, ExternalWebhookService externalWebhookService) {
+    @Test
+    void handleDeletion_skipsRegistryMutationsAfterShutdown() {
+        EEWBot bot = createBot(null, null, null, new AtomicBoolean(true));
+
+        bot.handleDeletion(42L, false);
+
+        verifyNoInteractions(this.mockAdminRegistry);
+    }
+
+    @Test
+    void handleDeletion_removesChannelAndSavesBeforeShutdown() throws Exception {
+        EEWBot bot = createBot(null, null, null, new AtomicBoolean(false));
+
+        bot.handleDeletion(42L, false);
+
+        InOrder inOrder = inOrder(this.mockAdminRegistry);
+        inOrder.verify(this.mockAdminRegistry).remove(42L);
+        inOrder.verify(this.mockAdminRegistry).save();
+    }
+
+    private EEWBot createBot(ChannelRegistrySql sqlRegistry, RevisionPoller revisionPoller, ExternalWebhookService externalWebhookService, AtomicBoolean shutdownFlag) {
         return new EEWBot(
                 this.mockGateway,
                 null, // config
@@ -137,6 +161,7 @@ class EEWBotCloseTest {
                 externalWebhookService,
                 this.mockSnapshotReloadExecutor,
                 this.mockScheduledExecutor,
+                shutdownFlag,
                 0L,   // applicationId
                 null, // userName
                 null  // avatarUrl

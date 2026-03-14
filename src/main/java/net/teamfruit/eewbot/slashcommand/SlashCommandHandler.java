@@ -39,12 +39,14 @@ public class SlashCommandHandler {
         commands.values().forEach(command -> service.createGlobalApplicationCommand(ctx.applicationId(), command.buildCommand()).subscribe());
 
         ctx.client().on(ApplicationCommandInteractionEvent.class)
+                .filter(event -> !ctx.shutdownFlag().get())
                 .flatMap(event -> Mono.just(event.getCommandName())
                         .filter(name -> commands.containsKey(name))
                         .map(commands::get)
                         .flatMap(cmd -> cmd.isDefer() ? event.deferReply(InteractionCallbackSpec.builder()
                                 .ephemeral(cmd.isEphemeralWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
+                        .filter(cmd -> !ctx.shutdownFlag().get())
                         .flatMap(cmd -> {
                             Channel channel = ctx.adminRegistry().get(event.getInteraction().getChannelId().asLong());
                             return cmd.on(ctx, event, channel, channel != null ? channel.getLang() : ctx.config().getBase().getDefaultLanguage());
@@ -64,6 +66,7 @@ public class SlashCommandHandler {
                 .subscribe();
 
         ctx.client().on(SelectMenuInteractionEvent.class)
+                .filter(event -> !ctx.shutdownFlag().get())
                 .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
                                 .filter(ISelectMenuSlashCommand.class::isInstance)
                                 .map(ISelectMenuSlashCommand.class::cast)
@@ -72,6 +75,7 @@ public class SlashCommandHandler {
                         .flatMap(cmd -> cmd.isDeferOnSelect() ? event.deferReply(InteractionCallbackSpec.builder()
                                 .ephemeral(cmd.isEphemeralOnSelectWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
+                        .filter(cmd -> !ctx.shutdownFlag().get())
                         .flatMap(cmd -> cmd.onSelect(ctx, event, getLanguage(ctx, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))
@@ -83,6 +87,7 @@ public class SlashCommandHandler {
                 .subscribe();
 
         ctx.client().on(ButtonInteractionEvent.class)
+                .filter(event -> !ctx.shutdownFlag().get())
                 .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
                                 .filter(IButtonSlashCommand.class::isInstance)
                                 .map(IButtonSlashCommand.class::cast)
@@ -91,6 +96,7 @@ public class SlashCommandHandler {
                         .flatMap(cmd -> cmd.isDeferOnClick() ? event.deferReply(InteractionCallbackSpec.builder()
                                 .ephemeral(cmd.isEphemeralOnClickWhenDefer())
                                 .build()).thenReturn(cmd) : Mono.defer(() -> Mono.just(cmd)))
+                        .filter(cmd -> !ctx.shutdownFlag().get())
                         .flatMap(cmd -> cmd.onClick(ctx, event, getLanguage(ctx, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
                         .onErrorResume(err -> Mono.empty()))

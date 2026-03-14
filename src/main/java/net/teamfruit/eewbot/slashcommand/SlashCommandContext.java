@@ -10,6 +10,7 @@ import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 
 import java.net.http.HttpClient;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public record SlashCommandContext(
         DestinationAdminRegistry adminRegistry,
@@ -23,6 +24,7 @@ public record SlashCommandContext(
         RendererQueryFactory rendererQueryFactory,
         QuakeInfoStore quakeInfoStore,
         TimeProvider timeProvider,
-        long applicationId
+        long applicationId,
+        AtomicBoolean shutdownFlag
 ) {
 }
