@@ -12,9 +12,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.*;
@@ -32,8 +32,10 @@ class EEWBotCloseTest {
     @Mock private ExternalWebhookService mockExternalWebhookService;
 
     @Test
-    void close_releasesAllResources() throws IOException {
+    void close_releasesAllResources() throws Exception {
         when(this.mockGateway.logout()).thenReturn(Mono.empty());
+        when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(true);
+        when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(true);
 
         EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService);
         bot.close();
@@ -48,27 +50,33 @@ class EEWBotCloseTest {
                 this.mockSqlRegistry,
                 this.mockExternalWebhookService
         );
-        inOrder.verify(this.mockGateway).logout();
         inOrder.verify(this.mockGatewayManager).close();
         inOrder.verify(this.mockRevisionPoller).stop();
+        inOrder.verify(this.mockGateway).logout();
         inOrder.verify(this.mockScheduledExecutor).shutdown();
+        inOrder.verify(this.mockScheduledExecutor).awaitTermination(10, TimeUnit.SECONDS);
         inOrder.verify(this.mockSnapshotReloadExecutor).shutdown();
+        inOrder.verify(this.mockSnapshotReloadExecutor).awaitTermination(5, TimeUnit.SECONDS);
         inOrder.verify(this.mockAdminRegistry).save();
         inOrder.verify(this.mockSqlRegistry).close();
         inOrder.verify(this.mockExternalWebhookService).shutdown();
     }
 
     @Test
-    void close_handlesNullOptionalDeps() {
+    void close_handlesNullOptionalDeps() throws Exception {
         when(this.mockGateway.logout()).thenReturn(Mono.empty());
+        when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(true);
+        when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(true);
 
         EEWBot bot = createBot(null, null, null);
         bot.close(); // NPE should not occur
     }
 
     @Test
-    void close_isIdempotent() {
+    void close_isIdempotent() throws Exception {
         when(this.mockGateway.logout()).thenReturn(Mono.empty());
+        when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(true);
+        when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(true);
 
         EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService);
         bot.close();
@@ -80,8 +88,10 @@ class EEWBotCloseTest {
     }
 
     @Test
-    void close_continuesCleanupWhenLogoutFails() throws IOException {
+    void close_continuesCleanupWhenLogoutFails() throws Exception {
         when(this.mockGateway.logout()).thenReturn(Mono.error(new RuntimeException("logout failed")));
+        when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(true);
+        when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(true);
 
         EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService);
 
@@ -90,10 +100,25 @@ class EEWBotCloseTest {
         verify(this.mockGatewayManager).close();
         verify(this.mockRevisionPoller).stop();
         verify(this.mockScheduledExecutor).shutdown();
+        verify(this.mockScheduledExecutor).awaitTermination(10, TimeUnit.SECONDS);
         verify(this.mockSnapshotReloadExecutor).shutdown();
+        verify(this.mockSnapshotReloadExecutor).awaitTermination(5, TimeUnit.SECONDS);
         verify(this.mockAdminRegistry).save();
         verify(this.mockSqlRegistry).close();
         verify(this.mockExternalWebhookService).shutdown();
+    }
+
+    @Test
+    void close_forcesExecutorShutdownWhenDrainTimesOut() throws Exception {
+        when(this.mockGateway.logout()).thenReturn(Mono.empty());
+        when(this.mockScheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(false);
+        when(this.mockSnapshotReloadExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(false);
+
+        EEWBot bot = createBot(this.mockSqlRegistry, this.mockRevisionPoller, this.mockExternalWebhookService);
+        bot.close();
+
+        verify(this.mockScheduledExecutor).shutdownNow();
+        verify(this.mockSnapshotReloadExecutor).shutdownNow();
     }
 
     private EEWBot createBot(ChannelRegistrySql sqlRegistry, RevisionPoller revisionPoller, ExternalWebhookService externalWebhookService) {

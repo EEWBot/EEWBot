@@ -13,6 +13,7 @@ import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EEWBot implements AutoCloseable {
@@ -83,6 +84,12 @@ public class EEWBot implements AutoCloseable {
     public void close() {
         if (!this.closed.compareAndSet(false, true)) return;
         Log.logger.info("Shutdown");
+        if (this.gatewayManager != null) {
+            this.gatewayManager.close();
+        }
+        if (this.revisionPoller != null) {
+            this.revisionPoller.stop();
+        }
         try {
             if (this.gateway != null) {
                 this.gateway.logout().block();
@@ -90,14 +97,8 @@ public class EEWBot implements AutoCloseable {
         } catch (final Exception e) {
             Log.logger.error("Gateway logout failed", e);
         }
-        if (this.gatewayManager != null) {
-            this.gatewayManager.close();
-        }
-        if (this.revisionPoller != null) {
-            this.revisionPoller.stop();
-        }
-        this.scheduledExecutor.shutdown();
-        this.snapshotReloadExecutor.shutdown();
+        awaitExecutorShutdown(this.scheduledExecutor, 10, TimeUnit.SECONDS);
+        awaitExecutorShutdown(this.snapshotReloadExecutor, 5, TimeUnit.SECONDS);
         try {
             this.adminRegistry.save();
         } catch (final IOException e) {
@@ -108,6 +109,18 @@ public class EEWBot implements AutoCloseable {
         }
         if (this.externalWebhookService != null) {
             this.externalWebhookService.shutdown();
+        }
+    }
+
+    private void awaitExecutorShutdown(ExecutorService executor, long timeout, TimeUnit unit) {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(timeout, unit)) {
+                executor.shutdownNow();
+            }
+        } catch (final InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 
