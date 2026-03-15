@@ -137,8 +137,9 @@ public class EEWService {
     }
 
     private void submitCleanup(Runnable task) {
+        Runnable wrapped = MdcUtil.wrapWithMdc(task);
         try {
-            this.executor.execute(task);
+            this.executor.execute(wrapped);
         } catch (RejectedExecutionException e) {
             Log.logger.debug("Cleanup task skipped (executor shut down)");
         }
@@ -198,7 +199,7 @@ public class EEWService {
                     SimpleHttpRequest request = SimpleRequestBuilder.copy(cacheReq.get(channel.lang()))
                             .setUri(channel.webhookUrl())
                             .build();
-                    endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
+                    endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), MdcUtil.wrapWithMdc(new FutureCallback<>() {
                         @Override
                         public void completed(SimpleHttpResponse simpleHttpResponse) {
                             latch.countDown();
@@ -223,7 +224,7 @@ public class EEWService {
                             Log.logger.info("Cancelled to send webhook: ChannelID={}", channelId);
                             onError.apply(channelId, channel);
                         }
-                    });
+                    }));
                 });
                 latch.await();
                 if (!erroredChannels.isEmpty()) {

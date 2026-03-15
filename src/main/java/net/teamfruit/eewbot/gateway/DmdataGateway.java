@@ -12,6 +12,7 @@ import net.teamfruit.eewbot.entity.dmdata.ws.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.MDC;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -21,9 +22,7 @@ import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
@@ -41,6 +40,7 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
     private final String appName;
     private final boolean multiConnect;
     private final Listener listener;
+    private final ScheduledExecutorService reconnectScheduler;
 
     private volatile boolean closed;
 
@@ -54,12 +54,13 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
         void onNewData(DmdataEEW eew);
     }
 
-    public DmdataGateway(java.net.http.HttpClient httpClient, DmdataAPI api, long appId, boolean multiConnect, Listener listener) {
+    public DmdataGateway(java.net.http.HttpClient httpClient, DmdataAPI api, long appId, boolean multiConnect, Listener listener, ScheduledExecutorService reconnectScheduler) {
         this.httpClient = httpClient;
         this.dmdataAPI = api;
         this.appName = "eewbot" + "-" + encodeAppId(appId);
         this.multiConnect = multiConnect;
         this.listener = listener;
+        this.reconnectScheduler = reconnectScheduler;
     }
 
     @Override
@@ -71,8 +72,16 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
 
     public void close() {
         this.closed = true;
+        cancelPendingReconnect(this.webSocket1);
+        cancelPendingReconnect(this.webSocket2);
         closeWebSocketConnection(this.webSocket1);
         closeWebSocketConnection(this.webSocket2);
+    }
+
+    private void cancelPendingReconnect(WebSocketConnection connection) {
+        if (connection != null && connection.pendingReconnect != null) {
+            connection.pendingReconnect.cancel(false);
+        }
     }
 
     private void closeWebSocketConnection(WebSocketConnection connection) {
@@ -171,12 +180,40 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
 
             WebSocketConnection connection = new WebSocketConnection(connectionName, wsBaseURI, hasForecastContract);
             CompletableFuture<WebSocket> future = this.httpClient.newWebSocketBuilder().buildAsync(URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()), connection.getListener());
-            future.thenAccept(connection::setWebSocket);
+            future.whenComplete((ws, ex) -> {
+                MDC.put("gateway", "dmdata");
+                MDC.put("gateway.connection", connectionName);
+                try {
+                    if (ex != null) {
+                        Log.logger.error("DMDATA WebSocket {}: handshake failed", connectionName, ex);
+                        onError(new EEWGatewayException("WebSocket handshake failed", ex));
+                        connection.reconnectFailed = true;
+                    } else {
+                        connection.setWebSocket(ws);
+                    }
+                } finally {
+                    MDC.clear();
+                }
+            });
             return connection;
         } else {
             WebSocketConnection connection = new WebSocketConnection(connectionName, wsBaseURI, hasForecastContract);
             CompletableFuture<WebSocket> future = this.httpClient.newWebSocketBuilder().buildAsync(URI.create(wsBaseURI), connection.getListener());
-            future.thenAccept(connection::setWebSocket);
+            future.whenComplete((ws, ex) -> {
+                MDC.put("gateway", "dmdata");
+                MDC.put("gateway.connection", connectionName);
+                try {
+                    if (ex != null) {
+                        Log.logger.error("DMDATA WebSocket {}: handshake failed", connectionName, ex);
+                        onError(new EEWGatewayException("WebSocket handshake failed", ex));
+                        connection.reconnectFailed = true;
+                    } else {
+                        connection.setWebSocket(ws);
+                    }
+                } finally {
+                    MDC.clear();
+                }
+            });
             return connection;
         }
     }
@@ -193,9 +230,17 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
             closeWebSocketIfExist(this.dmdataAPI.openSocketList(), connectionName);
             WebSocketConnection listener = connectWebSocket(wsBaseURI, connectionName, hasForecastContract);
             if (connectionName.endsWith("-2")) {
-                DmdataGateway.this.webSocket2 = listener;
+                if (this.webSocket2 != null) {
+                    this.webSocket2.replaced = true;
+                    cancelPendingReconnect(this.webSocket2);
+                }
+                this.webSocket2 = listener;
             } else {
-                DmdataGateway.this.webSocket1 = listener;
+                if (this.webSocket1 != null) {
+                    this.webSocket1.replaced = true;
+                    cancelPendingReconnect(this.webSocket1);
+                }
+                this.webSocket1 = listener;
             }
         } catch (IOException | InterruptedException e) {
             throw new EEWGatewayException("Failed to reconnect to DMDATA", e);
@@ -260,6 +305,8 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
 
         private volatile boolean reconnecting;
         private volatile boolean reconnectFailed;
+        volatile boolean replaced;
+        volatile ScheduledFuture<?> pendingReconnect;
 
         public WebSocketConnection(String connectionName, String wsBaseURI, boolean hasForecastContract) {
             this.connectionName = connectionName;
@@ -307,12 +354,18 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
 
             @Override
             public void onOpen(WebSocket webSocket) {
-                if (DmdataGateway.this.closed) {
-                    webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "shutdown");
-                    return;
+                MDC.put("gateway", "dmdata");
+                MDC.put("gateway.connection", WebSocketConnection.this.connectionName);
+                try {
+                    if (DmdataGateway.this.closed) {
+                        webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "shutdown");
+                        return;
+                    }
+                    Log.logger.info("DMDATA WebSocket opened: {}", WebSocketConnection.this.connectionName);
+                    WebSocket.Listener.super.onOpen(webSocket);
+                } finally {
+                    MDC.clear();
                 }
-                Log.logger.info("DMDATA WebSocket opened: {}", WebSocketConnection.this.connectionName);
-                WebSocket.Listener.super.onOpen(webSocket);
             }
 
             private final StringBuilder buffer = new StringBuilder();
@@ -333,6 +386,8 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
                     this.buffer.setLength(0);
                 }
 
+                MDC.put("gateway", "dmdata");
+                MDC.put("gateway.connection", WebSocketConnection.this.connectionName);
                 try {
                     DmdataWSMessage message = Codecs.GSON.fromJson(dataString, DmdataWSMessage.class);
                     switch (message.getType()) {
@@ -369,6 +424,8 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
                             DmdataEEW eew = Codecs.GSON.fromJson(bodyString, DmdataEEW.class);
                             eew.setRawData(bodyString);
                             boolean isTest = wsData.getHead().isTest() || !eew.getStatus().equals("通常");
+                            MDC.put("event.id", eew.getEventId());
+                            MDC.put("event.type", "eew");
                             Log.logger.info(isTest ? "DMDATA WebSocket {}: test EEW: {}" : "DMDATA WebSocket {}:  EEW: {}", WebSocketConnection.this.connectionName, eew);
 
                             if (eew.getSchema().getType().equals("eew-information") && !eew.getSchema().getVersion().equals("1.0.0")) {
@@ -415,44 +472,63 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
                     Log.logger.error("DMDATA WebSocket {}: failed to parse message: {}", WebSocketConnection.this.connectionName, dataString, e);
                 } catch (IOException e) {
                     Log.logger.error("DMDATA WebSocket {}: failed to decompress message: {}", WebSocketConnection.this.connectionName, dataString, e);
+                } finally {
+                    MDC.clear();
                 }
                 return WebSocket.Listener.super.onText(webSocket, data, true);
             }
 
             @Override
             public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-                Log.logger.info("DMDATA WebSocket {}: closed: {} {}", WebSocketConnection.this.connectionName, statusCode, reason);
-                onDisconnected();
+                MDC.put("gateway", "dmdata");
+                MDC.put("gateway.connection", WebSocketConnection.this.connectionName);
+                try {
+                    Log.logger.info("DMDATA WebSocket {}: closed: {} {}", WebSocketConnection.this.connectionName, statusCode, reason);
+                    onDisconnected();
+                } finally {
+                    MDC.clear();
+                }
                 return null;
             }
 
             @Override
             public void onError(WebSocket webSocket, Throwable error) {
-                Log.logger.error("DMDATA WebSocket {}: error", WebSocketConnection.this.connectionName, error);
-                DmdataGateway.this.onError(new EEWGatewayException("DMDATA WebSocket error", error));
-                if (webSocket.isOutputClosed() || webSocket.isInputClosed()) {
-                    onDisconnected();
+                MDC.put("gateway", "dmdata");
+                MDC.put("gateway.connection", WebSocketConnection.this.connectionName);
+                try {
+                    Log.logger.error("DMDATA WebSocket {}: error", WebSocketConnection.this.connectionName, error);
+                    DmdataGateway.this.onError(new EEWGatewayException("DMDATA WebSocket error", error));
+                    if (webSocket.isOutputClosed() || webSocket.isInputClosed()) {
+                        onDisconnected();
+                    }
+                } finally {
+                    MDC.clear();
                 }
             }
 
             private void onDisconnected() {
-                if (DmdataGateway.this.closed || WebSocketConnection.this.reconnecting) {
+                if (DmdataGateway.this.closed || WebSocketConnection.this.reconnecting || WebSocketConnection.this.replaced) {
                     return;
                 }
 
                 WebSocketConnection.this.reconnecting = true;
-                try {
-                    Thread.sleep(3000);
-                    reconnectWebSocket(WebSocketConnection.this);
-                } catch (EEWGatewayException e) {
-                    DmdataGateway.this.onError(e);
-                    WebSocketConnection.this.reconnectFailed = true;
-                } catch (InterruptedException e) {
-                    DmdataGateway.this.onError(new EEWGatewayException("Failed to reconnect to DMDATA", e));
-                    WebSocketConnection.this.reconnectFailed = true;
-                } finally {
-                    WebSocketConnection.this.reconnecting = false;
-                }
+                WebSocketConnection.this.pendingReconnect = DmdataGateway.this.reconnectScheduler.schedule(() -> {
+                    MDC.put("gateway", "dmdata");
+                    MDC.put("gateway.connection", WebSocketConnection.this.connectionName);
+                    MDC.put("gateway.task", "reconnect");
+                    try {
+                        if (DmdataGateway.this.closed || WebSocketConnection.this.replaced) {
+                            return;
+                        }
+                        reconnectWebSocket(WebSocketConnection.this);
+                    } catch (EEWGatewayException e) {
+                        DmdataGateway.this.onError(e);
+                        WebSocketConnection.this.reconnectFailed = true;
+                    } finally {
+                        WebSocketConnection.this.reconnecting = false;
+                        MDC.clear();
+                    }
+                }, 3, TimeUnit.SECONDS);
             }
         }
     }

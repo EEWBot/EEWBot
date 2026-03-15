@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.caffeine)
+    implementation(libs.logstash.logback.encoder)
 
     // Test dependencies
     testImplementation(libs.junit.jupiter)

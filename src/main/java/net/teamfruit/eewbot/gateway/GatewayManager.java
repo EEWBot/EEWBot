@@ -14,6 +14,7 @@ import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
+import org.slf4j.MDC;
 
 import java.net.http.HttpClient;
 import java.util.ArrayList;
@@ -97,7 +98,7 @@ public class GatewayManager implements AutoCloseable {
             );
         } else {
             DmdataAPI dmdataAPI = new DmdataAPI(this.httpClient, this.config.getDmdata().getAPIKey(), this.config.getDmdata().getOrigin());
-            this.dmdataGateway = new DmdataGateway(this.httpClient, dmdataAPI, this.applicationId, this.config.getDmdata().isMultiSocketConnect(), this::handleDmdataEEW);
+            this.dmdataGateway = new DmdataGateway(this.httpClient, dmdataAPI, this.applicationId, this.config.getDmdata().isMultiSocketConnect(), this::handleDmdataEEW, this.scheduledExecutor);
             this.scheduledExecutor.execute(this.dmdataGateway);
             this.scheduledTasks.add(
                     this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(this.dmdataGateway), 30, 30, TimeUnit.SECONDS)
@@ -106,36 +107,55 @@ public class GatewayManager implements AutoCloseable {
     }
 
     private void handleKmoniEEW(KmoniEEW eew) {
-        Log.logger.info(eew.toString());
-        boolean isWarning = EEWFilterClassifier.isKmoniWarning(eew);
-        boolean isImportant = EEWFilterClassifier.isKmoniImportant(eew);
-        SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
-        ChannelFilter filter = EEWFilterClassifier.classifyEEW(isWarning, isImportant, maxIntensity);
-        submitMessage(() -> this.service.sendMessage(filter, eew));
+        MDC.put("gateway", "kmoni");
+        MDC.put("event.type", "eew");
+        try {
+            Log.logger.info(eew.toString());
+            boolean isWarning = EEWFilterClassifier.isKmoniWarning(eew);
+            boolean isImportant = EEWFilterClassifier.isKmoniImportant(eew);
+            SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
+            ChannelFilter filter = EEWFilterClassifier.classifyEEW(isWarning, isImportant, maxIntensity);
+            submitMessage(() -> this.service.sendMessage(filter, eew));
+        } finally {
+            MDC.clear();
+        }
     }
 
     private void handleDmdataEEW(DmdataEEW eew) {
-        if (eew.getBody().getEarthquake() != null &&
-                Strings.CS.equals(eew.getBody().getEarthquake().getCondition(), "仮定震源要素") &&
-                eew.getBody().getIntensity() == null)
-            return;
+        MDC.put("gateway", "dmdata");
+        MDC.put("event.type", "eew");
+        MDC.put("event.id", eew.getEventId());
+        try {
+            if (eew.getBody().getEarthquake() != null &&
+                    Strings.CS.equals(eew.getBody().getEarthquake().getCondition(), "仮定震源要素") &&
+                    eew.getBody().getIntensity() == null)
+                return;
 
-        boolean isWarning = EEWFilterClassifier.isDmdataWarning(eew);
-        boolean isImportant = EEWFilterClassifier.isDmdataImportant(eew);
-        SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
-        ChannelFilter filter = EEWFilterClassifier.classifyEEW(isWarning, isImportant, maxIntensity);
-        submitMessage(() -> {
-            this.service.sendMessage(filter, eew);
-            this.externalWebhookService.sendExternalWebhook(eew);
-        });
+            boolean isWarning = EEWFilterClassifier.isDmdataWarning(eew);
+            boolean isImportant = EEWFilterClassifier.isDmdataImportant(eew);
+            SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
+            ChannelFilter filter = EEWFilterClassifier.classifyEEW(isWarning, isImportant, maxIntensity);
+            submitMessage(() -> {
+                this.service.sendMessage(filter, eew);
+                this.externalWebhookService.sendExternalWebhook(eew);
+            });
+        } finally {
+            MDC.clear();
+        }
     }
 
     private void initQuakeInfoGateway() {
         if (this.config.getLegacy().isEnableLegacyQuakeInfo()) {
             QuakeInfoGateway quakeInfoGateway = new QuakeInfoGateway(data -> {
-                Log.logger.info(data.toString());
-                ChannelFilter filter = EEWFilterClassifier.classifyQuakeInfo(data.getEarthquake().getIntensity());
-                submitMessage(() -> this.service.sendMessage(filter, data));
+                MDC.put("gateway", "quake-info");
+                MDC.put("event.type", "quake-info");
+                try {
+                    Log.logger.info(data.toString());
+                    ChannelFilter filter = EEWFilterClassifier.classifyQuakeInfo(data.getEarthquake().getIntensity());
+                    submitMessage(() -> this.service.sendMessage(filter, data));
+                } finally {
+                    MDC.clear();
+                }
             });
             this.scheduledTasks.add(
                     this.scheduledExecutor.scheduleAtFixedRate(quakeInfoGateway, 0, this.config.getLegacy().getLegacyQuakeInfoDelay(), TimeUnit.SECONDS)
@@ -159,18 +179,31 @@ public class GatewayManager implements AutoCloseable {
     }
 
     private void handleJMAReport(AbstractJMAReport data) {
-        if (!this.config.getLegacy().isEnableLegacyQuakeInfo()) {
-            if (data instanceof QuakeInfo quakeInfo) {
-                ChannelFilter filter = EEWFilterClassifier.classifyQuakeInfo(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
+        MDC.put("gateway", "jma-xml");
+        MDC.put("event.id", data.getEventId());
+        if (data instanceof VTSE41) {
+            MDC.put("event.type", "tsunami");
+        } else if (data instanceof QuakeInfo) {
+            MDC.put("event.type", "quake-info");
+        } else {
+            MDC.put("event.type", "report");
+        }
+        try {
+            if (!this.config.getLegacy().isEnableLegacyQuakeInfo()) {
+                if (data instanceof QuakeInfo quakeInfo) {
+                    ChannelFilter filter = EEWFilterClassifier.classifyQuakeInfo(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
+                    submitMessage(() -> this.service.sendMessage(filter, data));
+                }
+            }
+            if (data instanceof VTSE41) {
+                ChannelFilter filter = EEWFilterClassifier.classifyTsunami();
                 submitMessage(() -> this.service.sendMessage(filter, data));
             }
-        }
-        if (data instanceof VTSE41) {
-            ChannelFilter filter = EEWFilterClassifier.classifyTsunami();
-            submitMessage(() -> this.service.sendMessage(filter, data));
-        }
-        if (data instanceof ExternalData externalData) {
-            submitMessage(() -> this.externalWebhookService.sendExternalWebhook(externalData));
+            if (data instanceof ExternalData externalData) {
+                submitMessage(() -> this.externalWebhookService.sendExternalWebhook(externalData));
+            }
+        } finally {
+            MDC.clear();
         }
     }
 
@@ -183,8 +216,9 @@ public class GatewayManager implements AutoCloseable {
     }
 
     private void submitMessage(Runnable task) {
+        Runnable wrapped = MdcUtil.wrapWithMdc(task);
         try {
-            this.messageExecutor.submit(task);
+            this.messageExecutor.submit(wrapped);
         } catch (RejectedExecutionException e) {
             Log.logger.debug("Message dispatch skipped (executor shut down)");
         }

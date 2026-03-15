@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.gateway;
 
 import net.teamfruit.eewbot.Log;
+import org.slf4j.MDC;
 
 public class DmdataWsLivenessChecker implements Runnable {
 
@@ -15,6 +16,8 @@ public class DmdataWsLivenessChecker implements Runnable {
     @Override
     public void run() {
         Thread.currentThread().setName("eewbot-dmdata-liveness-checker-thread");
+        MDC.put("gateway", "dmdata");
+        MDC.put("gateway.task", "liveness");
         try {
             if (this.gateway.getWebSocket1() != null)
                 check(this.gateway.getWebSocket1());
@@ -27,6 +30,8 @@ public class DmdataWsLivenessChecker implements Runnable {
             }
         } catch (EEWGatewayException e) {
             Log.logger.error("Failed to reconnect DMDATA WebSocket", e);
+        } finally {
+            MDC.clear();
         }
 
         this.counter++;

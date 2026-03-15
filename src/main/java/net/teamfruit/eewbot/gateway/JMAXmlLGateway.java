@@ -9,6 +9,7 @@ import net.teamfruit.eewbot.entity.jma.JMAStatus;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE51;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE52;
+import org.slf4j.MDC;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -33,6 +34,7 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
 
     @Override
     public void run() {
+        MDC.put("gateway", "jma-xml-l");
         try {
             Thread.currentThread().setName("eewbot-jmaxml-thread");
 
@@ -90,6 +92,8 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
             }
         } catch (final Exception e) {
             onError(new EEWGatewayException(e));
+        } finally {
+            MDC.clear();
         }
     }
 

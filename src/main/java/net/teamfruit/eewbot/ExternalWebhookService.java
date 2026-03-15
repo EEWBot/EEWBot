@@ -3,6 +3,7 @@ package net.teamfruit.eewbot;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.ExternalWebhookRequest;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
+import org.slf4j.MDC;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -10,6 +11,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,7 +48,7 @@ public class ExternalWebhookService {
             String jsonBody = Codecs.GSON.toJson(request);
             Log.logger.debug("External webhook JSON content: {}", jsonBody);
 
-            this.webhookUrls.forEach(url -> this.executor.submit(() -> {
+            this.webhookUrls.forEach(url -> this.executor.submit(MdcUtil.wrapWithMdc(() -> {
                 try {
                     HttpRequest httpRequest = HttpRequest.newBuilder()
                             .uri(URI.create(url))
@@ -55,26 +57,39 @@ public class ExternalWebhookService {
                             .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                             .build();
 
+                    Map<String, String> mdcCtx = MDC.getCopyOfContextMap();
                     CompletableFuture<HttpResponse<String>> future = this.httpClient.sendAsync(
                             httpRequest,
                             HttpResponse.BodyHandlers.ofString()
                     );
 
                     future.thenAccept(response -> {
-                        if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                            Log.logger.info("Successfully sent external webhook to {}: status={}", url, response.statusCode());
-                        } else {
-                            Log.logger.warn("External webhook failed for {}: status={}, body={}", url, response.statusCode(), response.body());
+                        Map<String, String> prev = MDC.getCopyOfContextMap();
+                        if (mdcCtx != null) MDC.setContextMap(mdcCtx); else MDC.clear();
+                        try {
+                            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                                Log.logger.info("Successfully sent external webhook to {}: status={}", url, response.statusCode());
+                            } else {
+                                Log.logger.warn("External webhook failed for {}: status={}, body={}", url, response.statusCode(), response.body());
+                            }
+                        } finally {
+                            if (prev != null) MDC.setContextMap(prev); else MDC.clear();
                         }
                     }).exceptionally(throwable -> {
-                        Log.logger.error("Failed to send external webhook to {}: {}", url, throwable.getMessage());
+                        Map<String, String> prev = MDC.getCopyOfContextMap();
+                        if (mdcCtx != null) MDC.setContextMap(mdcCtx); else MDC.clear();
+                        try {
+                            Log.logger.error("Failed to send external webhook to {}: {}", url, throwable.getMessage());
+                        } finally {
+                            if (prev != null) MDC.setContextMap(prev); else MDC.clear();
+                        }
                         return null;
                     });
 
                 } catch (Exception e) {
                     Log.logger.error("Error sending external webhook to {}: {}", url, e.getMessage());
                 }
-            }));
+            })));
         } catch (Exception e) {
             Log.logger.error("Failed to serialize external data to JSON: {}", e.getMessage());
         }
