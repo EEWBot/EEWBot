@@ -81,6 +81,7 @@ public class EEWBotFactory {
 
         // 4. Create executors and HTTP client
         ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-worker"));
+        ScheduledExecutorService dmdataReconnectExecutor = Executors.newScheduledThreadPool(2, r -> new Thread(r, "eewbot-dmdata-reconnect"));
         ExecutorService snapshotReloadExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "eewbot-snapshot-reload"));
         HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -154,6 +155,7 @@ public class EEWBotFactory {
             }
         } catch (Exception e) {
             scheduledExecutor.shutdown();
+            dmdataReconnectExecutor.shutdown();
             snapshotReloadExecutor.shutdown();
             if (sqlRegistry != null)
                 sqlRegistry.close();
@@ -176,6 +178,7 @@ public class EEWBotFactory {
             if (revisionPoller != null) revisionPoller.stop();
             if (sqlRegistry != null) sqlRegistry.close();
             scheduledExecutor.shutdown();
+            dmdataReconnectExecutor.shutdown();
             snapshotReloadExecutor.shutdown();
             throw e;
         }
@@ -206,6 +209,7 @@ public class EEWBotFactory {
             if (revisionPoller != null) revisionPoller.stop();
             if (sqlRegistry != null) sqlRegistry.close();
             scheduledExecutor.shutdown();
+            dmdataReconnectExecutor.shutdown();
             snapshotReloadExecutor.shutdown();
             throw new IllegalStateException("Failed to get bot user");
         }
@@ -220,7 +224,7 @@ public class EEWBotFactory {
         );
         ExternalWebhookService externalWebhookService = new ExternalWebhookService(config, httpClient);
         GatewayManager gatewayManager = new GatewayManager(
-                service, config, applicationId, scheduledExecutor,
+                service, config, applicationId, scheduledExecutor, dmdataReconnectExecutor,
                 httpClient, gateway, adminRegistry, quakeInfoStore, externalWebhookService
         );
 

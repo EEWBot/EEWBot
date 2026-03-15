@@ -26,6 +26,8 @@ class GatewayManagerCloseTest {
     @Mock
     private ScheduledExecutorService mockScheduledExecutor;
     @Mock
+    private ScheduledExecutorService mockDmdataReconnectExecutor;
+    @Mock
     private ScheduledFuture<?> mockFuture1;
     @Mock
     private ScheduledFuture<?> mockFuture2;
@@ -39,6 +41,7 @@ class GatewayManagerCloseTest {
                 createMinimalConfig(),
                 0L,
                 this.mockScheduledExecutor,
+                this.mockDmdataReconnectExecutor,
                 null, // HttpClient
                 null, // GatewayDiscordClient
                 null, // DestinationAdminRegistry
@@ -57,6 +60,25 @@ class GatewayManagerCloseTest {
     }
 
     @Test
+    void close_shutsDownDmdataReconnectExecutor() throws Exception {
+        when(this.mockDmdataReconnectExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(true);
+
+        this.gatewayManager.close();
+
+        verify(this.mockDmdataReconnectExecutor).shutdown();
+    }
+
+    @Test
+    void close_forceShutsDmdataReconnectExecutorOnTimeout() throws Exception {
+        when(this.mockDmdataReconnectExecutor.awaitTermination(5, TimeUnit.SECONDS)).thenReturn(false);
+
+        this.gatewayManager.close();
+
+        verify(this.mockDmdataReconnectExecutor).shutdown();
+        verify(this.mockDmdataReconnectExecutor).shutdownNow();
+    }
+
+    @Test
     void close_stopsTimeProvider() {
         this.gatewayManager.close();
 
@@ -72,7 +94,8 @@ class GatewayManagerCloseTest {
         net.teamfruit.eewbot.registry.config.ConfigV2 config = createConfigWithLegacyQuakeInfo();
         GatewayManager manager = new GatewayManager(
                 null, config, 0L,
-                this.mockScheduledExecutor, null, null, null, null, null,
+                this.mockScheduledExecutor, this.mockDmdataReconnectExecutor,
+                null, null, null, null, null,
                 this.mockMessageExecutor, this.mockTimeProvider
         );
 

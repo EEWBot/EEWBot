@@ -25,6 +25,7 @@ import java.util.concurrent.*;
 public class GatewayManager implements AutoCloseable {
 
     private final ScheduledExecutorService scheduledExecutor;
+    private final ScheduledExecutorService dmdataReconnectExecutor;
     private final ExecutorService messageExecutor;
     private final TimeProvider timeProvider;
     private final EEWService service;
@@ -42,13 +43,14 @@ public class GatewayManager implements AutoCloseable {
             ConfigV2 config,
             long applicationId,
             ScheduledExecutorService scheduledExecutor,
+            ScheduledExecutorService dmdataReconnectExecutor,
             HttpClient httpClient,
             GatewayDiscordClient client,
             DestinationAdminRegistry adminRegistry,
             QuakeInfoStore quakeInfoStore,
             ExternalWebhookService externalWebhookService
     ) {
-        this(service, config, applicationId, scheduledExecutor, httpClient, client, adminRegistry, quakeInfoStore, externalWebhookService,
+        this(service, config, applicationId, scheduledExecutor, dmdataReconnectExecutor, httpClient, client, adminRegistry, quakeInfoStore, externalWebhookService,
                 Executors.newVirtualThreadPerTaskExecutor(),
                 new TimeProvider(scheduledExecutor, config.getLegacy().getNtpServer()));
     }
@@ -58,6 +60,7 @@ public class GatewayManager implements AutoCloseable {
             ConfigV2 config,
             long applicationId,
             ScheduledExecutorService scheduledExecutor,
+            ScheduledExecutorService dmdataReconnectExecutor,
             HttpClient httpClient,
             GatewayDiscordClient client,
             DestinationAdminRegistry adminRegistry,
@@ -70,6 +73,7 @@ public class GatewayManager implements AutoCloseable {
         this.config = config;
         this.applicationId = applicationId;
         this.scheduledExecutor = scheduledExecutor;
+        this.dmdataReconnectExecutor = dmdataReconnectExecutor;
         this.httpClient = httpClient;
         this.quakeInfoStore = quakeInfoStore;
         this.externalWebhookService = externalWebhookService;
@@ -98,10 +102,10 @@ public class GatewayManager implements AutoCloseable {
             );
         } else {
             DmdataAPI dmdataAPI = new DmdataAPI(this.httpClient, this.config.getDmdata().getAPIKey(), this.config.getDmdata().getOrigin());
-            this.dmdataGateway = new DmdataGateway(this.httpClient, dmdataAPI, this.applicationId, this.config.getDmdata().isMultiSocketConnect(), this::handleDmdataEEW, this.scheduledExecutor);
-            this.scheduledExecutor.execute(this.dmdataGateway);
+            this.dmdataGateway = new DmdataGateway(this.httpClient, dmdataAPI, this.applicationId, this.config.getDmdata().isMultiSocketConnect(), this::handleDmdataEEW, this.dmdataReconnectExecutor);
+            this.dmdataReconnectExecutor.execute(this.dmdataGateway);
             this.scheduledTasks.add(
-                    this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(this.dmdataGateway), 30, 30, TimeUnit.SECONDS)
+                    this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(this.dmdataGateway, this.dmdataReconnectExecutor), 30, 30, TimeUnit.SECONDS)
             );
         }
     }
@@ -226,14 +230,29 @@ public class GatewayManager implements AutoCloseable {
 
     @Override
     public void close() {
+        // 1. Cancel pending reconnects via DmdataGateway.close()
         if (this.dmdataGateway != null) {
             this.dmdataGateway.close();
         }
 
+        // 2. Cancel scheduled tasks (stops liveness checker from firing again)
         for (ScheduledFuture<?> task : this.scheduledTasks) {
             task.cancel(true);
         }
 
+        // 3. Drain in-flight reconnects on the dedicated executor
+        if (this.dmdataReconnectExecutor != null) {
+            this.dmdataReconnectExecutor.shutdown();
+            try {
+                if (!this.dmdataReconnectExecutor.awaitTermination(5, TimeUnit.SECONDS))
+                    this.dmdataReconnectExecutor.shutdownNow();
+            } catch (InterruptedException e) {
+                this.dmdataReconnectExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // 4. Stop time provider, shutdown message executor
         this.timeProvider.stop();
 
         this.messageExecutor.shutdown();
