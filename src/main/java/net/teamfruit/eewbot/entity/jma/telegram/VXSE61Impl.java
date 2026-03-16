@@ -72,7 +72,7 @@ public class VXSE61Impl extends JmxSeis implements VXSE61 {
     private Earthquake getEarthquake() {
         if (isCancelReport())
             throw new IllegalStateException("Cancel report");
-        return Objects.requireNonNull(getBody().getEarthquakes().get(0));
+        return Objects.requireNonNull(getBody().getEarthquakes().getFirst());
     }
 
     private Hypocenter getHypocenter() {

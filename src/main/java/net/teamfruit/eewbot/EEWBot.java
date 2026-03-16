@@ -170,11 +170,8 @@ public class EEWBot implements AutoCloseable {
     }
 
     public static void main(final String[] args) throws Exception {
-        EEWBot bot = EEWBotFactory.create();
-        try {
+        try (EEWBot bot = EEWBotFactory.create()) {
             bot.awaitDisconnect();
-        } finally {
-            bot.close();
         }
     }
 }

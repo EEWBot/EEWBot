@@ -7,7 +7,7 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.external.EEWExternalData;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
@@ -780,19 +780,19 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
     }
 
     public boolean isAccurateEnough() {
-        return isEpicenterAccurateEnough() && isDepthAccurateEnough() && isMagnitudeAccurateEnough() && !StringUtils.equals(this.getBody().getEarthquake().getCondition(), "仮定震源要素");
+        return isEpicenterAccurateEnough() && isDepthAccurateEnough() && isMagnitudeAccurateEnough() && !Strings.CS.equals(this.getBody().getEarthquake().getCondition(), "仮定震源要素");
     }
 
     public boolean isEpicenterAccurateEnough() {
         for (String acc1 : this.getBody().getEarthquake().getHypocenter().getAccuracy().getEpicenters()) {
-            if (StringUtils.equalsAny(acc1, "0", "1"))
+            if (Strings.CS.equalsAny(acc1, "0", "1"))
                 return false;
         }
         return true;
     }
 
     public boolean isDepthAccurateEnough() {
-        return !StringUtils.equalsAny(this.getBody().getEarthquake().getHypocenter().getAccuracy().getDepth(), "0", "1");
+        return !Strings.CS.equalsAny(this.getBody().getEarthquake().getHypocenter().getAccuracy().getDepth(), "0", "1");
     }
 
     public boolean isMagnitudeAccurateEnough() {
@@ -852,7 +852,7 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
             builder.color(Color.BLUE);
         }
         builder.timestamp(FORMAT.parse(this.getReportDateTime(), Instant::from));
-        if (!StringUtils.equals(this.getBody().getEarthquake().getCondition(), "仮定震源要素")) {
+        if (!Strings.CS.equals(this.getBody().getEarthquake().getCondition(), "仮定震源要素")) {
             builder.addField("eewbot.eew.epicenter", this.getBody().getEarthquake().getHypocenter().getName(), true);
             if (this.getBody().getEarthquake().getHypocenter().getDepth().getCondition() != null) {
                 builder.addField("eewbot.eew.depth", this.getBody().getEarthquake().getHypocenter().getDepth().getCondition(), true);

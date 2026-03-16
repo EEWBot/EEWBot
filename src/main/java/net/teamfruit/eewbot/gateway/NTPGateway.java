@@ -5,6 +5,7 @@ import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
 
 import java.net.InetAddress;
+import java.time.Duration;
 
 public abstract class NTPGateway implements Gateway<TimeInfo> {
 
@@ -26,12 +27,13 @@ public abstract class NTPGateway implements Gateway<TimeInfo> {
 
             Log.logger.info("NTP Correcting time");
 
-            final NTPUDPClient client = new NTPUDPClient();
-            client.setDefaultTimeout(10000);
-            client.open();
-            final InetAddress hostAddr = InetAddress.getByName(this.ntpServer);
+            try (NTPUDPClient client = new NTPUDPClient()) {
+                client.setDefaultTimeout(Duration.ofSeconds(10));
+                client.open();
+                final InetAddress hostAddr = InetAddress.getByName(this.ntpServer);
 
-            onNewData(client.getTime(hostAddr));
+                onNewData(client.getTime(hostAddr));
+            }
         } catch (final Exception e) {
             onError(new EEWGatewayException("Failed to fetch NTP", e));
         } finally {

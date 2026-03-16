@@ -39,7 +39,7 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     private Earthquake getEarthquake() {
         if (isCancelReport())
             throw new IllegalStateException("Cancel report");
-        return Objects.requireNonNull(getBody().getEarthquakes().get(0));
+        return Objects.requireNonNull(getBody().getEarthquakes().getFirst());
     }
 
     private Hypocenter getHypocenter() {
@@ -64,7 +64,7 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
 
     @Override
     public Optional<String> getDepth() {
-        return Optional.ofNullable(getHypocenter().getArea().getCoordinate().get(0).getDepth());
+        return Optional.ofNullable(getHypocenter().getArea().getCoordinate().getFirst().getDepth());
     }
 
     @Override
