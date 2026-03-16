@@ -71,7 +71,7 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                 return;
             }
 
-        JMAFeed feed = Codecs.XML_MAPPER.readValue(new InputStreamReader(feedResponse.body()), JMAFeed.class);
+            JMAFeed feed = Codecs.XML_MAPPER.readValue(new InputStreamReader(feedResponse.body()), JMAFeed.class);
 
             if (this.lastIds != null) {
                 final List<String> list = feed.getEntries().stream()

@@ -36,7 +36,7 @@ public class ExternalWebhookService {
         try {
             Object eewbotDto = externalData.toExternalDto();
             String rawData = externalData.getRawData();
-            
+
             // Use raw data string for data field, processed DTO for eewbot field
             ExternalWebhookRequest request = new ExternalWebhookRequest(
                     externalData.getDataType(),
@@ -65,7 +65,8 @@ public class ExternalWebhookService {
 
                     future.thenAccept(response -> {
                         Map<String, String> prev = MDC.getCopyOfContextMap();
-                        if (mdcCtx != null) MDC.setContextMap(mdcCtx); else MDC.clear();
+                        if (mdcCtx != null) MDC.setContextMap(mdcCtx);
+                        else MDC.clear();
                         try {
                             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                                 Log.logger.info("Successfully sent external webhook to {}: status={}", url, response.statusCode());
@@ -73,15 +74,18 @@ public class ExternalWebhookService {
                                 Log.logger.warn("External webhook failed for {}: status={}, body={}", url, response.statusCode(), response.body());
                             }
                         } finally {
-                            if (prev != null) MDC.setContextMap(prev); else MDC.clear();
+                            if (prev != null) MDC.setContextMap(prev);
+                            else MDC.clear();
                         }
                     }).exceptionally(throwable -> {
                         Map<String, String> prev = MDC.getCopyOfContextMap();
-                        if (mdcCtx != null) MDC.setContextMap(mdcCtx); else MDC.clear();
+                        if (mdcCtx != null) MDC.setContextMap(mdcCtx);
+                        else MDC.clear();
                         try {
                             Log.logger.error("Failed to send external webhook to {}: {}", url, throwable.getMessage());
                         } finally {
-                            if (prev != null) MDC.setContextMap(prev); else MDC.clear();
+                            if (prev != null) MDC.setContextMap(prev);
+                            else MDC.clear();
                         }
                         return null;
                     });

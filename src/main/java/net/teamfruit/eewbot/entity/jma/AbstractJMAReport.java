@@ -18,7 +18,7 @@ public abstract class AbstractJMAReport implements Entity, JMAReport {
 
     @JacksonXmlProperty(localName = "Head")
     protected Head head;
-    
+
     protected String rawData;
 
     public Control getControl() {

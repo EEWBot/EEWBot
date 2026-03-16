@@ -88,16 +88,16 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
      */
     private Mono<Boolean> validateWebhookUrl(SlashCommandContext ctx, ChannelWebhook webhook) {
         return Mono.fromCallable(() -> {
-            // Use base URL without thread_id query parameter
-            String baseUrl = ChannelWebhook.of(webhook.id(), webhook.token()).url();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl))
-                    .method("HEAD", HttpRequest.BodyPublishers.noBody())
-                    .build();
-            HttpResponse<Void> response = ctx.httpClient().send(request, HttpResponse.BodyHandlers.discarding());
-            int status = response.statusCode();
-            return status != 404;
-        }).subscribeOn(Schedulers.boundedElastic())
+                    // Use base URL without thread_id query parameter
+                    String baseUrl = ChannelWebhook.of(webhook.id(), webhook.token()).url();
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(baseUrl))
+                            .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                            .build();
+                    HttpResponse<Void> response = ctx.httpClient().send(request, HttpResponse.BodyHandlers.discarding());
+                    int status = response.statusCode();
+                    return status != 404;
+                }).subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
                     Log.logger.warn("Failed to validate webhook URL, assuming valid", e);
                     return Mono.just(true);

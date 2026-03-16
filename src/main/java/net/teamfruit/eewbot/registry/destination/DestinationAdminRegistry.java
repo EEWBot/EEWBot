@@ -58,7 +58,7 @@ public interface DestinationAdminRegistry {
      * Set language for all channels belonging to the specified guild.
      *
      * @param guildId the guild ID
-     * @param lang the language code
+     * @param lang    the language code
      * @return the number of channels updated
      */
     int setLangByGuildId(long guildId, String lang);
@@ -77,7 +77,7 @@ public interface DestinationAdminRegistry {
      * per destination rather than shared across related channels.
      *
      * @param webhookId the webhook ID to inspect
-     * @param targetId the destination target ID that is allowed to own the webhook
+     * @param targetId  the destination target ID that is allowed to own the webhook
      * @return {@code true} if no other destination uses the webhook ID
      */
     boolean isWebhookExclusiveToTarget(long webhookId, long targetId);

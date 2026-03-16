@@ -297,7 +297,8 @@ public class ChannelMigration {
     private static ChannelRegistrySql createDestinationRegistry(String type, Map<String, String> config) throws IOException {
         return switch (type.toLowerCase()) {
             case "sqlite", "postgresql" -> createSqlRegistry(type, config);
-            default -> throw new IllegalArgumentException("Unsupported destination type: " + type + ". Destination must be sqlite or postgresql.");
+            default ->
+                    throw new IllegalArgumentException("Unsupported destination type: " + type + ". Destination must be sqlite or postgresql.");
         };
     }
 
@@ -320,9 +321,12 @@ public class ChannelMigration {
                 case "--source-address" -> config.sourceConfig.put("address", nextArg(args, ++i, "--source-address"));
                 case "--source-host" -> config.sourceConfig.put("host", nextArg(args, ++i, "--source-host"));
                 case "--source-port" -> config.sourceConfig.put("port", nextArg(args, ++i, "--source-port"));
-                case "--source-database" -> config.sourceConfig.put("database", nextArg(args, ++i, "--source-database"));
-                case "--source-username" -> config.sourceConfig.put("username", nextArg(args, ++i, "--source-username"));
-                case "--source-password" -> config.sourceConfig.put("password", nextArg(args, ++i, "--source-password"));
+                case "--source-database" ->
+                        config.sourceConfig.put("database", nextArg(args, ++i, "--source-database"));
+                case "--source-username" ->
+                        config.sourceConfig.put("username", nextArg(args, ++i, "--source-username"));
+                case "--source-password" ->
+                        config.sourceConfig.put("password", nextArg(args, ++i, "--source-password"));
                 case "--dest-path" -> config.destConfig.put("path", nextArg(args, ++i, "--dest-path"));
                 case "--dest-host" -> config.destConfig.put("host", nextArg(args, ++i, "--dest-host"));
                 case "--dest-port" -> config.destConfig.put("port", nextArg(args, ++i, "--dest-port"));

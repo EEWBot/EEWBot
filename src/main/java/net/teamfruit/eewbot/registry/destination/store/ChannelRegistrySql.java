@@ -30,7 +30,9 @@ import static org.jooq.impl.DSL.*;
 
 public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry {
 
-    /** Must match the DB schema DEFAULT for the lang column. */
+    /**
+     * Must match the DB schema DEFAULT for the lang column.
+     */
     private static final String DEFAULT_LANG = "ja_jp";
 
     private static final Map<String, String> SETTABLE_BOOLEAN_COLUMNS = Map.of(
@@ -59,7 +61,9 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     private static final Field<String> WEBHOOK_URL = field(name("webhook_url"), String.class);
     private static final Field<Long> WEBHOOK_ID = field(name("webhook_id"), SQLDataType.BIGINT);
 
-    /** All destination fields for typed SELECT (avoids SQLite INTEGER->Integer truncation in selectFrom). */
+    /**
+     * All destination fields for typed SELECT (avoids SQLite INTEGER->Integer truncation in selectFrom).
+     */
     private static final SelectFieldOrAsterisk[] ALL_FIELDS = {
             TARGET_ID, CHANNEL_ID, THREAD_ID, GUILD_ID,
             EEW_ALERT, EEW_PREDICTION, EEW_DECIMATION, QUAKE_INFO, TSUNAMI,

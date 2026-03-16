@@ -18,11 +18,13 @@ public final class MdcUtil {
         Map<String, String> captured = MDC.getCopyOfContextMap();
         return () -> {
             Map<String, String> previous = MDC.getCopyOfContextMap();
-            if (captured != null) MDC.setContextMap(captured); else MDC.clear();
+            if (captured != null) MDC.setContextMap(captured);
+            else MDC.clear();
             try {
                 task.run();
             } finally {
-                if (previous != null) MDC.setContextMap(previous); else MDC.clear();
+                if (previous != null) MDC.setContextMap(previous);
+                else MDC.clear();
             }
         };
     }
@@ -36,11 +38,13 @@ public final class MdcUtil {
         return new FutureCallback<>() {
             private void withMdc(Runnable action) {
                 Map<String, String> previous = MDC.getCopyOfContextMap();
-                if (captured != null) MDC.setContextMap(captured); else MDC.clear();
+                if (captured != null) MDC.setContextMap(captured);
+                else MDC.clear();
                 try {
                     action.run();
                 } finally {
-                    if (previous != null) MDC.setContextMap(previous); else MDC.clear();
+                    if (previous != null) MDC.setContextMap(previous);
+                    else MDC.clear();
                 }
             }
 

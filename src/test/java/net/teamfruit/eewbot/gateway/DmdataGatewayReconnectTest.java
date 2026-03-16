@@ -33,7 +33,8 @@ class DmdataGatewayReconnectTest {
     void setUp() {
         this.gateway = new DmdataGateway(
                 this.httpClient, this.dmdataAPI, 1L, false,
-                eew -> {}, this.reconnectScheduler
+                eew -> {
+                }, this.reconnectScheduler
         );
     }
 

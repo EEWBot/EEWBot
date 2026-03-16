@@ -59,7 +59,9 @@ class RedisToSqliteMigrationEquivalenceTest {
     private JedisPooled jedis;
     private Gson gson;
 
-    /** Channels loaded from JSON reference, used for dynamic assertions. */
+    /**
+     * Channels loaded from JSON reference, used for dynamic assertions.
+     */
     private Map<Long, Channel> testChannels;
 
     @BeforeEach

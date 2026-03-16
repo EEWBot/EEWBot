@@ -23,9 +23,9 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
     private final Runnable onWrite;
 
     /**
-     * @param delegate the underlying SQL registry
+     * @param delegate      the underlying SQL registry
      * @param revisionStore the revision store for cache invalidation
-     * @param onWrite callback invoked after writes (typically triggers snapshot reload)
+     * @param onWrite       callback invoked after writes (typically triggers snapshot reload)
      */
     public SqlAdminRegistry(
             ChannelRegistrySql delegate,

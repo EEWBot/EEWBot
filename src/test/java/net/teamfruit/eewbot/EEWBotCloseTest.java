@@ -26,15 +26,24 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class EEWBotCloseTest {
 
-    @Mock private GatewayDiscordClient mockGateway;
-    @Mock private GatewayManager mockGatewayManager;
-    @Mock private RevisionPoller mockRevisionPoller;
-    @Mock private DestinationAdminRegistry mockAdminRegistry;
-    @Mock private ChannelRegistrySql mockSqlRegistry;
-    @Mock private ScheduledExecutorService mockScheduledExecutor;
-    @Mock private ExecutorService mockSnapshotReloadExecutor;
-    @Mock private ExternalWebhookService mockExternalWebhookService;
-    @Mock private Disposable mockEventSub;
+    @Mock
+    private GatewayDiscordClient mockGateway;
+    @Mock
+    private GatewayManager mockGatewayManager;
+    @Mock
+    private RevisionPoller mockRevisionPoller;
+    @Mock
+    private DestinationAdminRegistry mockAdminRegistry;
+    @Mock
+    private ChannelRegistrySql mockSqlRegistry;
+    @Mock
+    private ScheduledExecutorService mockScheduledExecutor;
+    @Mock
+    private ExecutorService mockSnapshotReloadExecutor;
+    @Mock
+    private ExternalWebhookService mockExternalWebhookService;
+    @Mock
+    private Disposable mockEventSub;
 
     @Test
     void close_releasesAllResources() throws Exception {

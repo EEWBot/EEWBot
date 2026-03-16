@@ -66,6 +66,7 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
         this.concurrentIndex = concurrentIndex;
     }
 
+    @Override
     public String getRawData() {
         return this.rawData;
     }
@@ -915,12 +916,12 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
         String serialNo = this.getSerialNo();
         boolean concurrent = this.isConcurrent();
         int concurrentIndex = this.getConcurrentIndex();
-        
+
         String epicenter = null;
         String depth = null;
         String magnitude = null;
         String condition = null;
-        
+
         if (this.getBody().getEarthquake() != null) {
             condition = this.getBody().getEarthquake().getCondition();
             if (this.getBody().getEarthquake().getHypocenter() != null) {
@@ -937,15 +938,15 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
                 magnitude = String.valueOf(this.getBody().getEarthquake().getMagnitude().getValue());
             }
         }
-        
+
         String maxIntensity = null;
         java.util.List<String> regions = new java.util.ArrayList<>();
-        
+
         if (this.getBody().getIntensity() != null) {
             if (this.getBody().getIntensity().getForecastMaxInt() != null) {
                 maxIntensity = SeismicIntensity.get(this.getBody().getIntensity().getForecastMaxInt().getFrom()).getSimple();
             }
-            
+
             if (this.getBody().getIntensity().getRegions() != null) {
                 regions = this.getBody().getIntensity().getRegions().stream()
                         .filter(Body.Intensity.IntensityRegionReached::isPlum)
@@ -958,7 +959,7 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
                         .collect(Collectors.toList());
             }
         }
-        
+
         return new EEWExternalData(
                 this.getBody().isWarning(),
                 this.getBody().isLastInfo(),

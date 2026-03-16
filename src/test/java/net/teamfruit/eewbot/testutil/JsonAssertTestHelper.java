@@ -23,12 +23,12 @@ public class JsonAssertTestHelper {
     /**
      * JSONAssertを実行し、失敗時にファイルダンプを行う
      *
-     * @param expected 期待値JSON
-     * @param actual 実際の値JSON
-     * @param compareMode 比較モード
-     * @param testClassName テストクラス名（例: "VXSE51WebhookTest"）
+     * @param expected       期待値JSON
+     * @param actual         実際の値JSON
+     * @param compareMode    比較モード
+     * @param testClassName  テストクラス名（例: "VXSE51WebhookTest"）
      * @param testMethodName テストメソッド名（例: "testDiscordWebhookJson"）
-     * @param caseName テストケース名（例: "case1"）
+     * @param caseName       テストケース名（例: "case1"）
      * @throws JSONException JSONAssertが失敗した場合（ダンプ後に再スロー）
      */
     public static void assertJsonWithDump(
