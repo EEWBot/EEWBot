@@ -96,7 +96,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                             .build();
                     HttpResponse<Void> response = ctx.httpClient().send(request, HttpResponse.BodyHandlers.discarding());
                     int status = response.statusCode();
-                    return status != 404;
+                    return status != 401 && status != 403 && status != 404;
                 }).subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
                     Log.logger.warn("Failed to validate webhook URL, assuming valid", e);
