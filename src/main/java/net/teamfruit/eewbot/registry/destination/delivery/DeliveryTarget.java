@@ -11,4 +11,5 @@ public record DeliveryTarget(
         long targetId,
         String lang,
         String webhookUrl // null なら direct
-) {}
+) {
+}

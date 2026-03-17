@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.entity.other;
 
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.util.Color;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
@@ -216,16 +217,16 @@ public class KmoniEEW implements Entity {
     }
 
     @Override
-    public MessageCreateSpec createMessage(final String lang) {
-        return MessageCreateSpec.builder().addEmbed(createEmbed(lang, I18nEmbedCreateSpec.builder(lang))).build();
+    public MessageCreateSpec createMessage(final String lang, final EmbedContext ctx) {
+        return MessageCreateSpec.builder().addEmbed(createEmbed(lang, ctx, I18nEmbedCreateSpec.builder(lang, ctx.i18n()))).build();
     }
 
     @Override
-    public DiscordWebhook createWebhook(final String lang) {
-        return DiscordWebhook.builder().addEmbed(createEmbed(lang, I18nDiscordEmbed.builder(lang))).build();
+    public DiscordWebhook createWebhook(final String lang, final EmbedContext ctx) {
+        return DiscordWebhook.builder().addEmbed(createEmbed(lang, ctx, I18nDiscordEmbed.builder(lang, ctx.i18n()))).build();
     }
 
-    public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
+    public <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
         if (isCancel())
             return builder.title("eewbot.eew.eewcancel")
                     .timestamp(getReportTime())

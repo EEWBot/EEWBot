@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.caffeine)
+    implementation(libs.logstash.logback.encoder)
 
     // Test dependencies
     testImplementation(libs.junit.jupiter)
@@ -47,12 +48,14 @@ dependencies {
     testImplementation(platform(libs.testcontainers.bom))
     testImplementation(libs.testcontainers.junit.jupiter)
     testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.junit.jupiter)
 }
 
 group = "net.teamfruit"
-version = "2.9.1"
+version = "2.9.2"
 description = "EEWBot"
-java.sourceCompatibility = JavaVersion.VERSION_17
+java.sourceCompatibility = JavaVersion.VERSION_21
 
 wire {
     java {

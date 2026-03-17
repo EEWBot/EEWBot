@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.entity.other.NHKDetailQuakeInfo;
 import net.teamfruit.eewbot.entity.other.NHKQuakeInfo;
 import net.teamfruit.eewbot.entity.other.NHKQuakeInfo.Record.Item;
@@ -11,19 +11,34 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
 
-public abstract class QuakeInfoGateway implements Gateway<NHKDetailQuakeInfo> {
+public class QuakeInfoGateway implements Gateway<NHKDetailQuakeInfo> {
 
     public static final String REMOTE_ROOT = "https://www3.nhk.or.jp/sokuho/jishin/";
     public static final String REMOTE = "data/JishinReport.xml";
 
+    private final Listener listener;
     private List<String> prev;
+
+    @FunctionalInterface
+    public interface Listener {
+        void onNewData(NHKDetailQuakeInfo data);
+    }
+
+    public QuakeInfoGateway(Listener listener) {
+        this.listener = listener;
+    }
+
+    @Override
+    public void onNewData(NHKDetailQuakeInfo data) {
+        this.listener.onNewData(data);
+    }
 
     @Override
     public void run() {
         try {
             Thread.currentThread().setName("eewbot-quakeinfo-thread");
 
-            NHKQuakeInfo quakeInfo = EEWBot.XML_MAPPER.readValue(new URL(REMOTE_ROOT + REMOTE), NHKQuakeInfo.class);
+            NHKQuakeInfo quakeInfo = Codecs.XML_MAPPER.readValue(new URL(REMOTE_ROOT + REMOTE), NHKQuakeInfo.class);
 
             if (this.prev != null) {
                 final List<String> list = quakeInfo.getRecords().stream()

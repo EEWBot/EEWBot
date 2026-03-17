@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 
@@ -14,16 +14,30 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class KmoniGateway implements Gateway<KmoniEEW> {
+public class KmoniGateway implements Gateway<KmoniEEW> {
 
     public static final String REMOTE = "http://www.kmoni.bosai.go.jp/webservice/hypo/eew/";
     public static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
+    private final java.net.http.HttpClient httpClient;
     private final Map<Long, KmoniEEW> prev = new HashMap<>();
     private final TimeProvider time;
+    private final Listener listener;
 
-    public KmoniGateway(final TimeProvider time) {
+    @FunctionalInterface
+    public interface Listener {
+        void onNewData(KmoniEEW eew);
+    }
+
+    public KmoniGateway(final java.net.http.HttpClient httpClient, final TimeProvider time, final Listener listener) {
+        this.httpClient = httpClient;
         this.time = time;
+        this.listener = listener;
+    }
+
+    @Override
+    public void onNewData(final KmoniEEW data) {
+        this.listener.onNewData(data);
     }
 
     @Override
@@ -38,11 +52,11 @@ public abstract class KmoniGateway implements Gateway<KmoniEEW> {
                     .uri(URI.create(url))
                     .GET()
                     .build();
-            HttpResponse<InputStream> response = EEWBot.instance.getHttpClient().send(request, HttpResponse.BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
             if (response.statusCode() == 200)
                 try (InputStreamReader is = new InputStreamReader(response.body())) {
-                    final KmoniEEW eew = EEWBot.GSON.fromJson(is, KmoniEEW.class);
+                    final KmoniEEW eew = Codecs.GSON.fromJson(is, KmoniEEW.class);
 
                     if (eew != null && eew.isEEW()) {
                         final KmoniEEW prev = this.prev.get(eew.getReportId());

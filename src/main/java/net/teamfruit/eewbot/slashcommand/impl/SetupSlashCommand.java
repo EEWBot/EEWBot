@@ -15,7 +15,6 @@ import discord4j.discordjson.json.WebhookData;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
-import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
@@ -23,6 +22,7 @@ import net.teamfruit.eewbot.registry.destination.model.ChannelSetting;
 import net.teamfruit.eewbot.registry.destination.model.ChannelSettingType;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
+import net.teamfruit.eewbot.slashcommand.SlashCommandContext;
 import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
@@ -86,18 +86,18 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
      * Returns true if the webhook is valid (non-404), false if 404 (deleted).
      * On network errors, assumes valid to avoid unnecessary recreation.
      */
-    private Mono<Boolean> validateWebhookUrl(EEWBot bot, ChannelWebhook webhook) {
+    private Mono<Boolean> validateWebhookUrl(SlashCommandContext ctx, ChannelWebhook webhook) {
         return Mono.fromCallable(() -> {
-            // Use base URL without thread_id query parameter
-            String baseUrl = ChannelWebhook.of(webhook.id(), webhook.token()).url();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl))
-                    .method("HEAD", HttpRequest.BodyPublishers.noBody())
-                    .build();
-            HttpResponse<Void> response = bot.getHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
-            int status = response.statusCode();
-            return status >= 200 && status < 300;
-        }).subscribeOn(Schedulers.boundedElastic())
+                    // Use base URL without thread_id query parameter
+                    String baseUrl = ChannelWebhook.of(webhook.id(), webhook.token()).url();
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(baseUrl))
+                            .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                            .build();
+                    HttpResponse<Void> response = ctx.httpClient().send(request, HttpResponse.BodyHandlers.discarding());
+                    int status = response.statusCode();
+                    return status != 401 && status != 403 && status != 404;
+                }).subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
                     Log.logger.warn("Failed to validate webhook URL, assuming valid", e);
                     return Mono.just(true);
@@ -109,13 +109,13 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
      * Parent channels and threads intentionally do not share webhook IDs, even under the same
      * parent channel, so Discord webhook rate limits are distributed per destination.
      */
-    private Mono<WebhookData> findOrCreateWebhook(EEWBot bot, ApplicationCommandInteractionEvent event, Snowflake guildId, GuildChannel guildChannel, long targetId) {
+    private Mono<WebhookData> findOrCreateWebhook(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, Snowflake guildId, GuildChannel guildChannel, long targetId) {
         boolean isThreadChannel = guildChannel instanceof ThreadChannel;
         long parentChannelId = isThreadChannel
                 ? ((ThreadChannel) guildChannel).getParentId().map(Snowflake::asLong).orElseThrow()
                 : targetId;
 
-        return bot.getClient().getRestClient().getWebhookService().getGuildWebhooks(guildId.asLong())
+        return ctx.client().getRestClient().getWebhookService().getGuildWebhooks(guildId.asLong())
                 .filter(webhook -> {
                     boolean isSameChannel = webhook.channelId().isPresent() && (webhook.channelId().get().asLong() == parentChannelId);
                     boolean isCreatedBySelf = webhook.user().toOptional()
@@ -124,46 +124,46 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                     boolean hasToken = webhook.token().isPresent();
                     // Webhooks are not shared across destinations. If a parent channel webhook is
                     // already assigned to one of its threads (or vice versa), create a fresh one.
-                    return isSameChannel && isCreatedBySelf && hasToken && bot.getAdminRegistry().isWebhookExclusiveToTarget(webhook.id().asLong(), targetId);
+                    return isSameChannel && isCreatedBySelf && hasToken && ctx.adminRegistry().isWebhookExclusiveToTarget(webhook.id().asLong(), targetId);
                 })
                 .next()
-                .switchIfEmpty(bot.getClient().getSelfMember(guildId).map(PartialMember::getDisplayName)
+                .switchIfEmpty(ctx.client().getSelfMember(guildId).map(PartialMember::getDisplayName)
                         .flatMap(name -> event.getClient().getRestClient().getWebhookService()
                                 .createWebhook(parentChannelId, WebhookCreateRequest.builder()
-                                        .name(removeUnusableName(name, bot.getUsername()))
+                                        .name(removeUnusableName(name, ctx.username()))
                                         .build(), "Create EEWBot webhook")));
     }
 
     /**
      * Registers a webhook for a target by converting WebhookData to ChannelWebhook and storing it.
      */
-    private void registerWebhook(EEWBot bot, GuildChannel guildChannel, long targetId, WebhookData webhookData) {
+    private void registerWebhook(SlashCommandContext ctx, GuildChannel guildChannel, long targetId, WebhookData webhookData) {
         Long threadId = guildChannel instanceof ThreadChannel ? targetId : null;
         ChannelWebhook webhook = ChannelWebhook.of(
                 webhookData.id().asLong(),
                 webhookData.token().get(),
                 threadId
         );
-        bot.getAdminRegistry().setWebhook(targetId, webhook);
+        ctx.adminRegistry().setWebhook(targetId, webhook);
     }
 
     /**
      * Checks MANAGE_WEBHOOKS permission; if present, finds/creates webhook and registers it.
      * If permission missing, shows reply with webhook warning.
      */
-    private Mono<Message> createWebhookWithPermCheck(EEWBot bot, ApplicationCommandInteractionEvent event, Snowflake guildId, GuildChannel guildChannel, long targetId, PermissionSet perms, String lang) {
+    private Mono<Message> createWebhookWithPermCheck(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, Snowflake guildId, GuildChannel guildChannel, long targetId, PermissionSet perms, String lang) {
         if (!perms.contains(Permission.MANAGE_WEBHOOKS)) {
-            return buildReply(bot, event, lang, targetId, true);
+            return buildReply(ctx, event, lang, targetId, true);
         }
-        return findOrCreateWebhook(bot, event, guildId, guildChannel, targetId)
+        return findOrCreateWebhook(ctx, event, guildId, guildChannel, targetId)
                 .flatMap(webhookData -> {
-                    registerWebhook(bot, guildChannel, targetId, webhookData);
-                    return buildReply(bot, event, lang, targetId, false);
+                    registerWebhook(ctx, guildChannel, targetId, webhookData);
+                    return buildReply(ctx, event, lang, targetId, false);
                 });
     }
 
     @Override
-    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
+    public Mono<Void> on(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         // channel id or thread id
         long targetId = event.getInteraction().getChannelId().asLong();
         Long guildId = event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(null);
@@ -183,42 +183,42 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                             }
                             return permissionCheckChannel.flatMap(target -> target.getEffectivePermissions(event.getClient().getSelfId())
                                             .filterWhen(perms -> perms.contains(Permission.SEND_MESSAGES) ? Mono.just(true)
-                                                    : event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.setup.permserror.sendmessages")).thenReturn(false))
+                                                    : event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.setup.permserror.sendmessages")).thenReturn(false))
                                             .flatMap(perms -> {
                                                 if (channel == null) {
                                                     // Case 1: Not registered — register target and create webhook
-                                                    SlashCommandUtils.createAndRegisterDefault(bot.getAdminRegistry(), guildChannel, targetId, guildId, lang);
-                                                    return createWebhookWithPermCheck(bot, event, gid, guildChannel, targetId, perms, lang);
+                                                    SlashCommandUtils.createAndRegisterDefault(ctx.adminRegistry(), guildChannel, targetId, guildId, lang);
+                                                    return createWebhookWithPermCheck(ctx, event, gid, guildChannel, targetId, perms, lang);
                                                 } else if (channel.getWebhook() == null) {
                                                     // Case 2: Registered, no webhook — try to create webhook
-                                                    return createWebhookWithPermCheck(bot, event, gid, guildChannel, targetId, perms, lang);
+                                                    return createWebhookWithPermCheck(ctx, event, gid, guildChannel, targetId, perms, lang);
                                                 } else {
                                                     // Case 3: Registered, has webhook — validate with HEAD request
-                                                    return validateWebhookUrl(bot, channel.getWebhook())
+                                                    return validateWebhookUrl(ctx, channel.getWebhook())
                                                             .flatMap(valid -> {
                                                                 if (valid) {
                                                                     // Webhook is valid, just show the menu
-                                                                    return buildReply(bot, event, lang, targetId, false);
+                                                                    return buildReply(ctx, event, lang, targetId, false);
                                                                 } else {
                                                                     // Webhook returned 404, recreate it
-                                                                    return createWebhookWithPermCheck(bot, event, gid, guildChannel, targetId, perms, lang);
+                                                                    return createWebhookWithPermCheck(ctx, event, gid, guildChannel, targetId, perms, lang);
                                                                 }
                                                             });
                                                 }
                                             }))
-                                    .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.setup.permserror.viewchannel")))
+                                    .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.setup.permserror.viewchannel")))
                                     .thenReturn(true);
                         })
                         .switchIfEmpty(Mono.defer(() -> {
                             // DM
                             if (channel == null) {
-                                bot.getAdminRegistry().put(targetId, Channel.createDefault(guildId, targetId, null, lang));
+                                ctx.adminRegistry().put(targetId, Channel.createDefault(guildId, targetId, null, lang));
                             }
-                            return buildReply(bot, event, lang, targetId, false).thenReturn(true);
+                            return buildReply(ctx, event, lang, targetId, false).thenReturn(true);
                         }))
                         .then(Mono.create(sink -> {
                             try {
-                                bot.getAdminRegistry().save();
+                                ctx.adminRegistry().save();
                                 sink.success();
                             } catch (IOException e) {
                                 sink.error(e);
@@ -226,49 +226,49 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                         })));
     }
 
-    private Mono<Message> buildReply(EEWBot bot, ApplicationCommandInteractionEvent event, String lang, long channelId, boolean noWebhook) {
-        return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.setup.reply") + (noWebhook ? "\n\n" + bot.getI18n().get(lang, "eewbot.scmd.setup.permserror.managewebhooks") : ""))
-                .withComponents(ActionRow.of(buildSelectMenu(bot, ChannelSettingType.BASE, channelId, lang)),
-                        ActionRow.of(buildSelectMenu(bot, ChannelSettingType.MODIFIER, channelId, lang)),
-                        ActionRow.of(buildSensitivitySelectMenu(bot, channelId, lang)));
+    private Mono<Message> buildReply(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, String lang, long channelId, boolean noWebhook) {
+        return event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.setup.reply") + (noWebhook ? "\n\n" + ctx.i18n().get(lang, "eewbot.scmd.setup.permserror.managewebhooks") : ""))
+                .withComponents(ActionRow.of(buildSelectMenu(ctx, ChannelSettingType.BASE, channelId, lang)),
+                        ActionRow.of(buildSelectMenu(ctx, ChannelSettingType.MODIFIER, channelId, lang)),
+                        ActionRow.of(buildSensitivitySelectMenu(ctx, channelId, lang)));
     }
 
-    private SelectMenu buildSelectMenu(EEWBot bot, ChannelSettingType type, long channelId, String lang) {
-        Map<String, Boolean> fields = bot.getAdminRegistry().get(channelId).getSettingsByType(type);
+    private SelectMenu buildSelectMenu(SlashCommandContext ctx, ChannelSettingType type, long channelId, String lang) {
+        Map<String, Boolean> fields = ctx.adminRegistry().get(channelId).getSettingsByType(type);
         return SelectMenu.of(type.getCustomId(), fields.entrySet().stream().map(entry -> {
-                    String label = bot.getI18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + "." + entry.getKey().toLowerCase() + ".label");
+                    String label = ctx.i18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + "." + entry.getKey().toLowerCase() + ".label");
                     SelectMenu.Option option = entry.getValue() ? SelectMenu.Option.ofDefault(label, entry.getKey()) : SelectMenu.Option.of(label, entry.getKey());
-                    option = option.withDescription(bot.getI18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + "." + entry.getKey().toLowerCase() + ".desc"));
+                    option = option.withDescription(ctx.i18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + "." + entry.getKey().toLowerCase() + ".desc"));
                     return option;
                 }).collect(Collectors.toList()))
-                .withPlaceholder(bot.getI18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + ".placeholder"))
+                .withPlaceholder(ctx.i18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + ".placeholder"))
                 .withMinValues(0)
                 .withMaxValues(fields.size());
     }
 
-    private SelectMenu buildSensitivitySelectMenu(EEWBot bot, long channelId, String lang) {
-        Channel channel = bot.getAdminRegistry().get(channelId);
+    private SelectMenu buildSensitivitySelectMenu(SlashCommandContext ctx, long channelId, String lang) {
+        Channel channel = ctx.adminRegistry().get(channelId);
         return SelectMenu.of("sensitivity", Arrays.stream(SeismicIntensity.values()).map(intensity -> {
-                    String label = intensity == SeismicIntensity.UNKNOWN ? bot.getI18n().get(lang, "eewbot.scmd.setup.sensitivity.option.unknown") : bot.getI18n().format(lang, "eewbot.scmd.setup.sensitivity.option", intensity);
+                    String label = intensity == SeismicIntensity.UNKNOWN ? ctx.i18n().get(lang, "eewbot.scmd.setup.sensitivity.option.unknown") : ctx.i18n().format(lang, "eewbot.scmd.setup.sensitivity.option", intensity);
                     if (channel.getMinIntensity() == intensity)
                         return SelectMenu.Option.ofDefault(label, intensity.getSimple());
                     return SelectMenu.Option.of(label, intensity.getSimple());
                 }).collect(Collectors.toList()))
-                .withPlaceholder(bot.getI18n().get(lang, "eewbot.scmd.setup.sensitivity.placeholder"))
+                .withPlaceholder(ctx.i18n().get(lang, "eewbot.scmd.setup.sensitivity.placeholder"))
                 .withMinValues(1)
                 .withMaxValues(1);
     }
 
     @Override
-    public Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
+    public Mono<Void> onSelect(SlashCommandContext ctx, SelectMenuInteractionEvent event, String lang) {
         if (ChannelSettingType.hasCustomId(event.getCustomId()))
-            return applyChannel(bot, event, lang).then();
+            return applyChannel(ctx, event, lang).then();
         else if (event.getCustomId().equals("sensitivity"))
-            return applySensitivity(bot, event, lang).then();
+            return applySensitivity(ctx, event, lang).then();
         return Mono.empty();
     }
 
-    private Mono<Message> applyChannel(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
+    private Mono<Message> applyChannel(SlashCommandContext ctx, SelectMenuInteractionEvent event, String lang) {
         long targetId = event.getInteraction().getChannelId().asLong();
         Map<String, Boolean> settings = Arrays.stream(Channel.class.getDeclaredFields())
                 .filter(field -> {
@@ -279,32 +279,32 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                 })
                 .map(Field::getName)
                 .collect(Collectors.toMap(name -> name, name -> event.getValues().contains(name)));
-        bot.getAdminRegistry().setAll(targetId, settings);
+        ctx.adminRegistry().setAll(targetId, settings);
         try {
-            bot.getAdminRegistry().save();
+            ctx.adminRegistry().save();
         } catch (IOException e) {
             return Mono.error(e);
         }
         if (event.getValues().isEmpty())
-            return event.createFollowup(bot.getI18n().get(lang, "eewbot.scmd.setup." + event.getCustomId() + ".followup.none"));
-        return event.createFollowup(bot.getI18n().format(lang, "eewbot.scmd.setup." + event.getCustomId() + ".followup.any",
+            return event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.setup." + event.getCustomId() + ".followup.none"));
+        return event.createFollowup(ctx.i18n().format(lang, "eewbot.scmd.setup." + event.getCustomId() + ".followup.any",
                 event.getValues().stream()
                         .map(value -> Channel.toI18nKey(value)
-                                .map(key -> bot.getI18n().format(lang, key))
+                                .map(key -> ctx.i18n().format(lang, key))
                                 .orElse(""))
                         .collect(Collectors.joining(", "))));
     }
 
-    private Mono<Message> applySensitivity(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
+    private Mono<Message> applySensitivity(SlashCommandContext ctx, SelectMenuInteractionEvent event, String lang) {
         long targetId = event.getInteraction().getChannelId().asLong();
-        SeismicIntensity intensity = SeismicIntensity.get(event.getValues().get(0));
-        bot.getAdminRegistry().setMinIntensity(targetId, intensity);
+        SeismicIntensity intensity = SeismicIntensity.get(event.getValues().getFirst());
+        ctx.adminRegistry().setMinIntensity(targetId, intensity);
         try {
-            bot.getAdminRegistry().save();
+            ctx.adminRegistry().save();
         } catch (IOException e) {
             return Mono.error(e);
         }
-        return event.createFollowup(bot.getI18n().format(lang, intensity != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", intensity.getSimple()));
+        return event.createFollowup(ctx.i18n().format(lang, intensity != SeismicIntensity.UNKNOWN ? "eewbot.scmd.setup.sensitivity.followup" : "eewbot.scmd.setup.sensitivity.followup.unknown", intensity.getSimple()));
     }
 
     public static String removeStringsIgnoreCase(String source, String... stringsToRemove) {

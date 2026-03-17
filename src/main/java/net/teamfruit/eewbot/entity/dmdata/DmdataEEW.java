@@ -1,12 +1,13 @@
 package net.teamfruit.eewbot.entity.dmdata;
 
 import discord4j.rest.util.Color;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.external.EEWExternalData;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.i18n.IEmbedBuilder;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
@@ -65,6 +66,7 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
         this.concurrentIndex = concurrentIndex;
     }
 
+    @Override
     public String getRawData() {
         return this.rawData;
     }
@@ -778,19 +780,19 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
     }
 
     public boolean isAccurateEnough() {
-        return isEpicenterAccurateEnough() && isDepthAccurateEnough() && isMagnitudeAccurateEnough() && !StringUtils.equals(this.getBody().getEarthquake().getCondition(), "仮定震源要素");
+        return isEpicenterAccurateEnough() && isDepthAccurateEnough() && isMagnitudeAccurateEnough() && !Strings.CS.equals(this.getBody().getEarthquake().getCondition(), "仮定震源要素");
     }
 
     public boolean isEpicenterAccurateEnough() {
         for (String acc1 : this.getBody().getEarthquake().getHypocenter().getAccuracy().getEpicenters()) {
-            if (StringUtils.equalsAny(acc1, "0", "1"))
+            if (Strings.CS.equalsAny(acc1, "0", "1"))
                 return false;
         }
         return true;
     }
 
     public boolean isDepthAccurateEnough() {
-        return !StringUtils.equalsAny(this.getBody().getEarthquake().getHypocenter().getAccuracy().getDepth(), "0", "1");
+        return !Strings.CS.equalsAny(this.getBody().getEarthquake().getHypocenter().getAccuracy().getDepth(), "0", "1");
     }
 
     public boolean isMagnitudeAccurateEnough() {
@@ -809,7 +811,7 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
     }
 
     @Override
-    public <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
+    public <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
         if (this.getBody().isCanceled()) {
             if (isConcurrent())
                 builder.title("eewbot.eew.eewcancel.concurrent", getConcurrentIndex());
@@ -850,7 +852,7 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
             builder.color(Color.BLUE);
         }
         builder.timestamp(FORMAT.parse(this.getReportDateTime(), Instant::from));
-        if (!StringUtils.equals(this.getBody().getEarthquake().getCondition(), "仮定震源要素")) {
+        if (!Strings.CS.equals(this.getBody().getEarthquake().getCondition(), "仮定震源要素")) {
             builder.addField("eewbot.eew.epicenter", this.getBody().getEarthquake().getHypocenter().getName(), true);
             if (this.getBody().getEarthquake().getHypocenter().getDepth().getCondition() != null) {
                 builder.addField("eewbot.eew.depth", this.getBody().getEarthquake().getHypocenter().getDepth().getCondition(), true);
@@ -914,12 +916,12 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
         String serialNo = this.getSerialNo();
         boolean concurrent = this.isConcurrent();
         int concurrentIndex = this.getConcurrentIndex();
-        
+
         String epicenter = null;
         String depth = null;
         String magnitude = null;
         String condition = null;
-        
+
         if (this.getBody().getEarthquake() != null) {
             condition = this.getBody().getEarthquake().getCondition();
             if (this.getBody().getEarthquake().getHypocenter() != null) {
@@ -936,15 +938,15 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
                 magnitude = String.valueOf(this.getBody().getEarthquake().getMagnitude().getValue());
             }
         }
-        
+
         String maxIntensity = null;
         java.util.List<String> regions = new java.util.ArrayList<>();
-        
+
         if (this.getBody().getIntensity() != null) {
             if (this.getBody().getIntensity().getForecastMaxInt() != null) {
                 maxIntensity = SeismicIntensity.get(this.getBody().getIntensity().getForecastMaxInt().getFrom()).getSimple();
             }
-            
+
             if (this.getBody().getIntensity().getRegions() != null) {
                 regions = this.getBody().getIntensity().getRegions().stream()
                         .filter(Body.Intensity.IntensityRegionReached::isPlum)
@@ -957,7 +959,7 @@ public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
                         .collect(Collectors.toList());
             }
         }
-        
+
         return new EEWExternalData(
                 this.getBody().isWarning(),
                 this.getBody().isLastInfo(),

@@ -1,7 +1,7 @@
 package net.teamfruit.eewbot.registry.destination.legacy;
 
 import com.google.gson.Gson;
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
@@ -348,7 +348,7 @@ public class ChannelRegistryRedis implements DestinationDeliveryRegistry, Destin
                 String lang = row.getString("$.lang");
 
                 if (row.get("$.webhook") != null) {
-                    ChannelWebhook webhook = EEWBot.GSON.fromJson(row.getString("$.webhook"), ChannelWebhook.class);
+                    ChannelWebhook webhook = Codecs.GSON.fromJson(row.getString("$.webhook"), ChannelWebhook.class);
                     webhookPresent.put(targetId, new DeliveryTarget(targetId, lang, webhook.getUrl()));
                 } else {
                     webhookAbsent.put(targetId, new DeliveryTarget(targetId, lang, null));

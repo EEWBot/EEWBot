@@ -154,7 +154,7 @@ public class RendererQueryFactory {
             throw new IllegalStateException("Renderer is not available");
         }
 
-        String base32768Str =generateQuakePrefectureData(renderQuakePrefecture.getTime(), renderQuakePrefecture.getCoordinate(), renderQuakePrefecture.getIntensityDetail());
+        String base32768Str = generateQuakePrefectureData(renderQuakePrefecture.getTime(), renderQuakePrefecture.getCoordinate(), renderQuakePrefecture.getIntensityDetail());
         String normalizedBaseURL = this.baseURL.endsWith("/") ? this.baseURL : this.baseURL + "/";
         return normalizedBaseURL + base32768Str;
     }

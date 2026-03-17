@@ -151,3 +151,4 @@ gradle-app.setting
 channels.json
 config.json
 bin/
+/channels.db

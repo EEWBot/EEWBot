@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.QuakeInfoStore;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
@@ -10,6 +11,7 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.Earthquake;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Hypocenter;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.JmxSeis;
+import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -17,9 +19,21 @@ import java.util.Optional;
 
 public class VXSE61Impl extends JmxSeis implements VXSE61 {
 
-    // なんとかしたい
+    private QuakeInfoStore quakeInfoStore;
+
+    @Override
+    public void initQuakeInfoStore(QuakeInfoStore store) {
+        this.quakeInfoStore = store;
+    }
+
+    @Override
+    public <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
+        this.quakeInfoStore = ctx.store();
+        return VXSE61.super.createEmbed(lang, ctx, builder);
+    }
+
     private Optional<QuakeInfo> getVXSE53() {
-        return EEWBot.instance.getQuakeInfoStore().getReport(getHead().getEventID(), JMAXmlType.VXSE53);
+        return this.quakeInfoStore.getReport(getHead().getEventID(), JMAXmlType.VXSE53);
     }
 
     @Override
@@ -44,8 +58,7 @@ public class VXSE61Impl extends JmxSeis implements VXSE61 {
 
     @Override
     public Optional<SeismicIntensity> getQuakeInfoMaxInt() {
-        // なんとかしたい
-        return EEWBot.instance.getQuakeInfoStore().getReport(getHead().getEventID(), JMAXmlType.VXSE53)
+        return this.quakeInfoStore.getReport(getHead().getEventID(), JMAXmlType.VXSE53)
                 .flatMap(QuakeInfo::getQuakeInfoMaxInt);
     }
 
@@ -59,7 +72,7 @@ public class VXSE61Impl extends JmxSeis implements VXSE61 {
     private Earthquake getEarthquake() {
         if (isCancelReport())
             throw new IllegalStateException("Cancel report");
-        return Objects.requireNonNull(getBody().getEarthquakes().get(0));
+        return Objects.requireNonNull(getBody().getEarthquakes().getFirst());
     }
 
     private Hypocenter getHypocenter() {

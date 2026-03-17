@@ -8,13 +8,13 @@ import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 public interface Entity {
 
-    <T> T createEmbed(String lang, IEmbedBuilder<T> builder);
+    <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder);
 
-    default MessageCreateSpec createMessage(String lang) {
-        return MessageCreateSpec.builder().addEmbed(createEmbed(lang, I18nEmbedCreateSpec.builder(lang))).build();
+    default MessageCreateSpec createMessage(String lang, EmbedContext ctx) {
+        return MessageCreateSpec.builder().addEmbed(createEmbed(lang, ctx, I18nEmbedCreateSpec.builder(lang, ctx.i18n()))).build();
     }
 
-    default DiscordWebhook createWebhook(String lang) {
-        return DiscordWebhook.builder().addEmbed(createEmbed(lang, I18nDiscordEmbed.builder(lang))).build();
+    default DiscordWebhook createWebhook(String lang, EmbedContext ctx) {
+        return DiscordWebhook.builder().addEmbed(createEmbed(lang, ctx, I18nDiscordEmbed.builder(lang, ctx.i18n()))).build();
     }
 }

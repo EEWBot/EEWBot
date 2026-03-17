@@ -12,18 +12,20 @@ org-apache-commons-commons-lang3 = "3.20.0"
 org-apache-httpcomponents-client5-httpclient5 = "5.6"
 redis-clients-jedis = "4.4.8"
 net-eewbot-base32768j = "0.1.0"
-shadow-jar = "9.3.2"
-wire = "5.5.1"
+shadow-jar = "9.4.0"
+wire = "6.0.0"
 junit-jupiter = "6.0.3"
 assertj-core = "3.27.7"
 jsonassert = "1.5.3"
-sqlite-jdbc = "3.51.2.0"
+sqlite-jdbc = "3.51.3.0"
 postgresql = "42.7.10"
 hikaricp = "7.0.2"
 jooq = "3.20.11"
 flyway = "12.1.0"
 caffeine = "3.2.3"
 testcontainers = "2.0.3"
+mockito = "5.23.0"
+logstash-logback-encoder = "9.0"
 
 [libraries]
 ch-qos-logback-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "ch-qos-logback-logback-classic" }
@@ -51,6 +53,9 @@ caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "c
 testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
+logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
 
 [plugins]
 shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar" }

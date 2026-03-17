@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot.slashcommand;
 
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import net.teamfruit.eewbot.EEWBot;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -18,6 +17,6 @@ public interface IButtonSlashCommand extends ISlashCommand {
         return false;
     }
 
-    Mono<Void> onClick(EEWBot bot, ButtonInteractionEvent event, String lang);
+    Mono<Void> onClick(SlashCommandContext ctx, ButtonInteractionEvent event, String lang);
 
 }

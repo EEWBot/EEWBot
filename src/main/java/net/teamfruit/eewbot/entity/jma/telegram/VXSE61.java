@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
@@ -25,7 +26,7 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
 
     Optional<String> getFreeFormComment();
 
-    default <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
+    default <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
         builder.title("eewbot.quakeinfo.hypocenterupdate.title");
         if (isCancelReport()) {
             builder.description("eewbot.quakeinfo.hypocenterupdate.cancel");

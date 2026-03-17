@@ -14,8 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DeliverySnapshotTest {
 
     private static DeliverySnapshot.DeliveryChannel dc(long targetId, long channelId, Long threadId, Long guildId,
-                                                        boolean eewAlert, boolean eewPrediction, boolean eewDecimation, boolean quakeInfo,
-                                                        boolean tsunami, SeismicIntensity minIntensity, String lang, ChannelWebhook webhook) {
+                                                       boolean eewAlert, boolean eewPrediction, boolean eewDecimation, boolean quakeInfo,
+                                                       boolean tsunami, SeismicIntensity minIntensity, String lang, ChannelWebhook webhook) {
         return new DeliverySnapshot.DeliveryChannel(targetId, channelId, threadId, guildId,
                 eewAlert, eewPrediction, eewDecimation, quakeInfo, tsunami, minIntensity, lang, webhook);
     }

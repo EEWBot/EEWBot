@@ -22,8 +22,8 @@ public class EEWExternalData {
     public EEWExternalData() {
     }
 
-    public EEWExternalData(boolean isWarning, boolean isFinal, boolean isCanceled, String serialNo, 
-                           String reportDateTime, String epicenter, String depth, String magnitude, 
+    public EEWExternalData(boolean isWarning, boolean isFinal, boolean isCanceled, String serialNo,
+                           String reportDateTime, String epicenter, String depth, String magnitude,
                            String maxIntensity, List<String> regions, String text, String condition,
                            boolean concurrent, int concurrentIndex) {
         this.isWarning = isWarning;

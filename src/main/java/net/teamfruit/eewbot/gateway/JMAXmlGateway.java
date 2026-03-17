@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.QuakeInfoStore;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
@@ -19,20 +19,34 @@ import java.util.ListIterator;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("NonAsciiCharacters")
-public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
+public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
 
     private static final String REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
 //    private static final String REMOTE_ROOT = "http://localhost:8000/";
 
     private static final String REMOTE = "eqvol.xml";
 
+    private final java.net.http.HttpClient httpClient;
     private final QuakeInfoStore store;
+    private final Listener listener;
 
     private String lastModified;
     private List<String> lastIds;
 
-    public JMAXmlGateway(QuakeInfoStore store) {
+    @FunctionalInterface
+    public interface Listener {
+        void onNewData(AbstractJMAReport report);
+    }
+
+    public JMAXmlGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store, Listener listener) {
+        this.httpClient = httpClient;
         this.store = store;
+        this.listener = listener;
+    }
+
+    @Override
+    public void onNewData(AbstractJMAReport data) {
+        this.listener.onNewData(data);
     }
 
     @Override
@@ -48,7 +62,7 @@ public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                 feedRequest.header("If-Modified-Since", this.lastModified);
             }
 
-            HttpResponse<InputStream> feedResponse = EEWBot.instance.getHttpClient().send(feedRequest.build(), HttpResponse.BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> feedResponse = this.httpClient.send(feedRequest.build(), HttpResponse.BodyHandlers.ofInputStream());
             if (feedResponse.statusCode() == 304) {
                 return;
             }
@@ -57,7 +71,7 @@ public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                 return;
             }
 
-        JMAFeed feed = EEWBot.XML_MAPPER.readValue(new InputStreamReader(feedResponse.body()), JMAFeed.class);
+            JMAFeed feed = Codecs.XML_MAPPER.readValue(new InputStreamReader(feedResponse.body()), JMAFeed.class);
 
             if (this.lastIds != null) {
                 final List<String> list = feed.getEntries().stream()
@@ -89,7 +103,7 @@ public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                                 .header("User-Agent", "eewbot")
                                 .GET()
                                 .build();
-                        HttpResponse<InputStream> reportResponse = EEWBot.instance.getHttpClient().send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
+                        HttpResponse<InputStream> reportResponse = this.httpClient.send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
                         if (reportResponse.statusCode() != 200) {
                             Log.logger.warn("Failed to fetch JMA XML Report: HTTP " + reportResponse.statusCode());
                             return;
@@ -99,7 +113,7 @@ public abstract class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                         try (InputStream inputStream = reportResponse.body()) {
                             xmlContent = new String(inputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
                         }
-                        AbstractJMAReport report = EEWBot.XML_MAPPER.readValue(xmlContent, reportClass);
+                        AbstractJMAReport report = Codecs.XML_MAPPER.readValue(xmlContent, reportClass);
                         report.setRawData(xmlContent);
                         if (report.getControl().getStatus() == JMAStatus.通常) {
                             if (report instanceof QuakeInfo) {

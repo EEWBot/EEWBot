@@ -6,11 +6,13 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
 import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
 import net.teamfruit.eewbot.i18n.I18n;
+import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
@@ -55,23 +57,35 @@ public class EEWService {
     private final ScheduledExecutorService executor;
     private final DestinationDeliveryRegistry deliveryRegistry;
     private final DestinationAdminRegistry adminRegistry;
+    private final EmbedContext embedContext;
     private final HttpClient httpClient;
     private final MinimalHttpAsyncClient asyncHttpClient;
     private final URI webhookSenderAddress;
     private final String[] webhookSenderHeader;
 
-    public EEWService(EEWBot bot) {
-        this.gateway = bot.getClient();
-        this.deliveryRegistry = bot.getDeliveryRegistry();
-        this.adminRegistry = bot.getAdminRegistry();
-        this.avatarUrl = bot.getAvatarUrl();
-        this.i18n = bot.getI18n();
-        this.executor = bot.getScheduledExecutor();
-        this.httpClient = bot.getHttpClient();
-        this.webhookSenderHeader = bot.getConfig().getWebhookSender().getCustomHeader().split(":");
+    public EEWService(
+            GatewayDiscordClient gateway,
+            DestinationDeliveryRegistry deliveryRegistry,
+            DestinationAdminRegistry adminRegistry,
+            String avatarUrl,
+            I18n i18n,
+            EmbedContext embedContext,
+            ScheduledExecutorService executor,
+            HttpClient httpClient,
+            ConfigV2 config
+    ) {
+        this.gateway = gateway;
+        this.deliveryRegistry = deliveryRegistry;
+        this.adminRegistry = adminRegistry;
+        this.avatarUrl = avatarUrl;
+        this.i18n = i18n;
+        this.embedContext = embedContext;
+        this.executor = executor;
+        this.httpClient = httpClient;
+        this.webhookSenderHeader = config.getWebhookSender().getCustomHeader().split(":");
 
-        int poolingMax = bot.getConfig().getAdvanced().getPoolingMax();
-        int poolingMaxPerRoute = bot.getConfig().getAdvanced().getPoolingMaxPerRoute();
+        int poolingMax = config.getAdvanced().getPoolingMax();
+        int poolingMaxPerRoute = config.getAdvanced().getPoolingMaxPerRoute();
 
         PoolingAsyncClientConnectionManager connectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
                 .setMaxConnTotal(poolingMax)
@@ -84,21 +98,21 @@ public class EEWService {
                 connectionManager);
         this.asyncHttpClient.start();
 
-        if (StringUtils.isNotEmpty(bot.getConfig().getWebhookSender().getAddress()))
-            this.webhookSenderAddress = URI.create(bot.getConfig().getWebhookSender().getAddress());
+        if (StringUtils.isNotEmpty(config.getWebhookSender().getAddress()))
+            this.webhookSenderAddress = URI.create(config.getWebhookSender().getAddress());
         else
             this.webhookSenderAddress = null;
     }
 
     public void sendMessage(final ChannelFilter filter, final Entity entity) {
         Map<String, MessageCreateSpec> msgByLang = new HashMap<>();
-        this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang)));
+        this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessage(lang, this.embedContext)));
 
         DeliveryPartition partition = this.deliveryRegistry.getDeliveryChannels(filter);
 
         List<DiscordWebhookRequest> webhookRequests = new ArrayList<>();
         this.i18n.getLanguages().keySet().forEach(lang -> {
-            DiscordWebhook webhook = entity.createWebhook(lang);
+            DiscordWebhook webhook = entity.createWebhook(lang, this.embedContext);
             webhook.avatar_url = this.avatarUrl;
             webhookRequests.add(new DiscordWebhookRequest(lang, webhook));
         });
@@ -122,6 +136,15 @@ public class EEWService {
         }
     }
 
+    private void submitCleanup(Runnable task) {
+        Runnable wrapped = MdcUtil.wrapWithMdc(task);
+        try {
+            this.executor.execute(wrapped);
+        } catch (RejectedExecutionException e) {
+            Log.logger.debug("Cleanup task skipped (executor shut down)");
+        }
+    }
+
     private void sendMessageD4J(Map<Long, DeliveryTarget> channels, Map<String, MessageCreateSpec> msgByLang) {
         List<Long> erroredChannels = new ArrayList<>();
         Flux.merge(channels.entrySet().stream()
@@ -139,7 +162,7 @@ public class EEWService {
                 .runOn(Schedulers.parallel())
                 .doOnComplete(() -> {
                     if (!erroredChannels.isEmpty()) {
-                        this.executor.execute(() -> {
+                        submitCleanup(() -> {
                             Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
                             erroredChannels.forEach(channelId -> {
@@ -163,7 +186,7 @@ public class EEWService {
         webhookRequests.forEach(webhookRequest -> cacheReq.put(webhookRequest.getLang(), SimpleRequestBuilder.post()
                 .setHttpHost(target)
                 .addHeader("User-Agent", "EEWBot")
-                .setBody(EEWBot.GSON.toJson(webhookRequest.getWebhook()), ContentType.APPLICATION_JSON)
+                .setBody(Codecs.GSON.toJson(webhookRequest.getWebhook()), ContentType.APPLICATION_JSON)
                 .build()));
 
         try {
@@ -176,7 +199,7 @@ public class EEWService {
                     SimpleHttpRequest request = SimpleRequestBuilder.copy(cacheReq.get(channel.lang()))
                             .setUri(channel.webhookUrl())
                             .build();
-                    endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), new FutureCallback<>() {
+                    endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), MdcUtil.wrapWithMdc(new FutureCallback<>() {
                         @Override
                         public void completed(SimpleHttpResponse simpleHttpResponse) {
                             latch.countDown();
@@ -201,11 +224,11 @@ public class EEWService {
                             Log.logger.info("Cancelled to send webhook: ChannelID={}", channelId);
                             onError.apply(channelId, channel);
                         }
-                    });
+                    }));
                 });
                 latch.await();
                 if (!erroredChannels.isEmpty()) {
-                    this.executor.execute(() -> {
+                    submitCleanup(() -> {
                         Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
                         erroredChannels.forEach((channelId, channel) -> {
@@ -247,7 +270,7 @@ public class EEWService {
                     .header("User-Agent", "EEWBot")
                     .header("Content-Type", "application/json")
                     .headers(this.webhookSenderHeader)
-                    .POST(HttpRequest.BodyPublishers.ofString(EEWBot.GSON.toJson(senderRequests)))
+                    .POST(HttpRequest.BodyPublishers.ofString(Codecs.GSON.toJson(senderRequests)))
                     .build();
 
             HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -272,7 +295,7 @@ public class EEWService {
                 .header("User-Agent", "EEWBot")
                 .header("Content-Type", "application/json")
                 .headers(this.webhookSenderHeader)
-                .POST(HttpRequest.BodyPublishers.ofString(EEWBot.GSON.toJson(List.of(senderRequest))))
+                .POST(HttpRequest.BodyPublishers.ofString(Codecs.GSON.toJson(List.of(senderRequest))))
                 .build();
         HttpResponse<Void> response = this.httpClient.send(request, HttpResponse.BodyHandlers.discarding());
         return response.statusCode();
@@ -300,7 +323,7 @@ public class EEWService {
                 return;
             }
 
-            List<String> notFoundList = EEWBot.GSON.fromJson(getResponse.body(), new TypeToken<List<String>>() {
+            List<String> notFoundList = Codecs.GSON.fromJson(getResponse.body(), new TypeToken<List<String>>() {
             }.getType());
             if (notFoundList.isEmpty()) {
                 return;

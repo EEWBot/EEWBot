@@ -10,10 +10,10 @@ import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Permission;
-import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.IButtonSlashCommand;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
+import net.teamfruit.eewbot.slashcommand.SlashCommandContext;
 import net.teamfruit.eewbot.slashcommand.SlashCommandUtils;
 import reactor.core.publisher.Mono;
 
@@ -55,7 +55,7 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
     }
 
     @Override
-    public Mono<Void> on(EEWBot bot, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
+    public Mono<Void> on(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         long targetId = event.getInteraction().getChannelId().asLong();
         Mono<Void> ensureRegistered;
         if (channel == null) {
@@ -63,9 +63,9 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
             ensureRegistered = event.getInteraction().getChannel()
                     .filter(GuildChannel.class::isInstance)
                     .cast(GuildChannel.class)
-                    .doOnNext(ch -> SlashCommandUtils.createAndRegisterDefault(bot.getAdminRegistry(), ch, targetId, guildId, lang))
+                    .doOnNext(ch -> SlashCommandUtils.createAndRegisterDefault(ctx.adminRegistry(), ch, targetId, guildId, lang))
                     .switchIfEmpty(Mono.fromRunnable(
-                            () -> bot.getAdminRegistry().put(targetId, Channel.createDefault(guildId, targetId, null, lang))))
+                            () -> ctx.adminRegistry().put(targetId, Channel.createDefault(guildId, targetId, null, lang))))
                     .then();
         } else {
             ensureRegistered = Mono.empty();
@@ -73,10 +73,10 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
         return ensureRegistered
                 .then(event.reply()
                         .withEphemeral(true)
-                        .withComponents(buildActionRows(bot, lang, event.getInteraction().getGuildId().isPresent())))
+                        .withComponents(buildActionRows(ctx, lang, event.getInteraction().getGuildId().isPresent())))
                 .then(Mono.create(sink -> {
                     try {
-                        bot.getAdminRegistry().save();
+                        ctx.adminRegistry().save();
                         sink.success();
                     } catch (IOException e) {
                         sink.error(e);
@@ -85,47 +85,47 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
     }
 
     @Override
-    public Mono<Void> onSelect(EEWBot bot, SelectMenuInteractionEvent event, String lang) {
+    public Mono<Void> onSelect(SlashCommandContext ctx, SelectMenuInteractionEvent event, String lang) {
         if (event.getCustomId().equals("lang-set")) {
-            String langKey = event.getValues().get(0);
-            bot.getAdminRegistry().setLang(event.getInteraction().getChannelId().asLong(), langKey);
+            String langKey = event.getValues().getFirst();
+            ctx.adminRegistry().setLang(event.getInteraction().getChannelId().asLong(), langKey);
             try {
-                bot.getAdminRegistry().save();
+                ctx.adminRegistry().save();
             } catch (IOException e) {
                 return Mono.error(e);
             }
             return event.edit()
-                    .withComponents(buildActionRows(bot, langKey, event.getInteraction().getGuildId().isPresent()))
+                    .withComponents(buildActionRows(ctx, langKey, event.getInteraction().getGuildId().isPresent()))
                     .then(event.createFollowup()
                             .withEphemeral(true)
-                            .withContent(bot.getI18n().format(langKey, "eewbot.scmd.lang.set.followup", bot.getI18n().getLanguages().get(langKey))))
+                            .withContent(ctx.i18n().format(langKey, "eewbot.scmd.lang.set.followup", ctx.i18n().getLanguages().get(langKey))))
                     .then();
         }
         return Mono.empty();
     }
 
     @Override
-    public Mono<Void> onClick(EEWBot bot, ButtonInteractionEvent event, String lang) {
+    public Mono<Void> onClick(SlashCommandContext ctx, ButtonInteractionEvent event, String lang) {
         if (event.getCustomId().equals("lang-apply")) {
             Optional<Snowflake> guildId = event.getInteraction().getGuildId();
             if (guildId.isEmpty())
                 return Mono.empty();
-            bot.getAdminRegistry().setLangByGuildId(guildId.get().asLong(), lang);
+            ctx.adminRegistry().setLangByGuildId(guildId.get().asLong(), lang);
             try {
-                bot.getAdminRegistry().save();
+                ctx.adminRegistry().save();
             } catch (IOException e) {
                 return Mono.error(e);
             }
             return event.createFollowup()
                     .withEphemeral(true)
-                    .withContent(bot.getI18n().format(lang, "eewbot.scmd.lang.applyall.followup", bot.getI18n().getLanguages().get(lang)))
+                    .withContent(ctx.i18n().format(lang, "eewbot.scmd.lang.applyall.followup", ctx.i18n().getLanguages().get(lang)))
                     .then();
         }
         return Mono.empty();
     }
 
-    private List<ActionRow> buildActionRows(EEWBot bot, String lang, boolean isGuild) {
-        ActionRow selectMenu = ActionRow.of(SelectMenu.of("lang-set", bot.getI18n().getLanguages().entrySet().stream()
+    private List<ActionRow> buildActionRows(SlashCommandContext ctx, String lang, boolean isGuild) {
+        ActionRow selectMenu = ActionRow.of(SelectMenu.of("lang-set", ctx.i18n().getLanguages().entrySet().stream()
                         .map(entry -> {
                             if (entry.getKey().equals(lang))
                                 return SelectMenu.Option.ofDefault(entry.getValue(), entry.getKey());
@@ -134,7 +134,7 @@ public class LangSlashCommand implements ISelectMenuSlashCommand, IButtonSlashCo
                         .collect(Collectors.toList()))
                 .withMinValues(1)
                 .withMaxValues(1));
-        ActionRow button = ActionRow.of(Button.primary("lang-apply", bot.getI18n().get(lang, "eewbot.scmd.lang.applyall.label")));
+        ActionRow button = ActionRow.of(Button.primary("lang-apply", ctx.i18n().get(lang, "eewbot.scmd.lang.applyall.label")));
         if (isGuild)
             return List.of(selectMenu, button);
         return List.of(selectMenu);

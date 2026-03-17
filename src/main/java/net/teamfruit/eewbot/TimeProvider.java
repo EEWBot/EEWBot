@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class TimeProvider {
@@ -19,11 +20,15 @@ public class TimeProvider {
     private ZonedDateTime lastComputerTime;
     private ZonedDateTime lastNTPTime;
 
-    private final NTPGateway gateway = new Gateway();
+    private final NTPGateway gateway;
     private final ScheduledExecutorService executor;
+    private final String ntpServer;
+    private ScheduledFuture<?> ntpFuture;
 
-    public TimeProvider(final ScheduledExecutorService executor) {
+    public TimeProvider(final ScheduledExecutorService executor, final String ntpServer) {
         this.executor = executor;
+        this.ntpServer = ntpServer;
+        this.gateway = new Gateway();
     }
 
     public ZonedDateTime getLastComputerTime() {
@@ -39,7 +44,13 @@ public class TimeProvider {
     }
 
     public void init() {
-        this.executor.scheduleWithFixedDelay(this.gateway, 0, 1, TimeUnit.SECONDS);
+        this.ntpFuture = this.executor.scheduleWithFixedDelay(this.gateway, 0, 1, TimeUnit.SECONDS);
+    }
+
+    public void stop() {
+        if (this.ntpFuture != null) {
+            this.ntpFuture.cancel(true);
+        }
     }
 
     public Mono<TimeProvider> fetch() {
@@ -75,6 +86,10 @@ public class TimeProvider {
     }
 
     public class Gateway extends NTPGateway {
+
+        Gateway() {
+            super(TimeProvider.this.ntpServer);
+        }
 
         @Override
         public void onNewData(final TimeInfo data) {

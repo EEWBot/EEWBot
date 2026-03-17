@@ -11,4 +11,5 @@ import java.util.Map;
 public record DeliveryPartition(
         Map<Long, DeliveryTarget> webhook,
         Map<Long, DeliveryTarget> direct
-) {}
+) {
+}

@@ -43,7 +43,9 @@ class JsonToSqliteMigrationEquivalenceTest {
 
     private Gson gson;
 
-    /** Channels loaded from resource file, used for dynamic assertions. */
+    /**
+     * Channels loaded from resource file, used for dynamic assertions.
+     */
     private Map<Long, Channel> testChannels;
 
     @BeforeEach

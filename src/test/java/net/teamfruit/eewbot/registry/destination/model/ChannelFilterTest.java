@@ -189,8 +189,8 @@ class ChannelFilterTest {
     }
 
     private DeliverySnapshot.DeliveryChannel deliveryChannel(Long guildId, long channelId, Long threadId,
-                                                              boolean eewAlert, boolean eewPrediction, boolean eewDecimation, boolean quakeInfo,
-                                                              SeismicIntensity minIntensity, ChannelWebhook webhook) {
+                                                             boolean eewAlert, boolean eewPrediction, boolean eewDecimation, boolean quakeInfo,
+                                                             SeismicIntensity minIntensity, ChannelWebhook webhook) {
         return new DeliverySnapshot.DeliveryChannel(0L, channelId, threadId, guildId,
                 eewAlert, eewPrediction, eewDecimation, quakeInfo, false, minIntensity, "ja_jp", webhook);
     }

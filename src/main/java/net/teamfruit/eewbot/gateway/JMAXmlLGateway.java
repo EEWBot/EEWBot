@@ -1,6 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
-import net.teamfruit.eewbot.EEWBot;
+import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.QuakeInfoStore;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
@@ -9,6 +9,7 @@ import net.teamfruit.eewbot.entity.jma.JMAStatus;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE51;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE52;
+import org.slf4j.MDC;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -23,14 +24,17 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
 
     private static final String REMOTE = "eqvol_l.xml";
 
+    private final java.net.http.HttpClient httpClient;
     private final QuakeInfoStore store;
 
-    public JMAXmlLGateway(QuakeInfoStore store) {
+    public JMAXmlLGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store) {
+        this.httpClient = httpClient;
         this.store = store;
     }
 
     @Override
     public void run() {
+        MDC.put("gateway", "jma-xml-l");
         try {
             Thread.currentThread().setName("eewbot-jmaxml-thread");
 
@@ -39,13 +43,13 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
                     .header("User-Agent", "eewbot")
                     .GET();
 
-            HttpResponse<InputStream> feedResponse = EEWBot.instance.getHttpClient().send(feedRequest.build(), HttpResponse.BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> feedResponse = this.httpClient.send(feedRequest.build(), HttpResponse.BodyHandlers.ofInputStream());
             if (feedResponse.statusCode() != 200) {
                 Log.logger.warn("Failed to fetch JMA XML: HTTP " + feedResponse.statusCode());
                 return;
             }
 
-            JMAFeed feed = EEWBot.XML_MAPPER.readValue(new InputStreamReader(feedResponse.body()), JMAFeed.class);
+            JMAFeed feed = Codecs.XML_MAPPER.readValue(new InputStreamReader(feedResponse.body()), JMAFeed.class);
 
             boolean searchVXSE51 = false;
             String searchEventId = null;
@@ -68,13 +72,13 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
                         .header("User-Agent", "eewbot")
                         .GET()
                         .build();
-                HttpResponse<InputStream> reportResponse = EEWBot.instance.getHttpClient().send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
+                HttpResponse<InputStream> reportResponse = this.httpClient.send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
                 if (reportResponse.statusCode() != 200) {
                     Log.logger.warn("Failed to fetch JMA XML Report: HTTP " + reportResponse.statusCode());
                     continue;
                 }
 
-                AbstractJMAReport report = EEWBot.XML_MAPPER.readValue(new InputStreamReader(reportResponse.body()), reportClass);
+                AbstractJMAReport report = Codecs.XML_MAPPER.readValue(new InputStreamReader(reportResponse.body()), reportClass);
                 if (report.getControl().getStatus() == JMAStatus.通常 && (searchEventId == null || searchEventId.equals(report.getEventId()))) {
                     QuakeInfo quakeInfo = (QuakeInfo) report;
                     this.store.putReport(quakeInfo);
@@ -88,6 +92,8 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
             }
         } catch (final Exception e) {
             onError(new EEWGatewayException(e));
+        } finally {
+            MDC.clear();
         }
     }
 

@@ -1,7 +1,7 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
-import net.teamfruit.eewbot.EEWBot;
 import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
@@ -30,7 +30,7 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
     Optional<String> getFreeFormComment();
 
     @Override
-    default <T> T createEmbed(String lang, IEmbedBuilder<T> builder) {
+    default <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
         builder.title("eewbot.quakeinfo.epicenter.title");
         if (isCancelReport()) {
             builder.description("eewbot.quakeinfo.epicenter.cancel");
@@ -44,9 +44,9 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
             getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
             getQuakeInfoMaxInt().ifPresent(intensity -> builder.color(intensity.getColor()));
 
-            if (EEWBot.instance.getRendererQueryFactory().isAvailable()) {
+            if (ctx.renderer().isAvailable()) {
                 try {
-                    builder.image(EEWBot.instance.getRendererQueryFactory().generateURL(this));
+                    builder.image(ctx.renderer().generateURL(this));
                 } catch (Exception e) {
                     Log.logger.error("Failed to generate renderer query", e);
                 }

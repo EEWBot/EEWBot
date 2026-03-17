@@ -61,7 +61,9 @@ class RedisToPostgresMigrationEquivalenceTest {
     private ChannelRegistryJson jsonRegistry;
     private JedisPooled jedis;
 
-    /** Channels loaded from JSON reference, used for dynamic assertions. */
+    /**
+     * Channels loaded from JSON reference, used for dynamic assertions.
+     */
     private Map<Long, Channel> testChannels;
 
     @BeforeAll

@@ -19,7 +19,6 @@ public class Config {
     private boolean dmdataMultiSocketConnect = false;
     private int poolingMax = 20;
     private int poolingMaxPerRoute = 20;
-    private boolean webhookMigration = false;
     private String redisAddress = "";
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
@@ -75,10 +74,6 @@ public class Config {
         return this.poolingMaxPerRoute;
     }
 
-    public boolean isWebhookMigration() {
-        return this.webhookMigration;
-    }
-
     public String getRedisAddress() {
         return this.redisAddress;
     }
@@ -132,7 +127,6 @@ public class Config {
                 ", dmdataMultiSocketConnect=" + this.dmdataMultiSocketConnect +
                 ", poolingMax=" + this.poolingMax +
                 ", poolingMaxPerRoute=" + this.poolingMaxPerRoute +
-                ", webhookMigration=" + this.webhookMigration +
                 ", redisAddress='" + this.redisAddress + '\'' +
                 ", nptServer='" + this.nptServer + '\'' +
                 ", defaultLanuage='" + this.defaultLanuage +

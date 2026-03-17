@@ -77,7 +77,7 @@ public class VTSE41Impl extends JmxSeis implements VTSE41 {
         if (hypocenter == null)
             return null;
 
-        List<Coordinate> coordinates =  hypocenter.getArea().getCoordinate();
+        List<Coordinate> coordinates = hypocenter.getArea().getCoordinate();
         if (coordinates.isEmpty())
             return null;
 

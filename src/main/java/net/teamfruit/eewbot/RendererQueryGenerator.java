@@ -18,7 +18,7 @@ public class RendererQueryGenerator {
         RendererQueryFactory rendererQueryFactory = new RendererQueryFactory("http://localhost:3000", hmacKey);
 
         try (var inputStream = new FileInputStream(path)) {
-            VTSE41 report = EEWBot.XML_MAPPER.readValue(inputStream, VTSE41Impl.class);
+            VTSE41 report = Codecs.XML_MAPPER.readValue(inputStream, VTSE41Impl.class);
             String data = rendererQueryFactory.generateURL(report);
             Log.logger.info(data);
         }
