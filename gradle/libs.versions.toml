@@ -23,7 +23,7 @@ hikaricp = "7.0.2"
 jooq = "3.20.11"
 flyway = "12.1.1"
 caffeine = "3.2.3"
-testcontainers = "2.0.3"
+testcontainers = "2.0.4"
 mockito = "5.23.0"
 logstash-logback-encoder = "9.0"
 
