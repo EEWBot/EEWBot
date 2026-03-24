@@ -89,6 +89,26 @@ tasks {
     }
 
     test {
+        useJUnitPlatform {
+            excludeTags("integration")
+        }
+    }
+
+    register<Test>("integrationTest") {
+        description = "Runs integration tests (migration, equivalence, store)"
+        group = "verification"
+        useJUnitPlatform {
+            includeTags("integration")
+        }
+        testClassesDirs = sourceSets["test"].output.classesDirs
+        classpath = sourceSets["test"].runtimeClasspath
+    }
+
+    register<Test>("allTests") {
+        description = "Runs all tests including integration"
+        group = "verification"
         useJUnitPlatform()
+        testClassesDirs = sourceSets["test"].output.classesDirs
+        classpath = sourceSets["test"].runtimeClasspath
     }
 }

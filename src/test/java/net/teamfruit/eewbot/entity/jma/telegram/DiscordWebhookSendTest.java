@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@Tag("external")
+@Tag("integration")
 class DiscordWebhookSendTest {
 
     private static final String[] TELEGRAM_TYPES = {"vxse51", "vxse52", "vxse53", "vxse61", "vtse41"};

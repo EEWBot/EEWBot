@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Requires Docker to be available. Tests are skipped (not failed) when Docker is unavailable.
  */
+@org.junit.jupiter.api.Tag("integration")
 @Testcontainers(disabledWithoutDocker = true)
 class RedisToPostgresMigrationEquivalenceTest {
 

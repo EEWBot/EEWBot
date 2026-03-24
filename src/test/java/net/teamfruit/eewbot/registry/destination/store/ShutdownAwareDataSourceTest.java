@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.registry.destination.store;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
@@ -15,6 +16,7 @@ import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("integration")
 class ShutdownAwareDataSourceTest {
 
     @Test

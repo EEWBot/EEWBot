@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * to verify that ChannelRegistryJson and ChannelRegistrySql (SQLite) produce identical results
  * after migration via ChannelMigration.
  */
+@org.junit.jupiter.api.Tag("integration")
 class JsonToSqliteMigrationEquivalenceTest {
 
     @TempDir
