@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -78,7 +79,7 @@ class DiscordWebhookSendTest {
     void sendDiscordWebhook(String type, String baseName) throws Exception {
         String jsonPath = "jmaxml/" + type + "/" + baseName + "_discord_expected.json";
         InputStream stream = getClass().getClassLoader().getResourceAsStream(jsonPath);
-        assertTrue(stream != null, "JSON file not found: " + jsonPath);
+        assertNotNull(stream, "JSON file not found: " + jsonPath);
         String json = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
 
         int[] result = executePost(json);

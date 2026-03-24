@@ -681,9 +681,8 @@ class RedisToSqliteMigrationEquivalenceTest {
                 .orElseThrow();
         long webhookId = withWebhook.getValue().getWebhook().id();
 
-        Long differentTargetId = this.testChannels.entrySet().stream()
-                .filter(e -> !e.getKey().equals(withWebhook.getKey()))
-                .map(Map.Entry::getKey)
+        Long differentTargetId = this.testChannels.keySet().stream()
+                .filter(aLong -> !aLong.equals(withWebhook.getKey()))
                 .findFirst()
                 .orElseThrow();
 

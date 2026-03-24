@@ -8,7 +8,6 @@ import java.io.PrintWriter;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -120,7 +119,7 @@ class ShutdownAwareDataSourceTest {
         }
 
         @Override
-        public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+        public Logger getParentLogger() {
             return Logger.getGlobal();
         }
 
@@ -156,27 +155,25 @@ class ShutdownAwareDataSourceTest {
             return (Connection) Proxy.newProxyInstance(
                     Connection.class.getClassLoader(),
                     new Class[]{Connection.class},
-                    (proxy, method, args) -> {
-                        return switch (method.getName()) {
-                            case "close" -> {
-                                connectionClosed.set(true);
-                                yield null;
+                    (proxy, method, args) -> switch (method.getName()) {
+                        case "close" -> {
+                            connectionClosed.set(true);
+                            yield null;
+                        }
+                        case "isClosed" -> connectionClosed.get();
+                        case "unwrap" -> {
+                            Class<?> iface = (Class<?>) args[0];
+                            if (iface.isInstance(proxy)) {
+                                yield proxy;
                             }
-                            case "isClosed" -> connectionClosed.get();
-                            case "unwrap" -> {
-                                Class<?> iface = (Class<?>) args[0];
-                                if (iface.isInstance(proxy)) {
-                                    yield proxy;
-                                }
-                                throw new SQLException("Not a wrapper for " + iface.getName());
-                            }
-                            case "isWrapperFor" -> {
-                                Class<?> iface = (Class<?>) args[0];
-                                yield iface.isInstance(proxy);
-                            }
-                            case "toString" -> "TestConnection";
-                            default -> defaultValue(method.getReturnType());
-                        };
+                            throw new SQLException("Not a wrapper for " + iface.getName());
+                        }
+                        case "isWrapperFor" -> {
+                            Class<?> iface = (Class<?>) args[0];
+                            yield iface.isInstance(proxy);
+                        }
+                        case "toString" -> "TestConnection";
+                        default -> defaultValue(method.getReturnType());
                     }
             );
         }
