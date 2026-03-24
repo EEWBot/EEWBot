@@ -17,8 +17,8 @@ import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.destination.model.SeismicIntensityDeserializer;
 import net.teamfruit.eewbot.registry.destination.model.SeismicIntensitySerializer;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,12 +72,12 @@ class AllExpectedJsonGeneratorTest {
     }
 
     /**
-     * すべてのテレグラムタイプのXMLファイルに対して、欠落している期待値JSONファイルを生成
-     * 既存のJSONファイルは上書きしない（冪等性を保証）
+     * すべてのテレグラムタイプのXMLファイルに対して、期待値JSONファイルを生成（既存ファイルは上書き）
+     * 実行方法: ./gradlew updateGolden
      */
     @Test
-    @Disabled("必要に応じて手動実行してください。実行後は再度@Disabledを付けることを推奨します。")
-    void generateAllMissingExpectedJsonFiles() throws IOException {
+    @EnabledIfSystemProperty(named = "update-golden", matches = "true")
+    void generateAllExpectedJsonFiles() throws IOException {
         System.out.println("========================================");
         System.out.println("全テレグラムタイプの期待値JSON生成処理を開始します");
         System.out.println("========================================");
@@ -108,25 +108,12 @@ class AllExpectedJsonGeneratorTest {
 
         int totalCount = xmlFileNames.size();
         List<String> generatedCases = new ArrayList<>();
-        List<String> skippedCases = new ArrayList<>();
         List<String> errorCases = new ArrayList<>();
 
         for (String caseName : xmlFileNames) {
             try {
-                Path discordPath = Paths.get("src/test/resources/jmaxml/" + telegramType + "/"
-                        + caseName + "_discord_expected.json");
-                Path externalPath = Paths.get("src/test/resources/jmaxml/" + telegramType + "/"
-                        + caseName + "_external_expected.json");
-
-                boolean discordExists = Files.exists(discordPath);
-                boolean externalExists = Files.exists(externalPath);
-
-                if (discordExists && externalExists) {
-                    skippedCases.add(caseName);
-                } else {
-                    generateExpectedJsonFiles(telegramType, implClass, caseName, true);
-                    generatedCases.add(caseName);
-                }
+                generateExpectedJsonFiles(telegramType, implClass, caseName);
+                generatedCases.add(caseName);
             } catch (Exception e) {
                 errorCases.add(caseName);
                 System.err.printf("[%s] エラー: %s%n", caseName, e.getMessage());
@@ -136,10 +123,8 @@ class AllExpectedJsonGeneratorTest {
 
         // サマリー出力
         System.out.println("総XMLファイル数: " + totalCount);
-        System.out.println("新規生成: " + generatedCases.size() + "件 "
+        System.out.println("生成: " + generatedCases.size() + "件 "
                 + (generatedCases.isEmpty() ? "" : generatedCases));
-        System.out.println("スキップ: " + skippedCases.size() + "件 "
-                + (skippedCases.isEmpty() ? "" : skippedCases));
         System.out.println("エラー: " + errorCases.size() + "件 "
                 + (errorCases.isEmpty() ? "" : errorCases));
     }
@@ -160,20 +145,12 @@ class AllExpectedJsonGeneratorTest {
     }
 
     private void generateExpectedJsonFiles(String telegramType, Class<? extends AbstractJMAReport> implClass,
-                                           String caseName, @SuppressWarnings("SameParameterValue") boolean overwrite) throws IOException {
+                                           String caseName) throws IOException {
         String xmlPath = "jmaxml/" + telegramType + "/" + caseName + ".xml";
         String baseOutputPath = "src/test/resources/jmaxml/" + telegramType + "/" + caseName;
 
         Path discordPath = Paths.get(baseOutputPath + "_discord_expected.json");
         Path externalPath = Paths.get(baseOutputPath + "_external_expected.json");
-
-        // 上書き保護チェック
-        if (!overwrite && Files.exists(discordPath) && Files.exists(externalPath)) {
-            System.out.printf("[%s] スキップ: 期待値JSONファイルが既に存在します%n", caseName);
-            System.out.println("  - Discord: " + discordPath);
-            System.out.println("  - External: " + externalPath);
-            return;
-        }
 
         // XMLを読み込み
         InputStream xmlStream = getClass().getClassLoader().getResourceAsStream(xmlPath);
@@ -188,31 +165,23 @@ class AllExpectedJsonGeneratorTest {
         assertThat(report).isNotNull();
 
         // 1. Discord Webhook用JSON生成
-        if (!overwrite && Files.exists(discordPath)) {
-            System.out.printf("[%s] Discord Webhook JSON: 既に存在（スキップ）%n", caseName);
-        } else {
-            DiscordWebhook webhook = report.createWebhook("ja_jp", embedContext);
-            String discordJson = gson.toJson(webhook);
-            Files.writeString(discordPath, discordJson, StandardCharsets.UTF_8);
-            System.out.printf("[%s] Discord Webhook JSON生成: %s%n", caseName, discordPath);
-        }
+        DiscordWebhook webhook = report.createWebhook("ja_jp", embedContext);
+        String discordJson = gson.toJson(webhook).replaceAll("\\R", "\n");
+        Files.writeString(discordPath, discordJson, StandardCharsets.UTF_8);
+        System.out.printf("[%s] Discord Webhook JSON生成: %s%n", caseName, discordPath);
 
         // 2. ExternalWebhook用JSON生成
-        if (!overwrite && Files.exists(externalPath)) {
-            System.out.printf("[%s] External Webhook JSON: 既に存在（スキップ）%n", caseName);
-        } else {
-            report.setRawData(rawXml);
-            ExternalData externalData = (ExternalData) report;
-            Object externalDto = externalData.toExternalDto();
-            ExternalWebhookRequest request = new ExternalWebhookRequest(
-                    externalData.getDataType(),
-                    1234567890000L,  // 固定値
-                    report.getRawData(),
-                    externalDto
-            );
-            String externalJson = gson.toJson(request);
-            Files.writeString(externalPath, externalJson, StandardCharsets.UTF_8);
-            System.out.printf("[%s] External Webhook JSON生成: %s%n", caseName, externalPath);
-        }
+        report.setRawData(rawXml);
+        ExternalData externalData = (ExternalData) report;
+        Object externalDto = externalData.toExternalDto();
+        ExternalWebhookRequest request = new ExternalWebhookRequest(
+                externalData.getDataType(),
+                1234567890000L,  // 固定値
+                report.getRawData(),
+                externalDto
+        );
+        String externalJson = gson.toJson(request).replaceAll("\\R", "\n");
+        Files.writeString(externalPath, externalJson, StandardCharsets.UTF_8);
+        System.out.printf("[%s] External Webhook JSON生成: %s%n", caseName, externalPath);
     }
 }
