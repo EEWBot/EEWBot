@@ -7,10 +7,7 @@ import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
 import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import org.jooq.SQLDialect;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
@@ -21,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration test for DeliverySnapshotLoader using real SQLite DB (no stubs).
  */
+@Tag("integration")
 class DeliverySnapshotLoaderTest {
 
     @TempDir

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("integration")
 class SqlAdminRegistryTest {
 
     @TempDir

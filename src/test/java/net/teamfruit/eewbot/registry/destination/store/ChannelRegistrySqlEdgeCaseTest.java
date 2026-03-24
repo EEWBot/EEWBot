@@ -16,6 +16,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@Tag("integration")
 class ChannelRegistrySqlEdgeCaseTest {
 
     @TempDir
@@ -199,7 +200,7 @@ class ChannelRegistrySqlEdgeCaseTest {
 
             List<DeliverySnapshot.DeliveryChannel> channels = sqlRegistry.loadAllForSnapshot();
             assertThat(channels).hasSize(1);
-            assertThat(channels.get(0).minIntensity()).isEqualTo(SeismicIntensity.ONE);
+            assertThat(channels.getFirst().minIntensity()).isEqualTo(SeismicIntensity.ONE);
         }
 
         @Test
@@ -210,9 +211,9 @@ class ChannelRegistrySqlEdgeCaseTest {
 
             List<DeliverySnapshot.DeliveryChannel> channels = sqlRegistry.loadAllForSnapshot();
             assertThat(channels).hasSize(1);
-            assertThat(channels.get(0).targetId()).isEqualTo(1L);
-            assertThat(channels.get(0).channelId()).isEqualTo(3L);
-            assertThat(channels.get(0).guildId()).isEqualTo(2L);
+            assertThat(channels.getFirst().targetId()).isEqualTo(1L);
+            assertThat(channels.getFirst().channelId()).isEqualTo(3L);
+            assertThat(channels.getFirst().guildId()).isEqualTo(2L);
         }
 
         @Test
@@ -223,7 +224,7 @@ class ChannelRegistrySqlEdgeCaseTest {
 
             List<DeliverySnapshot.DeliveryChannel> channels = sqlRegistry.loadAllForSnapshot();
             assertThat(channels).hasSize(1);
-            assertThat(channels.get(0).targetId()).isEqualTo(largeId);
+            assertThat(channels.getFirst().targetId()).isEqualTo(largeId);
         }
 
         @Test
@@ -235,7 +236,7 @@ class ChannelRegistrySqlEdgeCaseTest {
 
             List<DeliverySnapshot.DeliveryChannel> channels = sqlRegistry.loadAllForSnapshot();
             assertThat(channels).hasSize(1);
-            DeliverySnapshot.DeliveryChannel dc = channels.get(0);
+            DeliverySnapshot.DeliveryChannel dc = channels.getFirst();
             assertThat(dc.eewAlert()).isTrue();
             assertThat(dc.eewPrediction()).isFalse();
             assertThat(dc.eewDecimation()).isTrue();
@@ -254,8 +255,8 @@ class ChannelRegistrySqlEdgeCaseTest {
 
             List<DeliverySnapshot.DeliveryChannel> channels = sqlRegistry.loadAllForSnapshot();
             assertThat(channels).hasSize(1);
-            assertThat(channels.get(0).webhook()).isNotNull();
-            assertThat(channels.get(0).webhook().id()).isEqualTo(555L);
+            assertThat(channels.getFirst().webhook()).isNotNull();
+            assertThat(channels.getFirst().webhook().id()).isEqualTo(555L);
         }
 
         @Test
@@ -265,7 +266,7 @@ class ChannelRegistrySqlEdgeCaseTest {
 
             List<DeliverySnapshot.DeliveryChannel> channels = sqlRegistry.loadAllForSnapshot();
             assertThat(channels).hasSize(1);
-            assertThat(channels.get(0).webhook()).isNull();
+            assertThat(channels.getFirst().webhook()).isNull();
         }
     }
 
