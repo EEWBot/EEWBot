@@ -32,6 +32,13 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class DiscordWebhookSendTest {
 
     private static final String[] TELEGRAM_TYPES = {"vxse51", "vxse52", "vxse53", "vxse61", "vtse41"};
+    private static final String rendererHash = BaseWebhookTest.computeRendererHash(
+            System.getenv("EEWBOT_RENDERER_ADDRESS"),
+            System.getenv("EEWBOT_RENDERER_KEY")
+    );
+    private static final String EXPECTED_SUFFIX = rendererHash != null
+            ? "_discord_expected_" + rendererHash + ".json"
+            : "_discord_expected.json";
 
     private static URI webhookUri;
     private static CloseableHttpClient httpClient;
@@ -62,11 +69,11 @@ class DiscordWebhookSendTest {
                 continue;
             }
             try (Stream<Path> paths = Files.list(dir)) {
-                paths.filter(p -> p.getFileName().toString().endsWith("_discord_expected.json"))
+                paths.filter(p -> p.getFileName().toString().endsWith(EXPECTED_SUFFIX))
                         .sorted()
                         .forEach(p -> {
                             String fileName = p.getFileName().toString();
-                            String baseName = fileName.replace("_discord_expected.json", "");
+                            String baseName = fileName.replace(EXPECTED_SUFFIX, "");
                             builder.add(Arguments.of(type, baseName));
                         });
             }
@@ -77,7 +84,7 @@ class DiscordWebhookSendTest {
     @ParameterizedTest(name = "{0}/{1}")
     @MethodSource("provideAllDiscordJsonFiles")
     void sendDiscordWebhook(String type, String baseName) throws Exception {
-        String jsonPath = "jmaxml/" + type + "/" + baseName + "_discord_expected.json";
+        String jsonPath = "jmaxml/" + type + "/" + baseName + EXPECTED_SUFFIX;
         InputStream stream = getClass().getClassLoader().getResourceAsStream(jsonPath);
         assertNotNull(stream, "JSON file not found: " + jsonPath);
         String json = new String(stream.readAllBytes(), StandardCharsets.UTF_8);

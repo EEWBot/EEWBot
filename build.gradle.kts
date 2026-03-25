@@ -70,6 +70,10 @@ sourceSets {
     }
 }
 
+val rendererAddress = providers.environmentVariable("EEWBOT_RENDERER_ADDRESS")
+val rendererKey = providers.environmentVariable("EEWBOT_RENDERER_KEY")
+val webhookUrl = providers.environmentVariable("DISCORD_WEBHOOK_URL")
+
 tasks {
     named("jar") {
         enabled = false
@@ -92,8 +96,8 @@ tasks {
         useJUnitPlatform {
             excludeTags("integration")
         }
-        System.getenv("EEWBOT_RENDERER_ADDRESS")?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
-        System.getenv("EEWBOT_RENDERER_KEY")?.let { environment("EEWBOT_RENDERER_KEY", it) }
+        rendererAddress.orNull?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        rendererKey.orNull?.let { environment("EEWBOT_RENDERER_KEY", it) }
     }
 
     register<Test>("integrationTest") {
@@ -104,8 +108,9 @@ tasks {
         }
         testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
-        System.getenv("EEWBOT_RENDERER_ADDRESS")?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
-        System.getenv("EEWBOT_RENDERER_KEY")?.let { environment("EEWBOT_RENDERER_KEY", it) }
+        rendererAddress.orNull?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        rendererKey.orNull?.let { environment("EEWBOT_RENDERER_KEY", it) }
+        webhookUrl.orNull?.let { environment("DISCORD_WEBHOOK_URL", it) }
     }
 
     register<Test>("allTests") {
@@ -114,8 +119,9 @@ tasks {
         useJUnitPlatform()
         testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
-        System.getenv("EEWBOT_RENDERER_ADDRESS")?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
-        System.getenv("EEWBOT_RENDERER_KEY")?.let { environment("EEWBOT_RENDERER_KEY", it) }
+        rendererAddress.orNull?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        rendererKey.orNull?.let { environment("EEWBOT_RENDERER_KEY", it) }
+        webhookUrl.orNull?.let { environment("DISCORD_WEBHOOK_URL", it) }
     }
 
     register<Test>("updateGolden") {
@@ -131,7 +137,7 @@ tasks {
             )
         }
         systemProperty("update-golden", "true")
-        System.getenv("EEWBOT_RENDERER_ADDRESS")?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
-        System.getenv("EEWBOT_RENDERER_KEY")?.let { environment("EEWBOT_RENDERER_KEY", it) }
+        rendererAddress.orNull?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        rendererKey.orNull?.let { environment("EEWBOT_RENDERER_KEY", it) }
     }
 }

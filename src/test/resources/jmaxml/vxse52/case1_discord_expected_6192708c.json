@@ -1,0 +1,38 @@
+{
+  "embeds": [
+    {
+      "title": "地震情報（震源に関する情報）",
+      "description": "\u003ct:1765230720:f\u003e頃、地震がありました。",
+      "timestamp": "2025-12-08T21:57:00Z",
+      "color": 0,
+      "footer": {
+        "text": "気象庁"
+      },
+      "image": {
+        "url": "https://i.eewbot.net/ڿ礋㚾羳豎惠纥篐頎在飛噀橤淗㡌㡆ᗍ朤㥡堀ႰވڤԚԁҲ晪䙅癧"
+      },
+      "fields": [
+        {
+          "name": "震央",
+          "value": "青森県東方沖",
+          "inline": true
+        },
+        {
+          "name": "深さ",
+          "value": "10km",
+          "inline": true
+        },
+        {
+          "name": "マグニチュード",
+          "value": "6.4",
+          "inline": true
+        },
+        {
+          "name": "",
+          "value": "この地震により、日本の沿岸では若干の海面変動があるかもしれませんが、被害の心配はありません。",
+          "inline": false
+        }
+      ]
+    }
+  ]
+}
