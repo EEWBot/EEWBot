@@ -17,6 +17,7 @@ import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.destination.model.SeismicIntensityDeserializer;
 import net.teamfruit.eewbot.registry.destination.model.SeismicIntensitySerializer;
 import net.teamfruit.eewbot.testutil.JsonAssertTestHelper;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +47,7 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
     protected static Gson gson;
     protected static I18n i18n;
     protected static EmbedContext embedContext;
+    protected static String rendererHash;
     private static boolean initialized = false;
 
     /**
@@ -62,9 +67,12 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
         }
 
         i18n = new I18n("ja_jp");
-        RendererQueryFactory renderer = new RendererQueryFactory(null, null);
+        String rendererAddress = System.getenv("EEWBOT_RENDERER_ADDRESS");
+        String rendererKey = System.getenv("EEWBOT_RENDERER_KEY");
+        RendererQueryFactory renderer = new RendererQueryFactory(rendererAddress, rendererKey);
         QuakeInfoStore store = new QuakeInfoStore();
         embedContext = new EmbedContext(renderer, store, i18n);
+        rendererHash = computeRendererHash(rendererAddress, rendererKey);
 
         xmlMapper = XmlMapper.builder()
                 .addModule(new JavaTimeModule())
@@ -84,6 +92,23 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
         String testName = testInfo.getDisplayName();
         String className = this.getClass().getSimpleName();
         System.out.printf("[TEST] %s: %s%n", className, testName);
+    }
+
+    /**
+     * renderer設定のハッシュを算出（SHA-256先頭8文字hex）
+     * 未設定時はnullを返す
+     */
+    static String computeRendererHash(String address, String key) {
+        if (StringUtils.isEmpty(address) || StringUtils.isEmpty(key)) {
+            return null;
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest((address + ":" + key).getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash).substring(0, 8);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
     }
 
     /**
@@ -109,7 +134,12 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
      */
     protected void runDiscordWebhookTest(String baseName) throws IOException, JSONException {
         String xmlPath = "jmaxml/" + getTelegramType() + "/" + baseName + ".xml";
-        String expectedJsonPath = "jmaxml/" + getTelegramType() + "/" + baseName + "_discord_expected.json";
+        String expectedJsonPath;
+        if (rendererHash != null) {
+            expectedJsonPath = "jmaxml/" + getTelegramType() + "/" + baseName + "_discord_expected_" + rendererHash + ".json";
+        } else {
+            expectedJsonPath = "jmaxml/" + getTelegramType() + "/" + baseName + "_discord_expected.json";
+        }
 
         // 1. XMLを読み込んでデシリアライズ
         InputStream xmlStream = getClass().getClassLoader().getResourceAsStream(xmlPath);

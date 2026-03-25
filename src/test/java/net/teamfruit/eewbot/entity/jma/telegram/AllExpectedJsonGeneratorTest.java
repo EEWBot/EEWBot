@@ -41,6 +41,8 @@ class AllExpectedJsonGeneratorTest {
     private static Gson gson;
     private static I18n i18n;
     private static EmbedContext embedContext;
+    private static EmbedContext embedContextWithRenderer;
+    private static String rendererHash;
 
     // テレグラムタイプと実装クラスのマッピング
     private static final Map<String, Class<? extends AbstractJMAReport>> TELEGRAM_TYPES = new LinkedHashMap<>();
@@ -56,9 +58,18 @@ class AllExpectedJsonGeneratorTest {
     @BeforeAll
     static void setUp() {
         i18n = new I18n("ja_jp");
-        RendererQueryFactory renderer = new RendererQueryFactory(null, null);
         QuakeInfoStore store = new QuakeInfoStore();
-        embedContext = new EmbedContext(renderer, store, i18n);
+
+        RendererQueryFactory rendererDisabled = new RendererQueryFactory(null, null);
+        embedContext = new EmbedContext(rendererDisabled, store, i18n);
+
+        String rendererAddress = System.getenv("EEWBOT_RENDERER_ADDRESS");
+        String rendererKey = System.getenv("EEWBOT_RENDERER_KEY");
+        rendererHash = BaseWebhookTest.computeRendererHash(rendererAddress, rendererKey);
+        if (rendererHash != null) {
+            RendererQueryFactory rendererEnabled = new RendererQueryFactory(rendererAddress, rendererKey);
+            embedContextWithRenderer = new EmbedContext(rendererEnabled, store, i18n);
+        }
 
         xmlMapper = XmlMapper.builder()
                 .addModule(new JavaTimeModule())
@@ -164,11 +175,25 @@ class AllExpectedJsonGeneratorTest {
         AbstractJMAReport report = xmlMapper.readValue(xmlStream, implClass);
         assertThat(report).isNotNull();
 
-        // 1. Discord Webhook用JSON生成
+        // 1. Discord Webhook用JSON生成（rendererなし）
         DiscordWebhook webhook = report.createWebhook("ja_jp", embedContext);
         String discordJson = gson.toJson(webhook).replaceAll("\\R", "\n");
         Files.writeString(discordPath, discordJson, StandardCharsets.UTF_8);
         System.out.printf("[%s] Discord Webhook JSON生成: %s%n", caseName, discordPath);
+
+        // 1b. Discord Webhook用JSON生成（renderer有効、環境変数設定時のみ）
+        if (embedContextWithRenderer != null) {
+            // renderer有効版はXMLを再読み込みして生成
+            InputStream xmlStreamForRenderer = getClass().getClassLoader().getResourceAsStream(xmlPath);
+            assertThat(xmlStreamForRenderer).isNotNull();
+            AbstractJMAReport reportForRenderer = xmlMapper.readValue(xmlStreamForRenderer, implClass);
+
+            DiscordWebhook webhookWithRenderer = reportForRenderer.createWebhook("ja_jp", embedContextWithRenderer);
+            String discordJsonWithRenderer = gson.toJson(webhookWithRenderer).replaceAll("\\R", "\n");
+            Path discordRendererPath = Paths.get(baseOutputPath + "_discord_expected_" + rendererHash + ".json");
+            Files.writeString(discordRendererPath, discordJsonWithRenderer, StandardCharsets.UTF_8);
+            System.out.printf("[%s] Discord Webhook JSON生成 (renderer): %s%n", caseName, discordRendererPath);
+        }
 
         // 2. ExternalWebhook用JSON生成
         report.setRawData(rawXml);

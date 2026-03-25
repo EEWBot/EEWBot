@@ -92,6 +92,8 @@ tasks {
         useJUnitPlatform {
             excludeTags("integration")
         }
+        System.getenv("EEWBOT_RENDERER_ADDRESS")?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        System.getenv("EEWBOT_RENDERER_KEY")?.let { environment("EEWBOT_RENDERER_KEY", it) }
     }
 
     register<Test>("integrationTest") {
@@ -102,6 +104,8 @@ tasks {
         }
         testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
+        System.getenv("EEWBOT_RENDERER_ADDRESS")?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        System.getenv("EEWBOT_RENDERER_KEY")?.let { environment("EEWBOT_RENDERER_KEY", it) }
     }
 
     register<Test>("allTests") {
@@ -110,6 +114,8 @@ tasks {
         useJUnitPlatform()
         testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
+        System.getenv("EEWBOT_RENDERER_ADDRESS")?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        System.getenv("EEWBOT_RENDERER_KEY")?.let { environment("EEWBOT_RENDERER_KEY", it) }
     }
 
     register<Test>("updateGolden") {
@@ -125,5 +131,7 @@ tasks {
             )
         }
         systemProperty("update-golden", "true")
+        System.getenv("EEWBOT_RENDERER_ADDRESS")?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        System.getenv("EEWBOT_RENDERER_KEY")?.let { environment("EEWBOT_RENDERER_KEY", it) }
     }
 }
