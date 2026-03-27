@@ -19,6 +19,7 @@ import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.MDC;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -157,6 +158,7 @@ public class EEWService {
 
         Map<Long, DeliveryTarget> erroredChannels = new ConcurrentHashMap<>();
         List<CompletableFuture<Void>> futures = new ArrayList<>();
+        Map<String, String> mdcCtx = MDC.getCopyOfContextMap();
 
         webhookChannels.forEach((channelId, channel) -> {
             HttpRequest request = HttpRequest.newBuilder()
@@ -168,16 +170,24 @@ public class EEWService {
 
             CompletableFuture<Void> future = this.httpClient.sendAsync(request, HttpResponse.BodyHandlers.discarding())
                     .handle((response, ex) -> {
-                        if (ex != null) {
-                            Log.logger.info("Failed to send webhook: ChannelID={} Message={}", channelId, ex.getMessage());
-                            onError.apply(channelId, channel);
-                        } else {
-                            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                        Map<String, String> prev = MDC.getCopyOfContextMap();
+                        if (mdcCtx != null) MDC.setContextMap(mdcCtx);
+                        else MDC.clear();
+                        try {
+                            if (ex != null) {
+                                Log.logger.info("Failed to send webhook: ChannelID={} Message={}", channelId, ex.getMessage());
                                 onError.apply(channelId, channel);
+                            } else {
+                                if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                                    onError.apply(channelId, channel);
+                                }
+                                if (response.statusCode() == 404) {
+                                    erroredChannels.put(channelId, channel);
+                                }
                             }
-                            if (response.statusCode() == 404) {
-                                erroredChannels.put(channelId, channel);
-                            }
+                        } finally {
+                            if (prev != null) MDC.setContextMap(prev);
+                            else MDC.clear();
                         }
                         return null;
                     });
@@ -185,8 +195,11 @@ public class EEWService {
         });
 
         try {
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        } catch (CompletionException e) {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
+        } catch (InterruptedException e) {
+            Log.logger.warn("Webhook fan-out interrupted", e);
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
             Log.logger.error("Failed to send message", e);
         }
 
