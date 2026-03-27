@@ -28,3 +28,5 @@ jobs:
         env:
           TZ: 'Asia/Tokyo'
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          EEWBOT_RENDERER_ADDRESS: ${{ secrets.EEWBOT_RENDERER_ADDRESS }}
+          EEWBOT_RENDERER_KEY: ${{ secrets.EEWBOT_RENDERER_KEY }}
