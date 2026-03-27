@@ -22,7 +22,6 @@ dependencies {
     api(libs.com.google.code.gson.gson)
     api(libs.commons.net.commons.net)
     api(libs.org.apache.commons.commons.lang3)
-    api(libs.org.apache.httpcomponents.client5.httpclient5)
     api(libs.com.fasterxml.jackson.dataformat.jackson.dataformat.xml)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     api(libs.redis.clients.jedis)

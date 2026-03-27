@@ -1,13 +1,5 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.apache.hc.core5.net.URIBuilder;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,7 +9,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,24 +35,16 @@ class DiscordWebhookSendTest {
             : "_discord_expected.json";
 
     private static URI webhookUri;
-    private static CloseableHttpClient httpClient;
+    private static HttpClient httpClient;
 
     @BeforeAll
-    static void setUp() throws URISyntaxException {
+    static void setUp() {
         String webhookUrl = System.getenv("DISCORD_WEBHOOK_URL");
         assumeTrue(webhookUrl != null && !webhookUrl.isEmpty(), "DISCORD_WEBHOOK_URL not set, skipping");
 
-        webhookUri = new URIBuilder(URI.create(webhookUrl))
-                .addParameter("wait", "true")
-                .build();
-        httpClient = HttpClients.createDefault();
-    }
-
-    @AfterAll
-    static void tearDown() throws IOException {
-        if (httpClient != null) {
-            httpClient.close();
-        }
+        String separator = webhookUrl.contains("?") ? "&" : "?";
+        webhookUri = URI.create(webhookUrl + separator + "wait=true");
+        httpClient = HttpClient.newHttpClient();
     }
 
     static Stream<Arguments> provideAllDiscordJsonFiles() throws IOException {
@@ -107,19 +93,20 @@ class DiscordWebhookSendTest {
         Thread.sleep(1000);
     }
 
-    private int[] executePost(String json) throws IOException {
-        HttpPost post = new HttpPost(webhookUri);
-        post.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
-        return httpClient.execute(post, response -> {
-            int code = response.getCode();
-            long retryAfterMs = 0;
-            if (code == 429) {
-                Header retryAfterHeader = response.getFirstHeader("Retry-After");
-                if (retryAfterHeader != null) {
-                    retryAfterMs = (long) (Double.parseDouble(retryAfterHeader.getValue()) * 1000);
-                }
-            }
-            return new int[]{code, (int) retryAfterMs};
-        });
+    private int[] executePost(String json) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(webhookUri)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+        HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+        int code = response.statusCode();
+        long retryAfterMs = 0;
+        if (code == 429) {
+            retryAfterMs = response.headers().firstValue("Retry-After")
+                    .map(v -> (long) (Double.parseDouble(v) * 1000))
+                    .orElse(0L);
+        }
+        return new int[]{code, (int) retryAfterMs};
     }
 }

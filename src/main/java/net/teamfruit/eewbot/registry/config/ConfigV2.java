@@ -344,31 +344,9 @@ public class ConfigV2 {
 
     public static class Advanced {
 
-        private int poolingMax = 20;
-        private int poolingMaxPerRoute = 20;
-
-        public int getPoolingMax() {
-            return this.poolingMax;
-        }
-
-        public void setPoolingMax(int poolingMax) {
-            this.poolingMax = poolingMax;
-        }
-
-        public int getPoolingMaxPerRoute() {
-            return this.poolingMaxPerRoute;
-        }
-
-        public void setPoolingMaxPerRoute(int poolingMaxPerRoute) {
-            this.poolingMaxPerRoute = poolingMaxPerRoute;
-        }
-
         @Override
         public String toString() {
-            return "Advanced{" +
-                    "poolingMax=" + this.poolingMax +
-                    ", poolingMaxPerRoute=" + this.poolingMaxPerRoute +
-                    '}';
+            return "Advanced{}";
         }
     }
 
@@ -495,8 +473,6 @@ public class ConfigV2 {
         configV2.dmdata.setAPIKey(config.getDmdataAPIKey());
         configV2.dmdata.setOrigin(config.getDmdataOrigin());
         configV2.dmdata.setMultiSocketConnect(config.isDmdataMultiSocketConnect());
-        configV2.advanced.setPoolingMax(config.getPoolingMax());
-        configV2.advanced.setPoolingMaxPerRoute(config.getPoolingMaxPerRoute());
         configV2.legacy.setEnableKyoshin(config.isEnableKyoshin());
         configV2.legacy.setKyoshinDelay(config.getKyoshinDelay());
         configV2.legacy.setEnableLegacyQuakeInfo(config.isEnableLegacyQuakeInfo());
