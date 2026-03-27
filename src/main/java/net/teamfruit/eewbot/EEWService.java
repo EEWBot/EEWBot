@@ -27,6 +27,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -236,7 +237,7 @@ public class EEWService {
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(this.webhookSenderAddress.resolve("/api/send"))
+                    .uri(replacePathPreservingQuery(this.webhookSenderAddress, "/api/send"))
                     .header("User-Agent", "EEWBot")
                     .header("Content-Type", "application/json")
                     .headers(this.webhookSenderHeader)
@@ -259,7 +260,7 @@ public class EEWService {
 
     public int sendWebhookSenderSingle(WebhookSenderRequest senderRequest) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(this.webhookSenderAddress.resolve("/api/send"))
+                .uri(replacePathPreservingQuery(this.webhookSenderAddress, "/api/send"))
                 .header("User-Agent", "EEWBot")
                 .header("Content-Type", "application/json")
                 .headers(this.webhookSenderHeader)
@@ -281,7 +282,7 @@ public class EEWService {
         try {
             HttpRequest getRequest = HttpRequest.newBuilder()
                     .GET()
-                    .uri(this.webhookSenderAddress.resolve("/api/notfounds"))
+                    .uri(replacePathPreservingQuery(this.webhookSenderAddress, "/api/notfounds"))
                     .header("User-Agent", "EEWBot")
                     .headers(this.webhookSenderHeader)
                     .build();
@@ -305,6 +306,14 @@ public class EEWService {
             Log.logger.error("Interrupted while fetching not founds from webhook sender", e);
         } catch (Exception e) {
             Log.logger.error("Failed to fetch not founds from webhook sender", e);
+        }
+    }
+
+    private static URI replacePathPreservingQuery(URI base, String newPath) {
+        try {
+            return new URI(base.getScheme(), base.getRawAuthority(), newPath, base.getRawQuery(), null);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid URI: " + base + " with path " + newPath, e);
         }
     }
 }
