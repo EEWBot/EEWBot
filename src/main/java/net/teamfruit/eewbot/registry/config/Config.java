@@ -17,8 +17,6 @@ public class Config {
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
-    private int poolingMax = 20;
-    private int poolingMaxPerRoute = 20;
     private String redisAddress = "";
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
@@ -64,14 +62,6 @@ public class Config {
 
     public boolean isDmdataMultiSocketConnect() {
         return this.dmdataMultiSocketConnect;
-    }
-
-    public int getPoolingMax() {
-        return this.poolingMax;
-    }
-
-    public int getPoolingMaxPerRoute() {
-        return this.poolingMaxPerRoute;
     }
 
     public String getRedisAddress() {
@@ -125,8 +115,6 @@ public class Config {
                 ", dmdataAPIKey='" + this.dmdataAPIKey + '\'' +
                 ", dmdataOrigin='" + this.dmdataOrigin + '\'' +
                 ", dmdataMultiSocketConnect=" + this.dmdataMultiSocketConnect +
-                ", poolingMax=" + this.poolingMax +
-                ", poolingMaxPerRoute=" + this.poolingMaxPerRoute +
                 ", redisAddress='" + this.redisAddress + '\'' +
                 ", nptServer='" + this.nptServer + '\'' +
                 ", defaultLanuage='" + this.defaultLanuage +

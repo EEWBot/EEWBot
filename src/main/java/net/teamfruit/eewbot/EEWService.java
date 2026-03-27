@@ -19,19 +19,7 @@ import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hc.client5.http.async.methods.*;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
-import org.apache.hc.client5.http.impl.async.MinimalHttpAsyncClient;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
-import org.apache.hc.core5.concurrent.FutureCallback;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.config.Http1Config;
-import org.apache.hc.core5.http.nio.AsyncClientEndpoint;
-import org.apache.hc.core5.http2.config.H2Config;
-import org.apache.hc.core5.net.URIBuilder;
-import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.slf4j.MDC;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -59,7 +47,6 @@ public class EEWService {
     private final DestinationAdminRegistry adminRegistry;
     private final EmbedContext embedContext;
     private final HttpClient httpClient;
-    private final MinimalHttpAsyncClient asyncHttpClient;
     private final URI webhookSenderAddress;
     private final String[] webhookSenderHeader;
 
@@ -83,20 +70,6 @@ public class EEWService {
         this.executor = executor;
         this.httpClient = httpClient;
         this.webhookSenderHeader = config.getWebhookSender().getCustomHeader().split(":");
-
-        int poolingMax = config.getAdvanced().getPoolingMax();
-        int poolingMaxPerRoute = config.getAdvanced().getPoolingMaxPerRoute();
-
-        PoolingAsyncClientConnectionManager connectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
-                .setMaxConnTotal(poolingMax)
-                .setMaxConnPerRoute(poolingMaxPerRoute)
-                .build();
-        this.asyncHttpClient = HttpAsyncClients.createMinimal(
-                H2Config.DEFAULT,
-                Http1Config.DEFAULT,
-                IOReactorConfig.DEFAULT,
-                connectionManager);
-        this.asyncHttpClient.start();
 
         if (StringUtils.isNotEmpty(config.getWebhookSender().getAddress()))
             this.webhookSenderAddress = URI.create(config.getWebhookSender().getAddress());
@@ -181,72 +154,70 @@ public class EEWService {
     }
 
     private void sendWebhook(List<DiscordWebhookRequest> webhookRequests, Map<Long, DeliveryTarget> webhookChannels, BiFunction<Long, DeliveryTarget, Disposable> onError) {
-        HttpHost target = new HttpHost("https", "discord.com");
-        Map<String, SimpleHttpRequest> cacheReq = new HashMap<>();
-        webhookRequests.forEach(webhookRequest -> cacheReq.put(webhookRequest.getLang(), SimpleRequestBuilder.post()
-                .setHttpHost(target)
-                .addHeader("User-Agent", "EEWBot")
-                .setBody(Codecs.GSON.toJson(webhookRequest.getWebhook()), ContentType.APPLICATION_JSON)
-                .build()));
+        Map<String, String> jsonByLang = new HashMap<>();
+        webhookRequests.forEach(req -> jsonByLang.put(req.getLang(), Codecs.GSON.toJson(req.getWebhook())));
+
+        Map<Long, DeliveryTarget> erroredChannels = new ConcurrentHashMap<>();
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        Map<String, String> mdcCtx = MDC.getCopyOfContextMap();
+
+        webhookChannels.forEach((channelId, channel) -> {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(channel.webhookUrl()))
+                    .header("User-Agent", "EEWBot")
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonByLang.get(channel.lang())))
+                    .build();
+
+            CompletableFuture<Void> future = this.httpClient.sendAsync(request, HttpResponse.BodyHandlers.discarding())
+                    .handle((response, ex) -> {
+                        Map<String, String> prev = MDC.getCopyOfContextMap();
+                        if (mdcCtx != null) MDC.setContextMap(mdcCtx);
+                        else MDC.clear();
+                        try {
+                            if (ex != null) {
+                                Log.logger.info("Failed to send webhook: ChannelID={} Message={}", channelId, ex.getMessage());
+                                onError.apply(channelId, channel);
+                            } else {
+                                if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                                    onError.apply(channelId, channel);
+                                }
+                                if (response.statusCode() == 404) {
+                                    erroredChannels.put(channelId, channel);
+                                }
+                            }
+                        } finally {
+                            if (prev != null) MDC.setContextMap(prev);
+                            else MDC.clear();
+                        }
+                        return null;
+                    });
+            futures.add(future);
+        });
 
         try {
-            final Future<AsyncClientEndpoint> leaseFuture = this.asyncHttpClient.lease(target, null);
-            final AsyncClientEndpoint endpoint = leaseFuture.get(30, TimeUnit.SECONDS);
-            try {
-                final CountDownLatch latch = new CountDownLatch(webhookChannels.size());
-                Map<Long, DeliveryTarget> erroredChannels = new ConcurrentHashMap<>();
-                webhookChannels.forEach((channelId, channel) -> {
-                    SimpleHttpRequest request = SimpleRequestBuilder.copy(cacheReq.get(channel.lang()))
-                            .setUri(channel.webhookUrl())
-                            .build();
-                    endpoint.execute(SimpleRequestProducer.create(request), SimpleResponseConsumer.create(), MdcUtil.wrapWithMdc(new FutureCallback<>() {
-                        @Override
-                        public void completed(SimpleHttpResponse simpleHttpResponse) {
-                            latch.countDown();
-                            if (simpleHttpResponse.getCode() < 200 || simpleHttpResponse.getCode() >= 300) {
-                                onError.apply(channelId, channel);
-                            }
-                            if (simpleHttpResponse.getCode() == 404) {
-                                erroredChannels.put(channelId, channel);
-                            }
-                        }
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
+        } catch (InterruptedException e) {
+            Log.logger.warn("Webhook fan-out interrupted", e);
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            Log.logger.error("Failed to send message", e);
+        }
 
-                        @Override
-                        public void failed(Exception e) {
-                            latch.countDown();
-                            Log.logger.info("Failed to send webhook: ChannelID={} Message={}", channelId, e.getMessage());
-                            onError.apply(channelId, channel);
-                        }
+        if (!erroredChannels.isEmpty()) {
+            submitCleanup(() -> {
+                Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
-                        @Override
-                        public void cancelled() {
-                            latch.countDown();
-                            Log.logger.info("Cancelled to send webhook: ChannelID={}", channelId);
-                            onError.apply(channelId, channel);
-                        }
-                    }));
+                erroredChannels.forEach((channelId, channel) -> {
+                    Log.logger.info("Webhook for channel {} is deleted, unregister", channelId);
+                    this.adminRegistry.setWebhook(channelId, null);
                 });
-                latch.await();
-                if (!erroredChannels.isEmpty()) {
-                    submitCleanup(() -> {
-                        Thread.currentThread().setName("eewbot-channel-unregister-thread");
-
-                        erroredChannels.forEach((channelId, channel) -> {
-                            Log.logger.info("Webhook for channel {} is deleted, unregister", channelId);
-                            this.adminRegistry.setWebhook(channelId, null);
-                        });
-                        try {
-                            this.adminRegistry.save();
-                        } catch (IOException e) {
-                            Log.logger.error("Failed to save channels", e);
-                        }
-                    });
+                try {
+                    this.adminRegistry.save();
+                } catch (IOException e) {
+                    Log.logger.error("Failed to save channels", e);
                 }
-            } finally {
-                endpoint.releaseAndReuse();
-            }
-        } catch (ExecutionException | InterruptedException | TimeoutException e) {
-            Log.logger.error("Failed to send message");
+            });
         }
     }
 
@@ -266,7 +237,7 @@ public class EEWService {
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URIBuilder(this.webhookSenderAddress).setPath("/api/send").build())
+                    .uri(replacePathPreservingQuery(this.webhookSenderAddress, "/api/send"))
                     .header("User-Agent", "EEWBot")
                     .header("Content-Type", "application/json")
                     .headers(this.webhookSenderHeader)
@@ -282,16 +253,14 @@ public class EEWService {
             Log.logger.info("Sent message to webhook sender: {}", response.body());
         } catch (InterruptedException e) {
             Log.logger.error("Interrupted while sending messages to webhook sender", e);
-        } catch (URISyntaxException e) {
-            Log.logger.error("Invalid webhook sender send URI", e);
         } catch (Exception e) {
             Log.logger.error("Failed to send message to webhook sender", e);
         }
     }
 
-    public int sendWebhookSenderSingle(WebhookSenderRequest senderRequest) throws URISyntaxException, IOException, InterruptedException {
+    public int sendWebhookSenderSingle(WebhookSenderRequest senderRequest) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URIBuilder(this.webhookSenderAddress).setPath("/api/send").build())
+                .uri(replacePathPreservingQuery(this.webhookSenderAddress, "/api/send"))
                 .header("User-Agent", "EEWBot")
                 .header("Content-Type", "application/json")
                 .headers(this.webhookSenderHeader)
@@ -313,7 +282,7 @@ public class EEWService {
         try {
             HttpRequest getRequest = HttpRequest.newBuilder()
                     .GET()
-                    .uri(new URIBuilder(this.webhookSenderAddress).setPath("/api/notfounds").build())
+                    .uri(replacePathPreservingQuery(this.webhookSenderAddress, "/api/notfounds"))
                     .header("User-Agent", "EEWBot")
                     .headers(this.webhookSenderHeader)
                     .build();
@@ -335,10 +304,16 @@ public class EEWService {
             }
         } catch (InterruptedException e) {
             Log.logger.error("Interrupted while fetching not founds from webhook sender", e);
-        } catch (URISyntaxException e) {
-            Log.logger.error("Invalid webhook sender not founds URI", e);
         } catch (Exception e) {
             Log.logger.error("Failed to fetch not founds from webhook sender", e);
+        }
+    }
+
+    private static URI replacePathPreservingQuery(URI base, String newPath) {
+        try {
+            return new URI(base.getScheme(), base.getRawAuthority(), newPath, base.getRawQuery(), null);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid URI: " + base + " with path " + newPath, e);
         }
     }
 }
