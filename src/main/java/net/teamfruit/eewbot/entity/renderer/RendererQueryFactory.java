@@ -3,7 +3,7 @@ package net.teamfruit.eewbot.entity.renderer;
 import net.eewbot.CodeArray;
 import net.eewbot.Epicenter;
 import net.eewbot.QuakePrefectureV0;
-import net.eewbot.TsunamiForecastV0;
+import net.eewbot.TsunamiForecastV1;
 import net.eewbot.base32768j.Base32768;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.TsunamiCategory;
@@ -27,7 +27,7 @@ import java.util.function.BiConsumer;
 public class RendererQueryFactory {
 
     private static final byte VERSIONED_TYPE_QUAKE_PREFECTURE = 0;
-    private static final byte VERSIONED_TYPE_TSUNAMI = 1;
+    private static final byte VERSIONED_TYPE_TSUNAMI = 2;
     private static final String HMAC_ALGO = "HmacSHA1";
 
     private static final EnumMap<SeismicIntensity, BiConsumer<QuakePrefectureV0.Builder, CodeArray>> SETTER_MAP =
@@ -182,7 +182,7 @@ public class RendererQueryFactory {
             }
         }
 
-        TsunamiForecastV0.Builder builder = new TsunamiForecastV0.Builder();
+        TsunamiForecastV1.Builder builder = new TsunamiForecastV1.Builder();
         builder.time(time.getEpochSecond());
 
         List<Epicenter> epicenters = new ArrayList<>();
@@ -199,7 +199,7 @@ public class RendererQueryFactory {
         builder.warning(new CodeArray.Builder().codes(warningCodes).build());
         builder.major_warning(new CodeArray.Builder().codes(majorWarningCodes).build());
 
-        byte[] body = TsunamiForecastV0.ADAPTER.encode(builder.build());
+        byte[] body = TsunamiForecastV1.ADAPTER.encode(builder.build());
         byte[] query = computeQuery(VERSIONED_TYPE_TSUNAMI, body);
         return Base32768.getEncoder().encodeToString(query);
     }
