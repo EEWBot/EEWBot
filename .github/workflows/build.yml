@@ -30,3 +30,11 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           EEWBOT_RENDERER_ADDRESS: ${{ secrets.EEWBOT_RENDERER_ADDRESS }}
           EEWBOT_RENDERER_KEY: ${{ secrets.EEWBOT_RENDERER_KEY }}
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            build/reports/tests/
+            build/test-results/
