@@ -447,6 +447,8 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
                                     }
                                     if (value == null || Integer.parseInt(value.getSerialNo()) < currentSerialNo ||
                                             (eew.getBody().isCanceled() && !value.getBody().isCanceled())) {
+                                        if (value != null)
+                                            eew.setPrev(value);
                                         update.set(true);
                                         return eew;
                                     } else {
