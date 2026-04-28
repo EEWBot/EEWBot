@@ -3,7 +3,9 @@ package net.teamfruit.eewbot.gateway;
 import com.google.gson.JsonSyntaxException;
 import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
+import net.teamfruit.eewbot.entity.dmdata.DmdataEEWUpdate;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataContract;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataError;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketList;
@@ -24,10 +26,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
-public class DmdataGateway implements Gateway<DmdataEEW> {
+public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
 
     public static final String WS_BASE = "wss://ws.api.dmdata.jp/v2/websocket";
     public static final String WS_BASE_TOKYO = "wss://ws-tokyo.api.dmdata.jp/v2/websocket";
@@ -47,11 +50,14 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
     private WebSocketConnection webSocket1;
     private WebSocketConnection webSocket2;
 
-    private final Map<String, DmdataEEW> prev = new ConcurrentHashMap<>();
+    private final Map<String, EEWState> prev = new ConcurrentHashMap<>();
+
+    private record EEWState(DmdataEEW eew, SeismicIntensity maxIntensitySoFar) {
+    }
 
     @FunctionalInterface
     public interface Listener {
-        void onNewData(DmdataEEW eew);
+        void onNewData(DmdataEEWUpdate update);
     }
 
     public DmdataGateway(java.net.http.HttpClient httpClient, DmdataAPI api, long appId, boolean multiConnect, Listener listener, ScheduledExecutorService reconnectScheduler) {
@@ -64,7 +70,7 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
     }
 
     @Override
-    public void onNewData(DmdataEEW data) {
+    public void onNewData(DmdataEEWUpdate data) {
         if (this.closed)
             return;
         this.listener.onNewData(data);
@@ -435,28 +441,37 @@ public class DmdataGateway implements Gateway<DmdataEEW> {
                             if (!isTest) {
                                 int currentSerialNo = Integer.parseInt(eew.getSerialNo());
                                 AtomicBoolean update = new AtomicBoolean(false);
+                                AtomicReference<DmdataEEW> capturedPrev = new AtomicReference<>();
+                                AtomicReference<SeismicIntensity> capturedMaxBefore = new AtomicReference<>(SeismicIntensity.UNKNOWN);
                                 DmdataGateway.this.prev.compute(eew.getEventId(), (key, value) -> {
                                     int size = DmdataGateway.this.prev.size();
-                                    if (value == null) {
+                                    DmdataEEW prevEEW = value != null ? value.eew() : null;
+                                    if (prevEEW == null) {
                                         eew.setConcurrentIndex(size + 1);
                                         if (size >= 1)
                                             eew.setConcurrent(true);
                                     } else {
-                                        eew.setConcurrentIndex(value.getConcurrentIndex());
-                                        eew.setConcurrent(value.isConcurrent() || size >= 2);
+                                        eew.setConcurrentIndex(prevEEW.getConcurrentIndex());
+                                        eew.setConcurrent(prevEEW.isConcurrent() || size >= 2);
                                     }
-                                    if (value == null || Integer.parseInt(value.getSerialNo()) < currentSerialNo ||
-                                            (eew.getBody().isCanceled() && !value.getBody().isCanceled())) {
-                                        if (value != null)
-                                            eew.setPrev(value);
+                                    if (prevEEW == null || Integer.parseInt(prevEEW.getSerialNo()) < currentSerialNo ||
+                                            (eew.getBody().isCanceled() && !prevEEW.getBody().isCanceled())) {
+                                        SeismicIntensity maxBefore = value != null ? value.maxIntensitySoFar() : SeismicIntensity.UNKNOWN;
+                                        DmdataEEW.Body.Intensity currentIntensityField = eew.getBody().getIntensity();
+                                        SeismicIntensity currentBodyIntensity = currentIntensityField != null
+                                                ? SeismicIntensity.get(currentIntensityField.getForecastMaxInt().getFrom())
+                                                : SeismicIntensity.UNKNOWN;
+                                        SeismicIntensity newRunningMax = currentBodyIntensity.compareTo(maxBefore) > 0 ? currentBodyIntensity : maxBefore;
                                         update.set(true);
-                                        return eew;
+                                        capturedPrev.set(prevEEW);
+                                        capturedMaxBefore.set(maxBefore);
+                                        return new EEWState(eew, newRunningMax);
                                     } else {
                                         return value;
                                     }
                                 });
                                 if (update.get()) {
-                                    onNewData(eew);
+                                    onNewData(new DmdataEEWUpdate(eew, capturedPrev.get(), capturedMaxBefore.get()));
                                     if (!DmdataGateway.this.multiConnect && eew.getBody().isLastInfo()) {
                                         DmdataGateway.this.prev.remove(eew.getEventId());
                                     }

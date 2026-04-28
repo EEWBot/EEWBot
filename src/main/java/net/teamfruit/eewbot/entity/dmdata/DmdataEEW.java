@@ -18,36 +18,12 @@ import java.util.stream.Collectors;
 public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
 
     private Body body;
-    private DmdataEEW prev;
-    private SeismicIntensity maxIntensityBefore = SeismicIntensity.UNKNOWN;
     private boolean concurrent;
     private int concurrentIndex;
     private String rawData;
 
     public Body getBody() {
         return this.body;
-    }
-
-    @Nullable
-    public DmdataEEW getPrev() {
-        return this.prev;
-    }
-
-    public void setPrev(DmdataEEW prev) {
-        this.prev = prev;
-        SeismicIntensity prevIntensity = prev.getBody().getIntensity() != null ?
-                SeismicIntensity.get(prev.getBody().getIntensity().getForecastMaxInt().getFrom()) : SeismicIntensity.UNKNOWN;
-        if (this.maxIntensityBefore.compareTo(prevIntensity) < 0)
-            this.maxIntensityBefore = prevIntensity;
-    }
-
-    public SeismicIntensity getMaxIntensityEEW() {
-        if (getBody().getIntensity() == null)
-            return this.maxIntensityBefore;
-        SeismicIntensity intensity = SeismicIntensity.get(getBody().getIntensity().getForecastMaxInt().getFrom());
-        if (intensity.compareTo(this.maxIntensityBefore) > 0)
-            return intensity;
-        return this.maxIntensityBefore;
     }
 
     public boolean isConcurrent() {
