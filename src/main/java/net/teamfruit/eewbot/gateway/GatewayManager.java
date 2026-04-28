@@ -4,6 +4,7 @@ import discord4j.core.GatewayDiscordClient;
 import net.teamfruit.eewbot.*;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
+import net.teamfruit.eewbot.entity.dmdata.DmdataEEWUpdate;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
@@ -125,7 +126,8 @@ public class GatewayManager implements AutoCloseable {
         }
     }
 
-    private void handleDmdataEEW(DmdataEEW eew) {
+    private void handleDmdataEEW(DmdataEEWUpdate update) {
+        DmdataEEW eew = update.current();
         MDC.put("gateway", "dmdata");
         MDC.put("event.type", "eew");
         MDC.put("event.id", eew.getEventId());
@@ -135,9 +137,9 @@ public class GatewayManager implements AutoCloseable {
                     eew.getBody().getIntensity() == null)
                 return;
 
-            boolean isWarning = EEWFilterClassifier.isDmdataWarning(eew);
-            boolean isImportant = EEWFilterClassifier.isDmdataImportant(eew);
-            SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
+            boolean isWarning = EEWFilterClassifier.isDmdataWarning(eew, update.prev());
+            boolean isImportant = EEWFilterClassifier.isDmdataImportant(eew, update.prev());
+            SeismicIntensity maxIntensity = update.maxIntensityEEW();
             ChannelFilter filter = EEWFilterClassifier.classifyEEW(isWarning, isImportant, maxIntensity);
             submitMessage(() -> {
                 this.service.sendMessage(filter, eew);
