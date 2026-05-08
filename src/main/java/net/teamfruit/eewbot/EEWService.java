@@ -69,7 +69,7 @@ public class EEWService {
         this.embedContext = embedContext;
         this.executor = executor;
         this.httpClient = httpClient;
-        this.webhookSenderHeader = config.getWebhookSender().getCustomHeader().split(":");
+        this.webhookSenderHeader = parseWebhookSenderHeader(config.getWebhookSender().getCustomHeader());
 
         if (StringUtils.isNotEmpty(config.getWebhookSender().getAddress()))
             this.webhookSenderAddress = URI.create(config.getWebhookSender().getAddress());
@@ -236,13 +236,13 @@ public class EEWService {
                 .collect(Collectors.toList());
 
         try {
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(replacePathPreservingQuery(this.webhookSenderAddress, "/api/send"))
                     .header("User-Agent", "EEWBot")
                     .header("Content-Type", "application/json")
-                    .headers(this.webhookSenderHeader)
-                    .POST(HttpRequest.BodyPublishers.ofString(Codecs.GSON.toJson(senderRequests)))
-                    .build();
+                    .POST(HttpRequest.BodyPublishers.ofString(Codecs.GSON.toJson(senderRequests)));
+            applyWebhookSenderHeader(requestBuilder);
+            HttpRequest request = requestBuilder.build();
 
             HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
@@ -253,19 +253,22 @@ public class EEWService {
             Log.logger.info("Sent message to webhook sender: {}", response.body());
         } catch (InterruptedException e) {
             Log.logger.error("Interrupted while sending messages to webhook sender", e);
+            onError.accept(webhookChannels);
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             Log.logger.error("Failed to send message to webhook sender", e);
+            onError.accept(webhookChannels);
         }
     }
 
     public int sendWebhookSenderSingle(WebhookSenderRequest senderRequest) throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(replacePathPreservingQuery(this.webhookSenderAddress, "/api/send"))
                 .header("User-Agent", "EEWBot")
                 .header("Content-Type", "application/json")
-                .headers(this.webhookSenderHeader)
-                .POST(HttpRequest.BodyPublishers.ofString(Codecs.GSON.toJson(List.of(senderRequest))))
-                .build();
+                .POST(HttpRequest.BodyPublishers.ofString(Codecs.GSON.toJson(List.of(senderRequest))));
+        applyWebhookSenderHeader(requestBuilder);
+        HttpRequest request = requestBuilder.build();
         HttpResponse<Void> response = this.httpClient.send(request, HttpResponse.BodyHandlers.discarding());
         return response.statusCode();
     }
@@ -280,12 +283,12 @@ public class EEWService {
         Thread.currentThread().setName("eewbot-webhook-sender-handle-not-found-thread");
 
         try {
-            HttpRequest getRequest = HttpRequest.newBuilder()
+            HttpRequest.Builder getRequestBuilder = HttpRequest.newBuilder()
                     .GET()
                     .uri(replacePathPreservingQuery(this.webhookSenderAddress, "/api/notfounds"))
-                    .header("User-Agent", "EEWBot")
-                    .headers(this.webhookSenderHeader)
-                    .build();
+                    .header("User-Agent", "EEWBot");
+            applyWebhookSenderHeader(getRequestBuilder);
+            HttpRequest getRequest = getRequestBuilder.build();
             HttpResponse<String> getResponse = this.httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString());
             if (getResponse.statusCode() != 200) {
                 Log.logger.error("Failed to fetch not founds from webhook sender: " + getResponse.statusCode() + " " + getResponse.body());
@@ -315,5 +318,24 @@ public class EEWService {
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Invalid URI: " + base + " with path " + newPath, e);
         }
+    }
+
+    private void applyWebhookSenderHeader(HttpRequest.Builder builder) {
+        if (this.webhookSenderHeader.length > 0) {
+            builder.headers(this.webhookSenderHeader);
+        }
+    }
+
+    private static String[] parseWebhookSenderHeader(String customHeader) {
+        if (StringUtils.isBlank(customHeader)) {
+            return new String[0];
+        }
+
+        String[] header = customHeader.split(":", 2);
+        if (header.length != 2 || StringUtils.isBlank(header[0]) || StringUtils.isBlank(header[1])) {
+            Log.logger.warn("Ignoring invalid webhook sender custom header");
+            return new String[0];
+        }
+        return new String[]{header[0].trim(), header[1].trim()};
     }
 }
