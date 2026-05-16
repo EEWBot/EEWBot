@@ -22,8 +22,19 @@ jobs:
           java-version: '25'
           distribution: 'corretto'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
       - name: Build with Gradle
-        run: ./gradlew build
+        run: ./gradlew build -x test allTests
         env:
           TZ: 'Asia/Tokyo'
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          EEWBOT_RENDERER_ADDRESS: ${{ secrets.EEWBOT_RENDERER_ADDRESS }}
+          EEWBOT_RENDERER_KEY: ${{ secrets.EEWBOT_RENDERER_KEY }}
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: |
+            build/reports/tests/
+            build/test-results/

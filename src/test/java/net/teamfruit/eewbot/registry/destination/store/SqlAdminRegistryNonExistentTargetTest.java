@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Contract tests: writes targeting non-existent rows must be no-ops
  * (no revision increment, no onWrite callback).
  */
+@Tag("integration")
 class SqlAdminRegistryNonExistentTargetTest {
 
     @TempDir

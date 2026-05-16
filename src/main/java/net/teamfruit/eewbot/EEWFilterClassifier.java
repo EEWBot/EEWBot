@@ -4,6 +4,7 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
+import org.jetbrains.annotations.Nullable;
 
 public final class EEWFilterClassifier {
 
@@ -37,15 +38,15 @@ public final class EEWFilterClassifier {
                 !eew.getRegionName().equals(prev.getRegionName());
     }
 
-    public static boolean isDmdataWarning(DmdataEEW eew) {
-        DmdataEEW.Body currentBody = eew.getBody();
-        DmdataEEW.Body prevBody = eew.getPrev() != null ? eew.getPrev().getBody() : null;
+    public static boolean isDmdataWarning(DmdataEEW current, @Nullable DmdataEEW prev) {
+        DmdataEEW.Body currentBody = current.getBody();
+        DmdataEEW.Body prevBody = prev != null ? prev.getBody() : null;
         return currentBody.isCanceled() ? prevBody != null && prevBody.isWarning() : currentBody.isWarning();
     }
 
-    public static boolean isDmdataImportant(DmdataEEW eew) {
-        DmdataEEW.Body currentBody = eew.getBody();
-        DmdataEEW.Body prevBody = eew.getPrev() != null ? eew.getPrev().getBody() : null;
+    public static boolean isDmdataImportant(DmdataEEW current, @Nullable DmdataEEW prev) {
+        DmdataEEW.Body currentBody = current.getBody();
+        DmdataEEW.Body prevBody = prev != null ? prev.getBody() : null;
         if (prevBody == null)
             return true;
         DmdataEEW.Body.Intensity currentIntensity = currentBody.getIntensity();

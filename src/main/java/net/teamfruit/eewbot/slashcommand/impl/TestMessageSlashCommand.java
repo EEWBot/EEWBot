@@ -26,7 +26,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Objects;
 
 public class TestMessageSlashCommand implements ISlashCommand {
@@ -77,7 +76,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                                     .description("eewbot.scmd.testmessage.error.unknown", "webhook-sender returned abnormal status code: " + statusCode)
                                     .build())
                             .build()).then();
-                } catch (URISyntaxException | IOException | InterruptedException e) {
+                } catch (IOException | InterruptedException e) {
                     return event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang, ctx)
                                     .title("eewbot.scmd.testmessage.error.title")

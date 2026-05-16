@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -25,20 +26,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Utility to generate {@code dump.rdb} for Redis migration tests.
- *
- * <p>This test is {@code @Disabled} by default. Run it manually when the dump needs to be regenerated:
- * <ol>
- *   <li>Remove or comment out {@code @Disabled}</li>
- *   <li>Run this test class (requires Docker)</li>
- *   <li>Verify the generated {@code dump.rdb} at {@code src/test/resources/migration/dump.rdb}</li>
- *   <li>Re-enable {@code @Disabled}</li>
- * </ol>
- *
- * <p>The generated RDB contains 8 channels in old format (with {@code isGuild}, {@code webhook: {id, token, threadId}},
- * no {@code channelId}) plus the {@code channel-index} RediSearch index.
- */
+@Tag("integration")
 @Disabled("Run manually to regenerate dump.rdb for Redis migration tests")
 @Testcontainers(disabledWithoutDocker = true)
 class RedisDumpGeneratorTest {

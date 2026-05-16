@@ -1,5 +1,7 @@
 {
-  "ja_JP": "日本語 (Japanese)",
+  "ja_JP": "日本語",
   "en_US": "English, US",
-  "zh_TW": "中文（台灣）"
+  "zh_TW": "中文（台灣）",
+  "ko_Hanja": "한자",
+  "ko_KP": "조선어"
 }

@@ -22,7 +22,6 @@ dependencies {
     api(libs.com.google.code.gson.gson)
     api(libs.commons.net.commons.net)
     api(libs.org.apache.commons.commons.lang3)
-    api(libs.org.apache.httpcomponents.client5.httpclient5)
     api(libs.com.fasterxml.jackson.dataformat.jackson.dataformat.xml)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     api(libs.redis.clients.jedis)
@@ -53,7 +52,7 @@ dependencies {
 }
 
 group = "net.teamfruit"
-version = "2.9.2"
+version = "2.9.3"
 description = "EEWBot"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
@@ -69,6 +68,10 @@ sourceSets {
         }
     }
 }
+
+val rendererAddress = providers.environmentVariable("EEWBOT_RENDERER_ADDRESS")
+val rendererKey = providers.environmentVariable("EEWBOT_RENDERER_KEY")
+val webhookUrl = providers.environmentVariable("DISCORD_WEBHOOK_URL")
 
 tasks {
     named("jar") {
@@ -89,6 +92,51 @@ tasks {
     }
 
     test {
+        useJUnitPlatform {
+            excludeTags("integration")
+        }
+        rendererAddress.orNull?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        rendererKey.orNull?.let { environment("EEWBOT_RENDERER_KEY", it) }
+    }
+
+    register<Test>("integrationTest") {
+        description = "Runs integration tests (migration, equivalence, store)"
+        group = "verification"
+        useJUnitPlatform {
+            includeTags("integration")
+        }
+        testClassesDirs = sourceSets["test"].output.classesDirs
+        classpath = sourceSets["test"].runtimeClasspath
+        rendererAddress.orNull?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        rendererKey.orNull?.let { environment("EEWBOT_RENDERER_KEY", it) }
+        webhookUrl.orNull?.let { environment("DISCORD_WEBHOOK_URL", it) }
+    }
+
+    register<Test>("allTests") {
+        description = "Runs all tests including integration"
+        group = "verification"
         useJUnitPlatform()
+        testClassesDirs = sourceSets["test"].output.classesDirs
+        classpath = sourceSets["test"].runtimeClasspath
+        rendererAddress.orNull?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        rendererKey.orNull?.let { environment("EEWBOT_RENDERER_KEY", it) }
+        webhookUrl.orNull?.let { environment("DISCORD_WEBHOOK_URL", it) }
+    }
+
+    register<Test>("updateGolden") {
+        description = "Regenerates all expected JSON files for JMA XML golden tests"
+        group = "verification"
+        useJUnitPlatform()
+        testClassesDirs = sourceSets["test"].output.classesDirs
+        classpath = sourceSets["test"].runtimeClasspath
+        filter {
+            includeTest(
+                "net.teamfruit.eewbot.entity.jma.telegram.AllExpectedJsonGeneratorTest",
+                "generateAllExpectedJsonFiles"
+            )
+        }
+        systemProperty("update-golden", "true")
+        rendererAddress.orNull?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
+        rendererKey.orNull?.let { environment("EEWBOT_RENDERER_KEY", it) }
     }
 }

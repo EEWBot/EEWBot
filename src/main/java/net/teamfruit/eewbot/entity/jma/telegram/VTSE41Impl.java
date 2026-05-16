@@ -3,13 +3,9 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.*;
-import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 public class VTSE41Impl extends JmxSeis implements VTSE41 {
 
@@ -54,33 +50,25 @@ public class VTSE41Impl extends JmxSeis implements VTSE41 {
 
     @Override
     public Instant getTime() {
-        if (isCancelReport())
-            throw new IllegalStateException("Cancel report");
-
-        List<Earthquake> earthquakes = getBody().getEarthquakes();
-        if (earthquakes.isEmpty())
-            return null;
-
-        return earthquakes.getFirst().getOriginTime();
+        return getReportDateTime();
     }
 
     @Override
-    public @Nullable Coordinate getCoordinate() {
+    public List<Coordinate> getCoordinates() {
         if (isCancelReport())
-            throw new IllegalStateException("Cancel report");
+            return Collections.emptyList();
 
-        List<Earthquake> earthquakes = getBody().getEarthquakes();
-        if (earthquakes.isEmpty())
-            return null;
+        List<Coordinate> result = new ArrayList<>();
+        for (Earthquake earthquake : getBody().getEarthquakes()) {
+            Hypocenter hypocenter = earthquake.getHypocenter();
+            if (hypocenter == null)
+                continue;
 
-        Hypocenter hypocenter = earthquakes.getFirst().getHypocenter();
-        if (hypocenter == null)
-            return null;
-
-        List<Coordinate> coordinates = hypocenter.getArea().getCoordinate();
-        if (coordinates.isEmpty())
-            return null;
-
-        return coordinates.getFirst();
+            List<Coordinate> coordinates = hypocenter.getArea().getCoordinate();
+            if (!coordinates.isEmpty()) {
+                result.add(coordinates.getFirst());
+            }
+        }
+        return result;
     }
 }
