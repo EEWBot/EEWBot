@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
-import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.TsunamiCategory;
@@ -33,15 +32,13 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
     @Override
     @SuppressWarnings("NonAsciiCharacters")
     default <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
-        builder.title("eewbot.tsunami.title");
-
         if (isCancelReport()) {
+            builder.title("eewbot.tsunami.title");
             getText().ifPresentOrElse(builder::description, () -> builder.description("eewbot.tsunami.cancel"));
             builder.color(TsunamiCategory.津波なし.getColor());
         } else {
             List<TsunamiItem> items = getForecastItems();
-            Color highestColor = TsunamiCategory.津波なし.getColor();
-            int highestPriority = -1;
+            TsunamiCategory highest = null;
 
             // Group items by category kind name to avoid exceeding Discord's 25-field limit
             LinkedHashMap<String, List<String>> groupedAreas = new LinkedHashMap<>();
@@ -52,9 +49,8 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
                     continue;
 
                 TsunamiCategory tsunamiCategory = TsunamiCategory.fromCode(category.getKind().getCode());
-                if (tsunamiCategory.getLevel() > highestPriority) {
-                    highestPriority = tsunamiCategory.getLevel();
-                    highestColor = tsunamiCategory.getColor();
+                if (highest == null || tsunamiCategory.getLevel() > highest.getLevel()) {
+                    highest = tsunamiCategory;
                 }
 
                 String categoryName = category.getKind().getName();
@@ -115,9 +111,10 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
                 }
             }
 
-            builder.color(highestColor);
+            builder.title(highest != null ? highest.getTitleKey() : "eewbot.tsunami.title");
+            builder.color(highest != null ? highest.getColor() : TsunamiCategory.津波なし.getColor());
 
-            if (highestPriority > 0 && ctx.renderer().isAvailable()) {
+            if (highest != null && highest.getLevel() > 0 && ctx.renderer().isAvailable()) {
                 try {
                     builder.image(ctx.renderer().generateURL(this));
                 } catch (Exception e) {

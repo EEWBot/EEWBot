@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Requires Docker to be available. Tests are skipped (not failed) when Docker is unavailable.
  */
+@org.junit.jupiter.api.Tag("integration")
 @Testcontainers(disabledWithoutDocker = true)
 class JsonToPostgresMigrationEquivalenceTest {
 
@@ -551,9 +552,8 @@ class JsonToPostgresMigrationEquivalenceTest {
                 .orElseThrow();
         long webhookId = withWebhook.getValue().getWebhook().id();
 
-        Long differentTargetId = this.testChannels.entrySet().stream()
-                .filter(e -> !e.getKey().equals(withWebhook.getKey()))
-                .map(Map.Entry::getKey)
+        Long differentTargetId = this.testChannels.keySet().stream()
+                .filter(aLong -> !aLong.equals(withWebhook.getKey()))
                 .findFirst()
                 .orElseThrow();
 

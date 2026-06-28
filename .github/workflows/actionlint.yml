@@ -11,10 +11,10 @@ jobs:
     name: runner / actionlint
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v7.0.0
 
       - name: actionlint
-        uses: reviewdog/action-actionlint@v1.71.0
+        uses: reviewdog/action-actionlint@v1.72.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-review
