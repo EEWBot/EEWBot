@@ -1,0 +1,39 @@
+{
+  "embeds": [
+    {
+      "title": "緊急地震速報 (警報) 第7報",
+      "timestamp": "2024-04-17T14:15:01Z",
+      "color": 16711680,
+      "footer": {
+        "text": "気象庁"
+      },
+      "fields": [
+        {
+          "name": "震央",
+          "value": "豊後水道",
+          "inline": true
+        },
+        {
+          "name": "深さ",
+          "value": "40km",
+          "inline": true
+        },
+        {
+          "name": "マグニチュード",
+          "value": "5.8",
+          "inline": true
+        },
+        {
+          "name": "最大震度",
+          "value": "5弱",
+          "inline": false
+        },
+        {
+          "name": "警報対象の地域",
+          "value": "愛媛県南予 高知県西部 大分県南部 大分県中部 愛媛県中予 大分県北部 愛媛県東予 山口県東部 広島県南西部",
+          "inline": false
+        }
+      ]
+    }
+  ]
+}
