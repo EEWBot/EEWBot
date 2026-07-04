@@ -182,7 +182,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                         .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
                         .setTypes(types)
                         .setTest("no")
-                        .setFormatMode("xml")
+                        .setFormatMode("raw")
                         .build());
             } catch (IOException | InterruptedException e) {
                 throw new EEWGatewayException(e);
