@@ -1,7 +1,7 @@
 package net.teamfruit.eewbot;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
+import net.teamfruit.eewbot.entity.jma.telegram.EEW;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.jetbrains.annotations.Nullable;
@@ -38,24 +38,20 @@ public final class EEWFilterClassifier {
                 !eew.getRegionName().equals(prev.getRegionName());
     }
 
-    public static boolean isDmdataWarning(DmdataEEW current, @Nullable DmdataEEW prev) {
-        DmdataEEW.Body currentBody = current.getBody();
-        DmdataEEW.Body prevBody = prev != null ? prev.getBody() : null;
-        return currentBody.isCanceled() ? prevBody != null && prevBody.isWarning() : currentBody.isWarning();
+    public static boolean isDmdataWarning(EEW current, @Nullable EEW prev) {
+        return current.isCanceled() ? prev != null && prev.isEEWWarning() : current.isEEWWarning();
     }
 
-    public static boolean isDmdataImportant(DmdataEEW current, @Nullable DmdataEEW prev) {
-        DmdataEEW.Body currentBody = current.getBody();
-        DmdataEEW.Body prevBody = prev != null ? prev.getBody() : null;
-        if (prevBody == null)
+    public static boolean isDmdataImportant(EEW current, @Nullable EEW prev) {
+        if (prev == null)
             return true;
-        DmdataEEW.Body.Intensity currentIntensity = currentBody.getIntensity();
-        DmdataEEW.Body.Intensity prevIntensity = prevBody.getIntensity();
-        return currentBody.isLastInfo() ||
-                currentBody.isWarning() != prevBody.isWarning() ||
-                (currentIntensity == null) != (prevIntensity == null) ||
-                currentIntensity != null && !currentIntensity.getForecastMaxInt().getFrom().equals(prevIntensity.getForecastMaxInt().getFrom()) ||
-                !currentBody.getEarthquake().getHypocenter().getName().equals(prevBody.getEarthquake().getHypocenter().getName());
+        EEW.ForecastMaxInt currentMaxInt = current.getForecastMaxInt();
+        EEW.ForecastMaxInt prevMaxInt = prev.getForecastMaxInt();
+        return current.isLastInfo() ||
+                current.isEEWWarning() != prev.isEEWWarning() ||
+                (currentMaxInt == null) != (prevMaxInt == null) ||
+                currentMaxInt != null && !currentMaxInt.from().equals(prevMaxInt.from()) ||
+                !current.getHypocenterName().equals(prev.getHypocenterName());
     }
 
     public static ChannelFilter classifyQuakeInfo(SeismicIntensity maxIntensity) {

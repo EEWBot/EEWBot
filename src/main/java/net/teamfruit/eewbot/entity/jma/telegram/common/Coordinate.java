@@ -31,6 +31,8 @@ public class Coordinate {
     private float lat;
     private float lon;
     private @Nullable String depth;
+    private @Nullable String depthValue;
+    private @Nullable String depthCondition;
 
     @Nullable
     public String getRawValue() {
@@ -84,6 +86,24 @@ public class Coordinate {
         return this.depth;
     }
 
+    @Nullable
+    public String getDepthValue() {
+        if (this.value == null) {
+            return null;
+        }
+        parseCoordIfNotParsed();
+        return this.depthValue;
+    }
+
+    @Nullable
+    public String getDepthCondition() {
+        if (this.value == null) {
+            return null;
+        }
+        parseCoordIfNotParsed();
+        return this.depthCondition;
+    }
+
     private void parseCoordIfNotParsed() {
         if (this.isParsed) {
             return;
@@ -94,6 +114,7 @@ public class Coordinate {
                 this.lat = Float.parseFloat(matcher.group(1));
                 this.lon = Float.parseFloat(matcher.group(2));
                 this.depth = parseDepth(matcher.group(3));
+                parseDepthValueCondition(matcher.group(3));
             }
         }
         this.isParsed = true;
@@ -113,6 +134,23 @@ public class Coordinate {
             }
         }
         return -depth / 1000 + "km";
+    }
+
+    // 深さの数値(km)と状態("ごく浅い"等)を分離して保持する。getDepth()の"10km"形式とは別に、EEW側でdmdata JSONのdepth.value/depth.conditionを再現するために使う
+    private void parseDepthValueCondition(@Nullable String depthStr) {
+        if (depthStr == null) {
+            this.depthCondition = "不明";
+            return;
+        }
+        int depth = Integer.parseInt(depthStr);
+        if (depth >= 0) {
+            this.depthCondition = "ごく浅い";
+        } else if (depth <= -700000) {
+            // dmdata JSONのdepth.conditionは全角表記の"７００ｋｍ以上"
+            this.depthCondition = "７００ｋｍ以上";
+        } else {
+            this.depthValue = String.valueOf(-depth / 1000);
+        }
     }
 
     @Override

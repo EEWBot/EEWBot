@@ -3,11 +3,11 @@ package net.teamfruit.eewbot.gateway;
 import discord4j.core.GatewayDiscordClient;
 import net.teamfruit.eewbot.*;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEWUpdate;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
+import net.teamfruit.eewbot.entity.jma.telegram.EEW;
 import net.teamfruit.eewbot.entity.jma.telegram.VTSE41;
 import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
@@ -127,14 +127,14 @@ public class GatewayManager implements AutoCloseable {
     }
 
     private void handleDmdataEEW(DmdataEEWUpdate update) {
-        DmdataEEW eew = update.current();
+        EEW eew = update.current();
         MDC.put("gateway", "dmdata");
         MDC.put("event.type", "eew");
         MDC.put("event.id", eew.getEventId());
         try {
-            if (eew.getBody().getEarthquake() != null &&
-                    Strings.CS.equals(eew.getBody().getEarthquake().getCondition(), "仮定震源要素") &&
-                    eew.getBody().getIntensity() == null)
+            if (eew.hasEarthquake() &&
+                    Strings.CS.equals(eew.getCondition(), "仮定震源要素") &&
+                    eew.getForecastRegions() == null)
                 return;
 
             boolean isWarning = EEWFilterClassifier.isDmdataWarning(eew, update.prev());

@@ -1,0 +1,215 @@
+{
+  "_originalId": "TESTDATA_3",
+  "_schema": {
+    "type": "eew-information",
+    "version": "1.0.0"
+  },
+  "type": "緊急地震速報（警報）",
+  "title": "緊急地震速報（警報）",
+  "status": "通常",
+  "infoType": "発表",
+  "editorialOffice": "気象庁本庁",
+  "publishingOffice": [
+    "気象庁"
+  ],
+  "pressDateTime": "2026-05-11T10:23:55+09:00",
+  "reportDateTime": "2026-05-11T10:23:54+09:00",
+  "targetDateTime": "2026-05-11T10:23:54+09:00",
+  "eventId": "20260511102316",
+  "serialNo": "3",
+  "infoKind": "緊急地震速報",
+  "infoKindVersion": "1.2_0",
+  "headline": null,
+  "body": {
+    "isLastInfo": false,
+    "isCanceled": false,
+    "isWarning": true,
+    "zones": [
+      {
+        "kind": {
+          "lastKind": {
+            "code": "31",
+            "name": "緊急地震速報（警報）"
+          },
+          "code": "31",
+          "name": "緊急地震速報（警報）"
+        },
+        "code": "9934",
+        "name": "北陸"
+      }
+    ],
+    "prefectures": [
+      {
+        "kind": {
+          "lastKind": {
+            "code": "31",
+            "name": "緊急地震速報（警報）"
+          },
+          "code": "31",
+          "name": "緊急地震速報（警報）"
+        },
+        "code": "9170",
+        "name": "石川"
+      },
+      {
+        "kind": {
+          "lastKind": {
+            "code": "00",
+            "name": "なし"
+          },
+          "code": "31",
+          "name": "緊急地震速報（警報）"
+        },
+        "code": "9150",
+        "name": "新潟"
+      }
+    ],
+    "regions": [
+      {
+        "kind": {
+          "lastKind": {
+            "code": "31",
+            "name": "緊急地震速報（警報）"
+          },
+          "code": "31",
+          "name": "緊急地震速報（警報）"
+        },
+        "code": "390",
+        "name": "石川県能登"
+      },
+      {
+        "kind": {
+          "lastKind": {
+            "code": "31",
+            "name": "緊急地震速報（警報）"
+          },
+          "code": "31",
+          "name": "緊急地震速報（警報）"
+        },
+        "code": "391",
+        "name": "石川県加賀"
+      },
+      {
+        "kind": {
+          "lastKind": {
+            "code": "00",
+            "name": "なし"
+          },
+          "code": "31",
+          "name": "緊急地震速報（警報）"
+        },
+        "code": "370",
+        "name": "新潟県上越"
+      }
+    ],
+    "earthquake": {
+      "originTime": "2026-05-11T10:23:16+09:00",
+      "arrivalTime": "2026-05-11T10:23:20+09:00",
+      "hypocenter": {
+        "coordinate": {
+          "latitude": {
+            "text": "37.5度",
+            "value": "37.5"
+          },
+          "longitude": {
+            "text": "137.2度",
+            "value": "137.2"
+          },
+          "height": {
+            "type": "高さ",
+            "unit": "m",
+            "value": "-10000"
+          },
+          "geodeticSystem": "日本測地系"
+        },
+        "depth": {
+          "type": "深さ",
+          "unit": "km",
+          "value": "10"
+        },
+        "reduce": {
+          "code": "9170",
+          "name": "石川県"
+        },
+        "accuracy": {
+          "epicenters": [
+            "4",
+            "4"
+          ],
+          "depth": "4",
+          "magnitudeCalculation": "5",
+          "numberOfMagnitudeCalculation": "5"
+        },
+        "code": "390",
+        "name": "石川県能登地方",
+        "landOrSea": "内陸"
+      },
+      "magnitude": {
+        "type": "マグニチュード",
+        "unit": "Mj",
+        "value": "7.3"
+      }
+    },
+    "intensity": {
+      "forecastMaxInt": {
+        "from": "6-",
+        "to": "6-"
+      },
+      "regions": [
+        {
+          "forecastMaxInt": {
+            "from": "6-",
+            "to": "6-"
+          },
+          "isPlum": false,
+          "isWarning": true,
+          "kind": {
+            "code": "11",
+            "name": "緊急地震速報（警報）"
+          },
+          "code": "390",
+          "name": "石川県能登",
+          "condition": "既に主要動到達と推測"
+        },
+        {
+          "forecastMaxInt": {
+            "from": "5-",
+            "to": "5-"
+          },
+          "isPlum": false,
+          "isWarning": true,
+          "kind": {
+            "code": "11",
+            "name": "緊急地震速報（警報）"
+          },
+          "code": "391",
+          "name": "石川県加賀",
+          "condition": "既に主要動到達と推測"
+        },
+        {
+          "forecastMaxInt": {
+            "from": "5-",
+            "to": "5-"
+          },
+          "isPlum": false,
+          "isWarning": true,
+          "kind": {
+            "code": "11",
+            "name": "緊急地震速報（警報）"
+          },
+          "code": "370",
+          "name": "新潟県上越",
+          "arrivalTime": "2026-05-11T10:24:02+09:00"
+        }
+      ]
+    },
+    "comments": {
+      "warning": {
+        "text": "強い揺れに警戒してください。",
+        "codes": [
+          "0201"
+        ]
+      }
+    }
+  }
+}

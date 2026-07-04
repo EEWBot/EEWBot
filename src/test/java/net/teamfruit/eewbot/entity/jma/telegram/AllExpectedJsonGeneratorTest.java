@@ -53,6 +53,8 @@ class AllExpectedJsonGeneratorTest {
         TELEGRAM_TYPES.put("vxse53", VXSE53Impl.class);
         TELEGRAM_TYPES.put("vxse61", VXSE61Impl.class);
         TELEGRAM_TYPES.put("vtse41", VTSE41Impl.class);
+        TELEGRAM_TYPES.put("vxse43", VXSE43Impl.class);
+        TELEGRAM_TYPES.put("vxse45", VXSE45Impl.class);
     }
 
     @BeforeAll

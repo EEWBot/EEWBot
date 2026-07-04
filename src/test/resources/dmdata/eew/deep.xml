@@ -1,0 +1,47 @@
+<Report xmlns="http://xml.kishou.go.jp/jmaxml1/">
+    <Control>
+        <Title>緊急地震速報（地震動予報）</Title>
+        <DateTime>2026-05-11T01:24:10Z</DateTime>
+        <Status>通常</Status>
+        <EditorialOffice>気象庁本庁</EditorialOffice>
+        <PublishingOffice>気象庁</PublishingOffice>
+    </Control>
+    <Head xmlns="http://xml.kishou.go.jp/jmaxml1/informationBasis1/">
+        <Title>緊急地震速報（地震動予報）</Title>
+        <ReportDateTime>2026-05-11T10:24:09+09:00</ReportDateTime>
+        <TargetDateTime>2026-05-11T10:24:09+09:00</TargetDateTime>
+        <EventID>20260511102316</EventID>
+        <InfoType>発表</InfoType>
+        <Serial>7</Serial>
+        <InfoKind>緊急地震速報</InfoKind>
+        <InfoKindVersion>1.2_0</InfoKindVersion>
+        <Headline>
+            <Text/>
+        </Headline>
+    </Head>
+    <Body xmlns="http://xml.kishou.go.jp/jmaxml1/body/seismology1/"
+          xmlns:jmx_eb="http://xml.kishou.go.jp/jmaxml1/elementBasis1/">
+        <Earthquake>
+            <OriginTime>2026-05-11T10:23:16+09:00</OriginTime>
+            <ArrivalTime>2026-05-11T10:23:20+09:00</ArrivalTime>
+            <Hypocenter>
+                <Area>
+                    <Name>小笠原諸島西方沖</Name>
+                    <Code type="震央地名">855</Code>
+                    <jmx_eb:Coordinate description="北緯２７．９度　東経１４０．２度　深さは７００ｋｍ以上">+27.9+140.2-700000/
+                    </jmx_eb:Coordinate>
+                    <ReduceName>小笠原近海</ReduceName>
+                    <ReduceCode type="短縮用震央地名">9755</ReduceCode>
+                    <LandOrSea>海域</LandOrSea>
+                </Area>
+                <Accuracy>
+                    <Epicenter rank="3" rank2="3">NaN</Epicenter>
+                    <Depth rank="3">NaN</Depth>
+                    <MagnitudeCalculation rank="4">NaN</MagnitudeCalculation>
+                    <NumberOfMagnitudeCalculation>3</NumberOfMagnitudeCalculation>
+                </Accuracy>
+            </Hypocenter>
+            <jmx_eb:Magnitude type="Mj" description="Ｍ６．９">6.9</jmx_eb:Magnitude>
+        </Earthquake>
+    </Body>
+</Report>

@@ -15,6 +15,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * dmdata JSON形式（eew-information）の緊急地震速報エンティティ。
+ *
+ * @deprecated JMA XML形式の {@link net.teamfruit.eewbot.entity.jma.telegram.VXSE45Impl} /
+ * {@link net.teamfruit.eewbot.entity.jma.telegram.VXSE43Impl}（{@link net.teamfruit.eewbot.entity.jma.telegram.EEW}）に置き換え済み。
+ * 出力同一性を検証するパリティテスト（DmdataEEWParityTest）のために残しており、パリティ確認後のフォローアップコミットで削除予定。
+ */
+@Deprecated
 public class DmdataEEW extends DmdataHeader implements Entity, ExternalData {
 
     private Body body;

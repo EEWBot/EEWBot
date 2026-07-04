@@ -6,6 +6,13 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * dmdata JSON形式テレグラムの共通ヘッダ。
+ *
+ * @deprecated {@link DmdataEEW} 専用。JMA XML形式への移行に伴い、パリティテストのためにのみ残している。
+ * {@link DmdataEEW} と共にフォローアップコミットで削除予定。
+ */
+@Deprecated
 public class DmdataHeader {
 
     public static final DateTimeFormatter FORMAT = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.of("Asia/Tokyo"));

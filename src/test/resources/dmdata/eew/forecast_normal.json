@@ -1,0 +1,99 @@
+{
+  "_originalId": "TESTDATA_2",
+  "_schema": {
+    "type": "eew-information",
+    "version": "1.0.0"
+  },
+  "type": "緊急地震速報（地震動予報）",
+  "title": "緊急地震速報（予報）",
+  "status": "通常",
+  "infoType": "発表",
+  "editorialOffice": "気象庁本庁",
+  "publishingOffice": [
+    "気象庁"
+  ],
+  "pressDateTime": "2026-05-11T10:23:41+09:00",
+  "reportDateTime": "2026-05-11T10:23:40+09:00",
+  "targetDateTime": "2026-05-11T10:23:40+09:00",
+  "eventId": "20260511102316",
+  "serialNo": "2",
+  "infoKind": "緊急地震速報",
+  "infoKindVersion": "1.2_0",
+  "headline": null,
+  "body": {
+    "isLastInfo": false,
+    "isCanceled": false,
+    "isWarning": false,
+    "earthquake": {
+      "originTime": "2026-05-11T10:23:16+09:00",
+      "arrivalTime": "2026-05-11T10:23:20+09:00",
+      "hypocenter": {
+        "coordinate": {
+          "latitude": {
+            "text": "37.5度",
+            "value": "37.5"
+          },
+          "longitude": {
+            "text": "137.2度",
+            "value": "137.2"
+          },
+          "height": {
+            "type": "高さ",
+            "unit": "m",
+            "value": "-10000"
+          },
+          "geodeticSystem": "日本測地系"
+        },
+        "depth": {
+          "type": "深さ",
+          "unit": "km",
+          "value": "10"
+        },
+        "reduce": {
+          "code": "9170",
+          "name": "石川県"
+        },
+        "accuracy": {
+          "epicenters": [
+            "3",
+            "3"
+          ],
+          "depth": "3",
+          "magnitudeCalculation": "4",
+          "numberOfMagnitudeCalculation": "3"
+        },
+        "code": "390",
+        "name": "石川県能登地方",
+        "landOrSea": "内陸"
+      },
+      "magnitude": {
+        "type": "マグニチュード",
+        "unit": "Mj",
+        "value": "6.6"
+      }
+    },
+    "intensity": {
+      "forecastMaxInt": {
+        "from": "4",
+        "to": "4"
+      },
+      "regions": [
+        {
+          "forecastMaxInt": {
+            "from": "4",
+            "to": "4"
+          },
+          "isPlum": false,
+          "isWarning": false,
+          "kind": {
+            "code": "10",
+            "name": "緊急地震速報（予報）"
+          },
+          "code": "390",
+          "name": "石川県能登",
+          "arrivalTime": "2026-05-11T10:23:25+09:00"
+        }
+      ]
+    }
+  }
+}
