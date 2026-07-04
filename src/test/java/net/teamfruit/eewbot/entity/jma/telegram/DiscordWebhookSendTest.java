@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @Tag("integration")
 class DiscordWebhookSendTest {
 
-    private static final String[] TELEGRAM_TYPES = {"vxse51", "vxse52", "vxse53", "vxse61", "vtse41"};
+    private static final String[] TELEGRAM_TYPES = {"vxse51", "vxse52", "vxse53", "vxse61", "vtse41", "xvse43", "vxse45"};
     private static final String rendererHash = BaseWebhookTest.computeRendererHash(
             System.getenv("EEWBOT_RENDERER_ADDRESS"),
             System.getenv("EEWBOT_RENDERER_KEY")

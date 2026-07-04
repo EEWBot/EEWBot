@@ -1,8 +1,9 @@
 {
   "embeds": [
     {
-      "title": "緊急地震速報 (予報) 第3報",
-      "timestamp": "2026-05-11T01:23:42Z",
+      "title": "緊急地震速報 (予報) 第1報",
+      "description": "※この情報は精度が低い可能性があります",
+      "timestamp": "2026-05-11T01:23:24Z",
       "color": 255,
       "footer": {
         "text": "気象庁"
@@ -19,8 +20,13 @@
           "inline": true
         },
         {
+          "name": "マグニチュード",
+          "value": "5.9",
+          "inline": true
+        },
+        {
           "name": "最大震度",
-          "value": "不明",
+          "value": "5弱",
           "inline": false
         }
       ]

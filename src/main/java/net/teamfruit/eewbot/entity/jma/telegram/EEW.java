@@ -172,8 +172,9 @@ public interface EEW extends JMAReport, ExternalData {
             } else {
                 builder.addField("eewbot.eew.depth", "eewbot.eew.km", true, getDepthValue());
             }
-            // JSON側ではmagnitudeオブジェクトが常に存在しM不明時はvalueのみnullになるため、NaN時もフィールド自体は追加してJSON経路と同じ出力にする
-            builder.addField("eewbot.eew.magnitude", getMagnitudeValue(), true);
+            if (getMagnitudeValue() != null) {
+                builder.addField("eewbot.eew.magnitude", getMagnitudeValue(), true);
+            }
             if (getForecastMaxInt() != null) {
                 builder.addField("eewbot.eew.forecastseismicintensity",
                         SeismicIntensity.get(getForecastMaxInt().from()).getSimple(),
