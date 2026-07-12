@@ -80,14 +80,6 @@ public interface EEW extends JMAReport, ExternalData {
     record ForecastRegion(String name, ForecastMaxInt forecastMaxInt, boolean plum, boolean warning) {
     }
 
-    default boolean isCanceled() {
-        return isCancelReport();
-    }
-
-    default String getSerialNo() {
-        return getSerial();
-    }
-
     default String getReportDateTimeIso() {
         return REPORT_DATE_TIME_FORMAT.format(getReportDateTime());
     }
@@ -122,9 +114,22 @@ public interface EEW extends JMAReport, ExternalData {
         return false;
     }
 
+    // PLUM法の予測地域を最大震度ごとに全角空白区切りでまとめ、震度の高い順に並べる。createEmbedとtoExternalDtoで共用
+    private static List<Map.Entry<ForecastMaxInt, String>> plumRegionsByMaxInt(List<ForecastRegion> regions) {
+        return regions.stream()
+                .filter(ForecastRegion::plum)
+                .filter(region -> region.forecastMaxInt() != null)
+                .collect(Collectors.groupingBy(ForecastRegion::forecastMaxInt,
+                        Collectors.mapping(ForecastRegion::name, Collectors.joining("　"))))
+                .entrySet()
+                .stream()
+                .sorted(Comparator.comparing(entry -> SeismicIntensity.get(entry.getKey().from()), Comparator.reverseOrder()))
+                .collect(Collectors.toList());
+    }
+
     @Override
     default <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
-        if (isCanceled()) {
+        if (isCancelReport()) {
             if (isConcurrent())
                 builder.title("eewbot.eew.eewcancel.concurrent", getConcurrentIndex());
             else
@@ -136,7 +141,8 @@ public interface EEW extends JMAReport, ExternalData {
                     .build();
         }
 
-        if (isEEWWarning()) {
+        boolean eewWarning = isEEWWarning();
+        if (eewWarning) {
             if (isLastInfo()) {
                 if (isConcurrent())
                     builder.title("eewbot.eew.eewalert.final.concurrent", getConcurrentIndex());
@@ -144,9 +150,9 @@ public interface EEW extends JMAReport, ExternalData {
                     builder.title("eewbot.eew.eewalert.final");
             } else {
                 if (isConcurrent())
-                    builder.title("eewbot.eew.eewalert.num.concurrent", getConcurrentIndex(), getSerialNo());
+                    builder.title("eewbot.eew.eewalert.num.concurrent", getConcurrentIndex(), getSerial());
                 else
-                    builder.title("eewbot.eew.eewalert.num", getSerialNo());
+                    builder.title("eewbot.eew.eewalert.num", getSerial());
             }
             builder.color(Color.RED);
         } else {
@@ -157,42 +163,39 @@ public interface EEW extends JMAReport, ExternalData {
                     builder.title("eewbot.eew.eewprediction.final");
             } else {
                 if (isConcurrent())
-                    builder.title("eewbot.eew.eewprediction.num.concurrent", getConcurrentIndex(), getSerialNo());
+                    builder.title("eewbot.eew.eewprediction.num.concurrent", getConcurrentIndex(), getSerial());
                 else
-                    builder.title("eewbot.eew.eewprediction.num", getSerialNo());
+                    builder.title("eewbot.eew.eewprediction.num", getSerial());
             }
             builder.color(Color.BLUE);
         }
         builder.timestamp(getReportDateTime());
         List<ForecastRegion> forecastRegions = getForecastRegions();
+        ForecastMaxInt forecastMaxInt = getForecastMaxInt();
         if (!Strings.CS.equals(getCondition(), "仮定震源要素")) {
             builder.addField("eewbot.eew.epicenter", getHypocenterName(), true);
-            if (getDepthCondition() != null) {
-                builder.addField("eewbot.eew.depth", getDepthCondition(), true);
+            String depthCondition = getDepthCondition();
+            if (depthCondition != null) {
+                builder.addField("eewbot.eew.depth", depthCondition, true);
             } else {
                 builder.addField("eewbot.eew.depth", "eewbot.eew.km", true, getDepthValue());
             }
-            if (getMagnitudeValue() != null) {
-                builder.addField("eewbot.eew.magnitude", getMagnitudeValue(), true);
+            String magnitudeValue = getMagnitudeValue();
+            if (magnitudeValue != null) {
+                builder.addField("eewbot.eew.magnitude", magnitudeValue, true);
             }
-            if (getForecastMaxInt() != null) {
+            if (forecastMaxInt != null) {
                 builder.addField("eewbot.eew.forecastseismicintensity",
-                        SeismicIntensity.get(getForecastMaxInt().from()).getSimple(),
+                        SeismicIntensity.get(forecastMaxInt.from()).getSimple(),
                         false);
             }
         } else if (forecastRegions != null) {
             if (forecastRegions.isEmpty()) {
                 builder.addField("eewbot.eew.plumseismicintensityplus", "eewbot.eew.near", false,
-                        SeismicIntensity.get(getForecastMaxInt().from()).getSimple(),
+                        SeismicIntensity.get(forecastMaxInt.from()).getSimple(),
                         getHypocenterName());
             } else {
-                forecastRegions.stream()
-                        .filter(ForecastRegion::plum)
-                        .collect(Collectors.groupingBy(ForecastRegion::forecastMaxInt,
-                                Collectors.mapping(ForecastRegion::name, Collectors.joining("　"))))
-                        .entrySet()
-                        .stream()
-                        .sorted(Comparator.comparing(entry -> SeismicIntensity.get(entry.getKey().from()), Comparator.reverseOrder()))
+                plumRegionsByMaxInt(forecastRegions)
                         .forEach(entry -> {
                             if (entry.getKey().to().equals("over")) {
                                 builder.addField("eewbot.eew.plumseismicintensityplus",
@@ -205,7 +208,7 @@ public interface EEW extends JMAReport, ExternalData {
             }
         }
 
-        if (isEEWWarning()) {
+        if (eewWarning) {
             builder.addField("eewbot.eew.warningtext", getWarningRegions().stream()
                     .map(WarningRegion::name)
                     .collect(Collectors.joining(" ")), false);
@@ -226,7 +229,7 @@ public interface EEW extends JMAReport, ExternalData {
     @Override
     default Object toExternalDto() {
         String reportDateTime = getReportDateTimeIso();
-        String serialNo = getSerialNo();
+        String serialNo = getSerial();
         boolean concurrent = isConcurrent();
         int concurrentIndex = getConcurrentIndex();
 
@@ -238,10 +241,12 @@ public interface EEW extends JMAReport, ExternalData {
         if (hasEarthquake()) {
             condition = getCondition();
             epicenter = getHypocenterName();
-            if (getDepthCondition() != null) {
-                depth = getDepthCondition();
-            } else if (getDepthValue() != null) {
-                depth = getDepthValue() + "km";
+            String depthCondition = getDepthCondition();
+            String depthValue = getDepthValue();
+            if (depthCondition != null) {
+                depth = depthCondition;
+            } else if (depthValue != null) {
+                depth = depthValue + "km";
             }
             // JSON側はM不明時にvalue=nullをString.valueOfへ通しリテラル"null"を出力するため、NaN由来のnullもそのまま通して同じ出力にする
             magnitude = String.valueOf(getMagnitudeValue());
@@ -250,19 +255,14 @@ public interface EEW extends JMAReport, ExternalData {
         String maxIntensity = null;
         List<String> regions = new ArrayList<>();
 
-        if (getForecastMaxInt() != null) {
-            maxIntensity = SeismicIntensity.get(getForecastMaxInt().from()).getSimple();
+        ForecastMaxInt forecastMaxInt = getForecastMaxInt();
+        if (forecastMaxInt != null) {
+            maxIntensity = SeismicIntensity.get(forecastMaxInt.from()).getSimple();
         }
 
         List<ForecastRegion> forecastRegions = getForecastRegions();
         if (forecastRegions != null) {
-            regions = forecastRegions.stream()
-                    .filter(ForecastRegion::plum)
-                    .collect(Collectors.groupingBy(ForecastRegion::forecastMaxInt,
-                            Collectors.mapping(ForecastRegion::name, Collectors.joining("　"))))
-                    .entrySet()
-                    .stream()
-                    .sorted(Comparator.comparing(entry -> SeismicIntensity.get(entry.getKey().from()), Comparator.reverseOrder()))
+            regions = plumRegionsByMaxInt(forecastRegions).stream()
                     .map(Map.Entry::getValue)
                     .collect(Collectors.toList());
         }
@@ -270,7 +270,7 @@ public interface EEW extends JMAReport, ExternalData {
         return new EEWExternalData(
                 isEEWWarning(),
                 isLastInfo(),
-                isCanceled(),
+                isCancelReport(),
                 serialNo,
                 reportDateTime,
                 epicenter,

@@ -39,7 +39,7 @@ public final class EEWFilterClassifier {
     }
 
     public static boolean isDmdataWarning(EEW current, @Nullable EEW prev) {
-        return current.isCanceled() ? prev != null && prev.isEEWWarning() : current.isEEWWarning();
+        return current.isCancelReport() ? prev != null && prev.isEEWWarning() : current.isEEWWarning();
     }
 
     public static boolean isDmdataImportant(EEW current, @Nullable EEW prev) {

@@ -113,43 +113,38 @@ public class Coordinate {
             if (matcher.matches()) {
                 this.lat = Float.parseFloat(matcher.group(1));
                 this.lon = Float.parseFloat(matcher.group(2));
-                this.depth = parseDepth(matcher.group(3));
-                parseDepthValueCondition(matcher.group(3));
+                parseDepth(matcher.group(3));
             }
         }
         this.isParsed = true;
     }
 
-    private String parseDepth(String depthStr) {
+    // depth("10km"形式)に加え、EEW側でdmdata JSONのdepth.value/depth.conditionを再現するため数値(km)と状態("ごく浅い"等)にも分離して保持する
+    private void parseDepth(@Nullable String depthStr) {
         if (depthStr == null) {
-            return "不明";
-        }
-        int depth = Integer.parseInt(depthStr);
-        if (!"震源位置（度分）".equals(getType())) {
-            if (depth >= 0) {
-                return "ごく浅い";
-            }
-            if (depth <= -700000) {
-                return "700km以上";
-            }
-        }
-        return -depth / 1000 + "km";
-    }
-
-    // 深さの数値(km)と状態("ごく浅い"等)を分離して保持する。getDepth()の"10km"形式とは別に、EEW側でdmdata JSONのdepth.value/depth.conditionを再現するために使う
-    private void parseDepthValueCondition(@Nullable String depthStr) {
-        if (depthStr == null) {
+            this.depth = "不明";
             this.depthCondition = "不明";
             return;
         }
-        int depth = Integer.parseInt(depthStr);
-        if (depth >= 0) {
+        int depthMeters = Integer.parseInt(depthStr);
+        // 度分形式のdepthは特殊表記("ごく浅い"等)にせず常に数値表記
+        boolean degreeMinute = "震源位置（度分）".equals(getType());
+        if (depthMeters >= 0) {
+            if (!degreeMinute) {
+                this.depth = "ごく浅い";
+            }
             this.depthCondition = "ごく浅い";
-        } else if (depth <= -700000) {
+        } else if (depthMeters <= -700000) {
+            if (!degreeMinute) {
+                this.depth = "700km以上";
+            }
             // dmdata JSONのdepth.conditionは全角表記の"７００ｋｍ以上"
             this.depthCondition = "７００ｋｍ以上";
         } else {
-            this.depthValue = String.valueOf(-depth / 1000);
+            this.depthValue = String.valueOf(-depthMeters / 1000);
+        }
+        if (this.depth == null) {
+            this.depth = -depthMeters / 1000 + "km";
         }
     }
 

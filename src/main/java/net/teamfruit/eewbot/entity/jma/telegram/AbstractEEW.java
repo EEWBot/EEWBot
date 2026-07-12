@@ -1,22 +1,10 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.Accuracy;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.Earthquake;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.ForecastInt;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.Hypocenter;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityArea;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.JmxSeis;
-import net.teamfruit.eewbot.entity.jma.telegram.seis.Magnitude;
+import net.teamfruit.eewbot.entity.jma.telegram.seis.*;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public abstract class AbstractEEW extends JmxSeis implements EEW {
 
@@ -27,6 +15,14 @@ public abstract class AbstractEEW extends JmxSeis implements EEW {
 
     private boolean concurrent;
     private int concurrentIndex;
+
+    // XMLグラフはパース後不変のため、走査を伴う派生値は初回アクセス時に計算して保持する
+    private @Nullable Boolean eewWarning;
+    private @Nullable List<WarningRegion> warningRegions;
+    private boolean forecastMaxIntComputed;
+    private @Nullable ForecastMaxInt forecastMaxInt;
+    private boolean forecastRegionsComputed;
+    private @Nullable List<ForecastRegion> forecastRegions;
 
     @Override
     public boolean isConcurrent() {
@@ -56,6 +52,13 @@ public abstract class AbstractEEW extends JmxSeis implements EEW {
 
     @Override
     public boolean isEEWWarning() {
+        if (this.eewWarning == null) {
+            this.eewWarning = computeEEWWarning();
+        }
+        return this.eewWarning;
+    }
+
+    private boolean computeEEWWarning() {
         if (isCancelReport())
             return false;
         List<Head.Headline.Information> informations = getHead().getHeadline().getInformations();
@@ -67,6 +70,13 @@ public abstract class AbstractEEW extends JmxSeis implements EEW {
 
     @Override
     public List<WarningRegion> getWarningRegions() {
+        if (this.warningRegions == null) {
+            this.warningRegions = computeWarningRegions();
+        }
+        return this.warningRegions;
+    }
+
+    private List<WarningRegion> computeWarningRegions() {
         List<Head.Headline.Information> informations = getHead().getHeadline().getInformations();
         if (informations == null)
             return Collections.emptyList();
@@ -188,6 +198,15 @@ public abstract class AbstractEEW extends JmxSeis implements EEW {
     @Override
     @Nullable
     public ForecastMaxInt getForecastMaxInt() {
+        if (!this.forecastMaxIntComputed) {
+            this.forecastMaxInt = computeForecastMaxInt();
+            this.forecastMaxIntComputed = true;
+        }
+        return this.forecastMaxInt;
+    }
+
+    @Nullable
+    private ForecastMaxInt computeForecastMaxInt() {
         Intensity.IntensityDetail forecast = getForecast();
         if (forecast == null || forecast.getForecastInt() == null)
             return null;
@@ -197,6 +216,15 @@ public abstract class AbstractEEW extends JmxSeis implements EEW {
     @Override
     @Nullable
     public List<ForecastRegion> getForecastRegions() {
+        if (!this.forecastRegionsComputed) {
+            this.forecastRegions = computeForecastRegions();
+            this.forecastRegionsComputed = true;
+        }
+        return this.forecastRegions;
+    }
+
+    @Nullable
+    private List<ForecastRegion> computeForecastRegions() {
         Intensity.IntensityDetail forecast = getForecast();
         if (forecast == null)
             return null;

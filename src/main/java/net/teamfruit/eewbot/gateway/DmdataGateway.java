@@ -451,7 +451,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                             Log.logger.info(isTest ? "DMDATA WebSocket {}: test EEW: {}" : "DMDATA WebSocket {}:  EEW: {}", WebSocketConnection.this.connectionName, eew);
 
                             if (!isTest) {
-                                int currentSerialNo = Integer.parseInt(eew.getSerialNo());
+                                int currentSerialNo = Integer.parseInt(eew.getSerial());
                                 AtomicBoolean update = new AtomicBoolean(false);
                                 AtomicReference<EEW> capturedPrev = new AtomicReference<>();
                                 AtomicReference<SeismicIntensity> capturedMaxBefore = new AtomicReference<>(SeismicIntensity.UNKNOWN);
@@ -466,8 +466,8 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                                         eew.setConcurrentIndex(prevEEW.getConcurrentIndex());
                                         eew.setConcurrent(prevEEW.isConcurrent() || size >= 2);
                                     }
-                                    if (prevEEW == null || Integer.parseInt(prevEEW.getSerialNo()) < currentSerialNo ||
-                                            (eew.isCanceled() && !prevEEW.isCanceled())) {
+                                    if (prevEEW == null || Integer.parseInt(prevEEW.getSerial()) < currentSerialNo ||
+                                            (eew.isCancelReport() && !prevEEW.isCancelReport())) {
                                         SeismicIntensity maxBefore = value != null ? value.maxIntensitySoFar() : SeismicIntensity.UNKNOWN;
                                         EEW.ForecastMaxInt currentMaxInt = eew.getForecastMaxInt();
                                         SeismicIntensity currentBodyIntensity = currentMaxInt != null
