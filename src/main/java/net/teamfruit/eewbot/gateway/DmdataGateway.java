@@ -41,14 +41,13 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
     public static final String WS_BASE_TOKYO = "wss://ws-tokyo.api.dmdata.jp/v2/websocket";
     public static final String WS_BASE_OSAKA = "wss://ws-osaka.api.dmdata.jp/v2/websocket";
 
-    public static final String WS_BASE_TEST = "";
-
     private final java.net.http.HttpClient httpClient;
     private final DmdataAPI dmdataAPI;
     private final String appName;
     private final boolean multiConnect;
     private final Listener listener;
     private final ScheduledExecutorService reconnectScheduler;
+    private final String wsBaseTest;
 
     private volatile boolean closed;
 
@@ -65,13 +64,14 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
         void onNewData(DmdataEEWUpdate update);
     }
 
-    public DmdataGateway(java.net.http.HttpClient httpClient, DmdataAPI api, long appId, boolean multiConnect, Listener listener, ScheduledExecutorService reconnectScheduler) {
+    public DmdataGateway(java.net.http.HttpClient httpClient, DmdataAPI api, long appId, boolean multiConnect, Listener listener, ScheduledExecutorService reconnectScheduler, String wsBaseTest) {
         this.httpClient = httpClient;
         this.dmdataAPI = api;
         this.appName = "eewbot" + "-" + encodeAppId(appId);
         this.multiConnect = multiConnect;
         this.listener = listener;
         this.reconnectScheduler = reconnectScheduler;
+        this.wsBaseTest = wsBaseTest != null ? wsBaseTest : "";
     }
 
     @Override
@@ -127,7 +127,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
         try {
             Thread.currentThread().setName("eewbot-dmdata-thread");
 
-            if (StringUtils.isEmpty(WS_BASE_TEST)) {
+            if (StringUtils.isEmpty(this.wsBaseTest)) {
                 DmdataContract contract = this.dmdataAPI.contract();
                 Log.logger.info(contract.toString());
 
@@ -155,9 +155,9 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                 }
             } else {
                 Log.logger.info("DMDATA WebSocket test mode");
-                this.webSocket1 = connectWebSocket(WS_BASE_TEST, this.appName + "-1", true);
+                this.webSocket1 = connectWebSocket(this.wsBaseTest, this.appName + "-1", true);
                 if (this.multiConnect)
-                    this.webSocket2 = connectWebSocket(WS_BASE_TEST, this.appName + "-2", true);
+                    this.webSocket2 = connectWebSocket(this.wsBaseTest, this.appName + "-2", true);
             }
         } catch (EEWGatewayException e) {
             onError(e);
@@ -174,7 +174,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
             types.add("VXSE43");
         }
 
-        if (StringUtils.isEmpty(WS_BASE_TEST)) {
+        if (StringUtils.isEmpty(this.wsBaseTest)) {
             DmdataSocketStart.Response socketStart;
             try {
                 socketStart = this.dmdataAPI.socketStart(new DmdataSocketStart.Request.Builder()
@@ -238,7 +238,9 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
             return;
         try {
             Log.logger.info("DMDATA WebSocket reconnecting");
-            closeWebSocketIfExist(this.dmdataAPI.openSocketList(), connectionName);
+            if (StringUtils.isEmpty(this.wsBaseTest)) {
+                closeWebSocketIfExist(this.dmdataAPI.openSocketList(), connectionName);
+            }
             WebSocketConnection listener = connectWebSocket(wsBaseURI, connectionName, hasForecastContract);
             if (connectionName.endsWith("-2")) {
                 if (this.webSocket2 != null) {

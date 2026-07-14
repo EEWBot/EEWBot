@@ -15,6 +15,7 @@ public class ConfigV2 {
     private ExternalWebhook externalWebhook = new ExternalWebhook();
     private Advanced advanced = new Advanced();
     private Legacy legacy = new Legacy();
+    private Debug debug = new Debug();
 
     public Base getBase() {
         return this.base;
@@ -50,6 +51,10 @@ public class ConfigV2 {
 
     public Legacy getLegacy() {
         return this.legacy;
+    }
+
+    public Debug getDebug() {
+        return this.debug;
     }
 
     public static class Base {
@@ -410,6 +415,52 @@ public class ConfigV2 {
         }
     }
 
+    public static class Debug {
+
+        private String jmaXmlFeedRoot = "";
+        private int jmaXmlPollIntervalSeconds = 0;
+        private String dmdataWsBaseUri = "";
+
+        public String getJmaXmlFeedRoot() {
+            return this.jmaXmlFeedRoot;
+        }
+
+        public void setJmaXmlFeedRoot(String jmaXmlFeedRoot) {
+            this.jmaXmlFeedRoot = jmaXmlFeedRoot;
+        }
+
+        public int getJmaXmlPollIntervalSeconds() {
+            return this.jmaXmlPollIntervalSeconds;
+        }
+
+        public void setJmaXmlPollIntervalSeconds(int jmaXmlPollIntervalSeconds) {
+            this.jmaXmlPollIntervalSeconds = jmaXmlPollIntervalSeconds;
+        }
+
+        public String getDmdataWsBaseUri() {
+            return this.dmdataWsBaseUri;
+        }
+
+        public void setDmdataWsBaseUri(String dmdataWsBaseUri) {
+            this.dmdataWsBaseUri = dmdataWsBaseUri;
+        }
+
+        public boolean isAnyOverrideActive() {
+            return StringUtils.isNotEmpty(this.jmaXmlFeedRoot) ||
+                    this.jmaXmlPollIntervalSeconds > 0 ||
+                    StringUtils.isNotEmpty(this.dmdataWsBaseUri);
+        }
+
+        @Override
+        public String toString() {
+            return "Debug{" +
+                    "jmaXmlFeedRoot='" + this.jmaXmlFeedRoot + '\'' +
+                    ", jmaXmlPollIntervalSeconds=" + this.jmaXmlPollIntervalSeconds +
+                    ", dmdataWsBaseUri='" + this.dmdataWsBaseUri + '\'' +
+                    '}';
+        }
+    }
+
     public static class ExternalWebhook {
 
         private java.util.List<String> urls = new java.util.ArrayList<>();
@@ -441,6 +492,7 @@ public class ConfigV2 {
                 ", externalWebhook=" + this.externalWebhook +
                 ", advanced=" + this.advanced +
                 ", legacy=" + this.legacy +
+                ", debug=" + this.debug +
                 '}';
     }
 
@@ -460,6 +512,9 @@ public class ConfigV2 {
         }
         if (getLegacy().isEnableKyoshin()) {
             Log.logger.warn("Kyoshin EEW is enabled, please consider using DMDATA");
+        }
+        if (getDebug().isAnyOverrideActive()) {
+            Log.logger.warn("Debug config overrides are active: {}", getDebug());
         }
         return !errored;
     }

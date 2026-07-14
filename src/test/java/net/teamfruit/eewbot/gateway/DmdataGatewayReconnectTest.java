@@ -34,7 +34,7 @@ class DmdataGatewayReconnectTest {
         this.gateway = new DmdataGateway(
                 this.httpClient, this.dmdataAPI, 1L, false,
                 eew -> {
-                }, this.reconnectScheduler
+                }, this.reconnectScheduler, ""
         );
     }
 

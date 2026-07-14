@@ -9,6 +9,7 @@ import net.teamfruit.eewbot.entity.jma.JMAStatus;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE51;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE52;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
 
 import java.io.InputStream;
@@ -20,16 +21,18 @@ import java.net.http.HttpResponse;
 @SuppressWarnings("NonAsciiCharacters")
 public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
 
-    private static final String REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
+    private static final String DEFAULT_REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
 
     private static final String REMOTE = "eqvol_l.xml";
 
     private final java.net.http.HttpClient httpClient;
     private final QuakeInfoStore store;
+    private final String remoteRoot;
 
-    public JMAXmlLGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store) {
+    public JMAXmlLGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store, String debugFeedRoot) {
         this.httpClient = httpClient;
         this.store = store;
+        this.remoteRoot = StringUtils.isNotEmpty(debugFeedRoot) ? debugFeedRoot : DEFAULT_REMOTE_ROOT;
     }
 
     @Override
@@ -39,7 +42,7 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
             Thread.currentThread().setName("eewbot-jmaxml-thread");
 
             HttpRequest.Builder feedRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(REMOTE_ROOT + REMOTE))
+                    .uri(URI.create(this.remoteRoot + REMOTE))
                     .header("User-Agent", "eewbot")
                     .GET();
 

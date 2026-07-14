@@ -103,7 +103,7 @@ public class GatewayManager implements AutoCloseable {
             );
         } else {
             DmdataAPI dmdataAPI = new DmdataAPI(this.httpClient, this.config.getDmdata().getAPIKey(), this.config.getDmdata().getOrigin());
-            this.dmdataGateway = new DmdataGateway(this.httpClient, dmdataAPI, this.applicationId, this.config.getDmdata().isMultiSocketConnect(), this::handleDmdataEEW, this.dmdataReconnectExecutor);
+            this.dmdataGateway = new DmdataGateway(this.httpClient, dmdataAPI, this.applicationId, this.config.getDmdata().isMultiSocketConnect(), this::handleDmdataEEW, this.dmdataReconnectExecutor, this.config.getDebug().getDmdataWsBaseUri());
             this.dmdataReconnectExecutor.execute(this.dmdataGateway);
             this.scheduledTasks.add(
                     this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(this.dmdataGateway, this.dmdataReconnectExecutor), 30, 30, TimeUnit.SECONDS)
@@ -176,12 +176,15 @@ public class GatewayManager implements AutoCloseable {
             jmaXMLInitialDelay += 60;
         }
 
-        JMAXmlGateway jmaXmlGateway = new JMAXmlGateway(this.httpClient, this.quakeInfoStore, this::handleJMAReport);
+        int debugInterval = this.config.getDebug().getJmaXmlPollIntervalSeconds();
+        int pollIntervalSeconds = debugInterval > 0 ? debugInterval : 60;
+
+        JMAXmlGateway jmaXmlGateway = new JMAXmlGateway(this.httpClient, this.quakeInfoStore, this::handleJMAReport, this.config.getDebug().getJmaXmlFeedRoot());
         this.scheduledTasks.add(
-                this.scheduledExecutor.scheduleAtFixedRate(jmaXmlGateway, jmaXMLInitialDelay, 60, TimeUnit.SECONDS)
+                this.scheduledExecutor.scheduleAtFixedRate(jmaXmlGateway, jmaXMLInitialDelay, pollIntervalSeconds, TimeUnit.SECONDS)
         );
 
-        this.scheduledExecutor.execute(new JMAXmlLGateway(this.httpClient, this.quakeInfoStore));
+        this.scheduledExecutor.execute(new JMAXmlLGateway(this.httpClient, this.quakeInfoStore, this.config.getDebug().getJmaXmlFeedRoot()));
     }
 
     private void handleJMAReport(AbstractJMAReport data) {
