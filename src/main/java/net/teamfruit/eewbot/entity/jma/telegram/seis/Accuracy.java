@@ -12,8 +12,8 @@ public class Accuracy {
     @JacksonXmlProperty(localName = "Depth")
     private AccuracyDepth depth;
 
-    @JacksonXmlProperty(localName = "Magnitude")
-    private AccuracyMagnitude magnitude;
+    @JacksonXmlProperty(localName = "MagnitudeCalculation")
+    private AccuracyMagnitude magnitudeCalculation;
 
     @JacksonXmlProperty(localName = "NumberOfMagnitudeCalculation")
     private int numberOfMagnitudeCalculation;
@@ -26,8 +26,8 @@ public class Accuracy {
         return this.depth;
     }
 
-    public AccuracyMagnitude getMagnitude() {
-        return this.magnitude;
+    public AccuracyMagnitude getMagnitudeCalculation() {
+        return this.magnitudeCalculation;
     }
 
     public int getNumberOfMagnitudeCalculation() {
@@ -69,13 +69,14 @@ public class Accuracy {
 
     public static class AccuracyDepth {
 
+        // VXSE45は<Depth rank="1">NaN</Depth>を出すことがある(XSDもxs:float)
         @JacksonXmlText
-        private int value;
+        private float value;
 
         @JacksonXmlProperty(isAttribute = true)
         private int rank;
 
-        public int getValue() {
+        public float getValue() {
             return this.value;
         }
 
@@ -122,7 +123,7 @@ public class Accuracy {
         return "Accuracy{" +
                 "epicenter=" + this.epicenter +
                 ", depth=" + this.depth +
-                ", magnitude=" + this.magnitude +
+                ", magnitudeCalculation=" + this.magnitudeCalculation +
                 ", numberOfMagnitudeCalculation=" + this.numberOfMagnitudeCalculation +
                 '}';
     }

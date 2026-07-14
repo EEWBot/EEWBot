@@ -1,0 +1,175 @@
+<Report xmlns="http://xml.kishou.go.jp/jmaxml1/">
+    <Control>
+        <Title>緊急地震速報（地震動予報）</Title>
+        <DateTime>2026-05-11T01:23:45Z</DateTime>
+        <Status>通常</Status>
+        <EditorialOffice>気象庁本庁</EditorialOffice>
+        <PublishingOffice>気象庁</PublishingOffice>
+    </Control>
+    <Head xmlns="http://xml.kishou.go.jp/jmaxml1/informationBasis1/">
+        <Title>緊急地震速報（地震動予報）</Title>
+        <ReportDateTime>2026-05-11T10:23:44+09:00</ReportDateTime>
+        <TargetDateTime>2026-05-11T10:23:44+09:00</TargetDateTime>
+        <EventID>20260511102316</EventID>
+        <InfoType>発表</InfoType>
+        <Serial>4</Serial>
+        <InfoKind>緊急地震速報</InfoKind>
+        <InfoKindVersion>1.2_0</InfoKindVersion>
+        <Headline>
+            <Text>石川県で地震　強い揺れに警戒</Text>
+            <Information type="緊急地震速報（地方予報区）">
+                <Item>
+                    <Kind>
+                        <Name>緊急地震速報（警報）</Name>
+                        <Code>31</Code>
+                    </Kind>
+                    <LastKind>
+                        <Name>なし</Name>
+                        <Code>00</Code>
+                    </LastKind>
+                    <Areas codeType="緊急地震速報／地方予報区">
+                        <Area>
+                            <Name>北陸</Name>
+                            <Code>9934</Code>
+                        </Area>
+                    </Areas>
+                </Item>
+            </Information>
+            <Information type="緊急地震速報（府県予報区）">
+                <Item>
+                    <Kind>
+                        <Name>緊急地震速報（警報）</Name>
+                        <Code>31</Code>
+                    </Kind>
+                    <LastKind>
+                        <Name>なし</Name>
+                        <Code>00</Code>
+                    </LastKind>
+                    <Areas codeType="緊急地震速報／府県予報区">
+                        <Area>
+                            <Name>石川</Name>
+                            <Code>9170</Code>
+                        </Area>
+                    </Areas>
+                </Item>
+            </Information>
+            <Information type="緊急地震速報（細分区域）">
+                <Item>
+                    <Kind>
+                        <Name>緊急地震速報（警報）</Name>
+                        <Code>31</Code>
+                    </Kind>
+                    <LastKind>
+                        <Name>なし</Name>
+                        <Code>00</Code>
+                    </LastKind>
+                    <Areas codeType="地震情報／細分区域">
+                        <Area>
+                            <Name>石川県能登</Name>
+                            <Code>390</Code>
+                        </Area>
+                        <Area>
+                            <Name>石川県加賀</Name>
+                            <Code>391</Code>
+                        </Area>
+                    </Areas>
+                </Item>
+            </Information>
+        </Headline>
+    </Head>
+    <Body xmlns="http://xml.kishou.go.jp/jmaxml1/body/seismology1/"
+          xmlns:jmx_eb="http://xml.kishou.go.jp/jmaxml1/elementBasis1/">
+        <Earthquake>
+            <OriginTime>2026-05-11T10:23:16+09:00</OriginTime>
+            <ArrivalTime>2026-05-11T10:23:20+09:00</ArrivalTime>
+            <Hypocenter>
+                <Area>
+                    <Name>石川県能登地方</Name>
+                    <Code type="震央地名">390</Code>
+                    <jmx_eb:Coordinate description="北緯３７．５度　東経１３７．２度　深さ　１０ｋｍ">+37.5+137.2-10000/
+                    </jmx_eb:Coordinate>
+                    <ReduceName>石川県</ReduceName>
+                    <ReduceCode type="短縮用震央地名">9170</ReduceCode>
+                    <LandOrSea>内陸</LandOrSea>
+                </Area>
+                <Accuracy>
+                    <Epicenter rank="4" rank2="4">NaN</Epicenter>
+                    <Depth rank="4">NaN</Depth>
+                    <MagnitudeCalculation rank="5">NaN</MagnitudeCalculation>
+                    <NumberOfMagnitudeCalculation>5</NumberOfMagnitudeCalculation>
+                </Accuracy>
+            </Hypocenter>
+            <jmx_eb:Magnitude type="Mj" description="Ｍ７．１">7.1</jmx_eb:Magnitude>
+        </Earthquake>
+        <Intensity>
+            <Forecast>
+                <CodeDefine>
+                    <Type xpath="Pref/Code">緊急地震速報／府県予報区</Type>
+                    <Type xpath="Pref/Area/Code">地震情報／細分区域</Type>
+                    <Type xpath="Pref/Area/Category/Kind/Code">緊急地震速報</Type>
+                </CodeDefine>
+                <ForecastInt>
+                    <From>5+</From>
+                    <To>5+</To>
+                </ForecastInt>
+                <ForecastLgInt>
+                    <From>2</From>
+                    <To>2</To>
+                </ForecastLgInt>
+                <Appendix>
+                    <MaxIntChange>0</MaxIntChange>
+                    <MaxLgIntChange>0</MaxLgIntChange>
+                    <MaxIntChangeReason>0</MaxIntChangeReason>
+                </Appendix>
+                <Pref>
+                    <Name>石川</Name>
+                    <Code>9170</Code>
+                    <Area>
+                        <Name>石川県能登</Name>
+                        <Code>390</Code>
+                        <Category>
+                            <Kind>
+                                <Name>緊急地震速報（警報）</Name>
+                                <Code>11</Code>
+                            </Kind>
+                        </Category>
+                        <ForecastInt>
+                            <From>5+</From>
+                            <To>5+</To>
+                        </ForecastInt>
+                        <ForecastLgInt>
+                            <From>2</From>
+                            <To>2</To>
+                        </ForecastLgInt>
+                        <Condition>既に主要動到達と推測</Condition>
+                    </Area>
+                    <Area>
+                        <Name>石川県加賀</Name>
+                        <Code>391</Code>
+                        <Category>
+                            <Kind>
+                                <Name>緊急地震速報（警報）</Name>
+                                <Code>11</Code>
+                            </Kind>
+                        </Category>
+                        <ForecastInt>
+                            <From>5-</From>
+                            <To>5-</To>
+                        </ForecastInt>
+                        <ForecastLgInt>
+                            <From>1</From>
+                            <To>1</To>
+                        </ForecastLgInt>
+                        <ArrivalTime>2026-05-11T10:23:50+09:00</ArrivalTime>
+                    </Area>
+                </Pref>
+            </Forecast>
+        </Intensity>
+        <Comments>
+            <WarningComment codeType="固定付加文">
+                <Text>強い揺れに警戒してください。</Text>
+                <Code>0201</Code>
+            </WarningComment>
+        </Comments>
+    </Body>
+</Report>

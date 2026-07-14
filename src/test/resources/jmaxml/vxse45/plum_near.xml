@@ -1,0 +1,55 @@
+<Report xmlns="http://xml.kishou.go.jp/jmaxml1/">
+    <Control>
+        <Title>緊急地震速報（地震動予報）</Title>
+        <DateTime>2026-05-11T01:23:30Z</DateTime>
+        <Status>通常</Status>
+        <EditorialOffice>気象庁本庁</EditorialOffice>
+        <PublishingOffice>気象庁</PublishingOffice>
+    </Control>
+    <Head xmlns="http://xml.kishou.go.jp/jmaxml1/informationBasis1/">
+        <Title>緊急地震速報（地震動予報）</Title>
+        <ReportDateTime>2026-05-11T10:23:29+09:00</ReportDateTime>
+        <TargetDateTime>2026-05-11T10:23:29+09:00</TargetDateTime>
+        <EventID>20260511102316</EventID>
+        <InfoType>発表</InfoType>
+        <Serial>10</Serial>
+        <InfoKind>緊急地震速報</InfoKind>
+        <InfoKindVersion>1.2_0</InfoKindVersion>
+        <Headline>
+            <Text/>
+        </Headline>
+    </Head>
+    <Body xmlns="http://xml.kishou.go.jp/jmaxml1/body/seismology1/"
+          xmlns:jmx_eb="http://xml.kishou.go.jp/jmaxml1/elementBasis1/">
+        <Earthquake>
+            <OriginTime>2026-05-11T10:23:16+09:00</OriginTime>
+            <Condition>仮定震源要素</Condition>
+            <ArrivalTime>2026-05-11T10:23:20+09:00</ArrivalTime>
+            <Hypocenter>
+                <Area>
+                    <Name>石川県能登地方</Name>
+                    <Code type="震央地名">390</Code>
+                    <jmx_eb:Coordinate description="北緯３７．５度　東経１３７．２度　深さ　１０ｋｍ">+37.5+137.2-10000/
+                    </jmx_eb:Coordinate>
+                    <ReduceName>石川県</ReduceName>
+                    <ReduceCode type="短縮用震央地名">9170</ReduceCode>
+                </Area>
+                <Accuracy>
+                    <Epicenter rank="1" rank2="1">NaN</Epicenter>
+                    <Depth rank="1">NaN</Depth>
+                    <MagnitudeCalculation rank="8">NaN</MagnitudeCalculation>
+                    <NumberOfMagnitudeCalculation>1</NumberOfMagnitudeCalculation>
+                </Accuracy>
+            </Hypocenter>
+            <jmx_eb:Magnitude type="Mj" description="Ｍ１．０">1.0</jmx_eb:Magnitude>
+        </Earthquake>
+        <Intensity>
+            <Forecast>
+                <ForecastInt>
+                    <From>5-</From>
+                    <To>over</To>
+                </ForecastInt>
+            </Forecast>
+        </Intensity>
+    </Body>
+</Report>

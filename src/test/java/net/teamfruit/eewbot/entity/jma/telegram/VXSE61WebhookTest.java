@@ -1,12 +1,14 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import org.json.JSONException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.stream.Stream;
 
+@Tag("integration")
 class VXSE61WebhookTest extends BaseWebhookTest<VXSE61Impl> {
 
     @Override

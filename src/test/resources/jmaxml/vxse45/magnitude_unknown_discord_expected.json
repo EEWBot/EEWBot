@@ -1,0 +1,29 @@
+{
+  "embeds": [
+    {
+      "title": "緊急地震速報 (予報) 第3報",
+      "timestamp": "2026-05-11T01:23:42Z",
+      "color": 255,
+      "footer": {
+        "text": "気象庁"
+      },
+      "fields": [
+        {
+          "name": "震央",
+          "value": "石川県能登地方",
+          "inline": true
+        },
+        {
+          "name": "深さ",
+          "value": "10km",
+          "inline": true
+        },
+        {
+          "name": "最大震度",
+          "value": "不明",
+          "inline": false
+        }
+      ]
+    }
+  ]
+}
