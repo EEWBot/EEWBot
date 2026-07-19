@@ -29,6 +29,7 @@ public class RendererQueryFactory {
     private static final byte VERSIONED_TYPE_QUAKE_PREFECTURE = 0;
     private static final byte VERSIONED_TYPE_TSUNAMI = 2;
     private static final String HMAC_ALGO = "HmacSHA1";
+    private static final String TSUNAMI_EXTENSION = ".webp";
 
     private static final EnumMap<SeismicIntensity, BiConsumer<QuakePrefectureV0.Builder, CodeArray>> SETTER_MAP =
             new EnumMap<>(SeismicIntensity.class);
@@ -211,6 +212,6 @@ public class RendererQueryFactory {
 
         String base32768Str = generateTsunamiData(renderTsunami.getTime(), renderTsunami.getCoordinates(), renderTsunami.getForecastItems());
         String normalizedBaseURL = this.baseURL.endsWith("/") ? this.baseURL : this.baseURL + "/";
-        return normalizedBaseURL + base32768Str;
+        return normalizedBaseURL + base32768Str + TSUNAMI_EXTENSION;
     }
 }
