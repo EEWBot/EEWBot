@@ -176,7 +176,7 @@ public class EEWService {
                         else MDC.clear();
                         try {
                             if (ex != null) {
-                                Log.logger.info("Failed to send webhook: ChannelID={} Message={}", channelId, ex.getMessage());
+                                Log.logger.info("Failed to send webhook: ChannelID={} Message={}", channelId, LogSanitizer.safeExceptionMessage(ex));
                                 onError.apply(channelId, channel);
                             } else {
                                 if (response.statusCode() < 200 || response.statusCode() >= 300) {
@@ -246,11 +246,11 @@ public class EEWService {
 
             HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                Log.logger.error("Failed to send message to webhook sender: {} {}", response.statusCode(), response.body());
+                Log.logger.error("Failed to send message to webhook sender: {} {}", response.statusCode(), LogSanitizer.maskDiscordWebhookUrlsInText(response.body()));
                 onError.accept(webhookChannels);
                 return;
             }
-            Log.logger.info("Sent message to webhook sender: {}", response.body());
+            Log.logger.info("Sent message to webhook sender: {}", LogSanitizer.maskDiscordWebhookUrlsInText(response.body()));
         } catch (InterruptedException e) {
             Log.logger.error("Interrupted while sending messages to webhook sender", e);
             onError.accept(webhookChannels);
@@ -291,7 +291,7 @@ public class EEWService {
             HttpRequest getRequest = getRequestBuilder.build();
             HttpResponse<String> getResponse = this.httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString());
             if (getResponse.statusCode() != 200) {
-                Log.logger.error("Failed to fetch not founds from webhook sender: " + getResponse.statusCode() + " " + getResponse.body());
+                Log.logger.error("Failed to fetch not founds from webhook sender: " + getResponse.statusCode() + " " + LogSanitizer.maskDiscordWebhookUrlsInText(getResponse.body()));
                 return;
             }
 

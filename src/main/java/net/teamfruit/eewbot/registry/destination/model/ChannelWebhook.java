@@ -88,7 +88,7 @@ public record ChannelWebhook(String url) {
     @Override
     public String toString() {
         return "Webhook{" +
-                "url='" + this.url + '\'' +
+                "url='" + maskWebhookUrl(this.url) + '\'' +
                 '}';
     }
 }
