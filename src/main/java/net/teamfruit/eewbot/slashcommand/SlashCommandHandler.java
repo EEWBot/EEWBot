@@ -27,6 +27,7 @@ public class SlashCommandHandler {
         registerCommand(new TestMessageSlashCommand());
         registerCommand(new LangSlashCommand());
         registerCommand(new HelpSlashCommand());
+        registerCommand(new UnregisterSlashCommand());
     }
 
     public SlashCommandHandler(SlashCommandContext ctx) {
