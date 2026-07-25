@@ -18,8 +18,12 @@ class ConfigBootstrapTest {
     Path tempDir;
 
     private ConfigV2 bootstrap(Path configPath) throws IOException {
+        return bootstrap(configPath, this.tempDir.resolve("channels.json"));
+    }
+
+    private ConfigV2 bootstrap(Path configPath, Path channelsJsonPath) throws IOException {
         JsonRegistry<ConfigV2> registry = new JsonRegistry<>(configPath, ConfigV2::new, ConfigV2.class, Codecs.GSON_PRETTY);
-        return EEWBotFactory.loadConfig(registry);
+        return EEWBotFactory.loadConfig(registry, channelsJsonPath);
     }
 
     @Test
@@ -101,6 +105,75 @@ class ConfigBootstrapTest {
 
         assertEquals("v1-token", Codecs.GSON_PRETTY.fromJson(Files.readString(configPath), JsonObject.class)
                 .get("token").getAsString(), "the unsupported config must be left untouched");
+    }
+
+    @Test
+    void configWithoutDatabaseTypeButWithRedisAddressFails() throws IOException {
+        Path configPath = this.tempDir.resolve("config.json");
+        Files.writeString(configPath, """
+                {
+                  "base": { "discordToken": "my-token" },
+                  "dmdata": { "apiKey": "my-dmdata-key" },
+                  "redis": { "address": "localhost:6379" }
+                }
+                """);
+
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath));
+        assertTrue(e.getMessage().contains("redis"), "the error must name the detected legacy backend");
+        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
+
+        assertTrue(Files.readString(configPath).contains("redis"),
+                "the config must be left untouched so the migration tool can still read it");
+    }
+
+    @Test
+    void configWithoutDatabaseTypeButWithChannelsJsonFails() throws IOException {
+        Path configPath = this.tempDir.resolve("config.json");
+        Path channelsJsonPath = this.tempDir.resolve("channels.json");
+        Files.writeString(configPath, """
+                {
+                  "base": { "discordToken": "my-token" },
+                  "dmdata": { "apiKey": "my-dmdata-key" }
+                }
+                """);
+        Files.writeString(channelsJsonPath, "{}");
+
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath, channelsJsonPath));
+        assertTrue(e.getMessage().contains("json"), "the error must name the detected legacy backend");
+        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
+    }
+
+    @Test
+    void configWithoutDatabaseTypeAndWithoutLegacyMarkersIsAccepted() throws IOException {
+        Path configPath = this.tempDir.resolve("config.json");
+        Files.writeString(configPath, """
+                {
+                  "base": { "discordToken": "my-token" },
+                  "dmdata": { "apiKey": "my-dmdata-key" }
+                }
+                """);
+
+        ConfigV2 config = bootstrap(configPath);
+
+        assertEquals("my-token", config.getBase().getDiscordToken());
+    }
+
+    @Test
+    void explicitDatabaseTypeWinsOverLegacyMarkers() throws IOException {
+        Path configPath = this.tempDir.resolve("config.json");
+        Path channelsJsonPath = this.tempDir.resolve("channels.json");
+        Files.writeString(configPath, """
+                {
+                  "base": { "discordToken": "my-token" },
+                  "database": { "type": "sqlite" },
+                  "redis": { "address": "localhost:6379" }
+                }
+                """);
+        Files.writeString(channelsJsonPath, "{}");
+
+        ConfigV2 config = bootstrap(configPath, channelsJsonPath);
+
+        assertEquals("sqlite", config.getDatabase().getType());
     }
 
     @Test

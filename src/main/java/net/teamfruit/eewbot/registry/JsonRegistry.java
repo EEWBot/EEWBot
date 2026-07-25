@@ -59,15 +59,24 @@ public class JsonRegistry<E> {
     }
 
     /**
+     * Returns the raw JSON object stored in the file, or an empty object if the
+     * file does not contain a JSON object. Used by callers to inspect fields that
+     * are unknown to the target type, before {@link #load(boolean)} drops them.
+     */
+    public JsonObject readRootObject() throws IOException {
+        JsonElement root = JsonParser.parseString(Files.readString(this.path));
+        if (!root.isJsonObject())
+            return new JsonObject();
+        return root.getAsJsonObject();
+    }
+
+    /**
      * Returns the top level keys of the JSON file, or an empty set if the file
      * does not contain a JSON object. Used by callers to detect which schema
      * version a file was written with.
      */
     public Set<String> readTopLevelKeys() throws IOException {
-        JsonElement root = JsonParser.parseString(Files.readString(this.path));
-        if (!root.isJsonObject())
-            return Set.of();
-        return new HashSet<>(root.getAsJsonObject().keySet());
+        return new HashSet<>(readRootObject().keySet());
     }
 
     /**

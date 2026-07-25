@@ -1,5 +1,7 @@
 package net.teamfruit.eewbot;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
@@ -32,6 +34,7 @@ import reactor.core.Disposable;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -263,15 +266,24 @@ public class EEWBotFactory {
             "quakeInfoDelay", "nptServer", "defaultLanuage");
 
     static ConfigV2 loadConfig(JsonRegistry<ConfigV2> configRegistry) throws IOException {
+        return loadConfig(configRegistry, getChannelsJsonPath());
+    }
+
+    static ConfigV2 loadConfig(JsonRegistry<ConfigV2> configRegistry, Path channelsJsonPath) throws IOException {
         if (!configRegistry.exists()) {
             configRegistry.init(true);
             return configRegistry.getElement();
         }
 
-        if (isLegacyV1Config(configRegistry.readTopLevelKeys()))
+        JsonObject root = configRegistry.readRootObject();
+
+        if (isLegacyV1Config(root.keySet()))
             throw new IllegalStateException(
                     "config.json is in the legacy V1 format, which is no longer supported. "
                             + "Run EEWBot 2.9.x once to migrate it to the V2 format before upgrading.");
+
+        // Must run before load()/save(), which drops the now unknown redis section from the file.
+        rejectLegacyStorage(root, channelsJsonPath);
 
         configRegistry.load(true);
         configRegistry.save();
@@ -285,6 +297,34 @@ public class EEWBotFactory {
         return topLevelKeys.stream().anyMatch(V1_MARKER_KEYS::contains);
     }
 
+    private static void rejectLegacyStorage(JsonObject root, Path channelsJsonPath) {
+        if (StringUtils.isNotEmpty(readString(root, "database", "type")))
+            return;
+
+        String legacyBackend = null;
+        if (StringUtils.isNotEmpty(readString(root, "redis", "address")))
+            legacyBackend = "redis (redis.address is set)";
+        else if (Files.exists(channelsJsonPath))
+            legacyBackend = "json (" + channelsJsonPath + " exists)";
+
+        if (legacyBackend != null)
+            throw new IllegalStateException(
+                    "config.json has no database.type, but this deployment appears to use the removed "
+                            + legacyBackend + " backend, which is no longer supported. "
+                            + "Migrate to 'sqlite' or 'postgresql' with the ChannelMigration tool of EEWBot 2.9.x "
+                            + "before upgrading, then set database.type explicitly.");
+    }
+
+    private static String readString(JsonObject root, String objectKey, String key) {
+        JsonElement child = root.get(objectKey);
+        if (child == null || !child.isJsonObject())
+            return null;
+        JsonElement value = child.getAsJsonObject().get(key);
+        if (value == null || !value.isJsonPrimitive())
+            return null;
+        return value.getAsString();
+    }
+
     private static void migrateConfigIfNeeded(ConfigV2 config, JsonRegistry<ConfigV2> configRegistry) throws IOException {
         if (StringUtils.isNotEmpty(config.getDatabase().getType())) return;
 
@@ -294,6 +334,10 @@ public class EEWBotFactory {
 
     private static Path getConfigPath() {
         return EEWBot.CONFIG_DIRECTORY != null ? Paths.get(EEWBot.CONFIG_DIRECTORY, "config.json") : Paths.get("config.json");
+    }
+
+    private static Path getChannelsJsonPath() {
+        return EEWBot.DATA_DIRECTORY != null ? Paths.get(EEWBot.DATA_DIRECTORY, "channels.json") : Paths.get("channels.json");
     }
 
     private record SqlRegistries(
