@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot;
 
-import com.google.gson.JsonParseException;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
@@ -34,9 +33,12 @@ import reactor.core.Disposable;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,16 +49,7 @@ public class EEWBotFactory {
     public static EEWBot create() throws IOException {
         // 1. Config bootstrap
         JsonRegistry<ConfigV2> configRegistry = new JsonRegistry<>(getConfigPath(), ConfigV2::new, ConfigV2.class, Codecs.GSON_PRETTY);
-        try {
-            configRegistry.init(true);
-        } catch (JsonParseException e) {
-            JsonRegistry<Config> oldConfig = new JsonRegistry<>(getConfigPath(), Config::new, Config.class, Codecs.GSON_PRETTY);
-            oldConfig.load(false);
-            configRegistry.setElement(ConfigV2.fromV1(oldConfig.getElement()));
-            configRegistry.save();
-        }
-
-        ConfigV2 config = configRegistry.getElement();
+        ConfigV2 config = loadOrMigrateConfig(configRegistry);
 
         migrateConfigIfNeeded(config, configRegistry);
 
@@ -257,6 +250,52 @@ public class EEWBotFactory {
         poller.start();
 
         return new SqlRegistries(delivery, admin, poller);
+    }
+
+    /**
+     * Top level keys that only ever appear in the current (V2) config schema.
+     */
+    private static final Set<String> V2_MARKER_KEYS = Set.of("base", "database", "dmdata", "renderer",
+            "webhookSender", "externalWebhook", "advanced", "legacy", "debug");
+    /**
+     * Top level keys that only ever appear in the legacy (V1) flat config schema.
+     */
+    private static final Set<String> V1_MARKER_KEYS = Set.of("token", "dmdataAPIKey", "dmdataOrigin",
+            "dmdataMultiSocketConnect", "enableKyoshin", "kyoshinDelay", "enableLegacyQuakeInfo",
+            "quakeInfoDelay", "nptServer", "defaultLanuage");
+
+    static ConfigV2 loadOrMigrateConfig(JsonRegistry<ConfigV2> configRegistry) throws IOException {
+        if (!configRegistry.exists()) {
+            configRegistry.init(true);
+            return configRegistry.getElement();
+        }
+
+        Set<String> keys = configRegistry.readTopLevelKeys();
+        if (isLegacyV1Config(keys)) {
+            Path backup = backupConfig(configRegistry.getPath());
+            JsonRegistry<Config> oldConfig = new JsonRegistry<>(configRegistry.getPath(), Config::new, Config.class, Codecs.GSON_PRETTY);
+            oldConfig.load(false);
+            configRegistry.setElement(ConfigV2.fromV1(oldConfig.getElement()));
+            configRegistry.save();
+            Log.logger.info("Migrated config.json from V1 to V2 (backup: {})", backup);
+        } else {
+            configRegistry.load(true);
+            configRegistry.save();
+        }
+
+        return configRegistry.getElement();
+    }
+
+    private static boolean isLegacyV1Config(Set<String> topLevelKeys) {
+        if (topLevelKeys.stream().anyMatch(V2_MARKER_KEYS::contains))
+            return false;
+        return topLevelKeys.stream().anyMatch(V1_MARKER_KEYS::contains);
+    }
+
+    private static Path backupConfig(Path path) throws IOException {
+        Path backup = path.resolveSibling(path.getFileName() + ".v1.bak");
+        Files.copy(path, backup, StandardCopyOption.REPLACE_EXISTING);
+        return backup;
     }
 
     private static void migrateConfigIfNeeded(ConfigV2 config, JsonRegistry<ConfigV2> configRegistry) throws IOException {

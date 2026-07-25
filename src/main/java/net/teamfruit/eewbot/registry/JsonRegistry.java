@@ -1,10 +1,11 @@
 package net.teamfruit.eewbot.registry;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+import net.teamfruit.eewbot.Log;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -45,9 +46,13 @@ public class JsonRegistry<E> {
         this.element = element;
     }
 
-    public void init(boolean strict) throws IOException {
+    public boolean exists() {
+        return Files.exists(this.path);
+    }
+
+    public void init(boolean warnUnknownFields) throws IOException {
         if (!createIfNotExists()) {
-            load(strict);
+            load(warnUnknownFields);
             save();
         }
     }
@@ -61,10 +66,29 @@ public class JsonRegistry<E> {
         return false;
     }
 
-    public void load(boolean strict) throws IOException {
+    /**
+     * Returns the top level keys of the JSON file, or an empty set if the file
+     * does not contain a JSON object. Used by callers to detect which schema
+     * version a file was written with.
+     */
+    public Set<String> readTopLevelKeys() throws IOException {
+        JsonElement root = JsonParser.parseString(Files.readString(this.path));
+        if (!root.isJsonObject())
+            return Set.of();
+        return new HashSet<>(root.getAsJsonObject().keySet());
+    }
+
+    /**
+     * Loads the file into {@link #getElement()}. Fields that are unknown to the
+     * target type are ignored by Gson; when {@code warnUnknownFields} is set they
+     * are additionally reported in the log. Unknown fields are never fatal, since
+     * treating them as an error would risk overwriting a user's configuration on
+     * the next {@link #save()}.
+     */
+    public void load(boolean warnUnknownFields) throws IOException {
         String s = Files.readString(this.path);
 
-        if (strict) {
+        if (warnUnknownFields) {
             JsonObject jsonObj = JsonParser.parseString(s).getAsJsonObject();
             Set<String> jsonFields = new HashSet<>(jsonObj.keySet());
             Set<String> classFields = Arrays.stream(TypeToken.get(this.type).getRawType().getDeclaredFields())
@@ -73,11 +97,13 @@ public class JsonRegistry<E> {
 
             jsonFields.removeAll(classFields);
             if (!jsonFields.isEmpty()) {
-                throw new JsonParseException("Unknown JSON fields: " + jsonFields);
+                Log.logger.warn("Unknown fields in {} will be dropped: {}", this.path, jsonFields);
             }
         }
 
         this.element = this.gson.fromJson(s, this.type);
+        if (this.element == null)
+            this.element = this.supplier.get();
     }
 
     public void save() throws IOException {
