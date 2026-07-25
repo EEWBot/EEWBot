@@ -127,6 +127,41 @@ class ConfigBootstrapTest {
     }
 
     @Test
+    void redisDatabaseTypeFailsWithoutRewritingConfig() throws IOException {
+        Path configPath = this.tempDir.resolve("config.json");
+        Files.writeString(configPath, """
+                {
+                  "base": { "discordToken": "my-token" },
+                  "database": { "type": "redis" },
+                  "redis": { "address": "redis.example.com:6379" }
+                }
+                """);
+
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath));
+        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
+
+        assertTrue(Files.readString(configPath).contains("redis.example.com:6379"),
+                "the redis address must survive so a rollback to 2.9.x can still migrate");
+    }
+
+    @Test
+    void jsonDatabaseTypeFailsWithoutRewritingConfig() throws IOException {
+        Path configPath = this.tempDir.resolve("config.json");
+        Files.writeString(configPath, """
+                {
+                  "base": { "discordToken": "my-token" },
+                  "database": { "type": "JSON" }
+                }
+                """);
+
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath));
+        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
+
+        assertTrue(Files.readString(configPath).contains("\"JSON\""),
+                "the unsupported config must be left untouched");
+    }
+
+    @Test
     void configWithoutDatabaseTypeButWithChannelsJsonFails() throws IOException {
         Path configPath = this.tempDir.resolve("config.json");
         Path channelsJsonPath = this.tempDir.resolve("channels.json");

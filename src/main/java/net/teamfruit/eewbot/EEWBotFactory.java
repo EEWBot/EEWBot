@@ -109,9 +109,9 @@ public class EEWBotFactory {
                     adminRegistry = result.adminRegistry;
                     revisionPoller = result.revisionPoller;
                 }
+                // Normally unreachable: loadConfig rejects these before the config file is rewritten.
                 case "json", "redis" -> throw new IllegalStateException(
-                        "database.type '" + dbType + "' is no longer supported. "
-                                + "Migrate to 'sqlite' or 'postgresql' with the ChannelMigration tool of EEWBot 2.9.x before upgrading.");
+                        "database.type '" + dbType + "' is no longer supported. " + MIGRATION_HINT);
                 default -> throw new IllegalStateException(
                         "Unknown database.type: '" + dbType + "'. Supported values: sqlite, postgresql");
             }
@@ -265,6 +265,14 @@ public class EEWBotFactory {
             "dmdataMultiSocketConnect", "enableKyoshin", "kyoshinDelay", "enableLegacyQuakeInfo",
             "quakeInfoDelay", "nptServer", "defaultLanuage");
 
+    /**
+     * {@code database.type} values whose backends were removed. A config still using one is rejected
+     * before the file is rewritten, so the operator can roll back and migrate with EEWBot 2.9.x.
+     */
+    private static final Set<String> LEGACY_DATABASE_TYPES = Set.of("json", "redis");
+    private static final String MIGRATION_HINT =
+            "Migrate to 'sqlite' or 'postgresql' with the ChannelMigration tool of EEWBot 2.9.x before upgrading.";
+
     static ConfigV2 loadConfig(JsonRegistry<ConfigV2> configRegistry) throws IOException {
         return loadConfig(configRegistry, getChannelsJsonPath());
     }
@@ -298,8 +306,17 @@ public class EEWBotFactory {
     }
 
     private static void rejectLegacyStorage(JsonObject root, Path channelsJsonPath) {
-        if (StringUtils.isNotEmpty(readString(root, "database", "type")))
+        String dbType = readString(root, "database", "type");
+
+        if (StringUtils.isNotEmpty(dbType)) {
+            // Rejected here rather than only in the backend switch: saving first would strip the redis
+            // section, leaving a rollback to 2.9.x without the address its migration tool needs.
+            if (LEGACY_DATABASE_TYPES.contains(dbType.toLowerCase()))
+                throw new IllegalStateException(
+                        "database.type '" + dbType + "' is no longer supported. "
+                                + MIGRATION_HINT);
             return;
+        }
 
         String legacyBackend = null;
         if (StringUtils.isNotEmpty(readString(root, "redis", "address")))
@@ -311,8 +328,7 @@ public class EEWBotFactory {
             throw new IllegalStateException(
                     "config.json has no database.type, but this deployment appears to use the removed "
                             + legacyBackend + " backend, which is no longer supported. "
-                            + "Migrate to 'sqlite' or 'postgresql' with the ChannelMigration tool of EEWBot 2.9.x "
-                            + "before upgrading, then set database.type explicitly.");
+                            + MIGRATION_HINT + " Then set database.type explicitly.");
     }
 
     private static String readString(JsonObject root, String objectKey, String key) {
