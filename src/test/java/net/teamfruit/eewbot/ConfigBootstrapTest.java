@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot;
 
+import com.google.gson.JsonObject;
 import net.teamfruit.eewbot.registry.JsonRegistry;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ class ConfigBootstrapTest {
 
     private ConfigV2 bootstrap(Path configPath) throws IOException {
         JsonRegistry<ConfigV2> registry = new JsonRegistry<>(configPath, ConfigV2::new, ConfigV2.class, Codecs.GSON_PRETTY);
-        return EEWBotFactory.loadOrMigrateConfig(registry);
+        return EEWBotFactory.loadConfig(registry);
     }
 
     @Test
@@ -64,32 +65,42 @@ class ConfigBootstrapTest {
     }
 
     @Test
-    void v1ConfigIsMigratedAndBackedUp() throws IOException {
+    void v2ConfigWithRemovedLegacySectionIsPreserved() throws IOException {
+        Path configPath = this.tempDir.resolve("config.json");
+        Files.writeString(configPath, """
+                {
+                  "base": { "discordToken": "my-token" },
+                  "dmdata": { "apiKey": "my-dmdata-key" },
+                  "legacy": { "enableKyoshin": true, "ntpServer": "ntp.nict.jp" }
+                }
+                """);
+
+        ConfigV2 config = bootstrap(configPath);
+
+        assertEquals("my-token", config.getBase().getDiscordToken());
+        assertEquals("my-dmdata-key", config.getDmdata().getAPIKey());
+
+        String saved = Files.readString(configPath);
+        assertFalse(saved.contains("legacy"), "the removed legacy section should be dropped on save");
+    }
+
+    @Test
+    void v1ConfigFailsWithMigrationHint() throws IOException {
         Path configPath = this.tempDir.resolve("config.json");
         Files.writeString(configPath, """
                 {
                   "token": "v1-token",
-                  "enableKyoshin": true,
-                  "kyoshinDelay": 3,
                   "dmdataAPIKey": "v1-dmdata-key",
                   "nptServer": "ntp.nict.jp",
                   "defaultLanuage": "en_us"
                 }
                 """);
 
-        ConfigV2 config = bootstrap(configPath);
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath));
+        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
 
-        assertEquals("v1-token", config.getBase().getDiscordToken());
-        assertEquals("v1-dmdata-key", config.getDmdata().getAPIKey());
-        assertTrue(config.getLegacy().isEnableKyoshin());
-        assertEquals(3, config.getLegacy().getKyoshinDelay());
-        assertEquals("ntp.nict.jp", config.getLegacy().getNtpServer());
-
-        Path backup = this.tempDir.resolve("config.json.v1.bak");
-        assertTrue(Files.exists(backup), "the original V1 config must be backed up");
-        assertTrue(Files.readString(backup).contains("v1-token"));
-
-        assertTrue(Files.readString(configPath).contains("\"base\""));
+        assertEquals("v1-token", Codecs.GSON_PRETTY.fromJson(Files.readString(configPath), JsonObject.class)
+                .get("token").getAsString(), "the unsupported config must be left untouched");
     }
 
     @Test

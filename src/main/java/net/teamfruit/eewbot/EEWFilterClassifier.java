@@ -2,7 +2,6 @@ package net.teamfruit.eewbot;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.telegram.EEW;
-import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,21 +20,6 @@ public final class EEWFilterClassifier {
             builder.eewDecimation(false);
         builder.intensity(maxIntensity);
         return builder.build();
-    }
-
-    public static boolean isKmoniWarning(KmoniEEW eew) {
-        KmoniEEW prev = eew.getPrev();
-        return eew.isCancel() ? prev != null && prev.isAlert() : eew.isAlert();
-    }
-
-    public static boolean isKmoniImportant(KmoniEEW eew) {
-        KmoniEEW prev = eew.getPrev();
-        return prev == null ||
-                eew.isInitial() ||
-                eew.isFinal() ||
-                eew.isAlert() != prev.isAlert() ||
-                !eew.getIntensity().equals(prev.getIntensity()) ||
-                !eew.getRegionName().equals(prev.getRegionName());
     }
 
     public static boolean isDmdataWarning(EEW current, @Nullable EEW prev) {

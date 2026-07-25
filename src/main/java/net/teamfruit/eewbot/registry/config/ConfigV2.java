@@ -13,7 +13,6 @@ public class ConfigV2 {
     private WebhookSender webhookSender = new WebhookSender();
     private ExternalWebhook externalWebhook = new ExternalWebhook();
     private Advanced advanced = new Advanced();
-    private Legacy legacy = new Legacy();
     private Debug debug = new Debug();
 
     public Base getBase() {
@@ -42,10 +41,6 @@ public class ConfigV2 {
 
     public Advanced getAdvanced() {
         return this.advanced;
-    }
-
-    public Legacy getLegacy() {
-        return this.legacy;
     }
 
     public Debug getDebug() {
@@ -330,66 +325,6 @@ public class ConfigV2 {
         }
     }
 
-    public static class Legacy {
-
-        private boolean enableKyoshin = false;
-        private int kyoshinDelay = 1;
-        private boolean enableLegacyQuakeInfo = false;
-        private int legacyQuakeInfoDelay = 15;
-        private String ntpServer = "time.google.com";
-
-        public boolean isEnableKyoshin() {
-            return this.enableKyoshin;
-        }
-
-        public void setEnableKyoshin(boolean enableKyoshin) {
-            this.enableKyoshin = enableKyoshin;
-        }
-
-        public int getKyoshinDelay() {
-            return this.kyoshinDelay;
-        }
-
-        public void setKyoshinDelay(int kyoshinDelay) {
-            this.kyoshinDelay = Math.max(kyoshinDelay, 1);
-        }
-
-        public boolean isEnableLegacyQuakeInfo() {
-            return this.enableLegacyQuakeInfo;
-        }
-
-        public void setEnableLegacyQuakeInfo(boolean enableLegacyQuakeInfo) {
-            this.enableLegacyQuakeInfo = enableLegacyQuakeInfo;
-        }
-
-        public int getLegacyQuakeInfoDelay() {
-            return this.legacyQuakeInfoDelay;
-        }
-
-        public void setLegacyQuakeInfoDelay(int legacyQuakeInfoDelay) {
-            this.legacyQuakeInfoDelay = Math.max(legacyQuakeInfoDelay, 10);
-        }
-
-        public String getNtpServer() {
-            return this.ntpServer;
-        }
-
-        public void setNtpServer(String ntpServer) {
-            this.ntpServer = ntpServer;
-        }
-
-        @Override
-        public String toString() {
-            return "Legacy{" +
-                    "enableKyoshin=" + this.enableKyoshin +
-                    ", kyoshinDelay=" + this.kyoshinDelay +
-                    ", enableLegacyQuakeInfo=" + this.enableLegacyQuakeInfo +
-                    ", legacyQuakeInfoDelay=" + this.legacyQuakeInfoDelay +
-                    ", ntpServer='" + this.ntpServer + '\'' +
-                    '}';
-        }
-    }
-
     public static class Debug {
 
         private String jmaXmlFeedRoot = "";
@@ -466,7 +401,6 @@ public class ConfigV2 {
                 ", webhookSender=" + this.webhookSender +
                 ", externalWebhook=" + this.externalWebhook +
                 ", advanced=" + this.advanced +
-                ", legacy=" + this.legacy +
                 ", debug=" + this.debug +
                 '}';
     }
@@ -477,37 +411,13 @@ public class ConfigV2 {
             Log.logger.info("Please set a discord token");
             errored = true;
         }
-        if (!getLegacy().isEnableKyoshin() && StringUtils.isEmpty(getDmdata().getAPIKey())) {
+        if (StringUtils.isEmpty(getDmdata().getAPIKey())) {
             Log.logger.info("Please set a DMDATA API key");
             errored = true;
-        }
-        if (getLegacy().isEnableKyoshin() && StringUtils.isNotEmpty(getDmdata().getAPIKey())) {
-            getLegacy().setEnableKyoshin(false);
-            Log.logger.info("Dmdata API key provided, disabling Kyoshin");
-        }
-        if (getLegacy().isEnableKyoshin()) {
-            Log.logger.warn("Kyoshin EEW is enabled, please consider using DMDATA");
         }
         if (getDebug().isAnyOverrideActive()) {
             Log.logger.warn("Debug config overrides are active: {}", getDebug());
         }
         return !errored;
-    }
-
-    public static ConfigV2 fromV1(Config config) {
-        ConfigV2 configV2 = new ConfigV2();
-
-        configV2.base.setDiscordToken(config.getToken());
-        configV2.base.setDefaultLanguage(config.getDefaultLanguage());
-        configV2.dmdata.setAPIKey(config.getDmdataAPIKey());
-        configV2.dmdata.setOrigin(config.getDmdataOrigin());
-        configV2.dmdata.setMultiSocketConnect(config.isDmdataMultiSocketConnect());
-        configV2.legacy.setEnableKyoshin(config.isEnableKyoshin());
-        configV2.legacy.setKyoshinDelay(config.getKyoshinDelay());
-        configV2.legacy.setEnableLegacyQuakeInfo(config.isEnableLegacyQuakeInfo());
-        configV2.legacy.setLegacyQuakeInfoDelay(config.getQuakeInfoDelay());
-        configV2.legacy.setNtpServer(config.getNptServer());
-
-        return configV2;
     }
 }

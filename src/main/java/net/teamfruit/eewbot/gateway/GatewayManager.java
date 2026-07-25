@@ -9,7 +9,6 @@ import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.EEW;
 import net.teamfruit.eewbot.entity.jma.telegram.VTSE41;
-import net.teamfruit.eewbot.entity.other.KmoniEEW;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
@@ -28,7 +27,6 @@ public class GatewayManager implements AutoCloseable {
     private final ScheduledExecutorService scheduledExecutor;
     private final ScheduledExecutorService dmdataReconnectExecutor;
     private final ExecutorService messageExecutor;
-    private final TimeProvider timeProvider;
     private final EEWService service;
     private final ConfigV2 config;
     private final long applicationId;
@@ -52,8 +50,7 @@ public class GatewayManager implements AutoCloseable {
             ExternalWebhookService externalWebhookService
     ) {
         this(service, config, applicationId, scheduledExecutor, dmdataReconnectExecutor, httpClient, client, adminRegistry, quakeInfoStore, externalWebhookService,
-                Executors.newVirtualThreadPerTaskExecutor(),
-                new TimeProvider(scheduledExecutor, config.getLegacy().getNtpServer()));
+                Executors.newVirtualThreadPerTaskExecutor());
     }
 
     GatewayManager(
@@ -67,8 +64,7 @@ public class GatewayManager implements AutoCloseable {
             DestinationAdminRegistry adminRegistry,
             QuakeInfoStore quakeInfoStore,
             ExternalWebhookService externalWebhookService,
-            ExecutorService messageExecutor,
-            TimeProvider timeProvider
+            ExecutorService messageExecutor
     ) {
         this.service = service;
         this.config = config;
@@ -79,51 +75,21 @@ public class GatewayManager implements AutoCloseable {
         this.quakeInfoStore = quakeInfoStore;
         this.externalWebhookService = externalWebhookService;
         this.messageExecutor = messageExecutor;
-        this.timeProvider = timeProvider;
-    }
-
-    public TimeProvider getTimeProvider() {
-        return this.timeProvider;
     }
 
     public void init() {
         initEEWGateway();
-        initQuakeInfoGateway();
         initJMAXmlGateways();
         initWebhookSenderHealth();
     }
 
     private void initEEWGateway() {
-        if (this.config.getLegacy().isEnableKyoshin()) {
-            this.timeProvider.init();
-
-            KmoniGateway kmoniGateway = new KmoniGateway(this.httpClient, this.timeProvider, this::handleKmoniEEW);
-            this.scheduledTasks.add(
-                    this.scheduledExecutor.scheduleAtFixedRate(kmoniGateway, 0, this.config.getLegacy().getKyoshinDelay(), TimeUnit.SECONDS)
-            );
-        } else {
-            DmdataAPI dmdataAPI = new DmdataAPI(this.httpClient, this.config.getDmdata().getAPIKey(), this.config.getDmdata().getOrigin());
-            this.dmdataGateway = new DmdataGateway(this.httpClient, dmdataAPI, this.applicationId, this.config.getDmdata().isMultiSocketConnect(), this::handleDmdataEEW, this.dmdataReconnectExecutor, this.config.getDebug().getDmdataWsBaseUri());
-            this.dmdataReconnectExecutor.execute(this.dmdataGateway);
-            this.scheduledTasks.add(
-                    this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(this.dmdataGateway, this.dmdataReconnectExecutor), 30, 30, TimeUnit.SECONDS)
-            );
-        }
-    }
-
-    private void handleKmoniEEW(KmoniEEW eew) {
-        MDC.put("gateway", "kmoni");
-        MDC.put("event.type", "eew");
-        try {
-            Log.logger.info(eew.toString());
-            boolean isWarning = EEWFilterClassifier.isKmoniWarning(eew);
-            boolean isImportant = EEWFilterClassifier.isKmoniImportant(eew);
-            SeismicIntensity maxIntensity = eew.getMaxIntensityEEW();
-            ChannelFilter filter = EEWFilterClassifier.classifyEEW(isWarning, isImportant, maxIntensity);
-            submitMessage(() -> this.service.sendMessage(filter, eew));
-        } finally {
-            MDC.clear();
-        }
+        DmdataAPI dmdataAPI = new DmdataAPI(this.httpClient, this.config.getDmdata().getAPIKey(), this.config.getDmdata().getOrigin());
+        this.dmdataGateway = new DmdataGateway(this.httpClient, dmdataAPI, this.applicationId, this.config.getDmdata().isMultiSocketConnect(), this::handleDmdataEEW, this.dmdataReconnectExecutor, this.config.getDebug().getDmdataWsBaseUri());
+        this.dmdataReconnectExecutor.execute(this.dmdataGateway);
+        this.scheduledTasks.add(
+                this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(this.dmdataGateway, this.dmdataReconnectExecutor), 30, 30, TimeUnit.SECONDS)
+        );
     }
 
     private void handleDmdataEEW(DmdataEEWUpdate update) {
@@ -147,25 +113,6 @@ public class GatewayManager implements AutoCloseable {
             });
         } finally {
             MDC.clear();
-        }
-    }
-
-    private void initQuakeInfoGateway() {
-        if (this.config.getLegacy().isEnableLegacyQuakeInfo()) {
-            QuakeInfoGateway quakeInfoGateway = new QuakeInfoGateway(data -> {
-                MDC.put("gateway", "quake-info");
-                MDC.put("event.type", "quake-info");
-                try {
-                    Log.logger.info(data.toString());
-                    ChannelFilter filter = EEWFilterClassifier.classifyQuakeInfo(data.getEarthquake().getIntensity());
-                    submitMessage(() -> this.service.sendMessage(filter, data));
-                } finally {
-                    MDC.clear();
-                }
-            });
-            this.scheduledTasks.add(
-                    this.scheduledExecutor.scheduleAtFixedRate(quakeInfoGateway, 0, this.config.getLegacy().getLegacyQuakeInfoDelay(), TimeUnit.SECONDS)
-            );
         }
     }
 
@@ -198,11 +145,9 @@ public class GatewayManager implements AutoCloseable {
             MDC.put("event.type", "report");
         }
         try {
-            if (!this.config.getLegacy().isEnableLegacyQuakeInfo()) {
-                if (data instanceof QuakeInfo quakeInfo) {
-                    ChannelFilter filter = EEWFilterClassifier.classifyQuakeInfo(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
-                    submitMessage(() -> this.service.sendMessage(filter, data));
-                }
+            if (data instanceof QuakeInfo quakeInfo) {
+                ChannelFilter filter = EEWFilterClassifier.classifyQuakeInfo(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
+                submitMessage(() -> this.service.sendMessage(filter, data));
             }
             if (data instanceof VTSE41) {
                 ChannelFilter filter = EEWFilterClassifier.classifyTsunami();
@@ -257,9 +202,7 @@ public class GatewayManager implements AutoCloseable {
             }
         }
 
-        // 4. Stop time provider, shutdown message executor
-        this.timeProvider.stop();
-
+        // 4. Shutdown message executor
         this.messageExecutor.shutdown();
         try {
             if (!this.messageExecutor.awaitTermination(10, TimeUnit.SECONDS)) {

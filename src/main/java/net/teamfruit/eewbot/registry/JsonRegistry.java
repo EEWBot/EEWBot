@@ -34,16 +34,8 @@ public class JsonRegistry<E> {
         this.gson = gson;
     }
 
-    public Path getPath() {
-        return this.path;
-    }
-
     public E getElement() {
         return this.element;
-    }
-
-    public void setElement(final E element) {
-        this.element = element;
     }
 
     public boolean exists() {
