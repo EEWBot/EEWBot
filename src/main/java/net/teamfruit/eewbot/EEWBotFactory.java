@@ -263,7 +263,7 @@ public class EEWBotFactory {
      */
     private static final Set<String> V1_MARKER_KEYS = Set.of("token", "dmdataAPIKey", "dmdataOrigin",
             "dmdataMultiSocketConnect", "enableKyoshin", "kyoshinDelay", "enableLegacyQuakeInfo",
-            "quakeInfoDelay", "nptServer", "defaultLanuage");
+            "quakeInfoDelay", "nptServer", "defaultLanuage", "redisAddress");
 
     /**
      * {@code database.type} values whose backends were removed. A config still using one is rejected

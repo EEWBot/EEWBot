@@ -212,6 +212,22 @@ class ConfigBootstrapTest {
     }
 
     @Test
+    void v1ConfigWithOnlyRedisAddressFailsWithoutRewritingConfig() throws IOException {
+        Path configPath = this.tempDir.resolve("config.json");
+        Files.writeString(configPath, """
+                {
+                  "redisAddress": "redis.example.com:6379"
+                }
+                """);
+
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath));
+        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
+
+        assertTrue(Files.readString(configPath).contains("redis.example.com:6379"),
+                "the redis address must survive so a rollback to 2.9.x can still migrate");
+    }
+
+    @Test
     void missingConfigCreatesDefaults() throws IOException {
         Path configPath = this.tempDir.resolve("config.json");
 
