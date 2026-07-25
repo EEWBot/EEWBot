@@ -23,8 +23,6 @@ import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshotLoader;
 import net.teamfruit.eewbot.registry.destination.delivery.RevisionPoller;
 import net.teamfruit.eewbot.registry.destination.delivery.SnapshotDeliveryRegistry;
-import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
-import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryRedis;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
 import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
@@ -33,12 +31,9 @@ import net.teamfruit.eewbot.slashcommand.SlashCommandContext;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.Disposable;
-import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.JedisPooled;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -97,9 +92,6 @@ public class EEWBotFactory {
         DestinationAdminRegistry adminRegistry;
 
         try {
-            Path channelsJsonPath = EEWBot.DATA_DIRECTORY != null
-                    ? Paths.get(EEWBot.DATA_DIRECTORY, "channels.json")
-                    : Paths.get("channels.json");
             String dbType = config.getDatabase().getType();
 
             switch (dbType.toLowerCase()) {
@@ -111,32 +103,6 @@ public class EEWBotFactory {
                     deliveryRegistry = result.deliveryRegistry;
                     adminRegistry = result.adminRegistry;
                     revisionPoller = result.revisionPoller;
-                }
-                case "json" -> {
-                    if (Files.notExists(channelsJsonPath)) {
-                        throw new IllegalStateException(
-                                "channels.json not found. New JSON deployments are not supported. "
-                                        + "Please use 'sqlite' or 'postgresql' as database.type.");
-                    }
-                    ChannelRegistryJson registry = new ChannelRegistryJson(channelsJsonPath, Codecs.GSON);
-                    registry.init(false);
-                    deliveryRegistry = registry;
-                    adminRegistry = registry;
-                }
-                case "redis" -> {
-                    String redisAddress = config.getRedis().getAddress();
-                    if (StringUtils.isEmpty(redisAddress)) {
-                        throw new IllegalStateException(
-                                "database.type is 'redis' but redis.address is not set.");
-                    }
-                    HostAndPort hnp = redisAddress.lastIndexOf(":") < 0
-                            ? new HostAndPort(redisAddress, 6379)
-                            : HostAndPort.from(redisAddress);
-                    JedisPooled jedisPooled = new JedisPooled(hnp);
-                    ChannelRegistryRedis registry = new ChannelRegistryRedis(jedisPooled, Codecs.GSON);
-                    registry.init();
-                    deliveryRegistry = registry;
-                    adminRegistry = registry;
                 }
                 case "sqlite" -> {
                     Path sqlitePath = EEWBot.DATA_DIRECTORY != null
@@ -150,8 +116,11 @@ public class EEWBotFactory {
                     adminRegistry = result.adminRegistry;
                     revisionPoller = result.revisionPoller;
                 }
+                case "json", "redis" -> throw new IllegalStateException(
+                        "database.type '" + dbType + "' is no longer supported. "
+                                + "Migrate to 'sqlite' or 'postgresql' with the ChannelMigration tool of EEWBot 2.9.x before upgrading.");
                 default -> throw new IllegalStateException(
-                        "Unknown database.type: '" + dbType + "'. Supported values: sqlite, postgresql, json, redis");
+                        "Unknown database.type: '" + dbType + "'. Supported values: sqlite, postgresql");
             }
         } catch (Exception e) {
             scheduledExecutor.shutdown();
@@ -293,17 +262,7 @@ public class EEWBotFactory {
     private static void migrateConfigIfNeeded(ConfigV2 config, JsonRegistry<ConfigV2> configRegistry) throws IOException {
         if (StringUtils.isNotEmpty(config.getDatabase().getType())) return;
 
-        Path channelsJsonPath = EEWBot.DATA_DIRECTORY != null
-                ? Paths.get(EEWBot.DATA_DIRECTORY, "channels.json")
-                : Paths.get("channels.json");
-
-        if (StringUtils.isNotEmpty(config.getRedis().getAddress())) {
-            config.getDatabase().setType("redis");
-        } else if (Files.exists(channelsJsonPath)) {
-            config.getDatabase().setType("json");
-        } else {
-            config.getDatabase().setType("sqlite");
-        }
+        config.getDatabase().setType("sqlite");
         configRegistry.save();
     }
 

@@ -8,7 +8,6 @@ public class ConfigV2 {
 
     private Base base = new Base();
     private Database database = new Database();
-    private Redis redis = new Redis();
     private DMData dmdata = new DMData();
     private Renderer renderer = new Renderer();
     private WebhookSender webhookSender = new WebhookSender();
@@ -23,10 +22,6 @@ public class ConfigV2 {
 
     public Database getDatabase() {
         return this.database;
-    }
-
-    public Redis getRedis() {
-        return this.redis;
     }
 
     public DMData getDmdata() {
@@ -226,26 +221,6 @@ public class ConfigV2 {
                     ", username='" + this.username + '\'' +
                     ", maxPoolSize=" + this.maxPoolSize +
                     ", minIdle=" + this.minIdle +
-                    '}';
-        }
-    }
-
-    public static class Redis {
-
-        private String address = "";
-
-        public String getAddress() {
-            return this.address;
-        }
-
-        public void setRedisAddress(final String address) {
-            this.address = address;
-        }
-
-        @Override
-        public String toString() {
-            return "Redis{" +
-                    "address='" + this.address + '\'' +
                     '}';
         }
     }
@@ -524,7 +499,6 @@ public class ConfigV2 {
 
         configV2.base.setDiscordToken(config.getToken());
         configV2.base.setDefaultLanguage(config.getDefaultLanguage());
-        configV2.redis.setRedisAddress(config.getRedisAddress());
         configV2.dmdata.setAPIKey(config.getDmdataAPIKey());
         configV2.dmdata.setOrigin(config.getDmdataOrigin());
         configV2.dmdata.setMultiSocketConnect(config.isDmdataMultiSocketConnect());

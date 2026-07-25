@@ -273,47 +273,6 @@ public class ChannelFilter {
         return true;
     }
 
-    public String toQueryString() {
-        StringBuilder builder = new StringBuilder();
-        if (this.hasGuildPresent) {
-            if (this.hasGuild != null && this.hasGuild)
-                builder.append("@guildId:[0 inf] ");
-            else if (this.hasGuild != null)
-                builder.append("-@guildId:[0 inf] ");
-        }
-        if (this.guildIdPresent)
-            builder.append("@guildId:[").append(this.guildId).append(" ").append(this.guildId).append("] ");
-        if (this.channelIdPresent)
-            builder.append("@channelId:[").append(this.channelId).append(" ").append(this.channelId).append("] ");
-        if (this.threadIdPresent) {
-            if (this.threadId != null)
-                builder.append("@threadId:[").append(this.threadId).append(" ").append(this.threadId).append("] ");
-            else
-                builder.append("-@threadId:[0 inf] ");
-        }
-        if (this.isThreadPresent) {
-            if (this.isThread != null && this.isThread)
-                builder.append("@threadId:[0 inf] ");
-            else if (this.isThread != null)
-                builder.append("-@threadId:[0 inf] ");
-        }
-        if (this.eewAlertPresent)
-            builder.append("@eewAlert:{").append(this.eewAlert).append("} ");
-        if (this.eewPredictionPresent)
-            builder.append("@eewPrediction:{").append(this.eewPrediction).append("} ");
-        if (this.eewDecimationPresent)
-            builder.append("@eewDecimation:{").append(this.eewDecimation).append("} ");
-        if (this.quakeInfoPresent)
-            builder.append("@quakeInfo:{").append(this.quakeInfo).append("} ");
-        if (this.tsunamiPresent)
-            builder.append("@tsunami:{").append(this.tsunami).append("} ");
-        if (this.intensityPresent)
-            builder.append("@minIntensity:[0 ").append(this.intensity.getCode()).append("] ");
-        if (this.webhookIdPresent)
-            builder.append("@webhookId:[").append(this.webhookId).append(" ").append(this.webhookId).append("]");
-        return builder.toString();
-    }
-
     public static ChannelFilter.Builder builder() {
         return new ChannelFilter.Builder();
     }

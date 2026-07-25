@@ -3,9 +3,6 @@ package net.teamfruit.eewbot.registry.config;
 import net.teamfruit.eewbot.Log;
 import org.apache.commons.lang3.StringUtils;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
 @SuppressWarnings("FieldMayBeFinal")
 public class Config {
 
@@ -17,7 +14,6 @@ public class Config {
     private String dmdataAPIKey = "";
     private String dmdataOrigin = "";
     private boolean dmdataMultiSocketConnect = false;
-    private String redisAddress = "";
     private String nptServer = "time.google.com";
     private String defaultLanuage = "ja_jp";
 
@@ -64,10 +60,6 @@ public class Config {
         return this.dmdataMultiSocketConnect;
     }
 
-    public String getRedisAddress() {
-        return this.redisAddress;
-    }
-
     public String getNptServer() {
         return this.nptServer;
     }
@@ -93,14 +85,6 @@ public class Config {
         if (isEnableKyoshin()) {
             Log.logger.warn("Kyoshin EEW is enabled, please consider using DMDATA");
         }
-        if (StringUtils.isNotEmpty(getRedisAddress())) {
-            try {
-                new URI(getRedisAddress());
-            } catch (URISyntaxException e) {
-                Log.logger.info("Invalid redis address: " + e.getMessage());
-                return false;
-            }
-        }
         return true;
     }
 
@@ -115,7 +99,6 @@ public class Config {
                 ", dmdataAPIKey='" + this.dmdataAPIKey + '\'' +
                 ", dmdataOrigin='" + this.dmdataOrigin + '\'' +
                 ", dmdataMultiSocketConnect=" + this.dmdataMultiSocketConnect +
-                ", redisAddress='" + this.redisAddress + '\'' +
                 ", nptServer='" + this.nptServer + '\'' +
                 ", defaultLanuage='" + this.defaultLanuage +
                 '}';

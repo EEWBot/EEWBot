@@ -24,7 +24,6 @@ dependencies {
     api(libs.org.apache.commons.commons.lang3)
     api(libs.com.fasterxml.jackson.dataformat.jackson.dataformat.xml)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
-    api(libs.redis.clients.jedis)
 
     implementation(libs.wire.runtime)
     implementation(libs.net.eewbot.base32768j)
