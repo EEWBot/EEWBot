@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot.registry;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
@@ -59,24 +58,27 @@ public class JsonRegistry<E> {
     }
 
     /**
-     * Returns the raw JSON object stored in the file, or an empty object if the
-     * file does not contain a JSON object. Used by callers to inspect fields that
-     * are unknown to the target type, before {@link #load(boolean)} drops them.
+     * Loads the file, then rewrites it only if the serialized form differs from what is
+     * on disk, which happens when unknown fields are dropped or new defaults are added.
+     * The original file is copied to {@code <name>.bak} first, so a config written by
+     * another version is never lost.
      */
-    public JsonObject readRootObject() throws IOException {
-        JsonElement root = JsonParser.parseString(Files.readString(this.path));
-        if (!root.isJsonObject())
-            return new JsonObject();
-        return root.getAsJsonObject();
-    }
+    public void loadAndNormalize(boolean warnUnknownFields) throws IOException {
+        String original = Files.readString(this.path);
+        load(warnUnknownFields);
 
-    /**
-     * Returns the top level keys of the JSON file, or an empty set if the file
-     * does not contain a JSON object. Used by callers to detect which schema
-     * version a file was written with.
-     */
-    public Set<String> readTopLevelKeys() throws IOException {
-        return new HashSet<>(readRootObject().keySet());
+        String normalized = this.type != null
+                ? this.gson.toJson(this.element, this.type)
+                : this.gson.toJson(this.element);
+
+        // Structural comparison, so that formatting differences alone never trigger a backup.
+        if (JsonParser.parseString(original).equals(JsonParser.parseString(normalized)))
+            return;
+
+        Path backup = this.path.resolveSibling(this.path.getFileName() + ".bak");
+        Log.logger.warn("{} is being rewritten, backing the previous content up to {}", this.path, backup);
+        Files.writeString(backup, original);
+        save();
     }
 
     /**

@@ -1,7 +1,5 @@
 package net.teamfruit.eewbot;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
@@ -29,16 +27,13 @@ import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import net.teamfruit.eewbot.registry.destination.store.SqlAdminRegistry;
 import net.teamfruit.eewbot.slashcommand.SlashCommandContext;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
-import org.apache.commons.lang3.StringUtils;
 import reactor.core.Disposable;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -50,8 +45,6 @@ public class EEWBotFactory {
         // 1. Config bootstrap
         JsonRegistry<ConfigV2> configRegistry = new JsonRegistry<>(getConfigPath(), ConfigV2::new, ConfigV2.class, Codecs.GSON_PRETTY);
         ConfigV2 config = loadConfig(configRegistry);
-
-        migrateConfigIfNeeded(config, configRegistry);
 
         // 2. Environment variable overrides
         final String token = System.getenv("TOKEN");
@@ -109,9 +102,9 @@ public class EEWBotFactory {
                     adminRegistry = result.adminRegistry;
                     revisionPoller = result.revisionPoller;
                 }
-                // Normally unreachable: loadConfig rejects these before the config file is rewritten.
                 case "json", "redis" -> throw new IllegalStateException(
-                        "database.type '" + dbType + "' is no longer supported. " + MIGRATION_HINT);
+                        "database.type '" + dbType + "' is no longer supported. Migrate to 'sqlite' or "
+                                + "'postgresql' with the ChannelMigration tool of EEWBot 2.9.x before upgrading.");
                 default -> throw new IllegalStateException(
                         "Unknown database.type: '" + dbType + "'. Supported values: sqlite, postgresql");
             }
@@ -252,108 +245,18 @@ public class EEWBotFactory {
         return new SqlRegistries(delivery, admin, poller);
     }
 
-    /**
-     * Top level keys that only ever appear in the V2 config schema. Includes {@code legacy}, which was
-     * dropped from {@link ConfigV2} but may still be present in a config.json written by an older version.
-     */
-    private static final Set<String> V2_MARKER_KEYS = Set.of("base", "database", "dmdata", "renderer",
-            "webhookSender", "externalWebhook", "advanced", "legacy", "debug");
-    /**
-     * Top level keys that only ever appear in the unsupported (V1) flat config schema.
-     */
-    private static final Set<String> V1_MARKER_KEYS = Set.of("token", "dmdataAPIKey", "dmdataOrigin",
-            "dmdataMultiSocketConnect", "enableKyoshin", "kyoshinDelay", "enableLegacyQuakeInfo",
-            "quakeInfoDelay", "nptServer", "defaultLanuage", "redisAddress");
-
-    /**
-     * {@code database.type} values whose backends were removed. A config still using one is rejected
-     * before the file is rewritten, so the operator can roll back and migrate with EEWBot 2.9.x.
-     */
-    private static final Set<String> LEGACY_DATABASE_TYPES = Set.of("json", "redis");
-    private static final String MIGRATION_HINT =
-            "Migrate to 'sqlite' or 'postgresql' with the ChannelMigration tool of EEWBot 2.9.x before upgrading.";
-
     static ConfigV2 loadConfig(JsonRegistry<ConfigV2> configRegistry) throws IOException {
-        return loadConfig(configRegistry, getChannelsJsonPath());
-    }
-
-    static ConfigV2 loadConfig(JsonRegistry<ConfigV2> configRegistry, Path channelsJsonPath) throws IOException {
         if (!configRegistry.exists()) {
             configRegistry.init(true);
             return configRegistry.getElement();
         }
 
-        JsonObject root = configRegistry.readRootObject();
-
-        if (isLegacyV1Config(root.keySet()))
-            throw new IllegalStateException(
-                    "config.json is in the legacy V1 format, which is no longer supported. "
-                            + "Run EEWBot 2.9.x once to migrate it to the V2 format before upgrading.");
-
-        // Must run before load()/save(), which drops the now unknown redis section from the file.
-        rejectLegacyStorage(root, channelsJsonPath);
-
-        configRegistry.load(true);
-        configRegistry.save();
-
+        configRegistry.loadAndNormalize(true);
         return configRegistry.getElement();
-    }
-
-    private static boolean isLegacyV1Config(Set<String> topLevelKeys) {
-        if (topLevelKeys.stream().anyMatch(V2_MARKER_KEYS::contains))
-            return false;
-        return topLevelKeys.stream().anyMatch(V1_MARKER_KEYS::contains);
-    }
-
-    private static void rejectLegacyStorage(JsonObject root, Path channelsJsonPath) {
-        String dbType = readString(root, "database", "type");
-
-        if (StringUtils.isNotEmpty(dbType)) {
-            // Rejected here rather than only in the backend switch: saving first would strip the redis
-            // section, leaving a rollback to 2.9.x without the address its migration tool needs.
-            if (LEGACY_DATABASE_TYPES.contains(dbType.toLowerCase()))
-                throw new IllegalStateException(
-                        "database.type '" + dbType + "' is no longer supported. "
-                                + MIGRATION_HINT);
-            return;
-        }
-
-        String legacyBackend = null;
-        if (StringUtils.isNotEmpty(readString(root, "redis", "address")))
-            legacyBackend = "redis (redis.address is set)";
-        else if (Files.exists(channelsJsonPath))
-            legacyBackend = "json (" + channelsJsonPath + " exists)";
-
-        if (legacyBackend != null)
-            throw new IllegalStateException(
-                    "config.json has no database.type, but this deployment appears to use the removed "
-                            + legacyBackend + " backend, which is no longer supported. "
-                            + MIGRATION_HINT + " Then set database.type explicitly.");
-    }
-
-    private static String readString(JsonObject root, String objectKey, String key) {
-        JsonElement child = root.get(objectKey);
-        if (child == null || !child.isJsonObject())
-            return null;
-        JsonElement value = child.getAsJsonObject().get(key);
-        if (value == null || !value.isJsonPrimitive())
-            return null;
-        return value.getAsString();
-    }
-
-    private static void migrateConfigIfNeeded(ConfigV2 config, JsonRegistry<ConfigV2> configRegistry) throws IOException {
-        if (StringUtils.isNotEmpty(config.getDatabase().getType())) return;
-
-        config.getDatabase().setType("sqlite");
-        configRegistry.save();
     }
 
     private static Path getConfigPath() {
         return EEWBot.CONFIG_DIRECTORY != null ? Paths.get(EEWBot.CONFIG_DIRECTORY, "config.json") : Paths.get("config.json");
-    }
-
-    private static Path getChannelsJsonPath() {
-        return EEWBot.DATA_DIRECTORY != null ? Paths.get(EEWBot.DATA_DIRECTORY, "channels.json") : Paths.get("channels.json");
     }
 
     private record SqlRegistries(

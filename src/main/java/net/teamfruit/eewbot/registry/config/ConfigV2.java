@@ -79,7 +79,7 @@ public class ConfigV2 {
 
     public static class Database {
 
-        private String type = "";
+        private String type = "sqlite";
         private SQLite sqlite = new SQLite();
         private PostgreSQL postgresql = new PostgreSQL();
 

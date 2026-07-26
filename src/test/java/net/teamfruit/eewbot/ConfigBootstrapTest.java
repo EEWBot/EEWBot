@@ -18,12 +18,12 @@ class ConfigBootstrapTest {
     Path tempDir;
 
     private ConfigV2 bootstrap(Path configPath) throws IOException {
-        return bootstrap(configPath, this.tempDir.resolve("channels.json"));
+        JsonRegistry<ConfigV2> registry = new JsonRegistry<>(configPath, ConfigV2::new, ConfigV2.class, Codecs.GSON_PRETTY);
+        return EEWBotFactory.loadConfig(registry);
     }
 
-    private ConfigV2 bootstrap(Path configPath, Path channelsJsonPath) throws IOException {
-        JsonRegistry<ConfigV2> registry = new JsonRegistry<>(configPath, ConfigV2::new, ConfigV2.class, Codecs.GSON_PRETTY);
-        return EEWBotFactory.loadConfig(registry, channelsJsonPath);
+    private Path backupOf(Path configPath) {
+        return configPath.resolveSibling(configPath.getFileName() + ".bak");
     }
 
     @Test
@@ -51,6 +51,9 @@ class ConfigBootstrapTest {
         String saved = Files.readString(configPath);
         assertTrue(saved.contains("my-token"), "config.json must keep the configured token");
         assertFalse(saved.contains("redis"), "the removed redis section should be dropped on save");
+
+        assertTrue(Files.readString(backupOf(configPath)).contains("redis://localhost:6379"),
+                "the dropped redis section must survive in the backup");
     }
 
     @Test
@@ -66,6 +69,8 @@ class ConfigBootstrapTest {
         ConfigV2 config = bootstrap(configPath);
 
         assertEquals("my-token", config.getBase().getDiscordToken());
+        assertTrue(Files.readString(backupOf(configPath)).contains("typoSection"),
+                "the dropped section must survive in the backup");
     }
 
     @Test
@@ -86,10 +91,13 @@ class ConfigBootstrapTest {
 
         String saved = Files.readString(configPath);
         assertFalse(saved.contains("legacy"), "the removed legacy section should be dropped on save");
+
+        assertTrue(Files.readString(backupOf(configPath)).contains("ntp.nict.jp"),
+                "the dropped legacy section must survive in the backup");
     }
 
     @Test
-    void v1ConfigFailsWithMigrationHint() throws IOException {
+    void v1ConfigIsBackedUpBeforeBeingReset() throws IOException {
         Path configPath = this.tempDir.resolve("config.json");
         Files.writeString(configPath, """
                 {
@@ -100,86 +108,17 @@ class ConfigBootstrapTest {
                 }
                 """);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath));
-        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
+        ConfigV2 config = bootstrap(configPath);
 
-        assertEquals("v1-token", Codecs.GSON_PRETTY.fromJson(Files.readString(configPath), JsonObject.class)
-                .get("token").getAsString(), "the unsupported config must be left untouched");
+        // The V1 schema is no longer understood, so nothing is carried over and startup fails validation.
+        assertFalse(config.isValid());
+
+        assertEquals("v1-token", Codecs.GSON_PRETTY.fromJson(Files.readString(backupOf(configPath)), JsonObject.class)
+                .get("token").getAsString(), "the unsupported config must survive in the backup");
     }
 
     @Test
-    void configWithoutDatabaseTypeButWithRedisAddressFails() throws IOException {
-        Path configPath = this.tempDir.resolve("config.json");
-        Files.writeString(configPath, """
-                {
-                  "base": { "discordToken": "my-token" },
-                  "dmdata": { "apiKey": "my-dmdata-key" },
-                  "redis": { "address": "localhost:6379" }
-                }
-                """);
-
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath));
-        assertTrue(e.getMessage().contains("redis"), "the error must name the detected legacy backend");
-        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
-
-        assertTrue(Files.readString(configPath).contains("redis"),
-                "the config must be left untouched so the migration tool can still read it");
-    }
-
-    @Test
-    void redisDatabaseTypeFailsWithoutRewritingConfig() throws IOException {
-        Path configPath = this.tempDir.resolve("config.json");
-        Files.writeString(configPath, """
-                {
-                  "base": { "discordToken": "my-token" },
-                  "database": { "type": "redis" },
-                  "redis": { "address": "redis.example.com:6379" }
-                }
-                """);
-
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath));
-        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
-
-        assertTrue(Files.readString(configPath).contains("redis.example.com:6379"),
-                "the redis address must survive so a rollback to 2.9.x can still migrate");
-    }
-
-    @Test
-    void jsonDatabaseTypeFailsWithoutRewritingConfig() throws IOException {
-        Path configPath = this.tempDir.resolve("config.json");
-        Files.writeString(configPath, """
-                {
-                  "base": { "discordToken": "my-token" },
-                  "database": { "type": "JSON" }
-                }
-                """);
-
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath));
-        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
-
-        assertTrue(Files.readString(configPath).contains("\"JSON\""),
-                "the unsupported config must be left untouched");
-    }
-
-    @Test
-    void configWithoutDatabaseTypeButWithChannelsJsonFails() throws IOException {
-        Path configPath = this.tempDir.resolve("config.json");
-        Path channelsJsonPath = this.tempDir.resolve("channels.json");
-        Files.writeString(configPath, """
-                {
-                  "base": { "discordToken": "my-token" },
-                  "dmdata": { "apiKey": "my-dmdata-key" }
-                }
-                """);
-        Files.writeString(channelsJsonPath, "{}");
-
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath, channelsJsonPath));
-        assertTrue(e.getMessage().contains("json"), "the error must name the detected legacy backend");
-        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
-    }
-
-    @Test
-    void configWithoutDatabaseTypeAndWithoutLegacyMarkersIsAccepted() throws IOException {
+    void configWithoutDatabaseTypeDefaultsToSqlite() throws IOException {
         Path configPath = this.tempDir.resolve("config.json");
         Files.writeString(configPath, """
                 {
@@ -191,40 +130,21 @@ class ConfigBootstrapTest {
         ConfigV2 config = bootstrap(configPath);
 
         assertEquals("my-token", config.getBase().getDiscordToken());
-    }
-
-    @Test
-    void explicitDatabaseTypeWinsOverLegacyMarkers() throws IOException {
-        Path configPath = this.tempDir.resolve("config.json");
-        Path channelsJsonPath = this.tempDir.resolve("channels.json");
-        Files.writeString(configPath, """
-                {
-                  "base": { "discordToken": "my-token" },
-                  "database": { "type": "sqlite" },
-                  "redis": { "address": "localhost:6379" }
-                }
-                """);
-        Files.writeString(channelsJsonPath, "{}");
-
-        ConfigV2 config = bootstrap(configPath, channelsJsonPath);
-
         assertEquals("sqlite", config.getDatabase().getType());
+        assertTrue(Files.readString(configPath).contains("\"sqlite\""),
+                "the defaulted database type must be written back to the file");
     }
 
     @Test
-    void v1ConfigWithOnlyRedisAddressFailsWithoutRewritingConfig() throws IOException {
+    void alreadyNormalizedConfigIsNotRewritten() throws IOException {
         Path configPath = this.tempDir.resolve("config.json");
-        Files.writeString(configPath, """
-                {
-                  "redisAddress": "redis.example.com:6379"
-                }
-                """);
+        bootstrap(configPath);
+        String created = Files.readString(configPath);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> bootstrap(configPath));
-        assertTrue(e.getMessage().contains("2.9.x"), "the error must hint at how to migrate");
+        bootstrap(configPath);
 
-        assertTrue(Files.readString(configPath).contains("redis.example.com:6379"),
-                "the redis address must survive so a rollback to 2.9.x can still migrate");
+        assertEquals(created, Files.readString(configPath), "a normalized config must be left as is");
+        assertFalse(Files.exists(backupOf(configPath)), "no backup should be written when nothing changes");
     }
 
     @Test
@@ -235,5 +155,6 @@ class ConfigBootstrapTest {
 
         assertTrue(Files.exists(configPath));
         assertEquals("", config.getBase().getDiscordToken());
+        assertFalse(Files.exists(backupOf(configPath)), "creating a fresh config must not write a backup");
     }
 }
