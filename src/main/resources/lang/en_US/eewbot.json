@@ -105,5 +105,8 @@
   "eewbot.scmd.help.field.unregister.value": "Deletes the notification registration for this channel (or DM). Requires manage server permission by default.",
   "eewbot.scmd.help.field.help.value": "Display help.",
   "eewbot.scmd.help.field.links.name": "Links",
-  "eewbot.scmd.help.field.links.value": "[GitHub](https://github.com/EEWBot/EEWBot)\n[Support Server](https://discord.gg/upt9n86ctG)"
+  "eewbot.scmd.help.field.links.value": "[GitHub](https://github.com/EEWBot/EEWBot)\n[Support Server](https://discord.gg/upt9n86ctG)",
+  "eewbot.scmd.help.field.legal.name": "Legal",
+  "eewbot.scmd.help.field.legal.value": "[Privacy Policy](https://eewbot.net/privacy)\n[Terms of Service](https://eewbot.net/terms)",
+  "eewbot.scmd.setup.legal": "[Privacy Policy](<https://eewbot.net/privacy>) / [Terms of Service](<https://eewbot.net/terms>)"
 }

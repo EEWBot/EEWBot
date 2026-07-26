@@ -105,5 +105,8 @@
   "eewbot.scmd.help.field.unregister.value": "このチャンネル(またはDM)の通知登録を削除します。デフォルトでは、サーバー管理権限が必要です。",
   "eewbot.scmd.help.field.help.value": "Helpを表示します。",
   "eewbot.scmd.help.field.links.name": "リンク",
-  "eewbot.scmd.help.field.links.value": "[コマンドリファレンス](https://github.com/EEWBot/EEWBot/wiki/%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%83%AA%E3%83%95%E3%82%A1%E3%83%AC%E3%83%B3%E3%82%B9) [GitHub](https://github.com/EEWBot/EEWBot) [サポートサーバー](https://discord.gg/upt9n86ctG)"
+  "eewbot.scmd.help.field.links.value": "[コマンドリファレンス](https://github.com/EEWBot/EEWBot/wiki/%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%83%AA%E3%83%95%E3%82%A1%E3%83%AC%E3%83%B3%E3%82%B9) [GitHub](https://github.com/EEWBot/EEWBot) [サポートサーバー](https://discord.gg/upt9n86ctG)",
+  "eewbot.scmd.help.field.legal.name": "法的情報",
+  "eewbot.scmd.help.field.legal.value": "[プライバシーポリシー](https://eewbot.net/privacy) [利用規約](https://eewbot.net/terms)",
+  "eewbot.scmd.setup.legal": "[プライバシーポリシー](<https://eewbot.net/privacy>) / [利用規約](<https://eewbot.net/terms>)"
 }
