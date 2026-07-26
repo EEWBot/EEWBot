@@ -228,7 +228,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private Mono<Message> buildReply(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, String lang, long channelId, boolean noWebhook) {
-        return event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.setup.reply") + (noWebhook ? "\n\n" + ctx.i18n().get(lang, "eewbot.scmd.setup.permserror.managewebhooks") : ""))
+        return event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.setup.reply") + "\n" + ctx.i18n().get(lang, "eewbot.scmd.setup.legal") + (noWebhook ? "\n\n" + ctx.i18n().get(lang, "eewbot.scmd.setup.permserror.managewebhooks") : ""))
                 .withComponents(ActionRow.of(buildSelectMenu(ctx, ChannelSettingType.BASE, channelId, lang)),
                         ActionRow.of(buildSelectMenu(ctx, ChannelSettingType.MODIFIER, channelId, lang)),
                         ActionRow.of(buildSensitivitySelectMenu(ctx, channelId, lang)));
