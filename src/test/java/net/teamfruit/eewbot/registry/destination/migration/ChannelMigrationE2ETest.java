@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -33,40 +32,39 @@ class ChannelMigrationE2ETest {
     private static final Field<Long> TARGET_ID = field(name("target_id"), Long.class);
     private static final Field<String> NAME_FIELD = field(name("name"), String.class);
 
-    private Path writeSourceJson(String content) throws IOException {
-        Path json = this.tempDir.resolve("source.json");
-        Files.writeString(json, content);
-        return json;
+    /**
+     * Builds a SQLite source database containing two channels.
+     */
+    private Path createSourceDb() throws IOException {
+        Path dbPath = this.tempDir.resolve("source.db");
+        ChannelRegistrySql source = ChannelRegistrySql.forSQLite(dbPath);
+        try {
+            DatabaseInitializer.migrate(source.getDataSource(), SQLDialect.SQLITE);
+            source.put(1001L, new Channel(100L, 1001L, null,
+                    true, false, false, true, false, SeismicIntensity.ONE, null, "ja_jp"));
+            source.put(1002L, new Channel(100L, 1002L, null,
+                    false, true, false, false, false, SeismicIntensity.THREE, null, "en_us"));
+        } finally {
+            source.close();
+        }
+        return dbPath;
+    }
+
+    private String[] migrationArgs(Path source, String destPath, String... extra) {
+        String[] base = {"--source", "sqlite", "--source-path", source.toString(),
+                "--dest", "sqlite", "--dest-path", destPath};
+        if (extra.length == 0) {
+            return base;
+        }
+        String[] combined = new String[base.length + extra.length];
+        System.arraycopy(base, 0, combined, 0, base.length);
+        System.arraycopy(extra, 0, combined, base.length, extra.length);
+        return combined;
     }
 
     private String destDbPath() {
         return this.tempDir.resolve("dest.db").toString();
     }
-
-    private static final String TWO_CHANNEL_JSON = """
-            {
-              "1001": {
-                "channelId": 1001,
-                "guildId": 100,
-                "eewAlert": true,
-                "eewPrediction": false,
-                "eewDecimation": false,
-                "quakeInfo": true,
-                "minIntensity": "1",
-                "lang": "ja_jp"
-              },
-              "1002": {
-                "channelId": 1002,
-                "guildId": 100,
-                "eewAlert": false,
-                "eewPrediction": true,
-                "eewDecimation": false,
-                "quakeInfo": false,
-                "minIntensity": "3",
-                "lang": "en_us"
-              }
-            }
-            """;
 
     @Nested
     @DisplayName("Migration tracking")
@@ -75,11 +73,10 @@ class ChannelMigrationE2ETest {
         @Test
         @DisplayName("Idempotent: second run is a no-op with no duplicates")
         void idempotentMigration() throws IOException {
-            Path source = writeSourceJson(TWO_CHANNEL_JSON);
+            Path source = createSourceDb();
             String destPath = destDbPath();
 
-            String[] args = {"--source", "json", "--source-path", source.toString(),
-                    "--dest", "sqlite", "--dest-path", destPath};
+            String[] args = migrationArgs(source, destPath);
 
             int result1 = ChannelMigration.run(args);
             assertThat(result1).isZero();
@@ -100,11 +97,10 @@ class ChannelMigrationE2ETest {
         @Test
         @DisplayName("Migration is recorded in data_migrations table")
         void migrationRecorded() throws IOException {
-            Path source = writeSourceJson(TWO_CHANNEL_JSON);
+            Path source = createSourceDb();
             String destPath = destDbPath();
 
-            String[] args = {"--source", "json", "--source-path", source.toString(),
-                    "--dest", "sqlite", "--dest-path", destPath};
+            String[] args = migrationArgs(source, destPath);
 
             ChannelMigration.run(args);
 
@@ -112,7 +108,7 @@ class ChannelMigrationE2ETest {
             try {
                 boolean exists = registry.getDsl().fetchExists(
                         registry.getDsl().selectFrom(DATA_MIGRATIONS)
-                                .where(NAME_FIELD.eq("json_to_sql_channels_v1"))
+                                .where(NAME_FIELD.eq("sqlite_to_sql_channels_v1"))
                 );
                 assertThat(exists).isTrue();
             } finally {
@@ -123,11 +119,10 @@ class ChannelMigrationE2ETest {
         @Test
         @DisplayName("Migration increments channels_revision")
         void migrationIncrementsRevision() throws IOException {
-            Path source = writeSourceJson(TWO_CHANNEL_JSON);
+            Path source = createSourceDb();
             String destPath = destDbPath();
 
-            String[] args = {"--source", "json", "--source-path", source.toString(),
-                    "--dest", "sqlite", "--dest-path", destPath};
+            String[] args = migrationArgs(source, destPath);
 
             ChannelMigration.run(args);
 
@@ -143,17 +138,16 @@ class ChannelMigrationE2ETest {
         @Test
         @DisplayName("isMigrationApplied returns true after success")
         void isMigrationAppliedAfterSuccess() throws IOException {
-            Path source = writeSourceJson(TWO_CHANNEL_JSON);
+            Path source = createSourceDb();
             String destPath = destDbPath();
 
-            String[] args = {"--source", "json", "--source-path", source.toString(),
-                    "--dest", "sqlite", "--dest-path", destPath};
+            String[] args = migrationArgs(source, destPath);
 
             ChannelMigration.run(args);
 
             ChannelRegistrySql registry = ChannelRegistrySql.forSQLite(Path.of(destPath));
             try {
-                assertThat(ChannelMigration.isMigrationApplied(registry, "json_to_sql_channels_v1")).isTrue();
+                assertThat(ChannelMigration.isMigrationApplied(registry, "sqlite_to_sql_channels_v1")).isTrue();
             } finally {
                 registry.close();
             }
@@ -167,7 +161,7 @@ class ChannelMigrationE2ETest {
         @Test
         @DisplayName("Rollback on failure: trigger prevents insert, transaction rolls back")
         void rollbackOnFailure() throws IOException {
-            Path source = writeSourceJson(TWO_CHANNEL_JSON);
+            Path source = createSourceDb();
             String destPath = destDbPath();
 
             // Create and migrate the dest DB schema first
@@ -186,8 +180,7 @@ class ChannelMigrationE2ETest {
             destRegistry.close();
 
             // Now run migration — should fail due to trigger
-            String[] args = {"--source", "json", "--source-path", source.toString(),
-                    "--dest", "sqlite", "--dest-path", destPath};
+            String[] args = migrationArgs(source, destPath);
 
             int result = ChannelMigration.run(args);
             assertThat(result).isEqualTo(1);
@@ -220,12 +213,10 @@ class ChannelMigrationE2ETest {
         @Test
         @DisplayName("Dry run writes no data")
         void dryRunNoWrites() throws IOException {
-            Path source = writeSourceJson(TWO_CHANNEL_JSON);
+            Path source = createSourceDb();
             String destPath = destDbPath();
 
-            String[] args = {"--source", "json", "--source-path", source.toString(),
-                    "--dest", "sqlite", "--dest-path", destPath,
-                    "--dry-run"};
+            String[] args = migrationArgs(source, destPath, "--dry-run");
 
             int result = ChannelMigration.run(args);
             assertThat(result).isZero();
@@ -253,13 +244,12 @@ class ChannelMigrationE2ETest {
     class RunIntegrationTests {
 
         @Test
-        @DisplayName("JSON to SQLite migration succeeds")
-        void jsonToSqliteSuccess() throws IOException {
-            Path source = writeSourceJson(TWO_CHANNEL_JSON);
+        @DisplayName("SQLite to SQLite migration succeeds")
+        void sqliteToSqliteSuccess() throws IOException {
+            Path source = createSourceDb();
             String destPath = destDbPath();
 
-            String[] args = {"--source", "json", "--source-path", source.toString(),
-                    "--dest", "sqlite", "--dest-path", destPath};
+            String[] args = migrationArgs(source, destPath);
 
             int result = ChannelMigration.run(args);
             assertThat(result).isZero();
@@ -296,14 +286,10 @@ class ChannelMigrationE2ETest {
         @Test
         @DisplayName("Dry run returns exit code 0")
         void dryRunReturnsZero() throws IOException {
-            Path source = writeSourceJson(TWO_CHANNEL_JSON);
+            Path source = createSourceDb();
             String destPath = destDbPath();
 
-            int result = ChannelMigration.run(new String[]{
-                    "--source", "json", "--source-path", source.toString(),
-                    "--dest", "sqlite", "--dest-path", destPath,
-                    "--dry-run"
-            });
+            int result = ChannelMigration.run(migrationArgs(source, destPath, "--dry-run"));
             assertThat(result).isZero();
         }
     }

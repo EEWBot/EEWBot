@@ -22,7 +22,6 @@ public class SlashCommandHandler {
     static {
         registerCommand(new SetupSlashCommand());
         registerCommand(new QuakeInfoSlashCommand());
-        registerCommand(new TimeSlashCommand());
         registerCommand(new InviteSlashCommand());
         registerCommand(new TestMessageSlashCommand());
         registerCommand(new LangSlashCommand());

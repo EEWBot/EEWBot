@@ -27,8 +27,8 @@ public class EEWBot implements AutoCloseable {
     private final ConfigV2 config;
     private final DestinationDeliveryRegistry deliveryRegistry;
     private final DestinationAdminRegistry adminRegistry;
-    private final ChannelRegistrySql sqlRegistry;       // nullable (JSON/Redis backend)
-    private final RevisionPoller revisionPoller;         // nullable
+    private final ChannelRegistrySql sqlRegistry;
+    private final RevisionPoller revisionPoller;
     private final I18n i18n;
     private final QuakeInfoStore quakeInfoStore;
     private final RendererQueryFactory rendererQueryFactory;

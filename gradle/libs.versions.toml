@@ -7,9 +7,7 @@ com-discord4j-discord4j-core = "3.3.2"
 com-fasterxml-jackson-dataformat-jackson-dataformat-xml = "2.22.1"
 com-fasterxml-jackson-datatype-jackson-datatype-jsr310 = "2.22.1"
 com-google-code-gson-gson = "2.14.0"
-commons-net-commons-net = "3.13.0"
 org-apache-commons-commons-lang3 = "3.20.0"
-redis-clients-jedis = "4.4.8"
 net-eewbot-base32768j = "0.1.0"
 shadow-jar = "9.6.1"
 wire = "6.4.5"
@@ -32,9 +30,7 @@ com-discord4j-discord4j-core = { module = "com.discord4j:discord4j-core", versio
 com-fasterxml-jackson-dataformat-jackson-dataformat-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml", version.ref = "com-fasterxml-jackson-dataformat-jackson-dataformat-xml" }
 com-fasterxml-jackson-datatype-jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "com-fasterxml-jackson-datatype-jackson-datatype-jsr310" }
 com-google-code-gson-gson = { module = "com.google.code.gson:gson", version.ref = "com-google-code-gson-gson" }
-commons-net-commons-net = { module = "commons-net:commons-net", version.ref = "commons-net-commons-net" }
 org-apache-commons-commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "org-apache-commons-commons-lang3" }
-redis-clients-jedis = { module = "redis.clients:jedis", version.ref = "redis-clients-jedis" }
 net-eewbot-base32768j = { module = "net.eewbot:base32768j", version.ref = "net-eewbot-base32768j" }
 wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }

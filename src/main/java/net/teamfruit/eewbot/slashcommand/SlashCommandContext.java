@@ -3,7 +3,6 @@ package net.teamfruit.eewbot.slashcommand;
 import discord4j.core.GatewayDiscordClient;
 import net.teamfruit.eewbot.EEWService;
 import net.teamfruit.eewbot.QuakeInfoStore;
-import net.teamfruit.eewbot.TimeProvider;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
@@ -23,7 +22,6 @@ public record SlashCommandContext(
         String avatarUrl,
         RendererQueryFactory rendererQueryFactory,
         QuakeInfoStore quakeInfoStore,
-        TimeProvider timeProvider,
         long applicationId,
         AtomicBoolean shutdownFlag
 ) {
