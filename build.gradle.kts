@@ -50,7 +50,7 @@ dependencies {
 }
 
 group = "net.teamfruit"
-version = "2.9.3"
+version = "2.10.0"
 description = "EEWBot"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
