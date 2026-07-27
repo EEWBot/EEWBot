@@ -85,10 +85,20 @@ public class GatewayManager implements AutoCloseable {
 
     private void initEEWGateway() {
         DmdataAPI dmdataAPI = new DmdataAPI(this.httpClient, this.config.getDmdata().getAPIKey(), this.config.getDmdata().getOrigin());
-        this.dmdataGateway = new DmdataGateway(this.httpClient, dmdataAPI, this.applicationId, this.config.getDmdata().isMultiSocketConnect(), this::handleDmdataEEW, this.dmdataReconnectExecutor, this.config.getDebug().getDmdataWsBaseUri());
+        String wsBaseTest = this.config.getDebug().getDmdataWsBaseUri();
+        this.dmdataGateway = new DmdataGateway(this.httpClient, dmdataAPI, this.applicationId, this.config.getDmdata().isMultiSocketConnect(), this::handleDmdataEEW, this.dmdataReconnectExecutor, wsBaseTest);
         this.dmdataReconnectExecutor.execute(this.dmdataGateway);
+
+        AbstractDmdataWsLivenessChecker livenessChecker;
+        if (StringUtils.isNotEmpty(wsBaseTest)) {
+            Log.logger.info("DMDATA WebSocket test mode: using debug liveness checker (DMDATA API dead check disabled)");
+            livenessChecker = new DmdataWsDebugLivenessChecker(this.dmdataGateway, this.dmdataReconnectExecutor);
+        } else {
+            livenessChecker = new DmdataWsLivenessChecker(this.dmdataGateway, this.dmdataReconnectExecutor);
+        }
+
         this.scheduledTasks.add(
-                this.scheduledExecutor.scheduleAtFixedRate(new DmdataWsLivenessChecker(this.dmdataGateway, this.dmdataReconnectExecutor), 30, 30, TimeUnit.SECONDS)
+                this.scheduledExecutor.scheduleAtFixedRate(livenessChecker, 30, 30, TimeUnit.SECONDS)
         );
     }
 
