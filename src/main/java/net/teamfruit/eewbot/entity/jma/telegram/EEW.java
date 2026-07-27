@@ -191,9 +191,11 @@ public interface EEW extends JMAReport, ExternalData {
             }
         } else if (forecastRegions != null) {
             if (forecastRegions.isEmpty()) {
-                builder.addField("eewbot.eew.plumseismicintensityplus", "eewbot.eew.near", false,
-                        SeismicIntensity.get(forecastMaxInt.from()).getSimple(),
-                        getHypocenterName());
+                if (forecastMaxInt != null) {
+                    builder.addField("eewbot.eew.plumseismicintensityplus", "eewbot.eew.near", false,
+                            SeismicIntensity.get(forecastMaxInt.from()).getSimple(),
+                            getHypocenterName());
+                }
             } else {
                 plumRegionsByMaxInt(forecastRegions)
                         .forEach(entry -> {
