@@ -8,6 +8,7 @@ import net.teamfruit.eewbot.entity.jma.JMAFeed;
 import net.teamfruit.eewbot.entity.jma.JMAStatus;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -43,7 +44,8 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
         this.httpClient = httpClient;
         this.store = store;
         this.listener = listener;
-        this.remoteRoot = StringUtils.isNotEmpty(debugFeedRoot) ? debugFeedRoot : DEFAULT_REMOTE_ROOT;
+        String root = StringUtils.isNotEmpty(debugFeedRoot) ? debugFeedRoot : DEFAULT_REMOTE_ROOT;
+        this.remoteRoot = Strings.CS.appendIfMissing(root, "/");
     }
 
     @Override

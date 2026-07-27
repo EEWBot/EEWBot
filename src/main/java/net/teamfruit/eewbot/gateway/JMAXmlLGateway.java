@@ -10,6 +10,7 @@ import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE51;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE52;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.MDC;
 
 import java.io.InputStream;
@@ -32,7 +33,8 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
     public JMAXmlLGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store, String debugFeedRoot) {
         this.httpClient = httpClient;
         this.store = store;
-        this.remoteRoot = StringUtils.isNotEmpty(debugFeedRoot) ? debugFeedRoot : DEFAULT_REMOTE_ROOT;
+        String root = StringUtils.isNotEmpty(debugFeedRoot) ? debugFeedRoot : DEFAULT_REMOTE_ROOT;
+        this.remoteRoot = Strings.CS.appendIfMissing(root, "/");
     }
 
     @Override
