@@ -10,8 +10,10 @@ public abstract class AbstractEEW extends JmxSeis implements EEW {
 
     private static final String EEW_INFORMATION_TYPE_PREFIX = "緊急地震速報";
     private static final String EEW_REGION_INFORMATION_TYPE = "緊急地震速報（細分区域）";
-    private static final Set<String> PLUM_KIND_CODES = Set.of("18", "19");
-    private static final Set<String> WARNING_KIND_CODES = Set.of("11", "19");
+    // 09=予報(PLUM法), 19=警報(PLUM法)
+    private static final Set<String> PLUM_KIND_CODES = Set.of("09", "19");
+    // 10=警報(主要動未到達), 11=警報(既に主要動到達と推測), 19=警報(PLUM法)
+    private static final Set<String> WARNING_KIND_CODES = Set.of("10", "11", "19");
 
     private boolean concurrent;
     private int concurrentIndex;
