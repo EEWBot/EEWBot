@@ -2,9 +2,9 @@ package net.teamfruit.eewbot.registry;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+import net.teamfruit.eewbot.Log;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -33,21 +33,17 @@ public class JsonRegistry<E> {
         this.gson = gson;
     }
 
-    public Path getPath() {
-        return this.path;
-    }
-
     public E getElement() {
         return this.element;
     }
 
-    public void setElement(final E element) {
-        this.element = element;
+    public boolean exists() {
+        return Files.exists(this.path);
     }
 
-    public void init(boolean strict) throws IOException {
+    public void init(boolean warnUnknownFields) throws IOException {
         if (!createIfNotExists()) {
-            load(strict);
+            load(warnUnknownFields);
             save();
         }
     }
@@ -61,10 +57,41 @@ public class JsonRegistry<E> {
         return false;
     }
 
-    public void load(boolean strict) throws IOException {
+    /**
+     * Loads the file, then rewrites it only if the serialized form differs from what is
+     * on disk, which happens when unknown fields are dropped or new defaults are added.
+     * The original file is copied to {@code <name>.bak} first, so a config written by
+     * another version is never lost.
+     */
+    public void loadAndNormalize(boolean warnUnknownFields) throws IOException {
+        String original = Files.readString(this.path);
+        load(warnUnknownFields);
+
+        String normalized = this.type != null
+                ? this.gson.toJson(this.element, this.type)
+                : this.gson.toJson(this.element);
+
+        // Structural comparison, so that formatting differences alone never trigger a backup.
+        if (JsonParser.parseString(original).equals(JsonParser.parseString(normalized)))
+            return;
+
+        Path backup = this.path.resolveSibling(this.path.getFileName() + ".bak");
+        Log.logger.warn("{} is being rewritten, backing the previous content up to {}", this.path, backup);
+        Files.writeString(backup, original);
+        save();
+    }
+
+    /**
+     * Loads the file into {@link #getElement()}. Fields that are unknown to the
+     * target type are ignored by Gson; when {@code warnUnknownFields} is set they
+     * are additionally reported in the log. Unknown fields are never fatal, since
+     * treating them as an error would risk overwriting a user's configuration on
+     * the next {@link #save()}.
+     */
+    public void load(boolean warnUnknownFields) throws IOException {
         String s = Files.readString(this.path);
 
-        if (strict) {
+        if (warnUnknownFields) {
             JsonObject jsonObj = JsonParser.parseString(s).getAsJsonObject();
             Set<String> jsonFields = new HashSet<>(jsonObj.keySet());
             Set<String> classFields = Arrays.stream(TypeToken.get(this.type).getRawType().getDeclaredFields())
@@ -73,11 +100,13 @@ public class JsonRegistry<E> {
 
             jsonFields.removeAll(classFields);
             if (!jsonFields.isEmpty()) {
-                throw new JsonParseException("Unknown JSON fields: " + jsonFields);
+                Log.logger.warn("Unknown fields in {} will be dropped: {}", this.path, jsonFields);
             }
         }
 
         this.element = this.gson.fromJson(s, this.type);
+        if (this.element == null)
+            this.element = this.supplier.get();
     }
 
     public void save() throws IOException {

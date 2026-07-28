@@ -14,6 +14,9 @@ public class Earthquake {
     @JacksonXmlProperty(localName = "ArrivalTime")
     private Instant arrivalTime;
 
+    @JacksonXmlProperty(localName = "Condition")
+    private @Nullable String condition;
+
     @JacksonXmlProperty(localName = "Hypocenter")
     private @Nullable Hypocenter hypocenter;
 
@@ -27,6 +30,11 @@ public class Earthquake {
 
     public Instant getArrivalTime() {
         return this.arrivalTime;
+    }
+
+    @Nullable
+    public String getCondition() {
+        return this.condition;
     }
 
     @Nullable
@@ -44,6 +52,7 @@ public class Earthquake {
         return "Earthquake{" +
                 "originTime=" + this.originTime +
                 ", arrivalTime=" + this.arrivalTime +
+                ", condition='" + this.condition + '\'' +
                 ", hypocenter=" + this.hypocenter +
                 ", magnitude=" + this.magnitude +
                 '}';

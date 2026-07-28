@@ -147,6 +147,7 @@ gradle-app.setting
 .idea/discord.xml
 
 # Specific
+.env
 *.log
 channels.json
 config.json

@@ -1,22 +1,16 @@
 package net.teamfruit.eewbot.registry.destination.migration;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
-import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryJson;
-import net.teamfruit.eewbot.registry.destination.legacy.ChannelRegistryRedis;
-import net.teamfruit.eewbot.registry.destination.model.*;
+import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
 import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
-import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.JedisPooled;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -29,13 +23,6 @@ import java.util.*;
 import static org.jooq.impl.DSL.*;
 
 public class ChannelMigration {
-
-    private static final Gson GSON = new GsonBuilder()
-            .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensitySerializer())
-            .registerTypeAdapter(SeismicIntensity.class, new SeismicIntensityDeserializer())
-            .registerTypeAdapter(Channel.class, new ChannelDeserializer())
-            .registerTypeAdapter(ChannelWebhook.class, new ChannelWebhookDeserializer())
-            .create();
 
     public static void main(String[] args) {
         int code = run(args);
@@ -99,8 +86,6 @@ public class ChannelMigration {
     private static void closeSource(DestinationAdminRegistry source) {
         if (source instanceof ChannelRegistrySql sqlSource) {
             sqlSource.close();
-        } else if (source instanceof ChannelRegistryRedis redisSource) {
-            redisSource.close();
         }
     }
 
@@ -184,15 +169,7 @@ public class ChannelMigration {
     }
 
     public static List<Map.Entry<Long, Channel>> collectChannels(DestinationAdminRegistry source) {
-        List<Map.Entry<Long, Channel>> entries = new ArrayList<>();
-
-        if (source instanceof ChannelRegistryJson jsonSource) {
-            entries.addAll(jsonSource.getElement().entrySet());
-        } else {
-            // Use the optimized getAllChannels method for all other registries
-            Map<Long, Channel> channels = source.getAllChannels();
-            entries.addAll(channels.entrySet());
-        }
+        List<Map.Entry<Long, Channel>> entries = new ArrayList<>(source.getAllChannels().entrySet());
 
         Log.logger.info("Collected {} channels from source", entries.size());
         return entries;
@@ -235,25 +212,6 @@ public class ChannelMigration {
 
     private static DestinationAdminRegistry createSourceRegistry(String type, Map<String, String> config) throws IOException {
         return switch (type.toLowerCase()) {
-            case "json" -> {
-                String pathStr = config.getOrDefault("path", "channels.json");
-                Path path = Paths.get(pathStr);
-                if (Files.notExists(path)) {
-                    throw new IllegalArgumentException(
-                            "JSON file not found: " + path + ". JSON can only be used as a source with an existing file.");
-                }
-                ChannelRegistryJson registry = new ChannelRegistryJson(path, GSON);
-                registry.init(false);
-                yield registry;
-            }
-            case "redis" -> {
-                String address = config.getOrDefault("address", "localhost:6379");
-                HostAndPort hnp = address.lastIndexOf(":") < 0
-                        ? new HostAndPort(address, 6379)
-                        : HostAndPort.from(address);
-                JedisPooled jedisPooled = new JedisPooled(hnp);
-                yield new ChannelRegistryRedis(jedisPooled, GSON);
-            }
             case "sqlite" -> {
                 String pathStr = config.getOrDefault("path", "channels.db");
                 Path path = Paths.get(pathStr);
@@ -318,7 +276,6 @@ public class ChannelMigration {
                 case "--source" -> config.sourceType = nextArg(args, ++i, "--source");
                 case "--dest" -> config.destType = nextArg(args, ++i, "--dest");
                 case "--source-path" -> config.sourceConfig.put("path", nextArg(args, ++i, "--source-path"));
-                case "--source-address" -> config.sourceConfig.put("address", nextArg(args, ++i, "--source-address"));
                 case "--source-host" -> config.sourceConfig.put("host", nextArg(args, ++i, "--source-host"));
                 case "--source-port" -> config.sourceConfig.put("port", nextArg(args, ++i, "--source-port"));
                 case "--source-database" ->
@@ -352,7 +309,7 @@ public class ChannelMigration {
     }
 
     private static void validateConfig(MigrationConfig config) {
-        Set<String> validSourceTypes = Set.of("json", "redis", "sqlite", "postgresql");
+        Set<String> validSourceTypes = Set.of("sqlite", "postgresql");
         Set<String> validDestTypes = Set.of("sqlite", "postgresql");
 
         if (!validSourceTypes.contains(config.sourceType.toLowerCase())) {
@@ -383,10 +340,9 @@ public class ChannelMigration {
         System.out.println("Usage: java -cp eewbot.jar net.teamfruit.eewbot.registry.destination.migration.ChannelMigration [options]");
         System.out.println();
         System.out.println("Options:");
-        System.out.println("  --source <type>           Source registry type: json, redis, sqlite, postgresql");
+        System.out.println("  --source <type>           Source registry type: sqlite, postgresql");
         System.out.println("  --dest <type>             Destination registry type: sqlite, postgresql");
-        System.out.println("  --source-path <path>      Source file path (for json/sqlite)");
-        System.out.println("  --source-address <addr>   Source Redis address (host:port)");
+        System.out.println("  --source-path <path>      Source file path (for sqlite)");
         System.out.println("  --source-host <host>      Source PostgreSQL host");
         System.out.println("  --source-port <port>      Source PostgreSQL port");
         System.out.println("  --source-database <db>    Source PostgreSQL database");
@@ -402,20 +358,15 @@ public class ChannelMigration {
         System.out.println("  --init-tsunami            Set tsunami=1 for all channels with quake_info=1");
         System.out.println();
         System.out.println("Examples:");
-        System.out.println("  # JSON to SQLite");
+        System.out.println("  # SQLite to PostgreSQL");
         System.out.println("  java -cp eewbot.jar net.teamfruit.eewbot.registry.destination.migration.ChannelMigration \\");
-        System.out.println("    --source json --source-path channels.json \\");
+        System.out.println("    --source sqlite --source-path channels.db \\");
+        System.out.println("    --dest postgresql --dest-host localhost --dest-database eewbot");
+        System.out.println();
+        System.out.println("  # PostgreSQL to SQLite");
+        System.out.println("  java -cp eewbot.jar net.teamfruit.eewbot.registry.destination.migration.ChannelMigration \\");
+        System.out.println("    --source postgresql --source-host localhost --source-database eewbot \\");
         System.out.println("    --dest sqlite --dest-path channels.db");
-        System.out.println();
-        System.out.println("  # JSON to PostgreSQL");
-        System.out.println("  java -cp eewbot.jar net.teamfruit.eewbot.registry.destination.migration.ChannelMigration \\");
-        System.out.println("    --source json --source-path channels.json \\");
-        System.out.println("    --dest postgresql --dest-host localhost --dest-database eewbot");
-        System.out.println();
-        System.out.println("  # Redis to PostgreSQL");
-        System.out.println("  java -cp eewbot.jar net.teamfruit.eewbot.registry.destination.migration.ChannelMigration \\");
-        System.out.println("    --source redis --source-address localhost:6379 \\");
-        System.out.println("    --dest postgresql --dest-host localhost --dest-database eewbot");
     }
 
     private static class MigrationConfig {

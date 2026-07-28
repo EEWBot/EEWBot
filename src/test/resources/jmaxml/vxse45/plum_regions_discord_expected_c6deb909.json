@@ -1,0 +1,30 @@
+{
+  "embeds": [
+    {
+      "title": "緊急地震速報 (警報) 第12報",
+      "description": "※この情報は精度が低い可能性があります",
+      "timestamp": "2026-05-11T01:23:59Z",
+      "color": 16711680,
+      "footer": {
+        "text": "気象庁"
+      },
+      "fields": [
+        {
+          "name": "震度5弱程度以上",
+          "value": "石川県能登",
+          "inline": false
+        },
+        {
+          "name": "震度4程度",
+          "value": "石川県加賀",
+          "inline": false
+        },
+        {
+          "name": "警報対象の地域",
+          "value": "石川県能登",
+          "inline": false
+        }
+      ]
+    }
+  ]
+}

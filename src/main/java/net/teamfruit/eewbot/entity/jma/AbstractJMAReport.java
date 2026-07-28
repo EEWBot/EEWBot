@@ -1,12 +1,14 @@
 package net.teamfruit.eewbot.entity.jma;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import net.teamfruit.eewbot.entity.Entity;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
+import java.util.List;
 
 @SuppressWarnings("unused")
 @JacksonXmlRootElement(localName = "Report")
@@ -231,20 +233,181 @@ public abstract class AbstractJMAReport implements Entity, JMAReport {
             return this.headline;
         }
 
-        @JsonIgnoreProperties("Information")
+        @JsonIgnoreProperties(ignoreUnknown = true)
         public static class Headline {
 
             @JacksonXmlProperty(localName = "Text")
             private String text;
 
+            @JacksonXmlProperty(localName = "Information")
+            @JacksonXmlElementWrapper(useWrapping = false)
+            private @Nullable List<Information> informations;
+
             public String getText() {
                 return this.text;
+            }
+
+            @Nullable
+            public List<Information> getInformations() {
+                return this.informations;
+            }
+
+            @JsonIgnoreProperties(ignoreUnknown = true)
+            public static class Information {
+
+                @JacksonXmlProperty(isAttribute = true)
+                private @Nullable String type;
+
+                @JacksonXmlProperty(localName = "Item")
+                @JacksonXmlElementWrapper(useWrapping = false)
+                private @Nullable List<Item> items;
+
+                @Nullable
+                public String getType() {
+                    return this.type;
+                }
+
+                @Nullable
+                public List<Item> getItems() {
+                    return this.items;
+                }
+
+                @Override
+                public String toString() {
+                    return "Information{" +
+                            "type='" + this.type + '\'' +
+                            ", items=" + this.items +
+                            '}';
+                }
+            }
+
+            @JsonIgnoreProperties(ignoreUnknown = true)
+            public static class Item {
+
+                @JacksonXmlProperty(localName = "Kind")
+                private @Nullable Kind kind;
+
+                @JacksonXmlProperty(localName = "LastKind")
+                private @Nullable Kind lastKind;
+
+                @JacksonXmlProperty(localName = "Areas")
+                private @Nullable Areas areas;
+
+                @Nullable
+                public Kind getKind() {
+                    return this.kind;
+                }
+
+                @Nullable
+                public Kind getLastKind() {
+                    return this.lastKind;
+                }
+
+                @Nullable
+                public Areas getAreas() {
+                    return this.areas;
+                }
+
+                @Override
+                public String toString() {
+                    return "Item{" +
+                            "kind=" + this.kind +
+                            ", lastKind=" + this.lastKind +
+                            ", areas=" + this.areas +
+                            '}';
+                }
+            }
+
+            @JsonIgnoreProperties(ignoreUnknown = true)
+            public static class Kind {
+
+                @JacksonXmlProperty(localName = "Name")
+                private @Nullable String name;
+
+                @JacksonXmlProperty(localName = "Code")
+                private @Nullable String code;
+
+                @Nullable
+                public String getName() {
+                    return this.name;
+                }
+
+                @Nullable
+                public String getCode() {
+                    return this.code;
+                }
+
+                @Override
+                public String toString() {
+                    return "Kind{" +
+                            "name='" + this.name + '\'' +
+                            ", code='" + this.code + '\'' +
+                            '}';
+                }
+            }
+
+            @JsonIgnoreProperties(ignoreUnknown = true)
+            public static class Areas {
+
+                @JacksonXmlProperty(isAttribute = true)
+                private @Nullable String codeType;
+
+                @JacksonXmlProperty(localName = "Area")
+                @JacksonXmlElementWrapper(useWrapping = false)
+                private @Nullable List<Area> areas;
+
+                @Nullable
+                public String getCodeType() {
+                    return this.codeType;
+                }
+
+                @Nullable
+                public List<Area> getAreas() {
+                    return this.areas;
+                }
+
+                @Override
+                public String toString() {
+                    return "Areas{" +
+                            "codeType='" + this.codeType + '\'' +
+                            ", areas=" + this.areas +
+                            '}';
+                }
+            }
+
+            @JsonIgnoreProperties(ignoreUnknown = true)
+            public static class Area {
+
+                @JacksonXmlProperty(localName = "Name")
+                private @Nullable String name;
+
+                @JacksonXmlProperty(localName = "Code")
+                private @Nullable String code;
+
+                @Nullable
+                public String getName() {
+                    return this.name;
+                }
+
+                @Nullable
+                public String getCode() {
+                    return this.code;
+                }
+
+                @Override
+                public String toString() {
+                    return "Area{" +
+                            "name='" + this.name + '\'' +
+                            ", code='" + this.code + '\'' +
+                            '}';
+                }
             }
 
             @Override
             public String toString() {
                 return "Headline{" +
                         "text='" + this.text + '\'' +
+                        ", informations=" + this.informations +
                         '}';
             }
         }

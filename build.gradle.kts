@@ -20,11 +20,9 @@ dependencies {
     //    implementation("com.github.discord4j:discord4j:210116a3c3")
     api(libs.ch.qos.logback.logback.classic)
     api(libs.com.google.code.gson.gson)
-    api(libs.commons.net.commons.net)
     api(libs.org.apache.commons.commons.lang3)
     api(libs.com.fasterxml.jackson.dataformat.jackson.dataformat.xml)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
-    api(libs.redis.clients.jedis)
 
     implementation(libs.wire.runtime)
     implementation(libs.net.eewbot.base32768j)
@@ -52,7 +50,7 @@ dependencies {
 }
 
 group = "net.teamfruit"
-version = "2.9.3"
+version = "2.10.0"
 description = "EEWBot"
 java.sourceCompatibility = JavaVersion.VERSION_21
 

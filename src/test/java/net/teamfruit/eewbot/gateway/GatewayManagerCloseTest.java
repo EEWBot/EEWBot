@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot.gateway;
 
-import net.teamfruit.eewbot.TimeProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,8 +20,6 @@ class GatewayManagerCloseTest {
 
     @Mock
     private ExecutorService mockMessageExecutor;
-    @Mock
-    private TimeProvider mockTimeProvider;
     @Mock
     private ScheduledExecutorService mockScheduledExecutor;
     @Mock
@@ -47,8 +44,7 @@ class GatewayManagerCloseTest {
                 null, // DestinationAdminRegistry
                 null, // QuakeInfoStore
                 null, // ExternalWebhookService
-                this.mockMessageExecutor,
-                this.mockTimeProvider
+                this.mockMessageExecutor
         );
     }
 
@@ -79,24 +75,16 @@ class GatewayManagerCloseTest {
     }
 
     @Test
-    void close_stopsTimeProvider() {
-        this.gatewayManager.close();
-
-        verify(this.mockTimeProvider).stop();
-    }
-
-    @Test
     void close_cancelsAllScheduledTasks() {
         // Return the same mock future for all scheduleAtFixedRate calls
         when(this.mockScheduledExecutor.scheduleAtFixedRate(any(Runnable.class), anyLong(), anyLong(), any(TimeUnit.class)))
                 .thenReturn((ScheduledFuture) this.mockFuture1);
 
-        net.teamfruit.eewbot.registry.config.ConfigV2 config = createConfigWithLegacyQuakeInfo();
         GatewayManager manager = new GatewayManager(
-                null, config, 0L,
+                null, createMinimalConfig(), 0L,
                 this.mockScheduledExecutor, this.mockDmdataReconnectExecutor,
                 null, null, null, null, null,
-                this.mockMessageExecutor, this.mockTimeProvider
+                this.mockMessageExecutor
         );
 
         try {
@@ -113,11 +101,5 @@ class GatewayManagerCloseTest {
 
     private static net.teamfruit.eewbot.registry.config.ConfigV2 createMinimalConfig() {
         return new net.teamfruit.eewbot.registry.config.ConfigV2();
-    }
-
-    private static net.teamfruit.eewbot.registry.config.ConfigV2 createConfigWithLegacyQuakeInfo() {
-        net.teamfruit.eewbot.registry.config.ConfigV2 config = new net.teamfruit.eewbot.registry.config.ConfigV2();
-        config.getLegacy().setEnableLegacyQuakeInfo(true);
-        return config;
     }
 }

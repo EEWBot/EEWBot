@@ -1,15 +1,16 @@
 package net.teamfruit.eewbot.entity.dmdata;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.jma.telegram.EEW;
 import org.jetbrains.annotations.Nullable;
 
-public record DmdataEEWUpdate(DmdataEEW current, @Nullable DmdataEEW prev, SeismicIntensity maxIntensityBefore) {
+public record DmdataEEWUpdate(EEW current, @Nullable EEW prev, SeismicIntensity maxIntensityBefore) {
 
     public SeismicIntensity maxIntensityEEW() {
-        DmdataEEW.Body.Intensity intensity = this.current.getBody().getIntensity();
-        if (intensity == null)
+        EEW.ForecastMaxInt maxInt = this.current.getForecastMaxInt();
+        if (maxInt == null)
             return this.maxIntensityBefore;
-        SeismicIntensity bodyIntensity = SeismicIntensity.get(intensity.getForecastMaxInt().getFrom());
+        SeismicIntensity bodyIntensity = SeismicIntensity.get(maxInt.from());
         return bodyIntensity.compareTo(this.maxIntensityBefore) > 0 ? bodyIntensity : this.maxIntensityBefore;
     }
 }

@@ -1,16 +1,21 @@
 package net.teamfruit.eewbot.gateway;
 
+import com.fasterxml.jackson.core.JacksonException;
 import com.google.gson.JsonSyntaxException;
 import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.dmdata.DmdataEEW;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEWUpdate;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataContract;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataError;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketList;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketStart;
 import net.teamfruit.eewbot.entity.dmdata.ws.*;
+import net.teamfruit.eewbot.entity.jma.JMAStatus;
+import net.teamfruit.eewbot.entity.jma.telegram.AbstractEEW;
+import net.teamfruit.eewbot.entity.jma.telegram.EEW;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE43Impl;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE45Impl;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.Nullable;
@@ -36,14 +41,13 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
     public static final String WS_BASE_TOKYO = "wss://ws-tokyo.api.dmdata.jp/v2/websocket";
     public static final String WS_BASE_OSAKA = "wss://ws-osaka.api.dmdata.jp/v2/websocket";
 
-    public static final String WS_BASE_TEST = "";
-
     private final java.net.http.HttpClient httpClient;
     private final DmdataAPI dmdataAPI;
     private final String appName;
     private final boolean multiConnect;
     private final Listener listener;
     private final ScheduledExecutorService reconnectScheduler;
+    private final String wsBaseTest;
 
     private volatile boolean closed;
 
@@ -52,7 +56,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
 
     private final Map<String, EEWState> prev = new ConcurrentHashMap<>();
 
-    private record EEWState(DmdataEEW eew, SeismicIntensity maxIntensitySoFar) {
+    private record EEWState(EEW eew, SeismicIntensity maxIntensitySoFar) {
     }
 
     @FunctionalInterface
@@ -60,13 +64,14 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
         void onNewData(DmdataEEWUpdate update);
     }
 
-    public DmdataGateway(java.net.http.HttpClient httpClient, DmdataAPI api, long appId, boolean multiConnect, Listener listener, ScheduledExecutorService reconnectScheduler) {
+    public DmdataGateway(java.net.http.HttpClient httpClient, DmdataAPI api, long appId, boolean multiConnect, Listener listener, ScheduledExecutorService reconnectScheduler, String wsBaseTest) {
         this.httpClient = httpClient;
         this.dmdataAPI = api;
         this.appName = "eewbot" + "-" + encodeAppId(appId);
         this.multiConnect = multiConnect;
         this.listener = listener;
         this.reconnectScheduler = reconnectScheduler;
+        this.wsBaseTest = wsBaseTest != null ? wsBaseTest : "";
     }
 
     @Override
@@ -122,7 +127,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
         try {
             Thread.currentThread().setName("eewbot-dmdata-thread");
 
-            if (StringUtils.isEmpty(WS_BASE_TEST)) {
+            if (StringUtils.isEmpty(this.wsBaseTest)) {
                 DmdataContract contract = this.dmdataAPI.contract();
                 Log.logger.info(contract.toString());
 
@@ -150,9 +155,9 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                 }
             } else {
                 Log.logger.info("DMDATA WebSocket test mode");
-                this.webSocket1 = connectWebSocket(WS_BASE_TEST, this.appName + "-1", true);
+                this.webSocket1 = connectWebSocket(this.wsBaseTest, this.appName + "-1", true);
                 if (this.multiConnect)
-                    this.webSocket2 = connectWebSocket(WS_BASE_TEST, this.appName + "-2", true);
+                    this.webSocket2 = connectWebSocket(this.wsBaseTest, this.appName + "-2", true);
             }
         } catch (EEWGatewayException e) {
             onError(e);
@@ -169,7 +174,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
             types.add("VXSE43");
         }
 
-        if (StringUtils.isEmpty(WS_BASE_TEST)) {
+        if (StringUtils.isEmpty(this.wsBaseTest)) {
             DmdataSocketStart.Response socketStart;
             try {
                 socketStart = this.dmdataAPI.socketStart(new DmdataSocketStart.Request.Builder()
@@ -177,7 +182,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                         .setClassifications(Collections.singletonList(hasForecastContract ? "eew.forecast" : "eew.warning"))
                         .setTypes(types)
                         .setTest("no")
-                        .setFormatMode("json")
+                        .setFormatMode("raw")
                         .build());
             } catch (IOException | InterruptedException e) {
                 throw new EEWGatewayException(e);
@@ -233,7 +238,9 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
             return;
         try {
             Log.logger.info("DMDATA WebSocket reconnecting");
-            closeWebSocketIfExist(this.dmdataAPI.openSocketList(), connectionName);
+            if (StringUtils.isEmpty(this.wsBaseTest)) {
+                closeWebSocketIfExist(this.dmdataAPI.openSocketList(), connectionName);
+            }
             WebSocketConnection listener = connectWebSocket(wsBaseURI, connectionName, hasForecastContract);
             if (connectionName.endsWith("-2")) {
                 if (this.webSocket2 != null) {
@@ -427,25 +434,32 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                             }
                             Log.logger.debug("DMDATA WebSocket {}: data body: {}", WebSocketConnection.this.connectionName, bodyString);
 
-                            DmdataEEW eew = Codecs.GSON.fromJson(bodyString, DmdataEEW.class);
+                            String telegramType = wsData.getHead().getType();
+                            Class<? extends AbstractEEW> eewClass;
+                            if ("VXSE45".equals(telegramType)) {
+                                eewClass = VXSE45Impl.class;
+                            } else if ("VXSE43".equals(telegramType)) {
+                                eewClass = VXSE43Impl.class;
+                            } else {
+                                Log.logger.warn("DMDATA WebSocket {}: unknown telegram type: {}", WebSocketConnection.this.connectionName, telegramType);
+                                break;
+                            }
+
+                            AbstractEEW eew = Codecs.XML_MAPPER.readValue(bodyString, eewClass);
                             eew.setRawData(bodyString);
-                            boolean isTest = wsData.getHead().isTest() || !eew.getStatus().equals("通常");
+                            boolean isTest = wsData.getHead().isTest() || eew.getStatus() != JMAStatus.通常;
                             MDC.put("event.id", eew.getEventId());
                             MDC.put("event.type", "eew");
                             Log.logger.info(isTest ? "DMDATA WebSocket {}: test EEW: {}" : "DMDATA WebSocket {}:  EEW: {}", WebSocketConnection.this.connectionName, eew);
 
-                            if (eew.getSchema().getType().equals("eew-information") && !eew.getSchema().getVersion().equals("1.0.0")) {
-                                Log.logger.warn("DMDATA WebSocket {}: EEW schema version is not 1.0.0, may not be compatible", WebSocketConnection.this.connectionName);
-                            }
-
                             if (!isTest) {
-                                int currentSerialNo = Integer.parseInt(eew.getSerialNo());
+                                int currentSerialNo = Integer.parseInt(eew.getSerial());
                                 AtomicBoolean update = new AtomicBoolean(false);
-                                AtomicReference<DmdataEEW> capturedPrev = new AtomicReference<>();
+                                AtomicReference<EEW> capturedPrev = new AtomicReference<>();
                                 AtomicReference<SeismicIntensity> capturedMaxBefore = new AtomicReference<>(SeismicIntensity.UNKNOWN);
                                 DmdataGateway.this.prev.compute(eew.getEventId(), (key, value) -> {
                                     int size = DmdataGateway.this.prev.size();
-                                    DmdataEEW prevEEW = value != null ? value.eew() : null;
+                                    EEW prevEEW = value != null ? value.eew() : null;
                                     if (prevEEW == null) {
                                         eew.setConcurrentIndex(size + 1);
                                         if (size >= 1)
@@ -454,12 +468,12 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                                         eew.setConcurrentIndex(prevEEW.getConcurrentIndex());
                                         eew.setConcurrent(prevEEW.isConcurrent() || size >= 2);
                                     }
-                                    if (prevEEW == null || Integer.parseInt(prevEEW.getSerialNo()) < currentSerialNo ||
-                                            (eew.getBody().isCanceled() && !prevEEW.getBody().isCanceled())) {
+                                    if (prevEEW == null || Integer.parseInt(prevEEW.getSerial()) < currentSerialNo ||
+                                            (eew.isCancelReport() && !prevEEW.isCancelReport())) {
                                         SeismicIntensity maxBefore = value != null ? value.maxIntensitySoFar() : SeismicIntensity.UNKNOWN;
-                                        DmdataEEW.Body.Intensity currentIntensityField = eew.getBody().getIntensity();
-                                        SeismicIntensity currentBodyIntensity = currentIntensityField != null
-                                                ? SeismicIntensity.get(currentIntensityField.getForecastMaxInt().getFrom())
+                                        EEW.ForecastMaxInt currentMaxInt = eew.getForecastMaxInt();
+                                        SeismicIntensity currentBodyIntensity = currentMaxInt != null
+                                                ? SeismicIntensity.get(currentMaxInt.from())
                                                 : SeismicIntensity.UNKNOWN;
                                         SeismicIntensity newRunningMax = currentBodyIntensity.compareTo(maxBefore) > 0 ? currentBodyIntensity : maxBefore;
                                         update.set(true);
@@ -472,10 +486,10 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                                 });
                                 if (update.get()) {
                                     onNewData(new DmdataEEWUpdate(eew, capturedPrev.get(), capturedMaxBefore.get()));
-                                    if (!DmdataGateway.this.multiConnect && eew.getBody().isLastInfo()) {
+                                    if (!DmdataGateway.this.multiConnect && eew.isLastInfo()) {
                                         DmdataGateway.this.prev.remove(eew.getEventId());
                                     }
-                                } else if (DmdataGateway.this.multiConnect && eew.getBody().isLastInfo()) {
+                                } else if (DmdataGateway.this.multiConnect && eew.isLastInfo()) {
                                     DmdataGateway.this.prev.remove(eew.getEventId());
                                 }
                             }
@@ -485,7 +499,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                             Log.logger.error("DMDATA WebSocket {}: error message: {}", WebSocketConnection.this.connectionName, wsError);
                             break;
                     }
-                } catch (JsonSyntaxException e) {
+                } catch (JsonSyntaxException | JacksonException e) {
                     Log.logger.error("DMDATA WebSocket {}: failed to parse message: {}", WebSocketConnection.this.connectionName, dataString, e);
                 } catch (IOException e) {
                     Log.logger.error("DMDATA WebSocket {}: failed to decompress message: {}", WebSocketConnection.this.connectionName, dataString, e);

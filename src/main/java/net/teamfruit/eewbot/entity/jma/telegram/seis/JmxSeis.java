@@ -40,7 +40,8 @@ public abstract class JmxSeis extends AbstractJMAReport {
         @JacksonXmlProperty(localName = "Text")
         protected @Nullable String text;
 
-        // NextAdvisory
+        @JacksonXmlProperty(localName = "NextAdvisory")
+        protected @Nullable String nextAdvisory;
 
         @JacksonXmlProperty(localName = "Comments")
         protected @Nullable Comment comments;
@@ -65,6 +66,11 @@ public abstract class JmxSeis extends AbstractJMAReport {
         }
 
         @Nullable
+        public String getNextAdvisory() {
+            return this.nextAdvisory;
+        }
+
+        @Nullable
         public Comment getComments() {
             return this.comments;
         }
@@ -76,6 +82,7 @@ public abstract class JmxSeis extends AbstractJMAReport {
                     ", earthquakes=" + this.earthquakes +
                     ", intensity=" + this.intensity +
                     ", text='" + this.text + '\'' +
+                    ", nextAdvisory='" + this.nextAdvisory + '\'' +
                     ", comments=" + this.comments +
                     '}';
         }

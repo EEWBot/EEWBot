@@ -7,6 +7,8 @@ import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import net.teamfruit.eewbot.entity.jma.JMAFeed;
 import net.teamfruit.eewbot.entity.jma.JMAStatus;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -21,14 +23,14 @@ import java.util.stream.Collectors;
 @SuppressWarnings("NonAsciiCharacters")
 public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
 
-    private static final String REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
-//    private static final String REMOTE_ROOT = "http://localhost:8000/";
+    private static final String DEFAULT_REMOTE_ROOT = "https://www.data.jma.go.jp/developer/xml/feed/";
 
     private static final String REMOTE = "eqvol.xml";
 
     private final java.net.http.HttpClient httpClient;
     private final QuakeInfoStore store;
     private final Listener listener;
+    private final String remoteRoot;
 
     private String lastModified;
     private List<String> lastIds;
@@ -38,10 +40,12 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
         void onNewData(AbstractJMAReport report);
     }
 
-    public JMAXmlGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store, Listener listener) {
+    public JMAXmlGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store, Listener listener, String debugFeedRoot) {
         this.httpClient = httpClient;
         this.store = store;
         this.listener = listener;
+        String root = StringUtils.isNotEmpty(debugFeedRoot) ? debugFeedRoot : DEFAULT_REMOTE_ROOT;
+        this.remoteRoot = Strings.CS.appendIfMissing(root, "/");
     }
 
     @Override
@@ -55,7 +59,7 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
             Thread.currentThread().setName("eewbot-jmaxml-thread");
 
             HttpRequest.Builder feedRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(REMOTE_ROOT + REMOTE))
+                    .uri(URI.create(this.remoteRoot + REMOTE))
                     .header("User-Agent", "eewbot")
                     .GET();
             if (this.lastModified != null) {
@@ -99,7 +103,6 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
 
                         HttpRequest reportRequest = HttpRequest.newBuilder()
                                 .uri(URI.create(entry.getLink().getHref()))
-//                                        .uri(URI.create(entry.getLink().getHref().replace("https://www.data.jma.go.jp/developer/xml/data/", "http://localhost:8000/")))
                                 .header("User-Agent", "eewbot")
                                 .GET()
                                 .build();

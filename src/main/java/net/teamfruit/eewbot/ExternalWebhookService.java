@@ -69,9 +69,9 @@ public class ExternalWebhookService {
                         else MDC.clear();
                         try {
                             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                                Log.logger.info("Successfully sent external webhook to {}: status={}", url, response.statusCode());
+                                Log.logger.info("Successfully sent external webhook to {}: status={}", LogSanitizer.maskUrl(url), response.statusCode());
                             } else {
-                                Log.logger.warn("External webhook failed for {}: status={}, body={}", url, response.statusCode(), response.body());
+                                Log.logger.warn("External webhook failed for {}: status={}, body={}", LogSanitizer.maskUrl(url), response.statusCode(), LogSanitizer.maskDiscordWebhookUrlsInText(response.body()));
                             }
                         } finally {
                             if (prev != null) MDC.setContextMap(prev);
@@ -82,7 +82,7 @@ public class ExternalWebhookService {
                         if (mdcCtx != null) MDC.setContextMap(mdcCtx);
                         else MDC.clear();
                         try {
-                            Log.logger.error("Failed to send external webhook to {}: {}", url, throwable.getMessage());
+                            Log.logger.error("Failed to send external webhook to {}: {}", LogSanitizer.maskUrl(url), LogSanitizer.safeExceptionMessage(throwable));
                         } finally {
                             if (prev != null) MDC.setContextMap(prev);
                             else MDC.clear();
@@ -91,7 +91,7 @@ public class ExternalWebhookService {
                     });
 
                 } catch (Exception e) {
-                    Log.logger.error("Error sending external webhook to {}: {}", url, e.getMessage());
+                    Log.logger.error("Error sending external webhook to {}: {}", LogSanitizer.maskUrl(url), LogSanitizer.safeExceptionMessage(e));
                 }
             })));
         } catch (Exception e) {

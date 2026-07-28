@@ -16,6 +16,7 @@ import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.LogSanitizer;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.registry.destination.model.ChannelSetting;
@@ -99,7 +100,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                     return status != 401 && status != 403 && status != 404;
                 }).subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
-                    Log.logger.warn("Failed to validate webhook URL, assuming valid", e);
+                    Log.logger.warn("Failed to validate webhook URL, assuming valid: {} {}", e.getClass().getSimpleName(), LogSanitizer.safeExceptionMessage(e));
                     return Mono.just(true);
                 });
     }
@@ -227,7 +228,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private Mono<Message> buildReply(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, String lang, long channelId, boolean noWebhook) {
-        return event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.setup.reply") + (noWebhook ? "\n\n" + ctx.i18n().get(lang, "eewbot.scmd.setup.permserror.managewebhooks") : ""))
+        return event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.setup.reply") + "\n" + ctx.i18n().get(lang, "eewbot.scmd.setup.legal") + (noWebhook ? "\n\n" + ctx.i18n().get(lang, "eewbot.scmd.setup.permserror.managewebhooks") : ""))
                 .withComponents(ActionRow.of(buildSelectMenu(ctx, ChannelSettingType.BASE, channelId, lang)),
                         ActionRow.of(buildSelectMenu(ctx, ChannelSettingType.MODIFIER, channelId, lang)),
                         ActionRow.of(buildSensitivitySelectMenu(ctx, channelId, lang)));

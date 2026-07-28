@@ -201,4 +201,31 @@ class ChannelWebhookTest {
         ChannelWebhook webhook = new ChannelWebhook(url);
         assertThat(webhook.getUrl()).isEqualTo(url);
     }
+
+    @Nested
+    @DisplayName("toString()")
+    class ToStringTests {
+
+        @Test
+        @DisplayName("should not contain the raw token")
+        void doesNotLeakToken() {
+            ChannelWebhook webhook = new ChannelWebhook(BASE_URL + "123456789/superSecretToken");
+            assertThat(webhook.toString())
+                    .doesNotContain("superSecretToken")
+                    .contains("123456789")
+                    .contains("***");
+        }
+
+        @Test
+        @DisplayName("ChannelBase.toString() should not leak the webhook token via its nested webhook field")
+        void channelBaseDoesNotLeakToken() {
+            ChannelWebhook webhook = new ChannelWebhook(BASE_URL + "555/anotherSecretToken");
+            ChannelBase channel = new ChannelBase(1L, 2L, null, webhook, "en");
+
+            assertThat(channel.toString())
+                    .doesNotContain("anotherSecretToken")
+                    .contains("555")
+                    .contains("***");
+        }
+    }
 }

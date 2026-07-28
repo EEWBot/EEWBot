@@ -22,11 +22,11 @@ public class SlashCommandHandler {
     static {
         registerCommand(new SetupSlashCommand());
         registerCommand(new QuakeInfoSlashCommand());
-        registerCommand(new TimeSlashCommand());
         registerCommand(new InviteSlashCommand());
         registerCommand(new TestMessageSlashCommand());
         registerCommand(new LangSlashCommand());
         registerCommand(new HelpSlashCommand());
+        registerCommand(new UnregisterSlashCommand());
     }
 
     public SlashCommandHandler(SlashCommandContext ctx) {

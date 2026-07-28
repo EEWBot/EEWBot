@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://xml.kishou.go.jp/jmaxml1/">
+    <Control>
+        <Title>緊急地震速報（地震動予報）</Title>
+        <DateTime>2026-07-28T07:27:21Z</DateTime>
+        <Status>通常</Status>
+        <EditorialOffice>大阪管区気象台</EditorialOffice>
+        <PublishingOffice>気象庁</PublishingOffice>
+    </Control>
+    <Head xmlns="http://xml.kishou.go.jp/jmaxml1/informationBasis1/">
+        <Title>緊急地震速報（地震動予報）</Title>
+        <ReportDateTime>2026-07-28T16:27:21+09:00</ReportDateTime>
+        <TargetDateTime>2026-07-28T16:27:21+09:00</TargetDateTime>
+        <EventID>20260728162718</EventID>
+        <InfoType>発表</InfoType>
+        <Serial>1</Serial>
+        <InfoKind>緊急地震速報</InfoKind>
+        <InfoKindVersion>1.2_0</InfoKindVersion>
+        <Headline>
+            <Text/>
+        </Headline>
+    </Head>
+    <Body xmlns="http://xml.kishou.go.jp/jmaxml1/body/seismology1/"
+          xmlns:jmx_eb="http://xml.kishou.go.jp/jmaxml1/elementBasis1/">
+        <Earthquake>
+            <OriginTime>2026-07-28T16:27:18+09:00</OriginTime>
+            <Condition>仮定震源要素</Condition>
+            <ArrivalTime>2026-07-28T16:27:18+09:00</ArrivalTime>
+            <Hypocenter>
+                <Area>
+                    <Name>熊本県熊本地方</Name>
+                    <Code type="震央地名">741</Code>
+                    <jmx_eb:Coordinate description="北緯３２．６度　東経１３０．７度　深さ　１０ｋｍ">+32.6+130.7-10000/
+                    </jmx_eb:Coordinate>
+                    <ReduceName>熊本県</ReduceName>
+                    <ReduceCode type="短縮用震央地名">9430</ReduceCode>
+                </Area>
+                <Accuracy>
+                    <Epicenter rank="1" rank2="1">NaN</Epicenter>
+                    <Depth rank="1">NaN</Depth>
+                    <MagnitudeCalculation rank="8">NaN</MagnitudeCalculation>
+                    <NumberOfMagnitudeCalculation>1</NumberOfMagnitudeCalculation>
+                </Accuracy>
+            </Hypocenter>
+            <jmx_eb:Magnitude type="Mj" description="Ｍ１．０">1.0</jmx_eb:Magnitude>
+        </Earthquake>
+        <Intensity>
+            <Forecast>
+                <CodeDefine>
+                    <Type xpath="Pref/Code">緊急地震速報／府県予報区</Type>
+                    <Type xpath="Pref/Area/Code">地震情報／細分区域</Type>
+                    <Type xpath="Pref/Area/Category/Kind/Code">緊急地震速報</Type>
+                </CodeDefine>
+                <ForecastInt>
+                    <From>4</From>
+                    <To>over</To>
+                </ForecastInt>
+                <Pref>
+                    <Name>熊本</Name>
+                    <Code>9430</Code>
+                    <Area>
+                        <Name>熊本県熊本</Name>
+                        <Code>741</Code>
+                        <Category>
+                            <Kind>
+                                <Name>緊急地震速報（予報）</Name>
+                                <Code>09</Code>
+                            </Kind>
+                        </Category>
+                        <ForecastInt>
+                            <From>4</From>
+                            <To>over</To>
+                        </ForecastInt>
+                        <ArrivalTime>2026-07-28T16:27:20+09:00</ArrivalTime>
+                    </Area>
+                </Pref>
+                <Pref>
+                    <Name>熊本</Name>
+                    <Code>9430</Code>
+                    <Area>
+                        <Name>熊本県天草・芦北</Name>
+                        <Code>743</Code>
+                        <Category>
+                            <Kind>
+                                <Name>緊急地震速報（予報）</Name>
+                                <Code>09</Code>
+                            </Kind>
+                        </Category>
+                        <ForecastInt>
+                            <From>4</From>
+                            <To>over</To>
+                        </ForecastInt>
+                        <ArrivalTime>2026-07-28T16:27:20+09:00</ArrivalTime>
+                    </Area>
+                </Pref>
+            </Forecast>
+        </Intensity>
+    </Body>
+</Report>
