@@ -80,10 +80,10 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
             if (this.lastIds != null) {
                 final List<String> list = feed.getEntries().stream()
                         .map(JMAFeed.Entry::getId)
-                        .collect(Collectors.toList());
+                        .toList();
                 final List<String> newer = new ArrayList<>(list);
                 newer.removeAll(this.lastIds);
-                this.lastIds = list;
+                final List<String> failedIds = new ArrayList<>();
 
                 for (final ListIterator<String> it = newer.listIterator(newer.size()); it.hasPrevious(); ) {
                     String id = it.previous();
@@ -101,39 +101,52 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                             break;
                         }
 
-                        HttpRequest reportRequest = HttpRequest.newBuilder()
-                                .uri(URI.create(entry.getLink().getHref()))
-                                .header("User-Agent", "eewbot")
-                                .GET()
-                                .build();
-                        HttpResponse<InputStream> reportResponse = this.httpClient.send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
-                        if (reportResponse.statusCode() != 200) {
-                            Log.logger.warn("Failed to fetch JMA XML Report: HTTP " + reportResponse.statusCode());
-                            return;
-                        }
-
-                        String xmlContent;
-                        try (InputStream inputStream = reportResponse.body()) {
-                            xmlContent = new String(inputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-                        }
-                        AbstractJMAReport report = Codecs.XML_MAPPER.readValue(xmlContent, reportClass);
-                        report.setRawData(xmlContent);
-                        if (report.getControl().getStatus() == JMAStatus.通常) {
-                            if (report instanceof QuakeInfo) {
-                                this.store.putReport((QuakeInfo) report);
+                        try {
+                            HttpRequest reportRequest = HttpRequest.newBuilder()
+                                    .uri(URI.create(entry.getLink().getHref()))
+                                    .header("User-Agent", "eewbot")
+                                    .GET()
+                                    .build();
+                            HttpResponse<InputStream> reportResponse = this.httpClient.send(reportRequest, HttpResponse.BodyHandlers.ofInputStream());
+                            if (reportResponse.statusCode() != 200) {
+                                Log.logger.warn("Failed to fetch JMA XML Report: HTTP {} ({}), retrying on the next poll", reportResponse.statusCode(), id);
+                                failedIds.add(id);
+                                break;
                             }
-                            Log.logger.info("JMA XML Report: {}", report);
-                            onNewData(report);
+
+                            String xmlContent;
+                            try (InputStream inputStream = reportResponse.body()) {
+                                xmlContent = new String(inputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                            }
+                            AbstractJMAReport report = Codecs.XML_MAPPER.readValue(xmlContent, reportClass);
+                            report.setRawData(xmlContent);
+                            if (report.getControl().getStatus() == JMAStatus.通常) {
+                                if (report instanceof QuakeInfo) {
+                                    this.store.putReport((QuakeInfo) report);
+                                }
+                                Log.logger.info("JMA XML Report: {}", report);
+                                onNewData(report);
+                            }
+                        } catch (final Exception e) {
+                            Log.logger.warn("Failed to process JMA XML Report: {}, retrying on the next poll", id, e);
+                            failedIds.add(id);
                         }
-//                                Thread.sleep(1000L);
                         break;
                     }
+                }
+
+                final List<String> seen = new ArrayList<>(list);
+                seen.removeAll(failedIds);
+                this.lastIds = seen;
+
+                if (!failedIds.isEmpty()) {
+                    Log.logger.warn("{} JMA XML Report(s) will be retried on the next poll", failedIds.size());
+                    return;
                 }
             } else {
                 this.lastIds = feed.getEntries().stream()
                         .map(JMAFeed.Entry::getId)
                         .collect(Collectors.toList());
-//                this.lastIds = new ArrayList<>();
             }
 
             this.lastModified = feedResponse.headers().firstValue("Last-Modified").orElseThrow();
