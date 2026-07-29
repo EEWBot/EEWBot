@@ -43,7 +43,7 @@
   "eewbot.tsunami.title": "地震海溢 警報·注意報·豫報",
   "eewbot.tsunami.cancel": "直前의 地震海溢 警報·注意報·豫報를 取消합니다.",
   "eewbot.scmd.error": "誤謬가 發生했습니다!",
-  "eewbot.scmd.setup.reply": "이 채널에서의 봇 動作을 設定합니다.\\n[봇 利用에 關한 免責 條項을 읽어 주세요.](<https://github.com/EEWBot/EEWBot/wiki/Bot%E3%81%AE%E5%88%A9%E7%94%A8%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8B%E5%85%8D%E8%B2%AC%E4%BA%8B%E9%A0%85>)",
+  "eewbot.scmd.setup.reply": "이 채널에서의 봇 動作을 設定합니다.",
   "eewbot.scmd.setup.permserror.viewchannel": "봇에게 이 채널을 볼 수 있는 權限이 없습니다!",
   "eewbot.scmd.setup.permserror.sendmessages": "봇에게 이 채널에서 메시지를 傳送할 權限이 없습니다!",
   "eewbot.scmd.setup.permserror.managewebhooks": ":warning: 봇에게 웹훅 管理 權限이 없습니다!\\n웹훅을 使用하면 메시지 傳送 遲延을 줄일 수 있습니다.",
