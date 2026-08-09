@@ -2,15 +2,18 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingEmbed;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
-import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
 
@@ -26,7 +29,8 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
 
     Optional<String> getFreeFormComment();
 
-    default <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
+    default List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
+        IEmbedBuilder builder = factory.get();
         builder.title("eewbot.quakeinfo.hypocenterupdate.title");
         if (isCancelReport()) {
             builder.description("eewbot.quakeinfo.hypocenterupdate.cancel");
@@ -40,7 +44,7 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
         }
         builder.footer(getPublishingOffice(), null);
         builder.timestamp(getReportDateTime());
-        return builder.build();
+        return List.of(builder.toPending());
     }
 
     @Override

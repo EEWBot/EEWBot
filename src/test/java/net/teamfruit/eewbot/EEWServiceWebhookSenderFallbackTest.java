@@ -4,8 +4,9 @@ import discord4j.core.spec.MessageCreateSpec;
 import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
+import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingEmbed;
 import net.teamfruit.eewbot.i18n.I18n;
-import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
@@ -22,22 +23,15 @@ import java.net.Authenticator;
 import java.net.CookieHandler;
 import java.net.ProxySelector;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpHeaders;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.WebSocket;
+import java.net.http.*;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -129,18 +123,18 @@ class EEWServiceWebhookSenderFallbackTest {
     private static Entity testEntity() {
         return new Entity() {
             @Override
-            public <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
-                return null;
+            public List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
+                return List.of();
             }
 
             @Override
-            public MessageCreateSpec createMessage(String lang, EmbedContext ctx) {
-                return MessageCreateSpec.builder().content("fallback").build();
+            public List<MessageCreateSpec> createMessages(String lang, EmbedContext ctx) {
+                return List.of(MessageCreateSpec.builder().content("fallback").build());
             }
 
             @Override
-            public DiscordWebhook createWebhook(String lang, EmbedContext ctx) {
-                return DiscordWebhook.builder().content("webhook").build();
+            public List<DiscordWebhook> createWebhooks(String lang, EmbedContext ctx) {
+                return List.of(DiscordWebhook.builder().content("webhook").build());
             }
         };
     }

@@ -3,6 +3,8 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.TsunamiCategory;
+import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingEmbed;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.TsunamiExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
@@ -12,11 +14,11 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.FirstHeight;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.MaxHeight;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.TsunamiItem;
 import net.teamfruit.eewbot.entity.renderer.RenderTsunami;
-import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Supplier;
 
 public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
 
@@ -31,7 +33,8 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
 
     @Override
     @SuppressWarnings("NonAsciiCharacters")
-    default <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
+    default List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
+        IEmbedBuilder builder = factory.get();
         if (isCancelReport()) {
             builder.title("eewbot.tsunami.title");
             getText().ifPresentOrElse(builder::description, () -> builder.description("eewbot.tsunami.cancel"));
@@ -40,7 +43,6 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
             List<TsunamiItem> items = getForecastItems();
             TsunamiCategory highest = null;
 
-            // Group items by category kind name to avoid exceeding Discord's 25-field limit
             LinkedHashMap<String, List<String>> groupedAreas = new LinkedHashMap<>();
 
             for (TsunamiItem item : items) {
@@ -89,26 +91,7 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
             }
 
             for (Map.Entry<String, List<String>> entry : groupedAreas.entrySet()) {
-                String fieldName = entry.getKey();
-                List<String> lines = entry.getValue();
-
-                // Split into multiple fields if value exceeds Discord's 1024 char limit
-                StringBuilder fieldValue = new StringBuilder();
-                boolean first = true;
-                for (String areaLine : lines) {
-                    if (!first && fieldValue.length() + 1 + areaLine.length() > 1024) {
-                        builder.addField(fieldName, fieldValue.toString(), false);
-                        fieldValue = new StringBuilder();
-                        fieldName = "";
-                    }
-                    if (!fieldValue.isEmpty())
-                        fieldValue.append("\n");
-                    fieldValue.append(areaLine);
-                    first = false;
-                }
-                if (!fieldValue.isEmpty()) {
-                    builder.addField(fieldName, fieldValue.toString(), false);
-                }
+                builder.addField(entry.getKey(), String.join("\n", entry.getValue()), false);
             }
 
             builder.title(highest != null ? highest.getTitleKey() : "eewbot.tsunami.title");
@@ -129,7 +112,7 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
 
         builder.footer(getPublishingOffice(), null);
         builder.timestamp(getReportDateTime());
-        return builder.build();
+        return List.of(builder.toPending());
     }
 
     @Override
