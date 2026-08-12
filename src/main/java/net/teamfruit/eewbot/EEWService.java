@@ -21,7 +21,6 @@ import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -35,11 +34,19 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class EEWService {
+
+    @FunctionalInterface
+    private interface WebhookFallback {
+        void onFailed(long channelId, DeliveryTarget target, int fromChunkIndex);
+    }
+
+    @FunctionalInterface
+    private interface SenderFallback {
+        void onFailed(Map<Long, DeliveryTarget> channels, int fromChunkIndex);
+    }
 
     private final GatewayDiscordClient gateway;
     private final String avatarUrl;
@@ -102,13 +109,16 @@ public class EEWService {
 
         Map<Long, DeliveryTarget> webhookChannels = partition.webhook();
         if (!webhookChannels.isEmpty()) {
+            WebhookFallback botFallback = (id, target, fromChunkIndex) ->
+                    sendMessagesInOrder(id, remainingMessages(msgByLang.get(target.lang()), fromChunkIndex)).subscribe();
+
             if (this.webhookSenderAddress == null) {
                 Log.logger.info("Sending webhook message to {} channels", webhookChannels.size());
-                sendWebhook(webhookChunks, webhookChannels, (id, target) -> sendMessagesInOrder(id, msgByLang.get(target.lang())).subscribe());
+                sendWebhook(webhookChunks, 0, webhookChannels, botFallback);
             } else {
                 Log.logger.info("Sending webhook message to {} channels via webhook sender", webhookChannels.size());
-                sendWebhookSender(webhookChunks, webhookChannels, channels ->
-                        sendWebhook(webhookChunks, channels, (id, target) -> sendMessagesInOrder(id, msgByLang.get(target.lang())).subscribe()));
+                sendWebhookSender(webhookChunks, webhookChannels, (channels, fromChunkIndex) ->
+                        sendWebhook(webhookChunks, fromChunkIndex, channels, botFallback));
             }
         }
 
@@ -121,6 +131,12 @@ public class EEWService {
 
     private Flux<Message> sendMessagesInOrder(long channelId, List<MessageCreateSpec> specs) {
         return Flux.fromIterable(specs).concatMap(spec -> directSendMessagePassErrors(channelId, spec));
+    }
+
+    private static List<MessageCreateSpec> remainingMessages(List<MessageCreateSpec> specs, int fromIndex) {
+        if (specs == null || fromIndex >= specs.size())
+            return Collections.emptyList();
+        return specs.subList(fromIndex, specs.size());
     }
 
     private void submitCleanup(Runnable task) {
@@ -167,11 +183,11 @@ public class EEWService {
                 .subscribe();
     }
 
-    private void sendWebhook(List<List<DiscordWebhookRequest>> webhookChunks, Map<Long, DeliveryTarget> webhookChannels, BiFunction<Long, DeliveryTarget, Disposable> onError) {
-        List<Map<String, String>> jsonByChunkAndLang = new ArrayList<>(webhookChunks.size());
-        for (List<DiscordWebhookRequest> chunk : webhookChunks) {
+    private void sendWebhook(List<List<DiscordWebhookRequest>> webhookChunks, int fromChunkIndex, Map<Long, DeliveryTarget> webhookChannels, WebhookFallback onError) {
+        List<Map<String, String>> jsonByChunkAndLang = new ArrayList<>(webhookChunks.size() - fromChunkIndex);
+        for (int i = fromChunkIndex; i < webhookChunks.size(); i++) {
             Map<String, String> jsonByLang = new HashMap<>();
-            chunk.forEach(req -> {
+            webhookChunks.get(i).forEach(req -> {
                 String json = Codecs.GSON.toJson(req.getWebhook());
                 int bytes = json.getBytes(StandardCharsets.UTF_8).length;
                 if (bytes > DiscordLimits.MAX_REQUEST_BYTES)
@@ -188,10 +204,11 @@ public class EEWService {
 
         webhookChannels.forEach((channelId, channel) -> {
             CompletableFuture<Boolean> chain = CompletableFuture.completedFuture(true);
-            for (Map<String, String> jsonByLang : jsonByChunkAndLang) {
-                String body = jsonByLang.get(channel.lang());
+            for (int i = 0; i < jsonByChunkAndLang.size(); i++) {
+                String body = jsonByChunkAndLang.get(i).get(channel.lang());
                 if (body == null)
                     continue;
+                final int chunkIndex = fromChunkIndex + i;
                 chain = chain.thenCompose(keepGoing -> {
                     if (!keepGoing)
                         return CompletableFuture.completedFuture(false);
@@ -209,11 +226,11 @@ public class EEWService {
                                 try {
                                     if (ex != null) {
                                         Log.logger.info("Failed to send webhook: ChannelID={} Message={}", channelId, LogSanitizer.safeExceptionMessage(ex));
-                                        onError.apply(channelId, channel);
+                                        onError.onFailed(channelId, channel, chunkIndex);
                                         return false;
                                     }
                                     if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                                        onError.apply(channelId, channel);
+                                        onError.onFailed(channelId, channel, chunkIndex);
                                         if (response.statusCode() == 404) {
                                             erroredChannels.put(channelId, channel);
                                         }
@@ -257,15 +274,15 @@ public class EEWService {
         }
     }
 
-    private void sendWebhookSender(List<List<DiscordWebhookRequest>> webhookChunks, Map<Long, DeliveryTarget> webhookChannels, Consumer<Map<Long, DeliveryTarget>> onError) {
+    private void sendWebhookSender(List<List<DiscordWebhookRequest>> webhookChunks, Map<Long, DeliveryTarget> webhookChannels, SenderFallback onError) {
         Map<String, List<String>> targetsByLang = webhookChannels.values().stream()
                 .collect(Collectors.groupingBy(
                         DeliveryTarget::lang,
                         Collectors.mapping(DeliveryTarget::webhookUrl, Collectors.toList())
                 ));
 
-        for (List<DiscordWebhookRequest> chunk : webhookChunks) {
-            List<WebhookSenderRequest> senderRequests = chunk.stream()
+        for (int chunkIndex = 0; chunkIndex < webhookChunks.size(); chunkIndex++) {
+            List<WebhookSenderRequest> senderRequests = webhookChunks.get(chunkIndex).stream()
                     .peek(webhookRequest -> webhookRequest.getTargets()
                             .addAll(targetsByLang.getOrDefault(webhookRequest.getLang(), Collections.emptyList())))
                     .filter(webhookRequest -> !webhookRequest.getTargets().isEmpty())
@@ -287,18 +304,18 @@ public class EEWService {
                 HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() < 200 || response.statusCode() >= 300) {
                     Log.logger.error("Failed to send message to webhook sender: {} {}", response.statusCode(), LogSanitizer.maskDiscordWebhookUrlsInText(response.body()));
-                    onError.accept(webhookChannels);
+                    onError.onFailed(webhookChannels, chunkIndex);
                     return;
                 }
                 Log.logger.info("Sent message to webhook sender: {}", LogSanitizer.maskDiscordWebhookUrlsInText(response.body()));
             } catch (InterruptedException e) {
                 Log.logger.error("Interrupted while sending messages to webhook sender", e);
-                onError.accept(webhookChannels);
+                onError.onFailed(webhookChannels, chunkIndex);
                 Thread.currentThread().interrupt();
                 return;
             } catch (Exception e) {
                 Log.logger.error("Failed to send message to webhook sender", e);
-                onError.accept(webhookChannels);
+                onError.onFailed(webhookChannels, chunkIndex);
                 return;
             }
         }
