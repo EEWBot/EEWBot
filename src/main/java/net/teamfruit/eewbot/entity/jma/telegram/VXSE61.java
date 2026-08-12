@@ -29,6 +29,7 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
 
     Optional<String> getFreeFormComment();
 
+    @Override
     default List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
         IEmbedBuilder builder = factory.get();
         builder.title("eewbot.quakeinfo.hypocenterupdate.title");
