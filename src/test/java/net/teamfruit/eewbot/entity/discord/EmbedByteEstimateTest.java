@@ -65,6 +65,19 @@ class EmbedByteEstimateTest {
     }
 
     @Test
+    void longJapaneseDescriptionStaysUnderTheRealByteWall() {
+        // description は固定のバイト上限ではなくメッセージの実サイズで抑えられる。
+        // 境界を担保するのは定数ではなく、実際にシリアライズしたペイロード
+        final PendingEmbed embed = new PendingEmbed("タイトル", "あ".repeat(4000), null,
+                Instant.EPOCH, Color.RED, "気象庁", null, null, null, null, null, null,
+                List.of(new PendingField("地域", "テスト地域名".repeat(50), false)));
+
+        for (final List<PendingEmbed> message : EmbedPacker.pack(List.of(embed)))
+            assertThat(serialize(message).getBytes(StandardCharsets.UTF_8).length)
+                    .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
+    }
+
+    @Test
     void escapeHeavyContentStillFits() {
         // 引用符・バックスラッシュ・改行は JSON エスケープでそれぞれサイズが倍になる
         final List<PendingEmbed> many = new ArrayList<>();

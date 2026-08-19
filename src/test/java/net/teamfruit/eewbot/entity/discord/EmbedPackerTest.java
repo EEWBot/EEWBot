@@ -132,17 +132,47 @@ class EmbedPackerTest {
     }
 
     @Test
-    void truncatesJapaneseDescriptionOnBytesNotJustCodePoints() {
+    void keepsJapaneseDescriptionThatFitsTheRealBudget() {
+        // あ×1500 は約 4500 バイト。文字数も合計文字数もリクエストサイズも全て上限内なので、
+        // 送信可能な本文は 1 文字も欠けてはならない
+        final String description = "あ".repeat(1500);
+        final List<PendingEmbed> pages = flatten(EmbedPacker.pack(List.of(new PendingEmbed(
+                null, description, null, null, null, null, null, null, null, null, null, null, List.of()))));
+
+        assertThat(pages).hasSize(1);
+        assertThat(pages.get(0).description()).isEqualTo(description);
+    }
+
+    @Test
+    void truncatesDescriptionOnlyWhenTheMessageBudgetIsExceeded() {
         // 日本語 4000 コードポイントは MAX_DESCRIPTION 未満だが約 12KB あり、500 が返る壁を越えている
         final String longJapanese = "あ".repeat(4000);
         assertThat(DiscordLimits.codePoints(longJapanese)).isLessThan(DiscordLimits.MAX_DESCRIPTION);
 
-        final PendingEmbed normalized = EmbedPacker.normalize(new PendingEmbed(
-                null, longJapanese, null, null, null, null, null, null, null, null, null, null, List.of()));
+        final List<PendingEmbed> pages = flatten(EmbedPacker.pack(List.of(new PendingEmbed(
+                null, longJapanese, null, null, null, null, null, null, null, null, null, null, List.of()))));
 
-        assertThat(DiscordLimits.jsonTextBytes(normalized.description()))
-                .isLessThanOrEqualTo(EmbedPacker.MAX_DESCRIPTION_BYTES);
-        assertThat(normalized.description()).endsWith("…");
+        assertThat(pages).hasSize(1);
+        final PendingEmbed only = pages.get(0);
+        assertThat(only.description()).endsWith("…");
+        assertThat(only.byteCount() + EmbedPacker.MESSAGE_JSON_OVERHEAD)
+                .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
+        // 固定上限ではなく実予算まで残るので、旧実装の約 1033 文字よりはるかに多く保たれる
+        assertThat(DiscordLimits.codePoints(only.description())).isGreaterThan(2500);
+    }
+
+    @Test
+    void leavesRoomForAFieldAlongsideAMaximalDescription() {
+        // description を予算いっぱいに使うと、先頭ページにフィールドを載せられなくなる
+        final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(new PendingEmbed(
+                "タイトル", "あ".repeat(4000), null, null, Color.RED, null, null, null, null,
+                null, null, null, fields(3, "地域名".repeat(100)))));
+
+        assertEveryLimitRespected(messages);
+        final PendingEmbed first = flatten(messages).get(0);
+        assertThat(first.description()).isNotEmpty();
+        assertThat(first.fields()).isNotEmpty();
+        first.fields().forEach(f -> assertThat(f.value()).isNotEmpty());
     }
 
     @Test
@@ -253,21 +283,6 @@ class EmbedPackerTest {
     }
 
     @Test
-    void chromeAndOneMaximalFieldFitTheCharacterBudget() {
-        // ASCII ではバイト上限がコードポイント数の上限も兼ねるため、実効上限は両者の小さい方。
-        // 装飾要素 + フルサイズのフィールド 1 つが 6000 の予算内に収まらなければ、paginate は
-        // どうやっても収められないページを出力せざるを得なくなる。
-        final int chrome = Math.min(DiscordLimits.MAX_TITLE, EmbedPacker.MAX_TITLE_BYTES)
-                + Math.min(DiscordLimits.MAX_DESCRIPTION, EmbedPacker.MAX_DESCRIPTION_BYTES)
-                + Math.min(DiscordLimits.MAX_FOOTER_TEXT, EmbedPacker.MAX_FOOTER_TEXT_BYTES)
-                + Math.min(DiscordLimits.MAX_AUTHOR_NAME, EmbedPacker.MAX_AUTHOR_NAME_BYTES);
-        final int field = Math.min(DiscordLimits.MAX_FIELD_NAME, EmbedPacker.MAX_FIELD_NAME_BYTES)
-                + DiscordLimits.MAX_FIELD_VALUE;
-
-        assertThat(chrome + field).isLessThanOrEqualTo(DiscordLimits.MAX_TOTAL_CHARS_PER_MESSAGE);
-    }
-
-    @Test
     void escapeHeavyContentRespectsTheByteBudget() {
         // Gson がエスケープすると Discord タイムスタンプの山括弧は 1 つ 6 バイトになるため、
         // 生の UTF-8 サイズでフィールドを計測すると半分以上少なく見積もってしまう
@@ -291,6 +306,9 @@ class EmbedPackerTest {
         final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(source));
 
         assertEveryLimitRespected(messages);
-        assertThat(flatten(messages).stream().flatMap(p -> p.fields().stream())).isNotEmpty();
+        final List<PendingField> all = flatten(messages).stream().flatMap(p -> p.fields().stream()).toList();
+        assertThat(all).isNotEmpty();
+        // 値が空のフィールドは Discord に 400 で弾かれる
+        all.forEach(f -> assertThat(f.value()).isNotEmpty());
     }
 }

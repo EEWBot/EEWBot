@@ -34,6 +34,12 @@ public record PendingEmbed(
                 this.authorName, this.authorUrl, this.authorIcon, fields);
     }
 
+    public PendingEmbed withDescription(final String description) {
+        return new PendingEmbed(this.title, description, this.url, this.timestamp, this.color,
+                this.footerText, this.footerIcon, this.image, this.thumbnail,
+                this.authorName, this.authorUrl, this.authorIcon, this.fields);
+    }
+
     public PendingEmbed headChromeOnly() {
         return new PendingEmbed(this.title, this.description, this.url, null, this.color,
                 null, null, null, this.thumbnail, null, null, null, this.fields);
