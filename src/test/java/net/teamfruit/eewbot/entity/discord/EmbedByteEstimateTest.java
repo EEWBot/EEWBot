@@ -92,6 +92,21 @@ class EmbedByteEstimateTest {
     }
 
     @Test
+    void heavyFieldNamesAndLongUrlsStillFit() {
+        // フィールド名は切り詰められない。Gson が < を < に展開して 1 文字 6 バイトになるため、
+        // 名前だけで 1.5KB を超える。見積もりではなく実ペイロードで壁の内側にいることを確かめる
+        final String heavyName = "<".repeat(256);
+        final String image = "https://example.com/" + "あ".repeat(2000);
+        final PendingEmbed embed = new PendingEmbed(null, null, null, Instant.EPOCH, Color.RED,
+                "f".repeat(2048), null, image, null, "a".repeat(256), null, null,
+                List.of(new PendingField("n", "v", false), new PendingField(heavyName, "値", false)));
+
+        for (final List<PendingEmbed> message : EmbedPacker.pack(List.of(embed)))
+            assertThat(serialize(message).getBytes(StandardCharsets.UTF_8).length)
+                    .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
+    }
+
+    @Test
     void escapeHeavyContentStillFits() {
         // 引用符・バックスラッシュ・改行は JSON エスケープでそれぞれサイズが倍になる
         final List<PendingEmbed> many = new ArrayList<>();

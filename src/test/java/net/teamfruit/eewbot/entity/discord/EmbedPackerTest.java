@@ -359,6 +359,39 @@ class EmbedPackerTest {
     }
 
     @Test
+    void keepsAHeavyNamedFieldWhenTruncatingItsValueIsNotEnough() {
+        // fitToBudget() が縮められるのは value だけ。name が重いと value を … まで削っても
+        // 末尾ページは予算を超えたままになる
+        final String heavyName = "<".repeat(256);
+        assertThat(DiscordLimits.jsonTextBytes(heavyName))
+                .isEqualTo(DiscordLimits.utf8Bytes(heavyName) * 6);
+
+        // 有効かつ MAX_URL 以内だが約 6KB になる image URL
+        final String image = "https://example.com/" + "あ".repeat(2000);
+        assertThat(DiscordLimits.codePoints(image)).isLessThanOrEqualTo(DiscordLimits.MAX_URL);
+
+        final PendingEmbed source = new PendingEmbed(null, null, null, Instant.EPOCH, Color.RED,
+                "f".repeat(2048), null, image, null, "a".repeat(256), null, null,
+                List.of(new PendingField("n", "v", false), new PendingField(heavyName, "値", false)));
+
+        final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(source));
+
+        assertEveryLimitRespected(messages);
+        // 名前の重いフィールドは無損失で残る
+        final List<PendingField> all = flatten(messages).stream().flatMap(p -> p.fields().stream()).toList();
+        assertThat(all).hasSize(2);
+        assertThat(all.get(1).name()).isEqualTo(heavyName);
+        assertThat(all.get(1).value()).isEqualTo("値");
+
+        // 下部の装飾はフィールドを持たない末尾ページに載る
+        final PendingEmbed last = flatten(messages).get(flatten(messages).size() - 1);
+        assertThat(last.fields()).isEmpty();
+        assertThat(last.image()).isEqualTo(image);
+        assertThat(last.footerText()).isEqualTo("f".repeat(2048));
+        assertThat(last.timestamp()).isEqualTo(Instant.EPOCH);
+    }
+
+    @Test
     void chromeAloneNeverExceedsTheByteBudget() {
         // URL は個別に MAX_URL 以内でも、6 プロパティの合計では予算を超えられる。
         // 文字数には算入されないため 6000 の制限でも止まらず、フィールドがなければ

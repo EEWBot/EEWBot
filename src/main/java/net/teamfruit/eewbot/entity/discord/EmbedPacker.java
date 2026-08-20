@@ -314,6 +314,7 @@ public final class EmbedPacker {
                     && (chars + fieldChars > DiscordLimits.MAX_TOTAL_CHARS_PER_MESSAGE
                     || bytes + fieldBytes > DiscordLimits.MAX_REQUEST_BYTES)) {
                 field = fitToBudget(field, chars, bytes);
+                warnTruncated(original, field);
                 fieldChars = fieldChars(field);
                 fieldBytes = fieldBytes(field);
             }
@@ -343,9 +344,25 @@ public final class EmbedPacker {
                 return;
 
             if (fields.size() < 2) {
-                if (!fields.isEmpty())
-                    fields.set(0, fitToBudget(fields.get(0), chrome.charCount(),
-                            chrome.byteCount() + MESSAGE_JSON_OVERHEAD + FIELDS_ARRAY_JSON_OVERHEAD));
+                // chrome だけで超過。fitChrome() の保証が破れていない限り到達しない
+                if (fields.isEmpty())
+                    return;
+
+                final PendingField only = fields.get(0);
+                final PendingField fitted = fitToBudget(only, chrome.charCount(),
+                        chrome.byteCount() + MESSAGE_JSON_OVERHEAD + FIELDS_ARRAY_JSON_OVERHEAD);
+                if (!overflows(chrome.withFields(List.of(fitted)))) {
+                    warnTruncated(only, fitted);
+                    fields.set(0, fitted);
+                    return;
+                }
+
+                // fitToBudget() が縮められるのは value だけなので、name が重いと切り詰めても
+                // 収まらない。フィールドは無傷のまま直前ページに残し、tail だけのページを足す。
+                // 元の末尾ページは color だけの chrome になって必ず軽くなる
+                Log.logger.warn("Moving the tail chrome onto a page of its own: the last page cannot hold it "
+                        + "together with a field named {} bytes long", DiscordLimits.jsonTextBytes(only.name()));
+                pages.add(new ArrayList<>());
                 return;
             }
             pages.add(new ArrayList<>(List.of(fields.remove(fields.size() - 1))));
@@ -389,12 +406,17 @@ public final class EmbedPacker {
         final String truncated = DiscordLimits.truncateBytes(
                 DiscordLimits.truncate(field.value(), Math.max(0, charBudget)), Math.max(0, byteBudget));
         // 値が空のフィールドは Discord に 400 で弾かれるため、最低でも省略記号は残す
-        final String value = truncated.isEmpty() ? "…" : truncated;
+        return new PendingField(field.name(), truncated.isEmpty() ? "…" : truncated, field.inline());
+    }
+
+    /**
+     * 切り詰めを採用したときだけ呼ぶ。結果を破棄する経路があるため {@link #fitToBudget} 自体は記録しない
+     */
+    private static void warnTruncated(final PendingField original, final PendingField fitted) {
         Log.logger.warn("Truncating embed field value from {} code points ({} bytes) to {} code points ({} bytes): "
                         + "the embed's chrome leaves no room for a full field",
-                DiscordLimits.codePoints(field.value()), DiscordLimits.jsonTextBytes(field.value()),
-                DiscordLimits.codePoints(value), DiscordLimits.jsonTextBytes(value));
-        return new PendingField(field.name(), value, field.inline());
+                DiscordLimits.codePoints(original.value()), DiscordLimits.jsonTextBytes(original.value()),
+                DiscordLimits.codePoints(fitted.value()), DiscordLimits.jsonTextBytes(fitted.value()));
     }
 
     static List<List<PendingEmbed>> group(final List<PendingEmbed> pages) {
