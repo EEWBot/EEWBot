@@ -86,7 +86,7 @@ public record PendingEmbed(
         if (this.timestamp != null)
             total += 40;                              // "timestamp":"2024-01-01T00:00:00Z",
         if (!this.fields.isEmpty())
-            total += 12;                              // "fields":[],
+            total += EmbedPacker.FIELDS_ARRAY_JSON_OVERHEAD;
         for (final PendingField field : this.fields)
             total += EmbedPacker.FIELD_JSON_OVERHEAD
                     + DiscordLimits.jsonTextBytes(field.name())

@@ -283,6 +283,51 @@ class EmbedPackerTest {
     }
 
     @Test
+    void doesNotChargeBothHeadAndTailChromeToEveryPage() {
+        // head (title/description) と tail (footer/author) が同居するのは 1 ページに収まる場合だけ。
+        // 分割されたページに両方を課金すると、実際には収まるフィールドまで切り詰めてしまう
+        final String emoji = "😀".repeat(DiscordLimits.MAX_FIELD_VALUE);
+        final PendingEmbed source = new PendingEmbed("t".repeat(256), "d".repeat(2900), null,
+                Instant.EPOCH, Color.RED, "f".repeat(2048), null, null, null,
+                "a".repeat(256), null, null, List.of(
+                new PendingField("n1", emoji, false), new PendingField("n2", emoji, false)));
+
+        final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(source));
+
+        assertEveryLimitRespected(messages);
+        final List<PendingField> all = flatten(messages).stream().flatMap(p -> p.fields().stream()).toList();
+        assertThat(all).hasSize(2);
+        // 切り詰められていれば末尾が省略記号になり、コードポイント数も減る
+        all.forEach(f -> {
+            assertThat(f.value()).isEqualTo(emoji);
+            assertThat(DiscordLimits.codePoints(f.value())).isEqualTo(DiscordLimits.MAX_FIELD_VALUE);
+        });
+    }
+
+    @Test
+    void everyPageFitsWithItsOwnChromeAfterRepacking() {
+        // 3 ページ以上に分かれるケースで、末尾ページが tail chrome を載せた実サイズでも予算内に収まる
+        final PendingEmbed source = new PendingEmbed("タイトル", "あ".repeat(1000), null,
+                Instant.EPOCH, Color.RED, "気象庁".repeat(100), null, "https://example.com/i.png", null,
+                "author", null, null, fields(40, "あ".repeat(300)));
+
+        final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(source));
+        final List<PendingEmbed> pages = flatten(messages);
+        assertThat(pages).hasSizeGreaterThan(2);
+
+        assertEveryLimitRespected(messages);
+        for (final PendingEmbed page : pages)
+            assertThat(page.byteCount() + EmbedPacker.MESSAGE_JSON_OVERHEAD)
+                    .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
+
+        // 下部の装飾は末尾ページに載り、フィールドも道連れに削られていない
+        final PendingEmbed last = pages.get(pages.size() - 1);
+        assertThat(last.image()).isEqualTo("https://example.com/i.png");
+        pages.stream().flatMap(p -> p.fields().stream())
+                .forEach(f -> assertThat(f.value()).doesNotEndWith("…"));
+    }
+
+    @Test
     void escapeHeavyContentRespectsTheByteBudget() {
         // Gson がエスケープすると Discord タイムスタンプの山括弧は 1 つ 6 バイトになるため、
         // 生の UTF-8 サイズでフィールドを計測すると半分以上少なく見積もってしまう

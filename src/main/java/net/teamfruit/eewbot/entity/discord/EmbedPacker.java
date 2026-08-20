@@ -10,6 +10,10 @@ import java.util.Objects;
 public final class EmbedPacker {
 
     static final int FIELD_JSON_OVERHEAD = 40;
+    /**
+     * {@code "fields":[],} フィールドを持つページだけが払う
+     */
+    static final int FIELDS_ARRAY_JSON_OVERHEAD = 12;
     static final int EMBED_JSON_OVERHEAD = 8;
     static final int MESSAGE_JSON_OVERHEAD = 256;
 
@@ -97,6 +101,11 @@ public final class EmbedPacker {
      * Discord の制限は文字数ベースだが、リクエストボディ全体が {@link DiscordLimits#MAX_REQUEST_BYTES}
      * を超えると 500 が返る。プロパティごとに固定のバイト上限を置くと、送信可能な本文まで削って
      * しまうため、実際の chrome と実際の先頭フィールドから残り予算を求め、本当に溢れる分だけ削る
+     * <p>
+     * ここでは head と tail の両方を予算から引く。footer / image / timestamp は embed を
+     * 増やさず必ず最終ページに載せる方針のため、1 ページに収まる場合に両者が同居できることを
+     * 保証する必要がある。分割される場合は tail の分だけ description に余裕が残るが、
+     * embed をひとつ増やすより description をわずかに削る方を選ぶ
      */
     static PendingEmbed fitChrome(final PendingEmbed embed) {
         if (embed.description() == null)
@@ -107,7 +116,8 @@ public final class EmbedPacker {
         final PendingEmbed bare = embed.withDescription("");
         final PendingEmbed bareHead = bare.headChromeOnly().withFields(List.of());
         final PendingEmbed bareTail = bare.tailChromeOnly().withFields(List.of());
-        final int fixedBytes = bareHead.byteCount() + bareTail.byteCount() + MESSAGE_JSON_OVERHEAD;
+        final int fixedBytes = bareHead.byteCount() + bareTail.byteCount() + MESSAGE_JSON_OVERHEAD
+                + (embed.fields().isEmpty() ? 0 : FIELDS_ARRAY_JSON_OVERHEAD);
         final int fixedChars = bareHead.charCount() + bareTail.charCount();
 
         // 先頭ページには最低でもフィールドひとつ分の余地を残す。最悪ケースではなく実サイズで見る
@@ -131,14 +141,34 @@ public final class EmbedPacker {
 
     static List<PendingEmbed> paginate(final PendingEmbed source) {
         final PendingEmbed embed = fitChrome(source);
+        final PendingEmbed full = embed.withFields(List.of());
         final PendingEmbed head = embed.headChromeOnly().withFields(List.of());
         final PendingEmbed tail = embed.tailChromeOnly().withFields(List.of());
         final PendingEmbed plain = embed.colorChromeOnly().withFields(List.of());
 
+        // 第 1 段階: 先頭ページは head、以降は color だけを課金してフィールドを分配する。
+        // tail がどのページに載るかは分割が終わるまで決まらないので、ここでは課金しない
+        final List<List<PendingField>> pages = distribute(embed, head, plain);
+
+        // 第 2 段階: 末尾ページに tail を載せ、それで溢れる分だけ後ろへ押し出す
+        spillForTail(pages, full, head, tail, plain);
+
+        final List<PendingEmbed> result = new ArrayList<>(pages.size());
+        for (int i = 0; i < pages.size(); i++)
+            result.add(chromeFor(i, pages.size(), full, head, tail, plain)
+                    .withFields(List.copyOf(pages.get(i))));
+        return result;
+    }
+
+    /**
+     * 先頭ページに head、以降のページに color だけを課金してフィールドを分配する
+     */
+    private static List<List<PendingField>> distribute(final PendingEmbed embed,
+                                                       final PendingEmbed head, final PendingEmbed plain) {
         final List<List<PendingField>> pages = new ArrayList<>();
         List<PendingField> current = new ArrayList<>();
-        int chars = head.charCount() + tail.charCount();
-        int bytes = head.byteCount() + tail.byteCount() + MESSAGE_JSON_OVERHEAD;
+        int chars = head.charCount();
+        int bytes = head.byteCount() + MESSAGE_JSON_OVERHEAD + FIELDS_ARRAY_JSON_OVERHEAD;
 
         for (final PendingField original : embed.fields()) {
             PendingField field = original;
@@ -152,8 +182,8 @@ public final class EmbedPacker {
             if (overflows && !current.isEmpty()) {
                 pages.add(current);
                 current = new ArrayList<>();
-                chars = head.charCount() + tail.charCount();
-                bytes = head.byteCount() + tail.byteCount() + MESSAGE_JSON_OVERHEAD;
+                chars = plain.charCount();
+                bytes = plain.byteCount() + MESSAGE_JSON_OVERHEAD + FIELDS_ARRAY_JSON_OVERHEAD;
             }
 
             if (current.isEmpty()
@@ -169,23 +199,54 @@ public final class EmbedPacker {
             bytes += fieldBytes;
         }
         pages.add(current);
+        return pages;
+    }
 
-        final List<PendingEmbed> result = new ArrayList<>(pages.size());
-        for (int i = 0; i < pages.size(); i++) {
-            final boolean isFirst = i == 0;
-            final boolean isLast = i == pages.size() - 1;
-            final PendingEmbed chrome;
-            if (isFirst && isLast)
-                chrome = embed;
-            else if (isFirst)
-                chrome = head;
-            else if (isLast)
-                chrome = tail;
-            else
-                chrome = plain;
-            result.add(chrome.withFields(List.copyOf(pages.get(i))));
+    /**
+     * 末尾ページに tail chrome を載せ、収まらない分のフィールドを後ろのページへ押し出す
+     * <p>
+     * ページを増やすと直前のページは tail を手放して軽くなるだけなので、押し出しは必ず終わる。
+     * フィールドがひとつしか残っていないページは押し出す先がないため、残予算まで切り詰める
+     */
+    private static void spillForTail(final List<List<PendingField>> pages, final PendingEmbed full,
+                                     final PendingEmbed head, final PendingEmbed tail,
+                                     final PendingEmbed plain) {
+        while (true) {
+            final int index = pages.size() - 1;
+            final PendingEmbed chrome = chromeFor(index, pages.size(), full, head, tail, plain);
+            final List<PendingField> fields = pages.get(index);
+            if (!overflows(chrome.withFields(List.copyOf(fields))))
+                return;
+
+            if (fields.size() < 2) {
+                if (!fields.isEmpty())
+                    fields.set(0, fitToBudget(fields.get(0), chrome.charCount(),
+                            chrome.byteCount() + MESSAGE_JSON_OVERHEAD + FIELDS_ARRAY_JSON_OVERHEAD));
+                return;
+            }
+            pages.add(new ArrayList<>(List.of(fields.remove(fields.size() - 1))));
         }
-        return result;
+    }
+
+    private static boolean overflows(final PendingEmbed page) {
+        return page.charCount() > DiscordLimits.MAX_TOTAL_CHARS_PER_MESSAGE
+                || page.byteCount() + MESSAGE_JSON_OVERHEAD > DiscordLimits.MAX_REQUEST_BYTES;
+    }
+
+    /**
+     * ページ index が実際に載せる chrome
+     * <p>
+     * 1 ページに収まるなら head と tail は同居する。分割される場合は Discord の描画順に合わせ、
+     * 先頭ページが上部の装飾を、末尾ページが下部の装飾を持つ
+     */
+    private static PendingEmbed chromeFor(final int index, final int pageCount, final PendingEmbed full,
+                                          final PendingEmbed head, final PendingEmbed tail,
+                                          final PendingEmbed plain) {
+        if (pageCount <= 1)
+            return full;
+        if (index == 0)
+            return head;
+        return index == pageCount - 1 ? tail : plain;
     }
 
     private static int fieldChars(final PendingField field) {
