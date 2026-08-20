@@ -78,6 +78,20 @@ class EmbedByteEstimateTest {
     }
 
     @Test
+    void urlHeavyChromeStaysUnderTheRealByteWall() {
+        // URL は文字数制限にも算入されず、フィールドがなければフィールド側の切り詰めも働かない。
+        // 6 プロパティすべてが上限近くでも、実ペイロードは壁を越えてはならない
+        final String url = "https://example.com/" + "あ".repeat(1980);
+        final PendingEmbed embed = new PendingEmbed("t".repeat(256), "d".repeat(4000), url,
+                Instant.EPOCH, Color.RED, "f".repeat(2048), url, url, url,
+                "a".repeat(256), url, url, List.of());
+
+        for (final List<PendingEmbed> message : EmbedPacker.pack(List.of(embed)))
+            assertThat(serialize(message).getBytes(StandardCharsets.UTF_8).length)
+                    .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
+    }
+
+    @Test
     void escapeHeavyContentStillFits() {
         // 引用符・バックスラッシュ・改行は JSON エスケープでそれぞれサイズが倍になる
         final List<PendingEmbed> many = new ArrayList<>();

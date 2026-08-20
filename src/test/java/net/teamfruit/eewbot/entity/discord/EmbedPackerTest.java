@@ -239,7 +239,8 @@ class EmbedPackerTest {
             assertThat(message).hasSizeLessThanOrEqualTo(DiscordLimits.MAX_EMBEDS_PER_MESSAGE);
             assertThat(message.stream().mapToInt(PendingEmbed::charCount).sum())
                     .isLessThanOrEqualTo(DiscordLimits.MAX_TOTAL_CHARS_PER_MESSAGE);
-            assertThat(message.stream().mapToInt(PendingEmbed::byteCount).sum())
+            assertThat(message.stream().mapToInt(PendingEmbed::byteCount).sum()
+                    + EmbedPacker.MESSAGE_JSON_OVERHEAD)
                     .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
             for (final PendingEmbed page : message) {
                 assertThat(page.fields()).hasSizeLessThanOrEqualTo(DiscordLimits.MAX_FIELDS_PER_EMBED);
@@ -325,6 +326,44 @@ class EmbedPackerTest {
         assertThat(last.image()).isEqualTo("https://example.com/i.png");
         pages.stream().flatMap(p -> p.fields().stream())
                 .forEach(f -> assertThat(f.value()).doesNotEndWith("…"));
+    }
+
+    @Test
+    void chromeAloneNeverExceedsTheByteBudget() {
+        // URL は個別に MAX_URL 以内でも、6 プロパティの合計では予算を超えられる。
+        // 文字数には算入されないため 6000 の制限でも止まらず、フィールドがなければ
+        // フィールド側の切り詰めも働かない
+        final String url = "https://example.com/" + "あ".repeat(1980);
+        assertThat(DiscordLimits.codePoints(url)).isLessThanOrEqualTo(DiscordLimits.MAX_URL);
+
+        final PendingEmbed source = new PendingEmbed("t".repeat(256), "d".repeat(4000), url,
+                Instant.EPOCH, Color.RED, "f".repeat(2048), url, url, url,
+                "a".repeat(256), url, url, List.of());
+
+        assertEveryLimitRespected(EmbedPacker.pack(List.of(source)));
+    }
+
+    @Test
+    void dropsDecorativeUrlsBeforeTruncatingTheDescription() {
+        // 装飾的なアイコンを落とすだけで収まるなら、気象情報本文も地震マップも守られる
+        final String url = "https://example.com/" + "あ".repeat(900);
+        final String description = "あ".repeat(1000);
+        final PendingEmbed source = new PendingEmbed("タイトル", description, url,
+                Instant.EPOCH, Color.RED, "気象庁", url, url, url,
+                null, null, url, List.of());
+
+        final List<PendingEmbed> pages = flatten(EmbedPacker.pack(List.of(source)));
+        assertThat(pages).hasSize(1);
+        final PendingEmbed only = pages.get(0);
+
+        assertEveryLimitRespected(EmbedPacker.pack(List.of(source)));
+        assertThat(only.description()).isEqualTo(description);
+        assertThat(only.authorIcon()).isNull();
+        assertThat(only.footerIcon()).isNull();
+        assertThat(only.thumbnail()).isNull();
+        // 地震マップとタイトルリンクは最後まで残る
+        assertThat(only.image()).isEqualTo(url);
+        assertThat(only.url()).isEqualTo(url);
     }
 
     @Test
