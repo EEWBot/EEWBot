@@ -6,6 +6,7 @@ import net.teamfruit.eewbot.entity.discord.PendingEmbed.PendingField;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public final class EmbedPacker {
 
@@ -115,7 +116,52 @@ public final class EmbedPacker {
     private static final int[] TEXT_LAST_RESORT = {FOOTER_TEXT, AUTHOR_NAME, TITLE};
 
     /**
-     * chrome をメッセージの実予算に合わせる
+     * chrome のうち、ひとつのページに同時に載る範囲
+     * <p>
+     * 分割されると先頭ページは {@link PendingEmbed#headChromeOnly()} しか、末尾ページは
+     * {@link PendingEmbed#tailChromeOnly()} しか持たない。1 ページに収まるときだけ両者が同居する
+     */
+    enum ChromeScope {
+        HEAD(Set.of(TITLE, DESCRIPTION, URL, THUMBNAIL)),
+        TAIL(Set.of(FOOTER_TEXT, FOOTER_ICON, IMAGE, AUTHOR_NAME, AUTHOR_URL, AUTHOR_ICON)),
+        FULL(null);
+
+        private final Set<Integer> slots;
+
+        ChromeScope(final Set<Integer> slots) {
+            this.slots = slots;
+        }
+
+        boolean covers(final int slot) {
+            return this.slots == null || this.slots.contains(slot);
+        }
+
+        int bytes(final PendingEmbed embed) {
+            int total = MESSAGE_JSON_OVERHEAD;
+            if (this != TAIL)
+                total += embed.headChromeOnly().withFields(List.of()).byteCount();
+            if (this != HEAD)
+                total += embed.tailChromeOnly().withFields(List.of()).byteCount();
+            // chrome がページを食い潰してフィールドを 1 つも載せられない状態を避ける
+            if (!embed.fields().isEmpty())
+                total += FIELDS_ARRAY_JSON_OVERHEAD + fieldBytes(embed.fields().get(0));
+            return total;
+        }
+
+        int chars(final PendingEmbed embed) {
+            int total = 0;
+            if (this != TAIL)
+                total += embed.headChromeOnly().withFields(List.of()).charCount();
+            if (this != HEAD)
+                total += embed.tailChromeOnly().withFields(List.of()).charCount();
+            if (!embed.fields().isEmpty())
+                total += fieldChars(embed.fields().get(0));
+            return total;
+        }
+    }
+
+    /**
+     * スコープが載せる chrome をメッセージの実予算に合わせる
      * <p>
      * Discord の制限は文字数ベースだが、リクエストボディ全体が {@link DiscordLimits#MAX_REQUEST_BYTES}
      * を超えると 500 が返る。プロパティごとに固定のバイト上限を置くと送信可能な本文まで削って
@@ -126,55 +172,43 @@ public final class EmbedPacker {
      * そのため失って影響の小さいものから順に落とし、戻り値が必ず予算内に収まることを保証する。
      * 全段階を経れば color と timestamp しか残らないので、収束は保証される
      * <p>
-     * 予算からは head と tail の両方を引く。footer / image / timestamp は embed を増やさず必ず
-     * 最終ページに載せる方針のため、1 ページに収まる場合に両者が同居できる必要がある
+     * スコープ外のプロパティは同じページに載らず 1 バイトも予算を消費しないため、対象にしない
      */
-    static PendingEmbed fitChrome(final PendingEmbed embed) {
+    static PendingEmbed fitChrome(final PendingEmbed embed, final ChromeScope scope) {
         final String[] chrome = {embed.title(), embed.description(), embed.url(), embed.footerText(),
                 embed.footerIcon(), embed.image(), embed.thumbnail(), embed.authorName(),
                 embed.authorUrl(), embed.authorIcon()};
 
         for (final int slot : DECORATIVE_URLS)
-            dropUrl(embed, chrome, slot);
-        fitDescription(embed, chrome);
+            dropUrl(embed, chrome, slot, scope);
+        if (scope.covers(DESCRIPTION))
+            fitDescription(embed, chrome, scope);
         for (final int slot : ESSENTIAL_URLS)
-            dropUrl(embed, chrome, slot);
+            dropUrl(embed, chrome, slot, scope);
         for (final int slot : TEXT_LAST_RESORT)
-            trimText(embed, chrome, slot);
+            trimText(embed, chrome, slot, scope);
 
         return rebuild(embed, chrome);
     }
 
-    /**
-     * chrome と先頭フィールドひとつを載せたメッセージの実バイト数
-     * <p>
-     * 先頭フィールドを含めるのは、chrome がページのすべてを食い潰してフィールドを 1 つも
-     * 載せられない状態を避けるため
-     */
-    private static int chromeBytes(final PendingEmbed embed) {
-        int total = embed.headChromeOnly().withFields(List.of()).byteCount()
-                + embed.tailChromeOnly().withFields(List.of()).byteCount() + MESSAGE_JSON_OVERHEAD;
-        if (!embed.fields().isEmpty())
-            total += FIELDS_ARRAY_JSON_OVERHEAD + fieldBytes(embed.fields().get(0));
-        return total;
-    }
-
-    private static boolean fits(final PendingEmbed embed, final String[] chrome) {
-        return chromeBytes(rebuild(embed, chrome)) <= DiscordLimits.MAX_REQUEST_BYTES;
+    private static boolean fits(final PendingEmbed embed, final String[] chrome, final ChromeScope scope) {
+        return scope.bytes(rebuild(embed, chrome)) <= DiscordLimits.MAX_REQUEST_BYTES;
     }
 
     /**
      * 切り詰めると不正な URL になるため、予算のために手放すときは丸ごと落とす
      */
-    private static void dropUrl(final PendingEmbed embed, final String[] chrome, final int slot) {
-        if (chrome[slot] == null || fits(embed, chrome))
+    private static void dropUrl(final PendingEmbed embed, final String[] chrome, final int slot,
+                                final ChromeScope scope) {
+        if (!scope.covers(slot) || chrome[slot] == null || fits(embed, chrome, scope))
             return;
-        Log.logger.warn("Dropping embed {} URL ({} bytes): the message does not fit in {} bytes with it",
+        Log.logger.warn("Dropping embed {} URL ({} bytes): the page does not fit in {} bytes with it",
                 CHROME_NAMES[slot], DiscordLimits.jsonTextBytes(chrome[slot]), DiscordLimits.MAX_REQUEST_BYTES);
         chrome[slot] = null;
     }
 
-    private static void fitDescription(final PendingEmbed embed, final String[] chrome) {
+    private static void fitDescription(final PendingEmbed embed, final String[] chrome,
+                                       final ChromeScope scope) {
         final String description = chrome[DESCRIPTION];
         if (description == null)
             return;
@@ -183,12 +217,9 @@ public final class EmbedPacker {
         // オーバーヘッドは byteCount() 側の定義に任せたまま残る
         chrome[DESCRIPTION] = "";
         final PendingEmbed bare = rebuild(embed, chrome);
-        final int fixedChars = bare.headChromeOnly().withFields(List.of()).charCount()
-                + bare.tailChromeOnly().withFields(List.of()).charCount()
-                + (embed.fields().isEmpty() ? 0 : fieldChars(embed.fields().get(0)));
 
-        final int byteBudget = Math.max(0, DiscordLimits.MAX_REQUEST_BYTES - chromeBytes(bare));
-        final int charBudget = Math.max(0, DiscordLimits.MAX_TOTAL_CHARS_PER_MESSAGE - fixedChars);
+        final int byteBudget = Math.max(0, DiscordLimits.MAX_REQUEST_BYTES - scope.bytes(bare));
+        final int charBudget = Math.max(0, DiscordLimits.MAX_TOTAL_CHARS_PER_MESSAGE - scope.chars(bare));
 
         final String fitted = DiscordLimits.truncateBytes(
                 DiscordLimits.truncate(description, charBudget), byteBudget);
@@ -196,22 +227,23 @@ public final class EmbedPacker {
 
         if (!Objects.equals(description, fitted))
             Log.logger.warn("Truncating embed description from {} code points ({} bytes) to {} code points "
-                            + "({} bytes): the rest of the message leaves only {} code points / {} bytes",
+                            + "({} bytes): the rest of the page leaves only {} code points / {} bytes",
                     DiscordLimits.codePoints(description), DiscordLimits.jsonTextBytes(description),
                     DiscordLimits.codePoints(fitted), DiscordLimits.jsonTextBytes(fitted), charBudget, byteBudget);
     }
 
-    private static void trimText(final PendingEmbed embed, final String[] chrome, final int slot) {
-        if (chrome[slot] == null || fits(embed, chrome))
+    private static void trimText(final PendingEmbed embed, final String[] chrome, final int slot,
+                                 final ChromeScope scope) {
+        if (!scope.covers(slot) || chrome[slot] == null || fits(embed, chrome, scope))
             return;
 
         final String original = chrome[slot];
         chrome[slot] = "";
-        final int byteBudget = Math.max(0, DiscordLimits.MAX_REQUEST_BYTES - chromeBytes(rebuild(embed, chrome)));
+        final int byteBudget = Math.max(0, DiscordLimits.MAX_REQUEST_BYTES - scope.bytes(rebuild(embed, chrome)));
         final String fitted = DiscordLimits.truncateBytes(original, byteBudget);
         chrome[slot] = fitted.isEmpty() ? null : fitted;
 
-        Log.logger.warn("Truncating embed {} from {} bytes to {} bytes: the rest of the message leaves "
+        Log.logger.warn("Truncating embed {} from {} bytes to {} bytes: the rest of the page leaves "
                         + "only {} bytes", CHROME_NAMES[slot], DiscordLimits.jsonTextBytes(original),
                 DiscordLimits.jsonTextBytes(fitted), byteBudget);
     }
@@ -223,15 +255,24 @@ public final class EmbedPacker {
     }
 
     static List<PendingEmbed> paginate(final PendingEmbed source) {
-        final PendingEmbed embed = fitChrome(source);
+        // 分割される場合、先頭ページは head しか、末尾ページは tail しか載せない。
+        // この時点では両者が同居する前提を置かず、それぞれが単独で予算に収まることだけを保証する
+        PendingEmbed embed = fitChrome(fitChrome(source, ChromeScope.HEAD), ChromeScope.TAIL);
+
+        // 第 1 段階: 先頭ページは head、以降は color だけを課金してフィールドを分配する。
+        // tail がどのページに載るかは分割が終わるまで決まらないので、ここでは課金しない
+        final List<List<PendingField>> pages = distribute(embed,
+                embed.headChromeOnly().withFields(List.of()), embed.colorChromeOnly().withFields(List.of()));
+
+        // 1 ページに収まった場合だけ head と tail が同居する。ここで初めて両者を同時に課金して
+        // 調整する。切り詰めはページを軽くする方向にしか働かないので、分配のやり直しは要らない
+        if (pages.size() == 1)
+            embed = fitChrome(embed, ChromeScope.FULL);
+
         final PendingEmbed full = embed.withFields(List.of());
         final PendingEmbed head = embed.headChromeOnly().withFields(List.of());
         final PendingEmbed tail = embed.tailChromeOnly().withFields(List.of());
         final PendingEmbed plain = embed.colorChromeOnly().withFields(List.of());
-
-        // 第 1 段階: 先頭ページは head、以降は color だけを課金してフィールドを分配する。
-        // tail がどのページに載るかは分割が終わるまで決まらないので、ここでは課金しない
-        final List<List<PendingField>> pages = distribute(embed, head, plain);
 
         // 第 2 段階: 末尾ページに tail を載せ、それで溢れる分だけ後ろへ押し出す
         spillForTail(pages, full, head, tail, plain);

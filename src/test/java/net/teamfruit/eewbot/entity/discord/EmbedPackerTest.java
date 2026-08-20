@@ -296,6 +296,8 @@ class EmbedPackerTest {
         final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(source));
 
         assertEveryLimitRespected(messages);
+        // 出力は 2 ページなので先頭ページに tail は載らない。description を削る理由はない
+        assertThat(flatten(messages).getFirst().description()).isEqualTo("d".repeat(2900));
         final List<PendingField> all = flatten(messages).stream().flatMap(p -> p.fields().stream()).toList();
         assertThat(all).hasSize(2);
         // 切り詰められていれば末尾が省略記号になり、コードポイント数も減る
@@ -326,6 +328,34 @@ class EmbedPackerTest {
         assertThat(last.image()).isEqualTo("https://example.com/i.png");
         pages.stream().flatMap(p -> p.fields().stream())
                 .forEach(f -> assertThat(f.value()).doesNotEndWith("…"));
+    }
+
+    @Test
+    void adjustsWithFullChromeOnlyWhenEverythingFitsOnOnePage() {
+        // フィールドが 1 つだけなら 1 ページに収まり、head と tail が同居する。
+        // このときだけは tail の分も予算から引いて description を詰めなければならない
+        final String description = "あ".repeat(4000);
+        final PendingEmbed withTail = new PendingEmbed("タイトル", description, null,
+                Instant.EPOCH, Color.RED, "気象庁".repeat(200), null, "https://example.com/i.png", null,
+                "author", null, null, fields(1, "地域"));
+        final PendingEmbed withoutTail = new PendingEmbed("タイトル", description, null,
+                null, Color.RED, null, null, null, null,
+                null, null, null, fields(1, "地域"));
+
+        final List<PendingEmbed> pages = flatten(EmbedPacker.pack(List.of(withTail)));
+        assertThat(pages).hasSize(1);
+        final PendingEmbed only = pages.get(0);
+
+        assertEveryLimitRespected(EmbedPacker.pack(List.of(withTail)));
+        // 下部の装飾は同じ embed に載る
+        assertThat(only.footerText()).isNotNull();
+        assertThat(only.image()).isEqualTo("https://example.com/i.png");
+        assertThat(only.timestamp()).isEqualTo(Instant.EPOCH);
+
+        // tail を抱える分だけ description は短くなる。常に head だけで測っていればこうならない
+        final PendingEmbed headOnly = flatten(EmbedPacker.pack(List.of(withoutTail))).get(0);
+        assertThat(DiscordLimits.codePoints(only.description()))
+                .isLessThan(DiscordLimits.codePoints(headOnly.description()));
     }
 
     @Test
