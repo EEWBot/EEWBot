@@ -33,6 +33,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -148,7 +149,10 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
         assertThat(report).isNotNull();
 
         // 2. Entity → DiscordWebhook変換
-        DiscordWebhook webhook = report.createWebhook("ja_jp", embedContext);
+        // 既存フィクスチャは分割されないはず。分割されたら意図せぬ回帰なのでここで落とす
+        List<DiscordWebhook> webhooks = report.createWebhooks("ja_jp", embedContext);
+        assertThat(webhooks).hasSize(1);
+        DiscordWebhook webhook = webhooks.get(0);
         assertThat(webhook).isNotNull();
 
         // 3. Webhook → JSON変換

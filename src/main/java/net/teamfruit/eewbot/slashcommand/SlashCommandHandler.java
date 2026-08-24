@@ -74,7 +74,7 @@ public class SlashCommandHandler {
                                 createErrorEmbed(getLanguage(ctx, event), ctx)
                                         .title("eewbot.scmd.error")
                                         .description(ExceptionUtils.getMessage(err))
-                                        .build()
+                                        .toEmbedCreateSpec()
                         )))
                 .onErrorResume(e -> {
                     Log.logger.error("Unhandled exception during ApplicationCommandInteractionEvent handling", e);

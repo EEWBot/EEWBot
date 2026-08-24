@@ -15,8 +15,8 @@ import discord4j.rest.util.Color;
 import discord4j.rest.util.MultipartRequest;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
+import net.teamfruit.eewbot.entity.discord.I18nEmbedBuilder;
 import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
-import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import net.teamfruit.eewbot.slashcommand.SlashCommandContext;
@@ -56,13 +56,13 @@ public class TestMessageSlashCommand implements ISlashCommand {
         if (hasWebhook) {
             if (StringUtils.isNotEmpty(ctx.config().getWebhookSender().getAddress())) {
                 DiscordWebhook webhook = DiscordWebhook.builder()
-                        .addEmbed(I18nDiscordEmbed.builder(lang, ctx.i18n())
+                        .addEmbed(I18nEmbedBuilder.builder(lang, ctx.i18n())
                                 .title("eewbot.scmd.testmessage.title")
                                 .description("eewbot.scmd.testmessage.webhooksender")
                                 .color(Color.of(7506394))
                                 .author(ctx.username(), "https://github.com/EEWBot/EEWBot", ctx.avatarUrl())
                                 .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png")
-                                .build())
+                                .toDiscordEmbed())
                         .build();
                 DiscordWebhookRequest request = new DiscordWebhookRequest(lang, webhook).addTarget(channel.getWebhook().getUrl());
                 try {
@@ -74,14 +74,14 @@ public class TestMessageSlashCommand implements ISlashCommand {
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang, ctx)
                                     .title("eewbot.scmd.testmessage.error.title")
                                     .description("eewbot.scmd.testmessage.error.unknown", "webhook-sender returned abnormal status code: " + statusCode)
-                                    .build())
+                                    .toEmbedCreateSpec())
                             .build()).then();
                 } catch (IOException | InterruptedException e) {
                     return event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang, ctx)
                                     .title("eewbot.scmd.testmessage.error.title")
                                     .description("eewbot.scmd.testmessage.error.unknown", e.getMessage())
-                                    .build())
+                                    .toEmbedCreateSpec())
                             .build()).then();
                 }
             }
@@ -90,7 +90,7 @@ public class TestMessageSlashCommand implements ISlashCommand {
                             .addEmbed(SlashCommandUtils.createEmbed(lang, ctx)
                                     .title("eewbot.scmd.testmessage.title")
                                     .description("eewbot.scmd.testmessage.webhook")
-                                    .build().asRequest())
+                                    .toEmbedCreateSpec().asRequest())
                             .avatarUrl(ctx.avatarUrl())
                             .build()))
                     .flatMap(message -> event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.testmessage.success.webhook")))
@@ -98,13 +98,13 @@ public class TestMessageSlashCommand implements ISlashCommand {
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang, ctx)
                                     .title("eewbot.scmd.testmessage.error.title")
                                     .description("eewbot.scmd.testmessage.error.unknownwebhook", ExceptionUtils.getMessage(err))
-                                    .build())
+                                    .toEmbedCreateSpec())
                             .build()))
                     .onErrorResume(ClientException.class, err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang, ctx)
                                     .title("eewbot.scmd.testmessage.error.title")
                                     .description("eewbot.scmd.testmessage.error.unknown", err.getErrorResponse().map(ErrorResponse::toString).orElse(""))
-                                    .build())
+                                    .toEmbedCreateSpec())
                             .build()))
                     .then();
         } else {
@@ -112,26 +112,26 @@ public class TestMessageSlashCommand implements ISlashCommand {
                             .addEmbed(SlashCommandUtils.createEmbed(lang, ctx)
                                     .title("eewbot.scmd.testmessage.title")
                                     .description("eewbot.scmd.testmessage.nowebhook")
-                                    .build())
+                                    .toEmbedCreateSpec())
                             .build())
                     .flatMap(message -> event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.testmessage.success.nowebhook")))
                     .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang, ctx)
                                     .title("eewbot.scmd.testmessage.error.title")
                                     .description("eewbot.scmd.testmessage.error.missingperms")
-                                    .build())
+                                    .toEmbedCreateSpec())
                             .build()))
                     .onErrorResume(ClientException.isStatusCode(429), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang, ctx)
                                     .title("eewbot.scmd.testmessage.error.title")
                                     .description("eewbot.scmd.testmessage.error.ratelimit")
-                                    .build())
+                                    .toEmbedCreateSpec())
                             .build()))
                     .onErrorResume(err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang, ctx)
                                     .title("eewbot.scmd.testmessage.error.title")
                                     .description("eewbot.scmd.testmessage.error.unknown", ExceptionUtils.getMessage(err))
-                                    .build())
+                                    .toEmbedCreateSpec())
                             .build()))
                     .then();
         }
