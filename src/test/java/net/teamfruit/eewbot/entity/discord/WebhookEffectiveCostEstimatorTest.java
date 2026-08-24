@@ -47,4 +47,19 @@ class WebhookEffectiveCostEstimatorTest {
         assertThat(WebhookEffectiveCostEstimator.estimate(List.of(section)))
                 .isInstanceOf(WebhookEffectiveCostEstimator.Indeterminate.class);
     }
+
+    @Test
+    void preservesKnownTextMinimumInsideUncharacterizedSection() {
+        PendingComponent.Thumbnail thumbnail = new PendingComponent.Thumbnail(
+                "https://example.com/thumb.png", null, false);
+        PendingComponent.Section atBoundary = new PendingComponent.Section(
+                List.of(new PendingComponent.Text("あ".repeat(3390))), thumbnail);
+        PendingComponent.Section overBoundary = new PendingComponent.Section(
+                List.of(new PendingComponent.Text("あ".repeat(3390) + "a")), thumbnail);
+
+        assertThat(WebhookEffectiveCostEstimator.estimate(List.of(atBoundary)))
+                .isEqualTo(new WebhookEffectiveCostEstimator.Indeterminate(10170));
+        assertThat(WebhookEffectiveCostEstimator.estimate(List.of(overBoundary)))
+                .isEqualTo(new WebhookEffectiveCostEstimator.TooLarge(10171));
+    }
 }

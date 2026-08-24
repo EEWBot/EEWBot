@@ -25,18 +25,18 @@ public final class WebhookEffectiveCostEstimator {
     }
 
     public static Result estimate(final List<PendingComponent> components) {
-        long knownCost = 0;
+        long minimumKnownCost = 0;
         boolean indeterminate = false;
         for (final PendingComponent component : components) {
             final Cost cost = cost(component, false);
-            knownCost += cost.knownCost();
+            minimumKnownCost += cost.minimumKnownCost();
             indeterminate |= cost.indeterminate();
         }
-        if (knownCost > OBSERVED_EFFECTIVE_BUDGET)
-            return new TooLarge(knownCost);
+        if (minimumKnownCost > OBSERVED_EFFECTIVE_BUDGET)
+            return new TooLarge(minimumKnownCost);
         if (indeterminate)
-            return new Indeterminate(knownCost);
-        return new Safe(knownCost);
+            return new Indeterminate(minimumKnownCost);
+        return new Safe(minimumKnownCost);
     }
 
     private static Cost cost(final PendingComponent component, final boolean insideContainer) {
@@ -53,7 +53,7 @@ public final class WebhookEffectiveCostEstimator {
             boolean indeterminate = false;
             for (final PendingComponent child : container.children()) {
                 final Cost childCost = cost(child, true);
-                value += childCost.knownCost();
+                value += childCost.minimumKnownCost();
                 indeterminate |= childCost.indeterminate();
             }
             if (container.accentColor() != null)
@@ -61,6 +61,11 @@ public final class WebhookEffectiveCostEstimator {
             if (container.spoiler())
                 value += CONTAINER_SPOILER_COST;
             return new Cost(value, indeterminate);
+        }
+        if (component instanceof PendingComponent.Section section) {
+            final long minimumTextCost = section.children().stream()
+                    .mapToLong(text -> ComponentLimits.utf8Bytes(text.content())).sum();
+            return new Cost(minimumTextCost, true);
         }
         if (!insideContainer && component instanceof PendingComponent.MediaGallery gallery
                 && isCharacterized(gallery)) {
@@ -88,10 +93,10 @@ public final class WebhookEffectiveCostEstimator {
     public record TooLarge(long minimumEffectiveCost) implements Result {
     }
 
-    public record Indeterminate(long knownEffectiveCost) implements Result {
+    public record Indeterminate(long minimumKnownEffectiveCost) implements Result {
     }
 
-    private record Cost(long knownCost, boolean indeterminate) {
+    private record Cost(long minimumKnownCost, boolean indeterminate) {
         private static Cost known(final long value) {
             return new Cost(value, false);
         }
