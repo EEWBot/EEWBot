@@ -69,15 +69,35 @@ class ComponentPackerTest {
     }
 
     @Test
-    void accountsForJsonEscapingAndUtf8RequestBytes() {
-        String escaped = "\\\"\n😀".repeat(1800);
-        List<List<PendingComponent>> pages = ComponentPacker.pack(List.of(container(List.of(new PendingComponent.Text(escaped)))));
-        assertThat(allText(pages)).isEqualTo(escaped);
-        pages.forEach(page -> {
-            DiscordWebhook webhook = DiscordWebhook.builder().components(ComponentRenderer.toWebhook(page)).build();
-            int bytes = Codecs.GSON.toJson(webhook).getBytes(StandardCharsets.UTF_8).length;
-            assertThat(bytes).isLessThanOrEqualTo(ComponentLimits.MAX_PACKED_COMPONENT_BODY_BYTES);
-        });
+    void jsonEscapingDoesNotAffectEffectiveCost() {
+        String plain = "a".repeat(3386);
+        String escaped = "\"".repeat(3386);
+        WebhookEffectiveCostEstimator.Safe plainEstimate = (WebhookEffectiveCostEstimator.Safe)
+                WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.Text(plain)));
+        WebhookEffectiveCostEstimator.Safe escapedEstimate = (WebhookEffectiveCostEstimator.Safe)
+                WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.Text(escaped)));
+
+        assertThat(escapedEstimate.effectiveCost()).isEqualTo(plainEstimate.effectiveCost());
+        int plainJsonBytes = Codecs.GSON.toJson(new DiscordComponent.TextDisplay(10, plain))
+                .getBytes(StandardCharsets.UTF_8).length;
+        int escapedJsonBytes = Codecs.GSON.toJson(new DiscordComponent.TextDisplay(10, escaped))
+                .getBytes(StandardCharsets.UTF_8).length;
+        assertThat(escapedJsonBytes).isGreaterThan(plainJsonBytes);
+    }
+
+    @Test
+    void paginatesAtObservedEffectiveCostBoundaryWithoutLosingText() {
+        String exact = "あ".repeat(3386);
+        String over = exact + "a";
+
+        assertThat(WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.Text(exact))))
+                .isEqualTo(new WebhookEffectiveCostEstimator.Safe(10170));
+        assertThat(WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.Text(over))))
+                .isEqualTo(new WebhookEffectiveCostEstimator.TooLarge(10171));
+        assertThat(ComponentPacker.pack(List.of(new PendingComponent.Text(exact)))).hasSize(1);
+        List<List<PendingComponent>> pages = ComponentPacker.pack(List.of(new PendingComponent.Text(over)));
+        assertThat(pages).hasSize(2);
+        assertThat(allText(pages)).isEqualTo(over);
     }
 
     @Test

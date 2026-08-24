@@ -8,7 +8,6 @@ import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.Entity;
-import net.teamfruit.eewbot.entity.discord.ComponentLimits;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
 import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
@@ -31,7 +30,6 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -189,10 +187,6 @@ public class EEWService {
             Map<String, String> jsonByLang = new HashMap<>();
             webhookChunks.get(i).forEach(req -> {
                 String json = Codecs.GSON.toJson(req.getWebhook());
-                int bytes = json.getBytes(StandardCharsets.UTF_8).length;
-                if (bytes > ComponentLimits.MAX_REQUEST_BYTES)
-                    Log.logger.error("Webhook payload for language {} is {} bytes, over the {} byte budget; Discord may answer 500",
-                            req.getLang(), bytes, ComponentLimits.MAX_REQUEST_BYTES);
                 jsonByLang.put(req.getLang(), json);
             });
             jsonByChunkAndLang.add(jsonByLang);

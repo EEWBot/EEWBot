@@ -1,8 +1,5 @@
 package net.teamfruit.eewbot.entity.discord;
 
-import net.teamfruit.eewbot.Codecs;
-
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -193,38 +190,17 @@ public final class ComponentPacker {
     }
 
     public static boolean fits(final List<PendingComponent> message) {
-        if (componentCount(message) > ComponentLimits.MAX_COMPONENTS_PER_MESSAGE)
+        if (!ComponentValidator.isValid(message))
             return false;
-        if (textCodePoints(message) > ComponentLimits.MAX_TEXT_DISPLAY_CODE_POINTS_PER_MESSAGE)
-            return false;
-        final DiscordWebhook webhook = DiscordWebhook.builder()
-                .components(ComponentRenderer.toWebhook(message)).build();
-        return Codecs.GSON.toJson(webhook).getBytes(StandardCharsets.UTF_8).length
-                <= ComponentLimits.MAX_PACKED_COMPONENT_BODY_BYTES;
+        return !(WebhookEffectiveCostEstimator.estimate(message)
+                instanceof WebhookEffectiveCostEstimator.TooLarge);
     }
 
     public static int componentCount(final List<PendingComponent> components) {
-        return components.stream().mapToInt(ComponentPacker::componentCount).sum();
-    }
-
-    private static int componentCount(final PendingComponent component) {
-        if (component instanceof PendingComponent.Container container)
-            return 1 + componentCount(container.children());
-        if (component instanceof PendingComponent.Section section)
-            return 2 + section.children().size();
-        return 1;
+        return ComponentValidator.componentCount(components);
     }
 
     public static int textCodePoints(final List<PendingComponent> components) {
-        int total = 0;
-        for (final PendingComponent component : components) {
-            if (component instanceof PendingComponent.Text text)
-                total += ComponentLimits.codePoints(text.content());
-            else if (component instanceof PendingComponent.Container container)
-                total += textCodePoints(container.children());
-            else if (component instanceof PendingComponent.Section section)
-                total += section.children().stream().mapToInt(text -> ComponentLimits.codePoints(text.content())).sum();
-        }
-        return total;
+        return ComponentValidator.textCodePoints(components);
     }
 }
