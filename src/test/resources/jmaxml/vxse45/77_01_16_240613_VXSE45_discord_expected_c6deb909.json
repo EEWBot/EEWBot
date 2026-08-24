@@ -1,39 +1,45 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "緊急地震速報 (警報) 第16報",
-      "timestamp": "2024-04-17T14:15:09Z",
-      "color": 16711680,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "震央",
-          "value": "豊後水道",
-          "inline": true
+          "type": 10,
+          "content": "# 緊急地震速報 (警報) 第16報"
         },
         {
-          "name": "深さ",
-          "value": "40km",
-          "inline": true
+          "type": 10,
+          "content": "**震央**\n豊後水道"
         },
         {
-          "name": "マグニチュード",
-          "value": "6.6",
-          "inline": true
+          "type": 10,
+          "content": "**深さ**\n40km"
         },
         {
-          "name": "最大震度",
-          "value": "6弱",
-          "inline": false
+          "type": 10,
+          "content": "**マグニチュード**\n6.6"
         },
         {
-          "name": "警報対象の地域",
-          "value": "愛媛県南予 高知県西部 大分県南部 大分県中部 愛媛県中予 大分県北部 愛媛県東予 山口県東部 広島県南西部",
-          "inline": false
+          "type": 14,
+          "divider": true,
+          "spacing": 1
+        },
+        {
+          "type": 10,
+          "content": "**最大震度**\n6弱"
+        },
+        {
+          "type": 10,
+          "content": "**警報対象の地域**\n愛媛県南予 高知県西部 大分県南部 大分県中部 愛媛県中予 大分県北部 愛媛県東予 山口県東部 広島県南西部"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • <t:1713363309:F>"
         }
-      ]
+      ],
+      "accent_color": 16711680,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }

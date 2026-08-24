@@ -1,19 +1,24 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "津波警報・注意報解除",
-      "timestamp": "2015-11-13T22:20:00Z",
-      "color": 8359053,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "津波注意報解除",
-          "value": "種子島・屋久島地方\n奄美群島・トカラ列島\n鹿児島県西部",
-          "inline": false
+          "type": 10,
+          "content": "# 津波警報・注意報解除"
+        },
+        {
+          "type": 10,
+          "content": "**津波注意報解除**\n種子島・屋久島地方\n奄美群島・トカラ列島\n鹿児島県西部"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • <t:1447453200:F>"
         }
-      ]
+      ],
+      "accent_color": 8359053,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }

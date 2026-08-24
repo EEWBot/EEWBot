@@ -1,13 +1,24 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "緊急地震速報 (キャンセル報)",
-      "description": "先ほどの、緊急地震速報（地震動予報）は取り消します。",
-      "timestamp": "2026-05-11T01:25:09Z",
-      "color": 16776960,
-      "footer": {
-        "text": "気象庁"
-      }
+      "type": 17,
+      "components": [
+        {
+          "type": 10,
+          "content": "# 緊急地震速報 (キャンセル報)"
+        },
+        {
+          "type": 10,
+          "content": "先ほどの、緊急地震速報（地震動予報）は取り消します。"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • <t:1778462709:F>"
+        }
+      ],
+      "accent_color": 16776960,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }

@@ -1,14 +1,13 @@
 package net.teamfruit.eewbot.entity.discord;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class DiscordWebhook {
 
-    public String content;
     public String username;
     public String avatar_url;
-    public List<DiscordEmbed> embeds;
+    public List<DiscordComponent> components;
+    public int flags = ComponentLimits.IS_COMPONENTS_V2;
     public String thread_name;
 
     public static DiscordWebhook.Builder builder() {
@@ -23,11 +22,6 @@ public class DiscordWebhook {
             this.webhook = new DiscordWebhook();
         }
 
-        public Builder content(String content) {
-            this.webhook.content = content;
-            return this;
-        }
-
         public Builder username(String username) {
             this.webhook.username = username;
             return this;
@@ -38,15 +32,8 @@ public class DiscordWebhook {
             return this;
         }
 
-        public Builder embeds(List<DiscordEmbed> embeds) {
-            this.webhook.embeds = embeds;
-            return this;
-        }
-
-        public Builder addEmbed(DiscordEmbed embed) {
-            if (this.webhook.embeds == null)
-                this.webhook.embeds = new ArrayList<>();
-            this.webhook.embeds.add(embed);
+        public Builder components(List<DiscordComponent> components) {
+            this.webhook.components = List.copyOf(components);
             return this;
         }
 

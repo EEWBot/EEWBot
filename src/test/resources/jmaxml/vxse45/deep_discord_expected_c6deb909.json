@@ -1,29 +1,32 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "緊急地震速報 (予報) 第7報",
-      "timestamp": "2026-05-11T01:24:09Z",
-      "color": 255,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "震央",
-          "value": "小笠原諸島西方沖",
-          "inline": true
+          "type": 10,
+          "content": "# 緊急地震速報 (予報) 第7報"
         },
         {
-          "name": "深さ",
-          "value": "７００ｋｍ以上",
-          "inline": true
+          "type": 10,
+          "content": "**震央**\n小笠原諸島西方沖"
         },
         {
-          "name": "マグニチュード",
-          "value": "6.9",
-          "inline": true
+          "type": 10,
+          "content": "**深さ**\n７００ｋｍ以上"
+        },
+        {
+          "type": 10,
+          "content": "**マグニチュード**\n6.9"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • <t:1778462649:F>"
         }
-      ]
+      ],
+      "accent_color": 255,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }

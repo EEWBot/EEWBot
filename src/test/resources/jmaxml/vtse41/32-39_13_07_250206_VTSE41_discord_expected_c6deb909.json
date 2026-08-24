@@ -1,19 +1,24 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "津波警報・注意報解除",
-      "timestamp": "2018-12-04T10:30:00Z",
-      "color": 8359053,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "津波注意報解除",
-          "value": "千葉県内房\n東京湾内湾\n伊豆諸島\n相模湾・三浦半島\n静岡県",
-          "inline": false
+          "type": 10,
+          "content": "# 津波警報・注意報解除"
+        },
+        {
+          "type": 10,
+          "content": "**津波注意報解除**\n千葉県内房\n東京湾内湾\n伊豆諸島\n相模湾・三浦半島\n静岡県"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • <t:1543919400:F>"
         }
-      ]
+      ],
+      "accent_color": 8359053,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }

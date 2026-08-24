@@ -6,9 +6,9 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import net.teamfruit.eewbot.entity.EmbedContext;
+import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.Entity;
-import net.teamfruit.eewbot.entity.discord.DiscordLimits;
+import net.teamfruit.eewbot.entity.discord.ComponentLimits;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
 import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
@@ -54,7 +54,7 @@ public class EEWService {
     private final ScheduledExecutorService executor;
     private final DestinationDeliveryRegistry deliveryRegistry;
     private final DestinationAdminRegistry adminRegistry;
-    private final EmbedContext embedContext;
+    private final ComponentContext componentContext;
     private final HttpClient httpClient;
     private final URI webhookSenderAddress;
     private final String[] webhookSenderHeader;
@@ -65,7 +65,7 @@ public class EEWService {
             DestinationAdminRegistry adminRegistry,
             String avatarUrl,
             I18n i18n,
-            EmbedContext embedContext,
+            ComponentContext componentContext,
             ScheduledExecutorService executor,
             HttpClient httpClient,
             ConfigV2 config
@@ -75,7 +75,7 @@ public class EEWService {
         this.adminRegistry = adminRegistry;
         this.avatarUrl = avatarUrl;
         this.i18n = i18n;
-        this.embedContext = embedContext;
+        this.componentContext = componentContext;
         this.executor = executor;
         this.httpClient = httpClient;
         this.webhookSenderHeader = parseWebhookSenderHeader(config.getWebhookSender().getCustomHeader());
@@ -88,13 +88,13 @@ public class EEWService {
 
     public void sendMessage(final ChannelFilter filter, final Entity entity) {
         Map<String, List<MessageCreateSpec>> msgByLang = new HashMap<>();
-        this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessages(lang, this.embedContext)));
+        this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessages(lang, this.componentContext)));
 
         DeliveryPartition partition = this.deliveryRegistry.getDeliveryChannels(filter);
 
         List<List<DiscordWebhookRequest>> webhookChunks = new ArrayList<>();
         this.i18n.getLanguages().keySet().forEach(lang -> {
-            List<DiscordWebhook> webhooks = entity.createWebhooks(lang, this.embedContext);
+            List<DiscordWebhook> webhooks = entity.createWebhooks(lang, this.componentContext);
             for (int i = 0; i < webhooks.size(); i++) {
                 DiscordWebhook webhook = webhooks.get(i);
                 webhook.avatar_url = this.avatarUrl;
@@ -190,9 +190,9 @@ public class EEWService {
             webhookChunks.get(i).forEach(req -> {
                 String json = Codecs.GSON.toJson(req.getWebhook());
                 int bytes = json.getBytes(StandardCharsets.UTF_8).length;
-                if (bytes > DiscordLimits.MAX_REQUEST_BYTES)
+                if (bytes > ComponentLimits.MAX_REQUEST_BYTES)
                     Log.logger.error("Webhook payload for language {} is {} bytes, over the {} byte budget; Discord may answer 500",
-                            req.getLang(), bytes, DiscordLimits.MAX_REQUEST_BYTES);
+                            req.getLang(), bytes, ComponentLimits.MAX_REQUEST_BYTES);
                 jsonByLang.put(req.getLang(), json);
             });
             jsonByChunkAndLang.add(jsonByLang);
@@ -213,7 +213,7 @@ public class EEWService {
                     if (!keepGoing)
                         return CompletableFuture.completedFuture(false);
                     HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(channel.webhookUrl()))
+                            .uri(URI.create(DiscordWebhookRequest.componentsV2Url(channel.webhookUrl())))
                             .header("User-Agent", "EEWBot")
                             .header("Content-Type", "application/json")
                             .POST(HttpRequest.BodyPublishers.ofString(body))
@@ -284,7 +284,8 @@ public class EEWService {
         for (int chunkIndex = 0; chunkIndex < webhookChunks.size(); chunkIndex++) {
             List<WebhookSenderRequest> senderRequests = webhookChunks.get(chunkIndex).stream()
                     .peek(webhookRequest -> webhookRequest.getTargets()
-                            .addAll(targetsByLang.getOrDefault(webhookRequest.getLang(), Collections.emptyList())))
+                            .addAll(targetsByLang.getOrDefault(webhookRequest.getLang(), Collections.emptyList()).stream()
+                                    .map(DiscordWebhookRequest::componentsV2Url).toList()))
                     .filter(webhookRequest -> !webhookRequest.getTargets().isEmpty())
                     .map(WebhookSenderRequest::from)
                     .collect(Collectors.toList());

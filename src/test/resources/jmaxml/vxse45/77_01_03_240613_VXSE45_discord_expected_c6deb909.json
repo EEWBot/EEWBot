@@ -1,35 +1,45 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "緊急地震速報 (予報) 第3報",
-      "description": "※この情報は精度が低い可能性があります",
-      "timestamp": "2024-04-17T14:14:59Z",
-      "color": 255,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "震央",
-          "value": "豊後水道",
-          "inline": true
+          "type": 10,
+          "content": "# 緊急地震速報 (予報) 第3報"
         },
         {
-          "name": "深さ",
-          "value": "30km",
-          "inline": true
+          "type": 10,
+          "content": "**震央**\n豊後水道"
         },
         {
-          "name": "マグニチュード",
-          "value": "5.1",
-          "inline": true
+          "type": 10,
+          "content": "**深さ**\n30km"
         },
         {
-          "name": "最大震度",
-          "value": "4",
-          "inline": false
+          "type": 10,
+          "content": "**マグニチュード**\n5.1"
+        },
+        {
+          "type": 14,
+          "divider": true,
+          "spacing": 1
+        },
+        {
+          "type": 10,
+          "content": "**最大震度**\n4"
+        },
+        {
+          "type": 10,
+          "content": "※この情報は精度が低い可能性があります"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • <t:1713363299:F>"
         }
-      ]
+      ],
+      "accent_color": 255,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }

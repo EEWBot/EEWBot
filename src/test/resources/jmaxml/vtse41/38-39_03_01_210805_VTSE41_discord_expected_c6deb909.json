@@ -1,13 +1,24 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "津波警報・注意報・予報",
-      "description": "先ほどの、津波注意報を取り消します。",
-      "timestamp": "2021-08-05T03:56:00Z",
-      "color": 8359053,
-      "footer": {
-        "text": "気象庁"
-      }
+      "type": 17,
+      "components": [
+        {
+          "type": 10,
+          "content": "# 津波警報・注意報・予報"
+        },
+        {
+          "type": 10,
+          "content": "先ほどの、津波注意報を取り消します。"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • <t:1628135760:F>"
+        }
+      ],
+      "accent_color": 8359053,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }

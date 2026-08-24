@@ -1,38 +1,55 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "地震情報（震源に関する情報）",
-      "description": "\u003ct:1765230720:f\u003e頃、地震がありました。",
-      "timestamp": "2025-12-08T21:57:00Z",
-      "color": 0,
-      "footer": {
-        "text": "気象庁"
-      },
-      "image": {
-        "url": "https://j.eewbot.net/ڿ莑曢厑泡薙䯯蜚ꄷ㭶蛑估橤淗㡌㡆ᗍ朤㥡堀ႰވڤԚԁҲ晪䙅癧"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "震央",
-          "value": "青森県東方沖",
-          "inline": true
+          "type": 10,
+          "content": "# 地震情報（震源に関する情報）"
         },
         {
-          "name": "深さ",
-          "value": "10km",
-          "inline": true
+          "type": 10,
+          "content": "<t:1765230720:f>頃、地震がありました。"
         },
         {
-          "name": "マグニチュード",
-          "value": "6.4",
-          "inline": true
+          "type": 10,
+          "content": "**震央**\n青森県東方沖"
         },
         {
-          "name": "",
-          "value": "この地震により、日本の沿岸では若干の海面変動があるかもしれませんが、被害の心配はありません。",
-          "inline": false
+          "type": 10,
+          "content": "**深さ**\n10km"
+        },
+        {
+          "type": 10,
+          "content": "**マグニチュード**\n6.4"
+        },
+        {
+          "type": 10,
+          "content": "この地震により、日本の沿岸では若干の海面変動があるかもしれませんが、被害の心配はありません。"
+        },
+        {
+          "type": 14,
+          "divider": true,
+          "spacing": 1
+        },
+        {
+          "type": 12,
+          "items": [
+            {
+              "media": {
+                "url": "https://j.eewbot.net/ڿ莑曢厑泡薙䯯蜚ꄷ㭶蛑估橤淗㡌㡆ᗍ朤㥡堀ႰވڤԚԁҲ晪䙅癧"
+              },
+              "spoiler": false
+            }
+          ]
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • <t:1765231020:F>"
         }
-      ]
+      ],
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }

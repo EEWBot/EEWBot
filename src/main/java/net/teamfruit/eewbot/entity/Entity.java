@@ -9,25 +9,25 @@ import java.util.function.Supplier;
 
 public interface Entity {
 
-    List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory);
+    List<PendingComponent> createComponents(String lang, ComponentContext ctx, Supplier<IComponentBuilder> factory);
 
-    private List<List<PendingEmbed>> pack(final String lang, final EmbedContext ctx) {
-        return EmbedPacker.pack(createEmbeds(lang, ctx, () -> new I18nEmbedBuilder(lang, ctx.i18n())));
+    private List<List<PendingComponent>> pack(final String lang, final ComponentContext ctx) {
+        return ComponentPacker.pack(createComponents(lang, ctx, () -> new I18nComponentBuilder(lang, ctx.i18n())));
     }
 
-    default List<MessageCreateSpec> createMessages(final String lang, final EmbedContext ctx) {
-        final List<List<PendingEmbed>> messages = pack(lang, ctx);
+    default List<MessageCreateSpec> createMessages(final String lang, final ComponentContext ctx) {
+        final List<List<PendingComponent>> messages = pack(lang, ctx);
         final List<MessageCreateSpec> specs = new ArrayList<>(messages.size());
-        for (final List<PendingEmbed> message : messages)
-            specs.add(MessageCreateSpec.builder().addAllEmbeds(EmbedRenderer.toEmbedCreateSpecs(message)).build());
+        for (final List<PendingComponent> message : messages)
+            specs.add(MessageCreateSpec.builder().addAllComponents(ComponentRenderer.toDiscord4J(message)).build());
         return specs;
     }
 
-    default List<DiscordWebhook> createWebhooks(final String lang, final EmbedContext ctx) {
-        final List<List<PendingEmbed>> messages = pack(lang, ctx);
+    default List<DiscordWebhook> createWebhooks(final String lang, final ComponentContext ctx) {
+        final List<List<PendingComponent>> messages = pack(lang, ctx);
         final List<DiscordWebhook> webhooks = new ArrayList<>(messages.size());
-        for (final List<PendingEmbed> message : messages)
-            webhooks.add(DiscordWebhook.builder().embeds(EmbedRenderer.toDiscordEmbeds(message)).build());
+        for (final List<PendingComponent> message : messages)
+            webhooks.add(DiscordWebhook.builder().components(ComponentRenderer.toWebhook(message)).build());
         return webhooks;
     }
 }

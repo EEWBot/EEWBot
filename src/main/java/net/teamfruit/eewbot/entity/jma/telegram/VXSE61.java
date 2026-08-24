@@ -1,9 +1,9 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
-import net.teamfruit.eewbot.entity.EmbedContext;
+import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
-import net.teamfruit.eewbot.entity.discord.PendingEmbed;
+import net.teamfruit.eewbot.entity.discord.IComponentBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
@@ -30,22 +30,22 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
     Optional<String> getFreeFormComment();
 
     @Override
-    default List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
-        IEmbedBuilder builder = factory.get();
-        builder.title("eewbot.quakeinfo.hypocenterupdate.title");
+    default List<PendingComponent> createComponents(String lang, ComponentContext ctx, Supplier<IComponentBuilder> factory) {
+        IComponentBuilder builder = factory.get();
+        builder.heading("eewbot.quakeinfo.hypocenterupdate.title");
         if (isCancelReport()) {
-            builder.description("eewbot.quakeinfo.hypocenterupdate.cancel");
-            builder.color(SeismicIntensity.UNKNOWN.getColor());
+            builder.text("eewbot.quakeinfo.hypocenterupdate.cancel");
+            builder.accent(SeismicIntensity.UNKNOWN.getColor());
         } else {
-            builder.description("eewbot.quakeinfo.hypocenterupdate.desc", "<t:" + getOriginTime().getEpochSecond() + ":f>");
-            builder.addField("eewbot.quakeinfo.field.epicenter", getHypocenterName(), true);
-            getDepth().ifPresent(depth -> builder.addField("eewbot.quakeinfo.field.depth", depth, true));
-            builder.addField("eewbot.quakeinfo.field.magnitude", getMagnitude(), true);
-            getQuakeInfoMaxInt().ifPresent(intensity -> builder.color(intensity.getColor()));
+            builder.text("eewbot.quakeinfo.hypocenterupdate.desc", "<t:" + getOriginTime().getEpochSecond() + ":f>");
+            builder.detail("eewbot.quakeinfo.field.epicenter", getHypocenterName());
+            getDepth().ifPresent(depth -> builder.detail("eewbot.quakeinfo.field.depth", depth));
+            builder.detail("eewbot.quakeinfo.field.magnitude", getMagnitude());
+            getQuakeInfoMaxInt().ifPresent(intensity -> builder.accent(intensity.getColor()));
         }
-        builder.footer(getPublishingOffice(), null);
+        builder.footer(getPublishingOffice());
         builder.timestamp(getReportDateTime());
-        return List.of(builder.toPending());
+        return List.of(builder.build());
     }
 
     @Override
