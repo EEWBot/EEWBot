@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot.entity.discord;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Estimates the empirically observed effective cost of Components V2 on Execute Webhook.
@@ -18,8 +17,9 @@ public final class WebhookEffectiveCostEstimator {
     private static final long CONTAINER_SEPARATOR_COST = 10;
     private static final long CONTAINER_ACCENT_COST = 6;
     private static final long CONTAINER_SPOILER_COST = 2;
-    private static final Pattern CHARACTERIZED_MEDIA_URL = Pattern.compile(
-            "https://embed-bug-tester\\.yr32\\.net/\\d{10}");
+    private static final long MEDIA_GALLERY_WRAPPER_COST = 9;
+    private static final long MEDIA_ITEM_COST = 120;
+    private static final int MEDIA_URL_LENGTH_PREFIX_THRESHOLD = 128;
 
     private WebhookEffectiveCostEstimator() {
     }
@@ -67,21 +67,30 @@ public final class WebhookEffectiveCostEstimator {
                     .mapToLong(text -> ComponentLimits.utf8Bytes(text.content())).sum();
             return new Cost(minimumTextCost, true);
         }
-        if (!insideContainer && component instanceof PendingComponent.MediaGallery gallery
-                && isCharacterized(gallery)) {
-            final int items = gallery.items().size();
-            return Cost.known(items == 1 ? 172 : 163L * items + 9);
+        if (component instanceof PendingComponent.MediaGallery gallery && isCharacterized(gallery)) {
+            long value = MEDIA_GALLERY_WRAPPER_COST;
+            for (final PendingComponent.MediaItem item : gallery.items())
+                value += mediaItemCost(item);
+            return Cost.known(value);
         }
-        // General Media Gallery, Section/Thumbnail, and their container-child costs are not characterized.
+        // Section/Thumbnail costs, and the cost of media descriptions and spoilers, are not characterized.
         return Cost.unknown();
+    }
+
+    /**
+     * The cost of a plain media item scales with its URL, plus one byte once the URL needs a longer length prefix.
+     * Container children are not characterized separately, so the top-level cost is used as an upper bound.
+     */
+    private static long mediaItemCost(final PendingComponent.MediaItem item) {
+        final long url = ComponentLimits.utf8Bytes(item.url());
+        return url + MEDIA_ITEM_COST + (url >= MEDIA_URL_LENGTH_PREFIX_THRESHOLD ? 1 : 0);
     }
 
     private static boolean isCharacterized(final PendingComponent.MediaGallery gallery) {
         return !gallery.items().isEmpty()
                 && gallery.items().size() <= ComponentLimits.MAX_MEDIA_GALLERY_ITEMS
                 && gallery.items().stream().allMatch(item ->
-                item.url() != null && CHARACTERIZED_MEDIA_URL.matcher(item.url()).matches()
-                        && item.description() == null && !item.spoiler());
+                item.url() != null && item.description() == null && !item.spoiler());
     }
 
     public sealed interface Result permits Safe, TooLarge, Indeterminate {

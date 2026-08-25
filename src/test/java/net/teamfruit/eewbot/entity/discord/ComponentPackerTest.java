@@ -153,7 +153,7 @@ class ComponentPackerTest {
     @Test
     void isolatesUnknownMediaWithItsSeparatorAndPreservesOrder() {
         PendingComponent.MediaGallery gallery = new PendingComponent.MediaGallery(List.of(
-                new PendingComponent.MediaItem("https://example.com/image.png", null, false)));
+                new PendingComponent.MediaItem("https://example.com/image.png", "described", false)));
         List<List<PendingComponent>> messages = ComponentPacker.pack(List.of(container(List.of(
                 new PendingComponent.Text("あ".repeat(3000)),
                 new PendingComponent.Separator(true, PendingComponent.Spacing.SMALL),
@@ -176,7 +176,7 @@ class ComponentPackerTest {
     @Test
     void doesNotCreateEmptyContainerWhenMovingSeparatorToUnknownMedia() {
         PendingComponent.MediaGallery gallery = new PendingComponent.MediaGallery(List.of(
-                new PendingComponent.MediaItem("https://example.com/image.png", null, false)));
+                new PendingComponent.MediaItem("https://example.com/image.png", "described", false)));
         List<List<PendingComponent>> messages = ComponentPacker.pack(List.of(container(List.of(
                 new PendingComponent.Separator(true, PendingComponent.Spacing.SMALL), gallery))));
 

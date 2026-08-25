@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
+import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,7 +44,8 @@ class DiscordWebhookSendTest {
         assumeTrue(webhookUrl != null && !webhookUrl.isEmpty(), "DISCORD_WEBHOOK_URL not set, skipping");
 
         String separator = webhookUrl.contains("?") ? "&" : "?";
-        webhookUri = URI.create(webhookUrl + separator + "wait=true");
+        // Non-application-owned webhooks ignore components without with_components, which sends an empty message
+        webhookUri = URI.create(DiscordWebhookRequest.componentsV2Url(webhookUrl + separator + "wait=true"));
         httpClient = HttpClient.newHttpClient();
     }
 
@@ -75,31 +77,29 @@ class DiscordWebhookSendTest {
         assertNotNull(stream, "JSON file not found: " + jsonPath);
         String json = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
 
-        int[] result = executePost(json);
-        int statusCode = result[0];
-        long retryAfterMs = result[1];
+        Result result = executePost(json);
 
-        if (statusCode == 429) {
-            long waitMs = retryAfterMs > 0 ? retryAfterMs : 5000;
+        if (result.statusCode() == 429) {
+            long waitMs = result.retryAfterMs() > 0 ? result.retryAfterMs() : 5000;
             System.out.printf("[RATE LIMITED] %s/%s - waiting %dms before retry%n", type, baseName, waitMs);
             Thread.sleep(waitMs);
             result = executePost(json);
-            statusCode = result[0];
         }
 
-        assertTrue(statusCode >= 200 && statusCode < 300,
-                String.format("Expected 2xx but got %d for %s/%s", statusCode, type, baseName));
+        assertTrue(result.statusCode() >= 200 && result.statusCode() < 300,
+                String.format("Expected 2xx but got %d for %s/%s: %s", result.statusCode(), type, baseName, result.body()));
 
         Thread.sleep(1000);
     }
 
-    private int[] executePost(String json) throws IOException, InterruptedException {
+    private Result executePost(String json) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(webhookUri)
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
                 .build();
-        HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+        HttpResponse<String> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         int code = response.statusCode();
         long retryAfterMs = 0;
         if (code == 429) {
@@ -107,6 +107,10 @@ class DiscordWebhookSendTest {
                     .map(v -> (long) (Double.parseDouble(v) * 1000))
                     .orElse(0L);
         }
-        return new int[]{code, (int) retryAfterMs};
+        // Discord explains a 400 in the response body, so keep it for the failure message
+        return new Result(code, retryAfterMs, code >= 200 && code < 300 ? "" : response.body());
+    }
+
+    private record Result(int statusCode, long retryAfterMs, String body) {
     }
 }
