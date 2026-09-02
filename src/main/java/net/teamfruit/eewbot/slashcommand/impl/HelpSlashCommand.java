@@ -25,18 +25,18 @@ public class HelpSlashCommand implements ISlashCommand {
 
     @Override
     public Mono<Void> on(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
-        return event.reply().withEmbeds(SlashCommandUtils.createEmbed(lang, ctx)
-                .title("eewbot.scmd.help.title")
-                .description("eewbot.scmd.help.desc")
-                .addField("/setup", "eewbot.scmd.help.field.set.value", false)
-                .addField("/quakeinfo", "eewbot.scmd.help.field.quakeinfo.value", false)
-                .addField("/invite", "eewbot.scmd.help.field.invite.value", false)
-                .addField("/testmessage", "eewbot.scmd.help.field.testmessage.value", false)
-                .addField("/lang", "eewbot.scmd.help.field.lang.value", false)
-                .addField("/unregister", "eewbot.scmd.help.field.unregister.value", false)
-                .addField("/help", "eewbot.scmd.help.field.help.value", false)
-                .addField("eewbot.scmd.help.field.links.name", "eewbot.scmd.help.field.links.value", false)
-                .addField("eewbot.scmd.help.field.legal.name", "eewbot.scmd.help.field.legal.value", false)
-                .toEmbedCreateSpec());
+        return event.reply().withComponents(SlashCommandUtils.render(SlashCommandUtils.createComponent(lang, ctx)
+                .heading("eewbot.scmd.help.title")
+                .text("eewbot.scmd.help.desc")
+                .detail("/setup", "eewbot.scmd.help.field.set.value")
+                .detail("/quakeinfo", "eewbot.scmd.help.field.quakeinfo.value")
+                .detail("/invite", "eewbot.scmd.help.field.invite.value")
+                .detail("/testmessage", "eewbot.scmd.help.field.testmessage.value")
+                .detail("/lang", "eewbot.scmd.help.field.lang.value")
+                .detail("/unregister", "eewbot.scmd.help.field.unregister.value")
+                .detail("/help", "eewbot.scmd.help.field.help.value")
+                .separator()
+                .detail("eewbot.scmd.help.field.links.name", "eewbot.scmd.help.field.links.value")
+                .detail("eewbot.scmd.help.field.legal.name", "eewbot.scmd.help.field.legal.value")));
     }
 }
