@@ -71,10 +71,9 @@ public class SlashCommandHandler {
                         })
                         .doOnError(err -> Log.logger.error("Error during {} command", event.getCommandName(), err))
                         .onErrorResume(err -> replyOrFollowUp(event, commands.get(event.getCommandName()).isDefer(),
-                                createErrorEmbed(getLanguage(ctx, event), ctx)
-                                        .title("eewbot.scmd.error")
-                                        .description(ExceptionUtils.getMessage(err))
-                                        .toEmbedCreateSpec()
+                                render(createErrorComponent(getLanguage(ctx, event), ctx)
+                                        .heading("eewbot.scmd.error")
+                                        .rawText(ExceptionUtils.getMessage(err)))
                         )))
                 .onErrorResume(e -> {
                     Log.logger.error("Unhandled exception during ApplicationCommandInteractionEvent handling", e);

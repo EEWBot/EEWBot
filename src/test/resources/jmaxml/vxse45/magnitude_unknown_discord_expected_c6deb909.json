@@ -1,29 +1,37 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "緊急地震速報 (予報) 第3報",
-      "timestamp": "2026-05-11T01:23:42Z",
-      "color": 255,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "震央",
-          "value": "石川県能登地方",
-          "inline": true
+          "type": 10,
+          "content": "# 緊急地震速報 (予報) 第3報"
         },
         {
-          "name": "深さ",
-          "value": "10km",
-          "inline": true
+          "type": 10,
+          "content": "**震央**\n石川県能登地方"
         },
         {
-          "name": "最大震度",
-          "value": "不明",
-          "inline": false
+          "type": 10,
+          "content": "**深さ**\n10km"
+        },
+        {
+          "type": 14,
+          "divider": true,
+          "spacing": 1
+        },
+        {
+          "type": 10,
+          "content": "**最大震度**\n不明"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • \u003ct:1778462622:F\u003e"
         }
-      ]
+      ],
+      "accent_color": 255,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }
