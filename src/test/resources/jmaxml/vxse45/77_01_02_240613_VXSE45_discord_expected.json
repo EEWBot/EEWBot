@@ -1,34 +1,41 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "緊急地震速報 (予報) 第2報",
-      "timestamp": "2024-04-17T14:14:58Z",
-      "color": 255,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "震央",
-          "value": "豊後水道",
-          "inline": true
+          "type": 10,
+          "content": "# 緊急地震速報 (予報) 第2報"
         },
         {
-          "name": "深さ",
-          "value": "30km",
-          "inline": true
+          "type": 10,
+          "content": "**震央**\n豊後水道"
         },
         {
-          "name": "マグニチュード",
-          "value": "4.5",
-          "inline": true
+          "type": 10,
+          "content": "**深さ**\n30km"
         },
         {
-          "name": "最大震度",
-          "value": "3",
-          "inline": false
+          "type": 10,
+          "content": "**マグニチュード**\n4.5"
+        },
+        {
+          "type": 14,
+          "divider": true,
+          "spacing": 1
+        },
+        {
+          "type": 10,
+          "content": "**最大震度**\n3"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • \u003ct:1713363298:F\u003e"
         }
-      ]
+      ],
+      "accent_color": 255,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }

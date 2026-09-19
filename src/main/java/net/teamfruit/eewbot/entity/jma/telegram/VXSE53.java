@@ -1,10 +1,10 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.entity.EmbedContext;
+import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
-import net.teamfruit.eewbot.entity.discord.PendingEmbed;
+import net.teamfruit.eewbot.entity.discord.IComponentBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
@@ -42,54 +42,54 @@ public interface VXSE53 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
     Optional<String> getFreeFormComment();
 
     @Override
-    default List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
-        IEmbedBuilder builder = factory.get();
+    default List<PendingComponent> createComponents(String lang, ComponentContext ctx, Supplier<IComponentBuilder> factory) {
+        IComponentBuilder builder = factory.get();
         if (isCancelReport()) {
-            builder.title("eewbot.quakeinfo.detail.title");
-            builder.description("eewbot.quakeinfo.detail.cancel");
-            builder.color(SeismicIntensity.UNKNOWN.getColor());
+            builder.heading("eewbot.quakeinfo.detail.title");
+            builder.text("eewbot.quakeinfo.detail.cancel");
+            builder.accent(SeismicIntensity.UNKNOWN.getColor());
         } else if (getHeadTitle().equals("遠地地震に関する情報")) {
             getFreeFormComment().filter(text -> text.contains("噴火が発生")).ifPresentOrElse(text -> {
                 // 海外噴火
-                builder.title("eewbot.quakeinfo.detail.eruption.title");
-                getHypocenterDetailedName().ifPresentOrElse(detailedName -> builder.addField("eewbot.quakeinfo.field.area", detailedName, true),
-                        () -> builder.addField("eewbot.quakeinfo.field.area", getHypocenterName(), true));
-                builder.addField("", StringUtils.substringBefore(text, "（注"), false);
+                builder.heading("eewbot.quakeinfo.detail.eruption.title");
+                getHypocenterDetailedName().ifPresentOrElse(detailedName -> builder.detail("eewbot.quakeinfo.field.area", detailedName),
+                        () -> builder.detail("eewbot.quakeinfo.field.area", getHypocenterName()));
+                builder.rawText(StringUtils.substringBefore(text, "（注"));
             }, () -> {
                 // 海外地震
-                builder.title("eewbot.quakeinfo.detail.overseas.title");
-                builder.description("eewbot.quakeinfo.detail.overseas.desc", "<t:" + getOriginTime().getEpochSecond() + ":f>");
-                getHypocenterDetailedName().ifPresentOrElse(detailedName -> builder.addField("eewbot.quakeinfo.field.epicenter", detailedName, true),
-                        () -> builder.addField("eewbot.quakeinfo.field.epicenter", getHypocenterName(), true));
-                builder.addField("eewbot.quakeinfo.field.magnitude", getMagnitude(), true);
-                getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
+                builder.heading("eewbot.quakeinfo.detail.overseas.title");
+                builder.text("eewbot.quakeinfo.detail.overseas.desc", "<t:" + getOriginTime().getEpochSecond() + ":f>");
+                getHypocenterDetailedName().ifPresentOrElse(detailedName -> builder.detail("eewbot.quakeinfo.field.epicenter", detailedName),
+                        () -> builder.detail("eewbot.quakeinfo.field.epicenter", getHypocenterName()));
+                builder.detail("eewbot.quakeinfo.field.magnitude", getMagnitude());
+                getFreeFormComment().ifPresent(builder::rawText);
             });
-            getForecastComment().ifPresent(forecastComment -> builder.addField("", forecastComment.getText(), false));
+            getForecastComment().ifPresent(forecastComment -> builder.rawText(forecastComment.getText()));
         } else {
-            builder.title("eewbot.quakeinfo.detail.title");
-            builder.description("eewbot.quakeinfo.detail.desc", "<t:" + getOriginTime().getEpochSecond() + ":f>");
-            builder.addField("eewbot.quakeinfo.field.epicenter", getHypocenterName(), true);
-            getDepth().ifPresent(depth -> builder.addField("eewbot.quakeinfo.field.depth", depth, true));
-            builder.addField("eewbot.quakeinfo.field.magnitude", getMagnitude(), true);
-            builder.addField("eewbot.quakeinfo.field.maxintensity", getMaxInt().getSimple(), true);
-            getForecastComment().ifPresent(forecastComment -> builder.addField("", forecastComment.getText(), false));
+            builder.heading("eewbot.quakeinfo.detail.title");
+            builder.text("eewbot.quakeinfo.detail.desc", "<t:" + getOriginTime().getEpochSecond() + ":f>");
+            builder.detail("eewbot.quakeinfo.field.epicenter", getHypocenterName());
+            getDepth().ifPresent(depth -> builder.detail("eewbot.quakeinfo.field.depth", depth));
+            builder.detail("eewbot.quakeinfo.field.magnitude", getMagnitude());
+            builder.separator().detail("eewbot.quakeinfo.field.maxintensity", getMaxInt().getSimple());
+            getForecastComment().ifPresent(forecastComment -> builder.rawText(forecastComment.getText()));
             getVarComment().map(varComment -> varComment.getText().replace("＊印は気象庁以外の震度観測点についての情報です。", ""))
                     .filter(StringUtils::isNotBlank)
-                    .ifPresent(text -> builder.addField("", text, false));
-            getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
-            builder.color(getMaxInt().getColor());
+                    .ifPresent(builder::rawText);
+            getFreeFormComment().ifPresent(builder::rawText);
+            builder.accent(getMaxInt().getColor());
 
             if (ctx.renderer().isAvailable()) {
                 try {
-                    builder.image(ctx.renderer().generateURL(this));
+                    builder.separator().media(ctx.renderer().generateURL(this), null);
                 } catch (Exception e) {
                     Log.logger.error("Failed to generate renderer query", e);
                 }
             }
         }
-        builder.footer(getPublishingOffice(), null);
+        builder.footer(getPublishingOffice());
         builder.timestamp(getReportDateTime());
-        return List.of(builder.toPending());
+        return List.of(builder.build());
     }
 
     @Override

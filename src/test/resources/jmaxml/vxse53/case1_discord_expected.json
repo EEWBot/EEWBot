@@ -1,45 +1,53 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "地震情報",
-      "description": "\u003ct:1765203300:f\u003e頃、地震がありました。",
-      "timestamp": "2025-12-08T14:26:00Z",
-      "color": 15615616,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "震央",
-          "value": "青森県東方沖",
-          "inline": true
+          "type": 10,
+          "content": "# 地震情報"
         },
         {
-          "name": "深さ",
-          "value": "50km",
-          "inline": true
+          "type": 10,
+          "content": "\u003ct:1765203300:f\u003e頃、地震がありました。"
         },
         {
-          "name": "マグニチュード",
-          "value": "7.6",
-          "inline": true
+          "type": 10,
+          "content": "**震央**\n青森県東方沖"
         },
         {
-          "name": "最大震度",
-          "value": "6強",
-          "inline": true
+          "type": 10,
+          "content": "**深さ**\n50km"
         },
         {
-          "name": "",
-          "value": "津波警報等（大津波警報・津波警報あるいは津波注意報）を発表中です。\n                    この地震について、緊急地震速報を発表しています。",
-          "inline": false
+          "type": 10,
+          "content": "**マグニチュード**\n7.6"
         },
         {
-          "name": "",
-          "value": "震源要素を訂正します。\n                    ",
-          "inline": false
+          "type": 14,
+          "divider": true,
+          "spacing": 1
+        },
+        {
+          "type": 10,
+          "content": "**最大震度**\n6強"
+        },
+        {
+          "type": 10,
+          "content": "津波警報等（大津波警報・津波警報あるいは津波注意報）を発表中です。\n                    この地震について、緊急地震速報を発表しています。"
+        },
+        {
+          "type": 10,
+          "content": "震源要素を訂正します。\n                    "
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • \u003ct:1765203960:F\u003e"
         }
-      ]
+      ],
+      "accent_color": 15615616,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }

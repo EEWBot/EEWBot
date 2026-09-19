@@ -10,7 +10,7 @@ import discord4j.core.object.entity.User;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
-import net.teamfruit.eewbot.entity.EmbedContext;
+import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.gateway.GatewayManager;
 import net.teamfruit.eewbot.i18n.I18n;
@@ -171,10 +171,10 @@ public class EEWBotFactory {
 
         // 9. Service construction
         QuakeInfoStore quakeInfoStore = new QuakeInfoStore();
-        EmbedContext embedContext = new EmbedContext(rendererQueryFactory, quakeInfoStore, i18n);
+        ComponentContext componentContext = new ComponentContext(rendererQueryFactory, quakeInfoStore, i18n);
         EEWService service = new EEWService(
                 gateway, deliveryRegistry, adminRegistry,
-                avatarUrl, i18n, embedContext,
+                avatarUrl, i18n, componentContext,
                 scheduledExecutor, httpClient, config
         );
         ExternalWebhookService externalWebhookService = new ExternalWebhookService(config, httpClient);

@@ -1,20 +1,28 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "緊急地震速報 (予報) 第1報",
-      "description": "※この情報は精度が低い可能性があります",
-      "timestamp": "2026-07-28T07:27:21Z",
-      "color": 255,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "震度4程度以上",
-          "value": "熊本県熊本　熊本県天草・芦北",
-          "inline": false
+          "type": 10,
+          "content": "# 緊急地震速報 (予報) 第1報"
+        },
+        {
+          "type": 10,
+          "content": "**震度4程度以上**\n熊本県熊本　熊本県天草・芦北"
+        },
+        {
+          "type": 10,
+          "content": "※この情報は精度が低い可能性があります"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • \u003ct:1785223641:F\u003e"
         }
-      ]
+      ],
+      "accent_color": 255,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }
