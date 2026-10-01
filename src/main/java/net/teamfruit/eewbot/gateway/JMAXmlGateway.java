@@ -127,6 +127,9 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                                 Log.logger.info("JMA XML Report: {}", report);
                                 onNewData(report);
                             }
+                        } catch (final InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            return;
                         } catch (final Exception e) {
                             Log.logger.warn("Failed to process JMA XML Report: {}, retrying on the next poll", id, e);
                             failedIds.add(id);
