@@ -37,6 +37,6 @@ public class HelpSlashCommand implements ISlashCommand {
                 .addField("/help", "eewbot.scmd.help.field.help.value", false)
                 .addField("eewbot.scmd.help.field.links.name", "eewbot.scmd.help.field.links.value", false)
                 .addField("eewbot.scmd.help.field.legal.name", "eewbot.scmd.help.field.legal.value", false)
-                .build());
+                .toEmbedCreateSpec());
     }
 }

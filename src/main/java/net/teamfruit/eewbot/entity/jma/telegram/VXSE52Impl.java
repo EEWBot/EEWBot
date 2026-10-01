@@ -3,6 +3,8 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import net.teamfruit.eewbot.QuakeInfoStore;
 import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingEmbed;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
@@ -11,11 +13,12 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.Earthquake;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Hypocenter;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.JmxSeis;
-import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class VXSE52Impl extends JmxSeis implements VXSE52 {
 
@@ -27,9 +30,9 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     }
 
     @Override
-    public <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
+    public List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
         this.quakeInfoStore = ctx.store();
-        return VXSE52.super.createEmbed(lang, ctx, builder);
+        return VXSE52.super.createEmbeds(lang, ctx, factory);
     }
 
     private Optional<QuakeInfo> getVXSE51() {

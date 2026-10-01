@@ -178,7 +178,10 @@ class AllExpectedJsonGeneratorTest {
         assertThat(report).isNotNull();
 
         // 1. Discord Webhook用JSON生成（rendererなし）
-        DiscordWebhook webhook = report.createWebhook("ja_jp", embedContext);
+        // 分割されたらページ1だけ書き出して黙って壊れるので、ここで止める
+        List<DiscordWebhook> webhooks = report.createWebhooks("ja_jp", embedContext);
+        assertThat(webhooks).hasSize(1);
+        DiscordWebhook webhook = webhooks.get(0);
         String discordJson = gson.toJson(webhook).replaceAll("\\R", "\n");
         Files.writeString(discordPath, discordJson, StandardCharsets.UTF_8);
         System.out.printf("[%s] Discord Webhook JSON生成: %s%n", caseName, discordPath);
@@ -190,8 +193,9 @@ class AllExpectedJsonGeneratorTest {
             assertThat(xmlStreamForRenderer).isNotNull();
             AbstractJMAReport reportForRenderer = xmlMapper.readValue(xmlStreamForRenderer, implClass);
 
-            DiscordWebhook webhookWithRenderer = reportForRenderer.createWebhook("ja_jp", embedContextWithRenderer);
-            String discordJsonWithRenderer = gson.toJson(webhookWithRenderer).replaceAll("\\R", "\n");
+            List<DiscordWebhook> webhooksWithRenderer = reportForRenderer.createWebhooks("ja_jp", embedContextWithRenderer);
+            assertThat(webhooksWithRenderer).hasSize(1);
+            String discordJsonWithRenderer = gson.toJson(webhooksWithRenderer.get(0)).replaceAll("\\R", "\n");
             Path discordRendererPath = Paths.get(baseOutputPath + "_discord_expected_" + rendererHash + ".json");
             Files.writeString(discordRendererPath, discordJsonWithRenderer, StandardCharsets.UTF_8);
             System.out.printf("[%s] Discord Webhook JSON生成 (renderer): %s%n", caseName, discordRendererPath);

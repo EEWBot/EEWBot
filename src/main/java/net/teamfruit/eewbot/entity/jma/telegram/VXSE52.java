@@ -3,6 +3,8 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingEmbed;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
@@ -10,10 +12,11 @@ import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
 import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
-import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, ExternalData {
 
@@ -30,7 +33,8 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
     Optional<String> getFreeFormComment();
 
     @Override
-    default <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
+    default List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
+        IEmbedBuilder builder = factory.get();
         builder.title("eewbot.quakeinfo.epicenter.title");
         if (isCancelReport()) {
             builder.description("eewbot.quakeinfo.epicenter.cancel");
@@ -54,7 +58,7 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
         }
         builder.footer(getPublishingOffice(), null);
         builder.timestamp(getReportDateTime());
-        return builder.build();
+        return List.of(builder.toPending());
     }
 
     @Override

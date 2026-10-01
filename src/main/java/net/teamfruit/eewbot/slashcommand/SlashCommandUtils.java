@@ -8,8 +8,8 @@ import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
-import net.teamfruit.eewbot.i18n.IEmbedBuilder;
+import net.teamfruit.eewbot.entity.discord.I18nEmbedBuilder;
+import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import reactor.core.publisher.Mono;
@@ -32,15 +32,15 @@ public class SlashCommandUtils {
                 .doOnError(err -> Log.logger.error("Error during reply", err));
     }
 
-    public static IEmbedBuilder<EmbedCreateSpec> createEmbed(final String lang, final SlashCommandContext ctx) {
-        return I18nEmbedCreateSpec.builder(lang, ctx.i18n())
+    public static IEmbedBuilder createEmbed(final String lang, final SlashCommandContext ctx) {
+        return I18nEmbedBuilder.builder(lang, ctx.i18n())
                 .color(Color.of(7506394))
                 .author(ctx.username(), "https://github.com/EEWBot/EEWBot", ctx.avatarUrl())
                 .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png");
     }
 
-    public static IEmbedBuilder<EmbedCreateSpec> createErrorEmbed(final String lang, final SlashCommandContext ctx) {
-        return I18nEmbedCreateSpec.builder(lang, ctx.i18n())
+    public static IEmbedBuilder createErrorEmbed(final String lang, final SlashCommandContext ctx) {
+        return I18nEmbedBuilder.builder(lang, ctx.i18n())
                 .color(Color.of(255, 64, 64))
                 .author(ctx.username(), "https://github.com/EEWBot/EEWBot", ctx.avatarUrl())
                 .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png");

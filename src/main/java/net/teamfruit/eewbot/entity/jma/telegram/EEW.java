@@ -3,10 +3,11 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingEmbed;
 import net.teamfruit.eewbot.entity.external.EEWExternalData;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
-import net.teamfruit.eewbot.i18n.IEmbedBuilder;
 import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public interface EEW extends JMAReport, ExternalData {
@@ -128,17 +130,18 @@ public interface EEW extends JMAReport, ExternalData {
     }
 
     @Override
-    default <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder) {
+    default List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
+        IEmbedBuilder builder = factory.get();
         if (isCancelReport()) {
             if (isConcurrent())
                 builder.title("eewbot.eew.eewcancel.concurrent", getConcurrentIndex());
             else
                 builder.title("eewbot.eew.eewcancel");
-            return builder.timestamp(getReportDateTime())
+            return List.of(builder.timestamp(getReportDateTime())
                     .description(getText())
                     .color(Color.YELLOW)
                     .footer(getPublishingOffice(), null)
-                    .build();
+                    .toPending());
         }
 
         boolean eewWarning = isEEWWarning();
@@ -220,7 +223,7 @@ public interface EEW extends JMAReport, ExternalData {
             builder.description("eewbot.eew.inaccurate");
         }
         builder.footer(getPublishingOffice(), null);
-        return builder.build();
+        return List.of(builder.toPending());
     }
 
     @Override

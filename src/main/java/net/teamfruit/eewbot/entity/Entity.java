@@ -1,20 +1,33 @@
 package net.teamfruit.eewbot.entity;
 
 import discord4j.core.spec.MessageCreateSpec;
-import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
-import net.teamfruit.eewbot.i18n.I18nDiscordEmbed;
-import net.teamfruit.eewbot.i18n.I18nEmbedCreateSpec;
-import net.teamfruit.eewbot.i18n.IEmbedBuilder;
+import net.teamfruit.eewbot.entity.discord.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
 
 public interface Entity {
 
-    <T> T createEmbed(String lang, EmbedContext ctx, IEmbedBuilder<T> builder);
+    List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory);
 
-    default MessageCreateSpec createMessage(String lang, EmbedContext ctx) {
-        return MessageCreateSpec.builder().addEmbed(createEmbed(lang, ctx, I18nEmbedCreateSpec.builder(lang, ctx.i18n()))).build();
+    private List<List<PendingEmbed>> pack(final String lang, final EmbedContext ctx) {
+        return EmbedPacker.pack(createEmbeds(lang, ctx, () -> new I18nEmbedBuilder(lang, ctx.i18n())));
     }
 
-    default DiscordWebhook createWebhook(String lang, EmbedContext ctx) {
-        return DiscordWebhook.builder().addEmbed(createEmbed(lang, ctx, I18nDiscordEmbed.builder(lang, ctx.i18n()))).build();
+    default List<MessageCreateSpec> createMessages(final String lang, final EmbedContext ctx) {
+        final List<List<PendingEmbed>> messages = pack(lang, ctx);
+        final List<MessageCreateSpec> specs = new ArrayList<>(messages.size());
+        for (final List<PendingEmbed> message : messages)
+            specs.add(MessageCreateSpec.builder().addAllEmbeds(EmbedRenderer.toEmbedCreateSpecs(message)).build());
+        return specs;
+    }
+
+    default List<DiscordWebhook> createWebhooks(final String lang, final EmbedContext ctx) {
+        final List<List<PendingEmbed>> messages = pack(lang, ctx);
+        final List<DiscordWebhook> webhooks = new ArrayList<>(messages.size());
+        for (final List<PendingEmbed> message : messages)
+            webhooks.add(DiscordWebhook.builder().embeds(EmbedRenderer.toDiscordEmbeds(message)).build());
+        return webhooks;
     }
 }
