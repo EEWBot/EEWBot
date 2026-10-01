@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot;
 
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.gateway.GatewayManager;
 import net.teamfruit.eewbot.i18n.I18n;
@@ -141,6 +142,15 @@ public class EEWBot implements AutoCloseable {
     }
 
     // package-private: used by Factory for event listener registration
+    void handleGuildDeletion(GuildDeleteEvent event) {
+        // Discord also sends GuildDeleteEvent when a guild is temporarily unavailable.
+        if (event.isUnavailable()) {
+            Log.logger.debug("Guild {} is temporarily unavailable, retaining destinations", event.getGuildId().asLong());
+            return;
+        }
+        this.handleDeletion(event.getGuildId().asLong(), true);
+    }
+
     void handleDeletion(long id, boolean isGuild) {
         try {
             if (isGuild)

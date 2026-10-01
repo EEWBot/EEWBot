@@ -202,7 +202,7 @@ public class EEWBotFactory {
 
         // 12. Event listeners (need bot instance)
         Disposable guildDeleteSub = gateway.on(GuildDeleteEvent.class)
-                .subscribe(event -> bot.handleDeletion(event.getGuildId().asLong(), true));
+                .subscribe(bot::handleGuildDeletion);
         Disposable textChannelDeleteSub = gateway.on(TextChannelDeleteEvent.class)
                 .subscribe(event -> bot.handleDeletion(event.getChannel().getId().asLong(), false));
         Disposable threadChannelDeleteSub = gateway.on(ThreadChannelDeleteEvent.class)
