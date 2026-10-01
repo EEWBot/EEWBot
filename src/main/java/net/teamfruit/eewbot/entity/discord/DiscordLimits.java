@@ -49,6 +49,8 @@ public final class DiscordLimits {
                 total += 1;
             else if (c < 0x20 || c == '<' || c == '>' || c == '&' || c == '=' || c == '\'')
                 total += 5;
+            else if (c == '\u2028' || c == '\u2029')
+                total += 3;
         }
         return total;
     }

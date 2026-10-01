@@ -4,6 +4,8 @@ import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.entity.discord.PendingEmbed.PendingField;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -62,6 +64,21 @@ class EmbedByteEstimateTest {
         for (final List<PendingEmbed> message : messages)
             assertThat(serialize(message).getBytes(StandardCharsets.UTF_8).length)
                     .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\u2028", "\u2029"})
+    void unicodeSeparatorsStayUnderEstimatedAndRealByteLimits(final String separator) {
+        final PendingEmbed embed = embedOf(0, "").withDescription(separator.repeat(2000));
+
+        for (final List<PendingEmbed> message : EmbedPacker.pack(List.of(embed))) {
+            final int actual = serialize(message).getBytes(StandardCharsets.UTF_8).length;
+            final int estimated = message.stream().mapToInt(PendingEmbed::byteCount).sum()
+                    + EmbedPacker.MESSAGE_JSON_OVERHEAD;
+
+            assertThat(actual).isLessThanOrEqualTo(estimated);
+            assertThat(actual).isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
+        }
     }
 
     @Test
