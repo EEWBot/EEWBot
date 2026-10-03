@@ -40,7 +40,7 @@ public final class WebhookEffectiveCostEstimator {
     }
 
     private static Cost cost(final PendingComponent component, final boolean insideContainer) {
-        if (component instanceof PendingComponent.Text text)
+        if (component instanceof PendingComponent.TextDisplay text)
             return Cost.known(ComponentLimits.utf8Bytes(text.content())
                     + (insideContainer ? CONTAINER_TEXT_COST : TOP_LEVEL_TEXT_COST));
         if (component instanceof PendingComponent.Separator separator) {
@@ -51,7 +51,7 @@ public final class WebhookEffectiveCostEstimator {
         if (component instanceof PendingComponent.Container container) {
             long value = CONTAINER_WRAPPER_COST;
             boolean indeterminate = false;
-            for (final PendingComponent child : container.children()) {
+            for (final PendingComponent child : container.components()) {
                 final Cost childCost = cost(child, true);
                 value += childCost.minimumKnownCost();
                 indeterminate |= childCost.indeterminate();
@@ -63,13 +63,13 @@ public final class WebhookEffectiveCostEstimator {
             return new Cost(value, indeterminate);
         }
         if (component instanceof PendingComponent.Section section) {
-            final long minimumTextCost = section.children().stream()
+            final long minimumTextCost = section.components().stream()
                     .mapToLong(text -> ComponentLimits.utf8Bytes(text.content())).sum();
             return new Cost(minimumTextCost, true);
         }
         if (component instanceof PendingComponent.MediaGallery gallery && isCharacterized(gallery)) {
             long value = MEDIA_GALLERY_WRAPPER_COST;
-            for (final PendingComponent.MediaItem item : gallery.items())
+            for (final PendingComponent.MediaGalleryItem item : gallery.items())
                 value += mediaItemCost(item);
             return Cost.known(value);
         }
@@ -81,7 +81,7 @@ public final class WebhookEffectiveCostEstimator {
      * The cost of a plain media item scales with its URL, plus one byte once the URL needs a longer length prefix.
      * Container children are not characterized separately, so the top-level cost is used as an upper bound.
      */
-    private static long mediaItemCost(final PendingComponent.MediaItem item) {
+    private static long mediaItemCost(final PendingComponent.MediaGalleryItem item) {
         final long url = ComponentLimits.utf8Bytes(item.url());
         return url + MEDIA_ITEM_COST + (url >= MEDIA_URL_LENGTH_PREFIX_THRESHOLD ? 1 : 0);
     }

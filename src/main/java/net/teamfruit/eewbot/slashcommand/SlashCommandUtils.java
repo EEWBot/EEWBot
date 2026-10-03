@@ -8,8 +8,8 @@ import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.discord.ComponentRenderer;
-import net.teamfruit.eewbot.entity.discord.I18nComponentBuilder;
-import net.teamfruit.eewbot.entity.discord.IComponentBuilder;
+import net.teamfruit.eewbot.entity.discord.ContainerBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import reactor.core.publisher.Mono;
@@ -34,19 +34,15 @@ public class SlashCommandUtils {
                 .doOnError(err -> Log.logger.error("Error during reply", err));
     }
 
-    public static IComponentBuilder createComponent(final String lang, final SlashCommandContext ctx) {
-        return I18nComponentBuilder.builder(lang, ctx.i18n())
-                .accent(7506394)
-                .footer("EEWBot/EEWBot");
+    public static ContainerBuilder createContainer() {
+        return PendingComponent.Container.builder().accentColor(7506394);
     }
 
-    public static IComponentBuilder createErrorComponent(final String lang, final SlashCommandContext ctx) {
-        return I18nComponentBuilder.builder(lang, ctx.i18n())
-                .accent(0xff4040)
-                .footer("EEWBot/EEWBot");
+    public static ContainerBuilder createErrorContainer() {
+        return PendingComponent.Container.builder().accentColor(0xff4040);
     }
 
-    public static List<TopLevelMessageComponent> render(final IComponentBuilder builder) {
+    public static List<TopLevelMessageComponent> render(final ContainerBuilder builder) {
         return ComponentRenderer.toDiscord4J(List.of(builder.build()));
     }
 

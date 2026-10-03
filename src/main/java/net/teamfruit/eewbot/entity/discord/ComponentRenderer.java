@@ -16,13 +16,13 @@ public final class ComponentRenderer {
 
     private static TopLevelMessageComponent toTopLevel(final PendingComponent component) {
         if (component instanceof PendingComponent.Container container) {
-            final List<ICanBeUsedInContainerComponent> children = container.children().stream()
+            final List<ICanBeUsedInContainerComponent> children = container.components().stream()
                     .map(ComponentRenderer::toContainerChild).toList();
             if (container.accentColor() != null)
                 return Container.of(Color.of(container.accentColor()), container.spoiler(), children);
             return Container.of(container.spoiler(), children);
         }
-        if (component instanceof PendingComponent.Text text)
+        if (component instanceof PendingComponent.TextDisplay text)
             return TextDisplay.of(text.content());
         if (component instanceof PendingComponent.Section section)
             return toSection(section);
@@ -38,17 +38,23 @@ public final class ComponentRenderer {
     }
 
     private static Section toSection(final PendingComponent.Section section) {
-        final List<ICanBeUsedInSectionComponent> children = section.children().stream()
+        final List<ICanBeUsedInSectionComponent> children = section.components().stream()
                 .map(text -> (ICanBeUsedInSectionComponent) TextDisplay.of(text.content())).toList();
         final PendingComponent.Accessory accessory = section.accessory();
-        if (accessory instanceof PendingComponent.Thumbnail thumbnail)
-            return Section.of(Thumbnail.of(UnfurledMediaItem.of(thumbnail.url()), thumbnail.description(), thumbnail.spoiler()), children);
+        if (accessory instanceof PendingComponent.Thumbnail thumbnail) {
+            final UnfurledMediaItem media = UnfurledMediaItem.of(thumbnail.url());
+            final Thumbnail rendered = thumbnail.description() == null ? Thumbnail.of(media, thumbnail.spoiler())
+                    : Thumbnail.of(media, thumbnail.description(), thumbnail.spoiler());
+            return Section.of(rendered, children);
+        }
         throw new IllegalArgumentException("Unsupported section accessory: " + accessory);
     }
 
     private static MediaGallery toGallery(final PendingComponent.MediaGallery gallery) {
         return MediaGallery.of(gallery.items().stream()
-                .map(item -> MediaGalleryItem.of(UnfurledMediaItem.of(item.url()), item.description(), item.spoiler()))
+                .map(item -> item.description() == null
+                        ? MediaGalleryItem.of(UnfurledMediaItem.of(item.url()), item.spoiler())
+                        : MediaGalleryItem.of(UnfurledMediaItem.of(item.url()), item.description(), item.spoiler()))
                 .toList());
     }
 
@@ -63,12 +69,12 @@ public final class ComponentRenderer {
 
     private static DiscordComponent toWebhook(final PendingComponent component) {
         if (component instanceof PendingComponent.Container container)
-            return new DiscordComponent.Container(17, container.children().stream().map(ComponentRenderer::toWebhook).toList(),
+            return new DiscordComponent.Container(17, container.components().stream().map(ComponentRenderer::toWebhook).toList(),
                     container.accentColor(), container.spoiler());
-        if (component instanceof PendingComponent.Text text)
+        if (component instanceof PendingComponent.TextDisplay text)
             return new DiscordComponent.TextDisplay(10, text.content());
         if (component instanceof PendingComponent.Section section)
-            return new DiscordComponent.Section(9, section.children().stream().map(ComponentRenderer::toWebhook).toList(),
+            return new DiscordComponent.Section(9, section.components().stream().map(ComponentRenderer::toWebhook).toList(),
                     toWebhookAccessory(section.accessory()));
         if (component instanceof PendingComponent.MediaGallery gallery)
             return new DiscordComponent.MediaGallery(12, gallery.items().stream()

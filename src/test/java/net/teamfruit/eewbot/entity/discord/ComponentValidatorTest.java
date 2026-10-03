@@ -18,8 +18,8 @@ class ComponentValidatorTest {
 
         forty.add(new PendingComponent.Separator(true, PendingComponent.Spacing.SMALL));
         assertThat(ComponentValidator.isValid(forty)).isFalse();
-        assertThat(ComponentValidator.isValid(List.of(new PendingComponent.Text("a".repeat(4000))))).isTrue();
-        assertThat(ComponentValidator.isValid(List.of(new PendingComponent.Text("a".repeat(4001))))).isFalse();
+        assertThat(ComponentValidator.isValid(List.of(new PendingComponent.TextDisplay("a".repeat(4000))))).isTrue();
+        assertThat(ComponentValidator.isValid(List.of(new PendingComponent.TextDisplay("a".repeat(4001))))).isFalse();
     }
 
     @Test
@@ -28,7 +28,7 @@ class ComponentValidatorTest {
         PendingComponent.Section emptySection = new PendingComponent.Section(List.of(), thumbnail);
         PendingComponent.MediaGallery emptyGallery = new PendingComponent.MediaGallery(List.of());
         PendingComponent.Container nested = new PendingComponent.Container(List.of(
-                new PendingComponent.Container(List.of(new PendingComponent.Text("nested")), null, false)), null, false);
+                new PendingComponent.Container(List.of(new PendingComponent.TextDisplay("nested")), null, false)), null, false);
 
         assertThat(ComponentValidator.isValid(List.of(emptySection))).isFalse();
         assertThat(ComponentValidator.isValid(List.of(emptyGallery))).isFalse();

@@ -5,7 +5,6 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.discord.ComponentPacker;
 import net.teamfruit.eewbot.entity.discord.ComponentRenderer;
-import net.teamfruit.eewbot.entity.discord.I18nComponentBuilder;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.ISlashCommand;
 import net.teamfruit.eewbot.slashcommand.SlashCommandContext;
@@ -35,8 +34,7 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
     public Mono<Void> on(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
         ComponentContext componentCtx = new ComponentContext(ctx.rendererQueryFactory(), ctx.quakeInfoStore(), ctx.i18n());
         return ctx.quakeInfoStore().getLatestReport()
-                .map(quakeInfo -> ComponentPacker.pack(quakeInfo.createComponents(lang, componentCtx,
-                        () -> new I18nComponentBuilder(lang, componentCtx.i18n()))))
+                .map(quakeInfo -> ComponentPacker.pack(quakeInfo.createComponents(lang, componentCtx)))
                 // components が順序どおり届くよう、フォローアップは 1 つずつ順番に送信する
                 .map(messages -> Flux.fromIterable(messages)
                         .concatMap(message -> event.createFollowup().withComponents(ComponentRenderer.toDiscord4J(message)))

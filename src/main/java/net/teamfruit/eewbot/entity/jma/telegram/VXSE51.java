@@ -3,7 +3,7 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.discord.IComponentBuilder;
+import net.teamfruit.eewbot.entity.discord.ContainerBuilder;
 import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
@@ -15,7 +15,6 @@ import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Supplier;
 
 public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture, ExternalData {
 
@@ -30,14 +29,14 @@ public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
     Optional<String> getFreeFormComment();
 
     @Override
-    default List<PendingComponent> createComponents(String lang, ComponentContext ctx, Supplier<IComponentBuilder> factory) {
-        IComponentBuilder builder = factory.get();
-        builder.heading("eewbot.quakeinfo.intensity.title");
+    default List<PendingComponent> createComponents(String lang, ComponentContext ctx) {
+        ContainerBuilder builder = PendingComponent.Container.builder();
+        builder.textDisplay("# " + ctx.i18n().get(lang, "eewbot.quakeinfo.intensity.title"));
         if (isCancelReport()) {
-            builder.text("eewbot.quakeinfo.intensity.cancel");
-            builder.accent(SeismicIntensity.UNKNOWN.getColor());
+            builder.textDisplay(ctx.i18n().get(lang, "eewbot.quakeinfo.intensity.cancel"));
+            builder.accentColor(SeismicIntensity.UNKNOWN.getColor());
         } else {
-            builder.text("eewbot.quakeinfo.intensity.desc", "<t:" + getTargetDateTime().getEpochSecond() + ":f>");
+            builder.textDisplay(ctx.i18n().format(lang, "eewbot.quakeinfo.intensity.desc", "<t:" + getTargetDateTime().getEpochSecond() + ":f>"));
             Map<SeismicIntensity, StringBuilder> intensityMap = new EnumMap<>(SeismicIntensity.class);
             getPrefs().stream().flatMap(pref -> pref.getAreas().stream())
                     .forEach(area -> {
@@ -52,23 +51,24 @@ public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
                 SeismicIntensity line = intensities[i];
                 StringBuilder sb = intensityMap.get(line);
                 if (sb != null) {
-                    builder.detail("eewbot.quakeinfo.field.intensity", sb.toString(), line.getSimple());
+                    builder.textDisplay("**" + ctx.i18n().format(lang, "eewbot.quakeinfo.field.intensity", line.getSimple())
+                            + "**\n" + sb);
                 }
             }
-            getForecastComment().ifPresent(forecastComment -> builder.rawText(forecastComment.getText()));
-            getFreeFormComment().ifPresent(builder::rawText);
-            builder.accent(getMaxInt().getColor());
+            getForecastComment().ifPresent(forecastComment -> builder.textDisplay(forecastComment.getText()));
+            getFreeFormComment().ifPresent(builder::textDisplay);
+            builder.accentColor(getMaxInt().getColor());
 
             if (ctx.renderer().isAvailable()) {
                 try {
-                    builder.separator().media(ctx.renderer().generateURL(this), null);
+                    builder.separator().mediaGallery(PendingComponent.MediaGalleryItem.of(ctx.renderer().generateURL(this), null, false));
                 } catch (Exception e) {
                     Log.logger.error("Failed to generate renderer query", e);
                 }
             }
         }
-        builder.footer(getPublishingOffice());
-        builder.timestamp(getReportDateTime());
+        builder.textDisplay("-# " + ctx.i18n().get(lang, getPublishingOffice())
+                + " • <t:" + getReportDateTime().getEpochSecond() + ":F>");
         return List.of(builder.build());
     }
 

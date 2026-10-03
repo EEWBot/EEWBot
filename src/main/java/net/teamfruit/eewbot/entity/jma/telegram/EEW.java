@@ -3,7 +3,7 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.discord.IComponentBuilder;
+import net.teamfruit.eewbot.entity.discord.ContainerBuilder;
 import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.entity.external.EEWExternalData;
 import net.teamfruit.eewbot.entity.external.ExternalData;
@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public interface EEW extends JMAReport, ExternalData {
@@ -130,17 +129,17 @@ public interface EEW extends JMAReport, ExternalData {
     }
 
     @Override
-    default List<PendingComponent> createComponents(String lang, ComponentContext ctx, Supplier<IComponentBuilder> factory) {
-        IComponentBuilder builder = factory.get();
+    default List<PendingComponent> createComponents(String lang, ComponentContext ctx) {
+        ContainerBuilder builder = PendingComponent.Container.builder();
         if (isCancelReport()) {
             if (isConcurrent())
-                builder.heading("eewbot.eew.eewcancel.concurrent", getConcurrentIndex());
+                builder.textDisplay("# " + ctx.i18n().format(lang, "eewbot.eew.eewcancel.concurrent", getConcurrentIndex()));
             else
-                builder.heading("eewbot.eew.eewcancel");
-            return List.of(builder.timestamp(getReportDateTime())
-                    .rawText(getText())
-                    .accent(Color.YELLOW)
-                    .footer(getPublishingOffice())
+                builder.textDisplay("# " + ctx.i18n().get(lang, "eewbot.eew.eewcancel"));
+            return List.of(builder.textDisplay(getText())
+                    .accentColor(Color.YELLOW)
+                    .textDisplay("-# " + ctx.i18n().get(lang, getPublishingOffice())
+                            + " • <t:" + getReportDateTime().getEpochSecond() + ":F>")
                     .build());
         }
 
@@ -148,80 +147,82 @@ public interface EEW extends JMAReport, ExternalData {
         if (eewWarning) {
             if (isLastInfo()) {
                 if (isConcurrent())
-                    builder.heading("eewbot.eew.eewalert.final.concurrent", getConcurrentIndex());
+                    builder.textDisplay("# " + ctx.i18n().format(lang, "eewbot.eew.eewalert.final.concurrent", getConcurrentIndex()));
                 else
-                    builder.heading("eewbot.eew.eewalert.final");
+                    builder.textDisplay("# " + ctx.i18n().get(lang, "eewbot.eew.eewalert.final"));
             } else {
                 if (isConcurrent())
-                    builder.heading("eewbot.eew.eewalert.num.concurrent", getConcurrentIndex(), getSerial());
+                    builder.textDisplay("# " + ctx.i18n().format(lang, "eewbot.eew.eewalert.num.concurrent", getConcurrentIndex(), getSerial()));
                 else
-                    builder.heading("eewbot.eew.eewalert.num", getSerial());
+                    builder.textDisplay("# " + ctx.i18n().format(lang, "eewbot.eew.eewalert.num", getSerial()));
             }
-            builder.accent(Color.RED);
+            builder.accentColor(Color.RED);
         } else {
             if (isLastInfo()) {
                 if (isConcurrent())
-                    builder.heading("eewbot.eew.eewprediction.final.concurrent", getConcurrentIndex());
+                    builder.textDisplay("# " + ctx.i18n().format(lang, "eewbot.eew.eewprediction.final.concurrent", getConcurrentIndex()));
                 else
-                    builder.heading("eewbot.eew.eewprediction.final");
+                    builder.textDisplay("# " + ctx.i18n().get(lang, "eewbot.eew.eewprediction.final"));
             } else {
                 if (isConcurrent())
-                    builder.heading("eewbot.eew.eewprediction.num.concurrent", getConcurrentIndex(), getSerial());
+                    builder.textDisplay("# " + ctx.i18n().format(lang, "eewbot.eew.eewprediction.num.concurrent", getConcurrentIndex(), getSerial()));
                 else
-                    builder.heading("eewbot.eew.eewprediction.num", getSerial());
+                    builder.textDisplay("# " + ctx.i18n().format(lang, "eewbot.eew.eewprediction.num", getSerial()));
             }
-            builder.accent(Color.BLUE);
+            builder.accentColor(Color.BLUE);
         }
-        builder.timestamp(getReportDateTime());
         List<ForecastRegion> forecastRegions = getForecastRegions();
         ForecastMaxInt forecastMaxInt = getForecastMaxInt();
         if (!Strings.CS.equals(getCondition(), "仮定震源要素")) {
-            builder.detail("eewbot.eew.epicenter", getHypocenterName());
+            builder.textDisplay("**" + ctx.i18n().get(lang, "eewbot.eew.epicenter") + "**\n" + getHypocenterName());
             String depthCondition = getDepthCondition();
             if (depthCondition != null) {
-                builder.detail("eewbot.eew.depth", depthCondition);
+                builder.textDisplay("**" + ctx.i18n().get(lang, "eewbot.eew.depth") + "**\n" + depthCondition);
             } else {
-                builder.detail("eewbot.eew.depth", "eewbot.eew.km", getDepthValue());
+                builder.textDisplay("**" + ctx.i18n().get(lang, "eewbot.eew.depth") + "**\n"
+                        + ctx.i18n().format(lang, "eewbot.eew.km", getDepthValue()));
             }
             String magnitudeValue = getMagnitudeValue();
             if (magnitudeValue != null) {
-                builder.detail("eewbot.eew.magnitude", magnitudeValue);
+                builder.textDisplay("**" + ctx.i18n().get(lang, "eewbot.eew.magnitude") + "**\n" + magnitudeValue);
             }
             if (forecastMaxInt != null) {
-                builder.separator().detail("eewbot.eew.forecastseismicintensity",
-                        SeismicIntensity.get(forecastMaxInt.from()).getSimple());
+                builder.separator().textDisplay("**" + ctx.i18n().get(lang, "eewbot.eew.forecastseismicintensity") + "**\n"
+                        + SeismicIntensity.get(forecastMaxInt.from()).getSimple());
             }
         } else if (forecastRegions != null) {
             if (forecastRegions.isEmpty()) {
                 if (forecastMaxInt != null) {
-                    builder.detail("eewbot.eew.plumseismicintensityplus", "eewbot.eew.near",
-                            SeismicIntensity.get(forecastMaxInt.from()).getSimple(),
-                            getHypocenterName());
+                    builder.textDisplay("**" + ctx.i18n().format(lang, "eewbot.eew.plumseismicintensityplus",
+                            SeismicIntensity.get(forecastMaxInt.from()).getSimple()) + "**\n"
+                            + ctx.i18n().format(lang, "eewbot.eew.near",
+                            SeismicIntensity.get(forecastMaxInt.from()).getSimple(), getHypocenterName()));
                 }
             } else {
                 plumRegionsByMaxInt(forecastRegions)
                         .forEach(entry -> {
                             if (entry.getKey().to().equals("over")) {
-                                builder.detail("eewbot.eew.plumseismicintensityplus",
-                                        entry.getValue(), SeismicIntensity.get(entry.getKey().from()).getSimple());
+                                builder.textDisplay("**" + ctx.i18n().format(lang, "eewbot.eew.plumseismicintensityplus",
+                                        SeismicIntensity.get(entry.getKey().from()).getSimple()) + "**\n" + entry.getValue());
                             } else {
-                                builder.detail("eewbot.eew.plumseismicintensity",
-                                        entry.getValue(), SeismicIntensity.get(entry.getKey().to()).getSimple());
+                                builder.textDisplay("**" + ctx.i18n().format(lang, "eewbot.eew.plumseismicintensity",
+                                        SeismicIntensity.get(entry.getKey().to()).getSimple()) + "**\n" + entry.getValue());
                             }
                         });
             }
         }
 
         if (eewWarning) {
-            builder.detail("eewbot.eew.warningtext", getWarningRegions().stream()
+            builder.textDisplay("**" + ctx.i18n().get(lang, "eewbot.eew.warningtext") + "**\n" + getWarningRegions().stream()
                     .map(WarningRegion::name)
                     .collect(Collectors.joining(" ")));
         }
 
         if (!isAccurateEnough()) {
-            builder.text("eewbot.eew.inaccurate");
+            builder.textDisplay(ctx.i18n().get(lang, "eewbot.eew.inaccurate"));
         }
-        builder.footer(getPublishingOffice());
+        builder.textDisplay("-# " + ctx.i18n().get(lang, getPublishingOffice())
+                + " • <t:" + getReportDateTime().getEpochSecond() + ":F>");
         return List.of(builder.build());
     }
 

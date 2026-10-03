@@ -25,12 +25,12 @@ class ComponentPackerTest {
 
     private static void collectText(final List<PendingComponent> components, final StringBuilder result) {
         for (PendingComponent component : components) {
-            if (component instanceof PendingComponent.Text text)
+            if (component instanceof PendingComponent.TextDisplay text)
                 result.append(text.content());
             else if (component instanceof PendingComponent.Container nested)
-                collectText(nested.children(), result);
+                collectText(nested.components(), result);
             else if (component instanceof PendingComponent.Section section)
-                section.children().forEach(text -> result.append(text.content()));
+                section.components().forEach(text -> result.append(text.content()));
         }
     }
 
@@ -51,10 +51,10 @@ class ComponentPackerTest {
     @Test
     void acceptsTextLimitAndPaginatesLimitPlusOneWithoutLoss() {
         String exact = "a".repeat(ComponentLimits.MAX_TEXT_DISPLAY_CODE_POINTS_PER_MESSAGE);
-        assertThat(ComponentPacker.pack(List.of(container(List.of(new PendingComponent.Text(exact)))))).hasSize(1);
+        assertThat(ComponentPacker.pack(List.of(container(List.of(new PendingComponent.TextDisplay(exact)))))).hasSize(1);
 
         String over = exact + "b";
-        List<List<PendingComponent>> pages = ComponentPacker.pack(List.of(container(List.of(new PendingComponent.Text(over)))));
+        List<List<PendingComponent>> pages = ComponentPacker.pack(List.of(container(List.of(new PendingComponent.TextDisplay(over)))));
         assertThat(pages).hasSize(2);
         assertThat(allText(pages)).isEqualTo(over);
     }
@@ -62,7 +62,7 @@ class ComponentPackerTest {
     @Test
     void countsUnicodeCodePointsAndPreservesFourByteCharacters() {
         String emoji = "😀".repeat(4001);
-        List<List<PendingComponent>> pages = ComponentPacker.pack(List.of(container(List.of(new PendingComponent.Text(emoji)))));
+        List<List<PendingComponent>> pages = ComponentPacker.pack(List.of(container(List.of(new PendingComponent.TextDisplay(emoji)))));
         assertThat(pages).hasSizeGreaterThan(1);
         assertThat(allText(pages)).isEqualTo(emoji);
         pages.forEach(page -> assertThat(ComponentPacker.textCodePoints(page)).isLessThanOrEqualTo(4000));
@@ -73,9 +73,9 @@ class ComponentPackerTest {
         String plain = "a".repeat(3386);
         String escaped = "\"".repeat(3386);
         WebhookEffectiveCostEstimator.Safe plainEstimate = (WebhookEffectiveCostEstimator.Safe)
-                WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.Text(plain)));
+                WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.TextDisplay(plain)));
         WebhookEffectiveCostEstimator.Safe escapedEstimate = (WebhookEffectiveCostEstimator.Safe)
-                WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.Text(escaped)));
+                WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.TextDisplay(escaped)));
 
         assertThat(escapedEstimate.effectiveCost()).isEqualTo(plainEstimate.effectiveCost());
         int plainJsonBytes = Codecs.GSON.toJson(new DiscordComponent.TextDisplay(10, plain))
@@ -90,16 +90,16 @@ class ComponentPackerTest {
         String exact = "あ".repeat(3386);
         String over = exact + "a";
 
-        assertThat(WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.Text(exact))))
+        assertThat(WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.TextDisplay(exact))))
                 .isEqualTo(new WebhookEffectiveCostEstimator.Safe(10170));
-        assertThat(WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.Text(over))))
+        assertThat(WebhookEffectiveCostEstimator.estimate(List.of(new PendingComponent.TextDisplay(over))))
                 .isEqualTo(new WebhookEffectiveCostEstimator.TooLarge(10171));
-        assertThat(ComponentPacker.fit(List.of(new PendingComponent.Text(exact))))
+        assertThat(ComponentPacker.fit(List.of(new PendingComponent.TextDisplay(exact))))
                 .isEqualTo(ComponentPacker.Fit.SAFE);
-        assertThat(ComponentPacker.fit(List.of(new PendingComponent.Text(over))))
+        assertThat(ComponentPacker.fit(List.of(new PendingComponent.TextDisplay(over))))
                 .isEqualTo(ComponentPacker.Fit.DOES_NOT_FIT);
-        assertThat(ComponentPacker.pack(List.of(new PendingComponent.Text(exact)))).hasSize(1);
-        List<List<PendingComponent>> pages = ComponentPacker.pack(List.of(new PendingComponent.Text(over)));
+        assertThat(ComponentPacker.pack(List.of(new PendingComponent.TextDisplay(exact)))).hasSize(1);
+        List<List<PendingComponent>> pages = ComponentPacker.pack(List.of(new PendingComponent.TextDisplay(over)));
         assertThat(pages).hasSize(2);
         assertThat(allText(pages)).isEqualTo(over);
     }
@@ -109,19 +109,19 @@ class ComponentPackerTest {
         PendingComponent.Thumbnail thumbnail = new PendingComponent.Thumbnail(
                 "https://example.com/a.png", null, false);
         PendingComponent.Section exact = new PendingComponent.Section(List.of(
-                new PendingComponent.Text("a"), new PendingComponent.Text("b"), new PendingComponent.Text("c")), thumbnail);
+                new PendingComponent.TextDisplay("a"), new PendingComponent.TextDisplay("b"), new PendingComponent.TextDisplay("c")), thumbnail);
         PendingComponent.Section over = new PendingComponent.Section(List.of(
-                new PendingComponent.Text("a"), new PendingComponent.Text("b"),
-                new PendingComponent.Text("c"), new PendingComponent.Text("d")), thumbnail);
+                new PendingComponent.TextDisplay("a"), new PendingComponent.TextDisplay("b"),
+                new PendingComponent.TextDisplay("c"), new PendingComponent.TextDisplay("d")), thumbnail);
         PendingComponent.Container exactPacked = (PendingComponent.Container) ComponentPacker
                 .pack(List.of(container(List.of(exact)))).getFirst().getFirst();
-        assertThat(((PendingComponent.Section) exactPacked.children().getFirst()).children()).hasSize(3);
+        assertThat(((PendingComponent.Section) exactPacked.components().getFirst()).components()).hasSize(3);
         List<List<PendingComponent>> overPages = ComponentPacker.pack(List.of(container(List.of(over))));
         assertThat(overPages).hasSize(2);
         assertThat(overPages).allSatisfy(page -> assertThat(
-                ((PendingComponent.Container) page.getFirst()).children()).hasSize(1));
+                ((PendingComponent.Container) page.getFirst()).components()).hasSize(1));
         PendingComponent.Container overPacked = (PendingComponent.Container) overPages.getFirst().getFirst();
-        assertThat(((PendingComponent.Section) overPacked.children().getFirst()).children()).hasSize(3);
+        assertThat(((PendingComponent.Section) overPacked.components().getFirst()).components()).hasSize(3);
     }
 
     @Test
@@ -131,43 +131,43 @@ class ComponentPackerTest {
         assertThatThrownBy(() -> ComponentPacker.pack(List.of(container(List.of(section)))))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> ComponentPacker.pack(List.of(container(List.of(container(List.of(
-                new PendingComponent.Text("nested"))))))))
+                new PendingComponent.TextDisplay("nested"))))))))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void splitsMediaGalleriesAtTenItems() {
-        List<PendingComponent.MediaItem> items = new ArrayList<>();
+        List<PendingComponent.MediaGalleryItem> items = new ArrayList<>();
         for (int i = 0; i < 11; i++)
-            items.add(new PendingComponent.MediaItem("https://example.com/" + i + ".png", "image " + i, false));
+            items.add(new PendingComponent.MediaGalleryItem("https://example.com/" + i + ".png", "image " + i, false));
         List<List<PendingComponent>> messages = ComponentPacker.pack(List.of(container(List.of(new PendingComponent.MediaGallery(items)))));
         assertThat(messages).hasSize(2);
         PendingComponent.Container first = (PendingComponent.Container) messages.getFirst().getFirst();
         PendingComponent.Container second = (PendingComponent.Container) messages.getLast().getFirst();
-        assertThat(first.children()).hasSize(1);
-        assertThat(second.children()).hasSize(1);
-        assertThat(((PendingComponent.MediaGallery) first.children().getFirst()).items()).hasSize(10);
-        assertThat(((PendingComponent.MediaGallery) second.children().getFirst()).items()).hasSize(1);
+        assertThat(first.components()).hasSize(1);
+        assertThat(second.components()).hasSize(1);
+        assertThat(((PendingComponent.MediaGallery) first.components().getFirst()).items()).hasSize(10);
+        assertThat(((PendingComponent.MediaGallery) second.components().getFirst()).items()).hasSize(1);
     }
 
     @Test
     void isolatesUnknownMediaWithItsSeparatorAndPreservesOrder() {
         PendingComponent.MediaGallery gallery = new PendingComponent.MediaGallery(List.of(
-                new PendingComponent.MediaItem("https://example.com/image.png", "described", false)));
+                new PendingComponent.MediaGalleryItem("https://example.com/image.png", "described", false)));
         List<List<PendingComponent>> messages = ComponentPacker.pack(List.of(container(List.of(
-                new PendingComponent.Text("あ".repeat(3000)),
+                new PendingComponent.TextDisplay("あ".repeat(3000)),
                 new PendingComponent.Separator(true, PendingComponent.Spacing.SMALL),
                 gallery,
-                new PendingComponent.Text("footer")))));
+                new PendingComponent.TextDisplay("footer")))));
 
         assertThat(messages).hasSize(3);
         PendingComponent.Container before = (PendingComponent.Container) messages.get(0).getFirst();
         PendingComponent.Container isolated = (PendingComponent.Container) messages.get(1).getFirst();
         PendingComponent.Container after = (PendingComponent.Container) messages.get(2).getFirst();
-        assertThat(before.children()).containsExactly(new PendingComponent.Text("あ".repeat(3000)));
-        assertThat(isolated.children()).containsExactly(
+        assertThat(before.components()).containsExactly(new PendingComponent.TextDisplay("あ".repeat(3000)));
+        assertThat(isolated.components()).containsExactly(
                 new PendingComponent.Separator(true, PendingComponent.Spacing.SMALL), gallery);
-        assertThat(after.children()).containsExactly(new PendingComponent.Text("footer"));
+        assertThat(after.components()).containsExactly(new PendingComponent.TextDisplay("footer"));
         assertThat(ComponentPacker.fit(messages.get(0))).isEqualTo(ComponentPacker.Fit.SAFE);
         assertThat(ComponentPacker.fit(messages.get(1))).isEqualTo(ComponentPacker.Fit.INDETERMINATE);
         assertThat(ComponentPacker.fit(messages.get(2))).isEqualTo(ComponentPacker.Fit.SAFE);
@@ -176,13 +176,13 @@ class ComponentPackerTest {
     @Test
     void doesNotCreateEmptyContainerWhenMovingSeparatorToUnknownMedia() {
         PendingComponent.MediaGallery gallery = new PendingComponent.MediaGallery(List.of(
-                new PendingComponent.MediaItem("https://example.com/image.png", "described", false)));
+                new PendingComponent.MediaGalleryItem("https://example.com/image.png", "described", false)));
         List<List<PendingComponent>> messages = ComponentPacker.pack(List.of(container(List.of(
                 new PendingComponent.Separator(true, PendingComponent.Spacing.SMALL), gallery))));
 
         assertThat(messages).hasSize(1);
         PendingComponent.Container isolated = (PendingComponent.Container) messages.getFirst().getFirst();
-        assertThat(isolated.children()).containsExactly(
+        assertThat(isolated.components()).containsExactly(
                 new PendingComponent.Separator(true, PendingComponent.Spacing.SMALL), gallery);
     }
 
@@ -192,17 +192,17 @@ class ComponentPackerTest {
         PendingComponent.Thumbnail thumbnail = new PendingComponent.Thumbnail(
                 "https://example.com/thumb.png", null, false);
         PendingComponent.Section section = new PendingComponent.Section(
-                List.of(new PendingComponent.Text(text)), thumbnail);
+                List.of(new PendingComponent.TextDisplay(text)), thumbnail);
         List<List<PendingComponent>> messages = ComponentPacker.pack(List.of(container(List.of(
                 new PendingComponent.Separator(true, PendingComponent.Spacing.SMALL), section))));
 
         assertThat(messages).hasSize(2);
         PendingComponent.Container first = (PendingComponent.Container) messages.getFirst().getFirst();
         PendingComponent.Container second = (PendingComponent.Container) messages.getLast().getFirst();
-        assertThat(first.children().getFirst()).isInstanceOf(PendingComponent.Separator.class);
-        assertThat(first.children().getLast()).isInstanceOf(PendingComponent.Section.class);
-        assertThat(second.children()).hasSize(1);
-        assertThat(second.children().getFirst()).isInstanceOf(PendingComponent.Section.class);
+        assertThat(first.components().getFirst()).isInstanceOf(PendingComponent.Separator.class);
+        assertThat(first.components().getLast()).isInstanceOf(PendingComponent.Section.class);
+        assertThat(second.components()).hasSize(1);
+        assertThat(second.components().getFirst()).isInstanceOf(PendingComponent.Section.class);
         assertThat(allText(messages)).isEqualTo(text);
     }
 
@@ -211,7 +211,7 @@ class ComponentPackerTest {
         String comment = "長い防災情報コメント。".repeat(1000);
         String regions = String.join("　", java.util.Collections.nCopies(1200, "予報区"));
         String source = comment + regions;
-        List<List<PendingComponent>> messages = ComponentPacker.pack(List.of(container(List.of(new PendingComponent.Text(source)))));
+        List<List<PendingComponent>> messages = ComponentPacker.pack(List.of(container(List.of(new PendingComponent.TextDisplay(source)))));
         assertThat(messages).hasSizeGreaterThan(1);
         assertThat(allText(messages)).isEqualTo(source);
     }

@@ -6,7 +6,6 @@ import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.discord.DiscordComponent;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
-import net.teamfruit.eewbot.entity.discord.IComponentBuilder;
 import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
@@ -33,7 +32,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -172,7 +170,7 @@ class EEWServiceWebhookSenderFallbackTest {
     private static Entity testEntity() {
         return new Entity() {
             @Override
-            public List<PendingComponent> createComponents(String lang, ComponentContext ctx, Supplier<IComponentBuilder> factory) {
+            public List<PendingComponent> createComponents(String lang, ComponentContext ctx) {
                 return List.of();
             }
 
@@ -194,7 +192,7 @@ class EEWServiceWebhookSenderFallbackTest {
     private static Entity twoPageEntity() {
         return new Entity() {
             @Override
-            public List<PendingComponent> createComponents(String lang, ComponentContext ctx, Supplier<IComponentBuilder> factory) {
+            public List<PendingComponent> createComponents(String lang, ComponentContext ctx) {
                 return List.of();
             }
 

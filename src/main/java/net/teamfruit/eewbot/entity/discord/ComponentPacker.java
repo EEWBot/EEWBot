@@ -18,10 +18,10 @@ public final class ComponentPacker {
             if (component instanceof PendingComponent.Container container) {
                 for (final PendingComponent.Container page : paginate(container))
                     append(messages, page);
-            } else if (component instanceof PendingComponent.Text text) {
+            } else if (component instanceof PendingComponent.TextDisplay text) {
                 for (final String part : splitText(text.content(), value ->
-                        fit(List.of(new PendingComponent.Text(value))) == Fit.SAFE))
-                    append(messages, new PendingComponent.Text(part));
+                        fit(List.of(new PendingComponent.TextDisplay(value))) == Fit.SAFE))
+                    append(messages, new PendingComponent.TextDisplay(part));
             } else if (component instanceof PendingComponent.Section section) {
                 for (final PendingComponent normalized : normalizeSection(section, null, null))
                     append(messages, normalized);
@@ -53,18 +53,18 @@ public final class ComponentPacker {
     }
 
     private static List<PendingComponent.Container> paginate(final PendingComponent.Container source) {
-        final List<PendingComponent> normalized = normalizeChildren(source.children(), source);
+        final List<PendingComponent> normalized = normalizeChildren(source.components(), source);
         final List<PendingComponent.Container> pages = new ArrayList<>();
         List<PendingComponent> current = new ArrayList<>();
         for (final PendingComponent child : normalized) {
             final List<PendingComponent> candidate = new ArrayList<>(current);
             candidate.add(child);
-            final Fit candidateFit = fit(List.of(source.withChildren(candidate)));
+            final Fit candidateFit = fit(List.of(source.withComponents(candidate)));
             if (candidateFit == Fit.SAFE) {
                 current = candidate;
                 continue;
             }
-            final Fit childFit = fit(List.of(source.withChildren(List.of(child))));
+            final Fit childFit = fit(List.of(source.withComponents(List.of(child))));
             if (childFit == Fit.INDETERMINATE) {
                 final List<PendingComponent> isolated = new ArrayList<>();
                 PendingComponent.Separator prefix = null;
@@ -75,17 +75,17 @@ public final class ComponentPacker {
                 }
                 isolated.add(child);
 
-                Fit isolatedFit = fit(List.of(source.withChildren(isolated)));
+                Fit isolatedFit = fit(List.of(source.withComponents(isolated)));
                 if (isolatedFit == Fit.DOES_NOT_FIT && prefix != null) {
                     current.add(prefix);
                     isolated.removeFirst();
-                    isolatedFit = fit(List.of(source.withChildren(isolated)));
+                    isolatedFit = fit(List.of(source.withComponents(isolated)));
                 }
                 addPage(pages, source, current);
                 current = new ArrayList<>();
                 if (isolatedFit == Fit.DOES_NOT_FIT)
                     throw new IllegalArgumentException("A container child cannot be represented within Discord's limits: " + child);
-                pages.add(source.withChildren(isolated));
+                pages.add(source.withComponents(isolated));
                 continue;
             }
 
@@ -96,16 +96,16 @@ public final class ComponentPacker {
                 continue;
             }
             if (childFit == Fit.INDETERMINATE) {
-                pages.add(source.withChildren(List.of(child)));
+                pages.add(source.withComponents(List.of(child)));
                 continue;
             }
-            if (child instanceof PendingComponent.Text text) {
-                final Predicate<String> predicate = value -> fit(List.of(source.withChildren(
-                        List.of(new PendingComponent.Text(value))))) == Fit.SAFE;
+            if (child instanceof PendingComponent.TextDisplay text) {
+                final Predicate<String> predicate = value -> fit(List.of(source.withComponents(
+                        List.of(new PendingComponent.TextDisplay(value))))) == Fit.SAFE;
                 for (final String part : splitText(text.content(), predicate)) {
                     addPage(pages, source, current);
                     current = new ArrayList<>();
-                    current.add(new PendingComponent.Text(part));
+                    current.add(new PendingComponent.TextDisplay(part));
                 }
                 continue;
             }
@@ -119,23 +119,19 @@ public final class ComponentPacker {
                                 final PendingComponent.Container source,
                                 final List<PendingComponent> children) {
         if (!children.isEmpty())
-            pages.add(source.withChildren(children));
+            pages.add(source.withComponents(children));
     }
 
     private static List<PendingComponent> normalizeChildren(final List<PendingComponent> children,
                                                             final PendingComponent.Container containerContext) {
         final List<PendingComponent> result = new ArrayList<>();
         for (final PendingComponent child : children) {
-            if (child instanceof PendingComponent.Text text) {
+            if (child instanceof PendingComponent.TextDisplay text) {
                 result.addAll(splitText(text.content(), value -> ComponentLimits.codePoints(value)
                         <= ComponentLimits.MAX_TEXT_DISPLAY_CODE_POINTS_PER_MESSAGE).stream()
-                        .map(PendingComponent.Text::new).toList());
+                        .map(PendingComponent.TextDisplay::new).toList());
             } else if (child instanceof PendingComponent.MediaGallery gallery) {
-                for (int start = 0; start < gallery.items().size(); start += ComponentLimits.MAX_MEDIA_GALLERY_ITEMS) {
-                    final int end = Math.min(gallery.items().size(), start + ComponentLimits.MAX_MEDIA_GALLERY_ITEMS);
-                    result.add(new PendingComponent.MediaGallery(gallery.items().subList(start, end).stream()
-                            .map(ComponentPacker::normalizeMediaItem).toList()));
-                }
+                result.addAll(normalizeGallery(gallery, containerContext));
             } else if (child instanceof PendingComponent.Section section) {
                 final PendingComponent.Separator prefix = !result.isEmpty()
                         && result.getLast() instanceof PendingComponent.Separator separator ? separator : null;
@@ -149,10 +145,37 @@ public final class ComponentPacker {
         return result;
     }
 
+    private static List<PendingComponent.MediaGallery> normalizeGallery(final PendingComponent.MediaGallery gallery,
+                                                                       final PendingComponent.Container containerContext) {
+        if (gallery.items().isEmpty())
+            throw new IllegalArgumentException("A media gallery must contain at least one item");
+        final List<PendingComponent.MediaGallery> result = new ArrayList<>();
+        List<PendingComponent.MediaGalleryItem> current = new ArrayList<>();
+        for (final PendingComponent.MediaGalleryItem source : gallery.items()) {
+            final PendingComponent.MediaGalleryItem item = normalizeMediaItem(source);
+            final List<PendingComponent.MediaGalleryItem> candidate = new ArrayList<>(current);
+            candidate.add(item);
+            final PendingComponent.MediaGallery candidateGallery = new PendingComponent.MediaGallery(candidate);
+            final List<PendingComponent> message = containerContext == null ? List.of(candidateGallery)
+                    : List.of(containerContext.withComponents(List.of(candidateGallery)));
+            if (candidate.size() <= ComponentLimits.MAX_MEDIA_GALLERY_ITEMS && fit(message) != Fit.DOES_NOT_FIT) {
+                current = candidate;
+            } else {
+                if (!current.isEmpty())
+                    result.add(new PendingComponent.MediaGallery(current));
+                current = new ArrayList<>();
+                current.add(item);
+            }
+        }
+        if (!current.isEmpty())
+            result.add(new PendingComponent.MediaGallery(current));
+        return result;
+    }
+
     private static List<PendingComponent.Section> normalizeSection(final PendingComponent.Section section,
                                                                    final PendingComponent.Container containerContext,
                                                                    final PendingComponent.Separator prefix) {
-        if (section.children().isEmpty())
+        if (section.components().isEmpty())
             throw new IllegalArgumentException("A section must contain at least one text display");
         if (section.accessory() == null)
             throw new IllegalArgumentException("A section requires an accessory");
@@ -165,18 +188,18 @@ public final class ComponentPacker {
             throw new IllegalArgumentException("Unsupported section accessory: " + section.accessory());
         }
 
-        final List<PendingComponent.Text> texts = new ArrayList<>();
-        for (final PendingComponent.Text text : section.children()) {
+        final List<PendingComponent.TextDisplay> texts = new ArrayList<>();
+        for (final PendingComponent.TextDisplay text : section.components()) {
             final Predicate<String> fitsAlone = value -> fit(sectionMessage(
-                    new PendingComponent.Section(List.of(new PendingComponent.Text(value)), accessory),
+                    new PendingComponent.Section(List.of(new PendingComponent.TextDisplay(value)), accessory),
                     containerContext, prefix)) != Fit.DOES_NOT_FIT;
-            splitText(text.content(), fitsAlone).stream().map(PendingComponent.Text::new).forEach(texts::add);
+            splitText(text.content(), fitsAlone).stream().map(PendingComponent.TextDisplay::new).forEach(texts::add);
         }
 
         final List<PendingComponent.Section> result = new ArrayList<>();
-        List<PendingComponent.Text> current = new ArrayList<>();
-        for (final PendingComponent.Text text : texts) {
-            final List<PendingComponent.Text> candidate = new ArrayList<>(current);
+        List<PendingComponent.TextDisplay> current = new ArrayList<>();
+        for (final PendingComponent.TextDisplay text : texts) {
+            final List<PendingComponent.TextDisplay> candidate = new ArrayList<>(current);
             candidate.add(text);
             final PendingComponent.Section candidateSection = new PendingComponent.Section(candidate, accessory);
             if (candidate.size() <= ComponentLimits.MAX_SECTION_CHILDREN
@@ -202,11 +225,11 @@ public final class ComponentPacker {
         if (prefix != null)
             children.add(prefix);
         children.add(section);
-        return List.of(containerContext.withChildren(children));
+        return List.of(containerContext.withComponents(children));
     }
 
-    private static PendingComponent.MediaItem normalizeMediaItem(final PendingComponent.MediaItem item) {
-        return new PendingComponent.MediaItem(item.url(),
+    private static PendingComponent.MediaGalleryItem normalizeMediaItem(final PendingComponent.MediaGalleryItem item) {
+        return new PendingComponent.MediaGalleryItem(item.url(),
                 ComponentLimits.truncate(item.description(), ComponentLimits.MAX_MEDIA_DESCRIPTION), item.spoiler());
     }
 

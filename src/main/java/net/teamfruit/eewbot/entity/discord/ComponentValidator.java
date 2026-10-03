@@ -23,27 +23,27 @@ public final class ComponentValidator {
 
     private static int componentCount(final PendingComponent component) {
         if (component instanceof PendingComponent.Container container)
-            return 1 + componentCount(container.children());
+            return 1 + componentCount(container.components());
         if (component instanceof PendingComponent.Section section)
-            return 2 + section.children().size();
+            return 2 + section.components().size();
         return 1;
     }
 
     public static int textCodePoints(final List<PendingComponent> components) {
         int total = 0;
         for (final PendingComponent component : components) {
-            if (component instanceof PendingComponent.Text text)
+            if (component instanceof PendingComponent.TextDisplay text)
                 total += ComponentLimits.codePoints(text.content());
             else if (component instanceof PendingComponent.Container container)
-                total += textCodePoints(container.children());
+                total += textCodePoints(container.components());
             else if (component instanceof PendingComponent.Section section)
-                total += section.children().stream().mapToInt(text -> ComponentLimits.codePoints(text.content())).sum();
+                total += section.components().stream().mapToInt(text -> ComponentLimits.codePoints(text.content())).sum();
         }
         return total;
     }
 
     private static boolean isValid(final PendingComponent component, final boolean insideContainer) {
-        if (component instanceof PendingComponent.Text text)
+        if (component instanceof PendingComponent.TextDisplay text)
             return text.content() != null && !text.content().isEmpty();
         if (component instanceof PendingComponent.Separator separator)
             return separator.spacing() != null;
@@ -52,14 +52,14 @@ public final class ComponentValidator {
                     && gallery.items().size() <= ComponentLimits.MAX_MEDIA_GALLERY_ITEMS
                     && gallery.items().stream().allMatch(ComponentValidator::isValid);
         if (component instanceof PendingComponent.Section section)
-            return section.children().size() >= 1
-                    && section.children().size() <= ComponentLimits.MAX_SECTION_CHILDREN
-                    && section.children().stream().allMatch(text -> isValid(text, insideContainer))
+            return section.components().size() >= 1
+                    && section.components().size() <= ComponentLimits.MAX_SECTION_CHILDREN
+                    && section.components().stream().allMatch(text -> isValid(text, insideContainer))
                     && isValid(section.accessory());
         if (component instanceof PendingComponent.Container container)
             return !insideContainer
-                    && !container.children().isEmpty()
-                    && container.children().stream().allMatch(child -> isValid(child, true));
+                    && !container.components().isEmpty()
+                    && container.components().stream().allMatch(child -> isValid(child, true));
         return false;
     }
 
@@ -70,7 +70,7 @@ public final class ComponentValidator {
         return false;
     }
 
-    private static boolean isValid(final PendingComponent.MediaItem item) {
+    private static boolean isValid(final PendingComponent.MediaGalleryItem item) {
         return item.url() != null && !item.url().isBlank()
                 && ComponentLimits.codePoints(item.description()) <= ComponentLimits.MAX_MEDIA_DESCRIPTION;
     }

@@ -5,14 +5,13 @@ import net.teamfruit.eewbot.entity.discord.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 public interface Entity {
 
-    List<PendingComponent> createComponents(String lang, ComponentContext ctx, Supplier<IComponentBuilder> factory);
+    List<PendingComponent> createComponents(String lang, ComponentContext ctx);
 
     private List<List<PendingComponent>> pack(final String lang, final ComponentContext ctx) {
-        return ComponentPacker.pack(createComponents(lang, ctx, () -> new I18nComponentBuilder(lang, ctx.i18n())));
+        return ComponentPacker.pack(createComponents(lang, ctx));
     }
 
     default List<MessageCreateSpec> createMessages(final String lang, final ComponentContext ctx) {

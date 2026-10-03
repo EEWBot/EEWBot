@@ -3,7 +3,6 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import net.teamfruit.eewbot.QuakeInfoStore;
 import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.discord.IComponentBuilder;
 import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
@@ -18,7 +17,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 public class VXSE61Impl extends JmxSeis implements VXSE61 {
 
@@ -30,9 +28,9 @@ public class VXSE61Impl extends JmxSeis implements VXSE61 {
     }
 
     @Override
-    public List<PendingComponent> createComponents(String lang, ComponentContext ctx, Supplier<IComponentBuilder> factory) {
+    public List<PendingComponent> createComponents(String lang, ComponentContext ctx) {
         this.quakeInfoStore = ctx.store();
-        return VXSE61.super.createComponents(lang, ctx, factory);
+        return VXSE61.super.createComponents(lang, ctx);
     }
 
     private Optional<QuakeInfo> getVXSE53() {

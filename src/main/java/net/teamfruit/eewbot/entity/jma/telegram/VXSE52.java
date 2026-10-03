@@ -3,7 +3,7 @@ package net.teamfruit.eewbot.entity.jma.telegram;
 import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.discord.IComponentBuilder;
+import net.teamfruit.eewbot.entity.discord.ContainerBuilder;
 import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
@@ -16,7 +16,6 @@ import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, ExternalData {
 
@@ -33,31 +32,31 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
     Optional<String> getFreeFormComment();
 
     @Override
-    default List<PendingComponent> createComponents(String lang, ComponentContext ctx, Supplier<IComponentBuilder> factory) {
-        IComponentBuilder builder = factory.get();
-        builder.heading("eewbot.quakeinfo.epicenter.title");
+    default List<PendingComponent> createComponents(String lang, ComponentContext ctx) {
+        ContainerBuilder builder = PendingComponent.Container.builder();
+        builder.textDisplay("# " + ctx.i18n().get(lang, "eewbot.quakeinfo.epicenter.title"));
         if (isCancelReport()) {
-            builder.text("eewbot.quakeinfo.epicenter.cancel");
-            builder.accent(SeismicIntensity.UNKNOWN.getColor());
+            builder.textDisplay(ctx.i18n().get(lang, "eewbot.quakeinfo.epicenter.cancel"));
+            builder.accentColor(SeismicIntensity.UNKNOWN.getColor());
         } else {
-            builder.text("eewbot.quakeinfo.epicenter.desc", "<t:" + getOriginTime().getEpochSecond() + ":f>");
-            builder.detail("eewbot.quakeinfo.field.epicenter", getHypocenterName());
-            getDepth().ifPresent(depth -> builder.detail("eewbot.quakeinfo.field.depth", depth));
-            builder.detail("eewbot.quakeinfo.field.magnitude", getMagnitude());
-            getForecastComment().ifPresent(forecastComment -> builder.rawText(forecastComment.getText()));
-            getFreeFormComment().ifPresent(builder::rawText);
-            getQuakeInfoMaxInt().ifPresent(intensity -> builder.accent(intensity.getColor()));
+            builder.textDisplay(ctx.i18n().format(lang, "eewbot.quakeinfo.epicenter.desc", "<t:" + getOriginTime().getEpochSecond() + ":f>"));
+            builder.textDisplay("**" + ctx.i18n().get(lang, "eewbot.quakeinfo.field.epicenter") + "**\n" + getHypocenterName());
+            getDepth().ifPresent(depth -> builder.textDisplay("**" + ctx.i18n().get(lang, "eewbot.quakeinfo.field.depth") + "**\n" + depth));
+            builder.textDisplay("**" + ctx.i18n().get(lang, "eewbot.quakeinfo.field.magnitude") + "**\n" + getMagnitude());
+            getForecastComment().ifPresent(forecastComment -> builder.textDisplay(forecastComment.getText()));
+            getFreeFormComment().ifPresent(builder::textDisplay);
+            getQuakeInfoMaxInt().ifPresent(intensity -> builder.accentColor(intensity.getColor()));
 
             if (ctx.renderer().isAvailable()) {
                 try {
-                    builder.separator().media(ctx.renderer().generateURL(this), null);
+                    builder.separator().mediaGallery(PendingComponent.MediaGalleryItem.of(ctx.renderer().generateURL(this), null, false));
                 } catch (Exception e) {
                     Log.logger.error("Failed to generate renderer query", e);
                 }
             }
         }
-        builder.footer(getPublishingOffice());
-        builder.timestamp(getReportDateTime());
+        builder.textDisplay("-# " + ctx.i18n().get(lang, getPublishingOffice())
+                + " • <t:" + getReportDateTime().getEpochSecond() + ":F>");
         return List.of(builder.build());
     }
 
