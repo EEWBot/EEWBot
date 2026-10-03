@@ -1,10 +1,10 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.entity.EmbedContext;
+import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
-import net.teamfruit.eewbot.entity.discord.PendingEmbed;
+import net.teamfruit.eewbot.entity.discord.ContainerBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
@@ -16,7 +16,6 @@ import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, ExternalData {
 
@@ -33,32 +32,32 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
     Optional<String> getFreeFormComment();
 
     @Override
-    default List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
-        IEmbedBuilder builder = factory.get();
-        builder.title("eewbot.quakeinfo.epicenter.title");
+    default List<PendingComponent> createComponents(String lang, ComponentContext ctx) {
+        ContainerBuilder builder = PendingComponent.Container.builder();
+        builder.textDisplay("# " + ctx.i18n().get(lang, "eewbot.quakeinfo.epicenter.title"));
         if (isCancelReport()) {
-            builder.description("eewbot.quakeinfo.epicenter.cancel");
-            builder.color(SeismicIntensity.UNKNOWN.getColor());
+            builder.textDisplay(ctx.i18n().get(lang, "eewbot.quakeinfo.epicenter.cancel"));
+            builder.accentColor(SeismicIntensity.UNKNOWN.getColor());
         } else {
-            builder.description("eewbot.quakeinfo.epicenter.desc", "<t:" + getOriginTime().getEpochSecond() + ":f>");
-            builder.addField("eewbot.quakeinfo.field.epicenter", getHypocenterName(), true);
-            getDepth().ifPresent(depth -> builder.addField("eewbot.quakeinfo.field.depth", depth, true));
-            builder.addField("eewbot.quakeinfo.field.magnitude", getMagnitude(), true);
-            getForecastComment().ifPresent(forecastComment -> builder.addField("", forecastComment.getText(), false));
-            getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
-            getQuakeInfoMaxInt().ifPresent(intensity -> builder.color(intensity.getColor()));
+            builder.textDisplay(ctx.i18n().format(lang, "eewbot.quakeinfo.epicenter.desc", "<t:" + getOriginTime().getEpochSecond() + ":f>"));
+            builder.textDisplay("**" + ctx.i18n().get(lang, "eewbot.quakeinfo.field.epicenter") + "**\n" + getHypocenterName());
+            getDepth().ifPresent(depth -> builder.textDisplay("**" + ctx.i18n().get(lang, "eewbot.quakeinfo.field.depth") + "**\n" + depth));
+            builder.textDisplay("**" + ctx.i18n().get(lang, "eewbot.quakeinfo.field.magnitude") + "**\n" + getMagnitude());
+            getForecastComment().ifPresent(forecastComment -> builder.textDisplay(forecastComment.getText()));
+            getFreeFormComment().ifPresent(builder::textDisplay);
+            getQuakeInfoMaxInt().ifPresent(intensity -> builder.accentColor(intensity.getColor()));
 
             if (ctx.renderer().isAvailable()) {
                 try {
-                    builder.image(ctx.renderer().generateURL(this));
+                    builder.separator().mediaGallery(PendingComponent.MediaGalleryItem.of(ctx.renderer().generateURL(this), null, false));
                 } catch (Exception e) {
                     Log.logger.error("Failed to generate renderer query", e);
                 }
             }
         }
-        builder.footer(getPublishingOffice(), null);
-        builder.timestamp(getReportDateTime());
-        return List.of(builder.toPending());
+        builder.textDisplay("-# " + ctx.i18n().get(lang, getPublishingOffice())
+                + " • <t:" + getReportDateTime().getEpochSecond() + ":F>");
+        return List.of(builder.build());
     }
 
     @Override

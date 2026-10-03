@@ -1,39 +1,45 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "緊急地震速報 (警報) 第3報",
-      "timestamp": "2026-05-11T01:23:54Z",
-      "color": 16711680,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "震央",
-          "value": "石川県能登地方",
-          "inline": true
+          "type": 10,
+          "content": "# 緊急地震速報 (警報) 第3報"
         },
         {
-          "name": "深さ",
-          "value": "10km",
-          "inline": true
+          "type": 10,
+          "content": "**震央**\n石川県能登地方"
         },
         {
-          "name": "マグニチュード",
-          "value": "7.3",
-          "inline": true
+          "type": 10,
+          "content": "**深さ**\n10km"
         },
         {
-          "name": "最大震度",
-          "value": "6弱",
-          "inline": false
+          "type": 10,
+          "content": "**マグニチュード**\n7.3"
         },
         {
-          "name": "警報対象の地域",
-          "value": "石川県能登 石川県加賀 新潟県上越",
-          "inline": false
+          "type": 14,
+          "divider": true,
+          "spacing": 1
+        },
+        {
+          "type": 10,
+          "content": "**最大震度**\n6弱"
+        },
+        {
+          "type": 10,
+          "content": "**警報対象の地域**\n石川県能登 石川県加賀 新潟県上越"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • \u003ct:1778462634:F\u003e"
         }
-      ]
+      ],
+      "accent_color": 16711680,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }
