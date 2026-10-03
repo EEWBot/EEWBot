@@ -277,11 +277,10 @@ public class EEWService {
 
         for (int chunkIndex = 0; chunkIndex < webhookChunks.size(); chunkIndex++) {
             List<WebhookSenderRequest> senderRequests = webhookChunks.get(chunkIndex).stream()
-                    .peek(webhookRequest -> webhookRequest.getTargets()
-                            .addAll(targetsByLang.getOrDefault(webhookRequest.getLang(), Collections.emptyList()).stream()
-                                    .map(DiscordWebhookRequest::componentsV2Url).toList()))
-                    .filter(webhookRequest -> !webhookRequest.getTargets().isEmpty())
+                    .peek(webhookRequest -> targetsByLang.getOrDefault(webhookRequest.getLang(), Collections.emptyList())
+                            .forEach(webhookRequest::addTarget))
                     .map(WebhookSenderRequest::from)
+                    .filter(senderRequest -> !senderRequest.targets().isEmpty())
                     .collect(Collectors.toList());
 
             if (senderRequests.isEmpty())

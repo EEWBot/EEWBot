@@ -22,8 +22,9 @@ public class DiscordWebhookRequest {
         return this.webhook;
     }
 
+    /** Returns an immutable snapshot; use {@link #addTarget(String)} to add normalized destinations. */
     public List<String> getTargets() {
-        return this.targets;
+        return List.copyOf(this.targets);
     }
 
     public DiscordWebhookRequest addTarget(String target) {

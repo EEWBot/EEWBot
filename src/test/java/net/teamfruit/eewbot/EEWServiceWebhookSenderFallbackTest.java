@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot;
 
+import com.google.gson.JsonParser;
 import discord4j.core.object.component.TextDisplay;
 import discord4j.core.spec.MessageCreateSpec;
 import net.teamfruit.eewbot.entity.ComponentContext;
@@ -77,13 +78,16 @@ class EEWServiceWebhookSenderFallbackTest {
     }
 
     @Test
-    void sendMessageDoesNotFallbackWhenWebhookSenderReturnsSuccess() {
+    void sendMessageDoesNotFallbackWhenWebhookSenderReturnsSuccess() throws Exception {
         FakeHttpClient httpClient = FakeHttpClient.sendStatus(204, "");
         EEWService service = createService(httpClient, "");
 
         service.sendMessage(ChannelFilter.builder().build(), testEntity());
 
         assertThat(httpClient.sentRequests).hasSize(1);
+        assertThat(JsonParser.parseString(bodyOf(httpClient.sentRequests.get(0))).getAsJsonArray().get(0)
+                .getAsJsonObject().getAsJsonArray("targets").get(0).getAsString())
+                .isEqualTo(WEBHOOK_URL + "?with_components=true");
         assertThat(httpClient.asyncRequests).isEmpty();
     }
 
