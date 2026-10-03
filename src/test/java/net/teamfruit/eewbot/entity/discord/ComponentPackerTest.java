@@ -2,6 +2,8 @@ package net.teamfruit.eewbot.entity.discord;
 
 import net.teamfruit.eewbot.Codecs;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -83,6 +85,24 @@ class ComponentPackerTest {
         int escapedJsonBytes = Codecs.GSON.toJson(new DiscordComponent.TextDisplay(10, escaped))
                 .getBytes(StandardCharsets.UTF_8).length;
         assertThat(escapedJsonBytes).isGreaterThan(plainJsonBytes);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\u2028", "\u2029"})
+    void unicodeSeparatorsUseDecodedEffectiveCostAndPaginateWithoutLoss(final String separator) {
+        String exact = separator.repeat(3386);
+        assertThat((long) Codecs.GSON.toJson(new DiscordComponent.TextDisplay(10, exact))
+                .getBytes(StandardCharsets.UTF_8).length)
+                .isGreaterThan(WebhookEffectiveCostEstimator.OBSERVED_EFFECTIVE_BUDGET);
+        assertThat(WebhookEffectiveCostEstimator.estimate(List.of(PendingComponent.TextDisplay.of(exact))))
+                .isEqualTo(new WebhookEffectiveCostEstimator.Safe(10170));
+        assertThat(ComponentPacker.pack(List.of(PendingComponent.TextDisplay.of(exact)))).hasSize(1);
+
+        String over = exact + separator;
+        List<List<PendingComponent>> messages = ComponentPacker.pack(List.of(PendingComponent.TextDisplay.of(over)));
+        assertThat(messages).hasSize(2);
+        assertThat(allText(messages)).isEqualTo(over);
+        messages.forEach(message -> assertThat(ComponentPacker.fit(message)).isEqualTo(ComponentPacker.Fit.SAFE));
     }
 
     @Test

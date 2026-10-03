@@ -1,6 +1,8 @@
 package net.teamfruit.eewbot;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import net.teamfruit.eewbot.gateway.GatewayManager;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.RevisionPoller;
@@ -135,6 +137,33 @@ class EEWBotCloseTest {
 
         verify(this.mockScheduledExecutor).shutdownNow();
         verify(this.mockSnapshotReloadExecutor).shutdownNow();
+    }
+
+    @Test
+    void handleGuildDeletion_retainsDestinationsWhenGuildIsUnavailable() {
+        EEWBot bot = createBot(null, null, null, new AtomicBoolean(false));
+        GuildDeleteEvent event = mock(GuildDeleteEvent.class);
+        when(event.getGuildId()).thenReturn(Snowflake.of(42L));
+        when(event.isUnavailable()).thenReturn(true);
+
+        bot.handleGuildDeletion(event);
+
+        verifyNoInteractions(this.mockAdminRegistry);
+    }
+
+    @Test
+    void handleGuildDeletion_removesDestinationsAndSavesWhenBotLeavesGuild() throws Exception {
+        EEWBot bot = createBot(null, null, null, new AtomicBoolean(false));
+        GuildDeleteEvent event = mock(GuildDeleteEvent.class);
+        when(event.getGuildId()).thenReturn(Snowflake.of(42L));
+        when(event.isUnavailable()).thenReturn(false);
+
+        bot.handleGuildDeletion(event);
+
+        InOrder inOrder = inOrder(this.mockAdminRegistry);
+        inOrder.verify(this.mockAdminRegistry).removeByGuildId(42L);
+        inOrder.verify(this.mockAdminRegistry).save();
+        verifyNoMoreInteractions(this.mockAdminRegistry);
     }
 
     @Test
