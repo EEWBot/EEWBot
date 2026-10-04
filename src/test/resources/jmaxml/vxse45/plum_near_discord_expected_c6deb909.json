@@ -1,20 +1,28 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "緊急地震速報 (予報) 第10報",
-      "description": "※この情報は精度が低い可能性があります",
-      "timestamp": "2026-05-11T01:23:29Z",
-      "color": 255,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "震度5弱程度以上",
-          "value": "石川県能登地方 付近",
-          "inline": false
+          "type": 10,
+          "content": "# 緊急地震速報 (予報) 第10報"
+        },
+        {
+          "type": 10,
+          "content": "**震度5弱程度以上**\n石川県能登地方 付近"
+        },
+        {
+          "type": 10,
+          "content": "※この情報は精度が低い可能性があります"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • \u003ct:1778462609:F\u003e"
         }
-      ]
+      ],
+      "accent_color": 255,
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }

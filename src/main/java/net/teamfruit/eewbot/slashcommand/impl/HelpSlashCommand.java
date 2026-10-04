@@ -25,18 +25,19 @@ public class HelpSlashCommand implements ISlashCommand {
 
     @Override
     public Mono<Void> on(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
-        return event.reply().withEmbeds(SlashCommandUtils.createEmbed(lang, ctx)
-                .title("eewbot.scmd.help.title")
-                .description("eewbot.scmd.help.desc")
-                .addField("/setup", "eewbot.scmd.help.field.set.value", false)
-                .addField("/quakeinfo", "eewbot.scmd.help.field.quakeinfo.value", false)
-                .addField("/invite", "eewbot.scmd.help.field.invite.value", false)
-                .addField("/testmessage", "eewbot.scmd.help.field.testmessage.value", false)
-                .addField("/lang", "eewbot.scmd.help.field.lang.value", false)
-                .addField("/unregister", "eewbot.scmd.help.field.unregister.value", false)
-                .addField("/help", "eewbot.scmd.help.field.help.value", false)
-                .addField("eewbot.scmd.help.field.links.name", "eewbot.scmd.help.field.links.value", false)
-                .addField("eewbot.scmd.help.field.legal.name", "eewbot.scmd.help.field.legal.value", false)
-                .toEmbedCreateSpec());
+        return event.reply().withComponents(SlashCommandUtils.render(SlashCommandUtils.createContainer()
+                .textDisplay("# " + ctx.i18n().get(lang, "eewbot.scmd.help.title"))
+                .textDisplay(ctx.i18n().get(lang, "eewbot.scmd.help.desc"))
+                .textDisplay("**" + ctx.i18n().get(lang, "/setup") + "**\n" + ctx.i18n().get(lang, "eewbot.scmd.help.field.set.value"))
+                .textDisplay("**" + ctx.i18n().get(lang, "/quakeinfo") + "**\n" + ctx.i18n().get(lang, "eewbot.scmd.help.field.quakeinfo.value"))
+                .textDisplay("**" + ctx.i18n().get(lang, "/invite") + "**\n" + ctx.i18n().get(lang, "eewbot.scmd.help.field.invite.value"))
+                .textDisplay("**" + ctx.i18n().get(lang, "/testmessage") + "**\n" + ctx.i18n().get(lang, "eewbot.scmd.help.field.testmessage.value"))
+                .textDisplay("**" + ctx.i18n().get(lang, "/lang") + "**\n" + ctx.i18n().get(lang, "eewbot.scmd.help.field.lang.value"))
+                .textDisplay("**" + ctx.i18n().get(lang, "/unregister") + "**\n" + ctx.i18n().get(lang, "eewbot.scmd.help.field.unregister.value"))
+                .textDisplay("**" + ctx.i18n().get(lang, "/help") + "**\n" + ctx.i18n().get(lang, "eewbot.scmd.help.field.help.value"))
+                .separator()
+                .textDisplay("**" + ctx.i18n().get(lang, "eewbot.scmd.help.field.links.name") + "**\n" + ctx.i18n().get(lang, "eewbot.scmd.help.field.links.value"))
+                .textDisplay("**" + ctx.i18n().get(lang, "eewbot.scmd.help.field.legal.name") + "**\n" + ctx.i18n().get(lang, "eewbot.scmd.help.field.legal.value"))
+                .textDisplay("-# EEWBot/EEWBot")));
     }
 }

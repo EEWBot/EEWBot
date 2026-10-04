@@ -1,10 +1,10 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.entity.EmbedContext;
+import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.TsunamiCategory;
-import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
-import net.teamfruit.eewbot.entity.discord.PendingEmbed;
+import net.teamfruit.eewbot.entity.discord.ContainerBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.external.TsunamiExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
@@ -18,7 +18,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Supplier;
 
 public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
 
@@ -33,12 +32,12 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
 
     @Override
     @SuppressWarnings("NonAsciiCharacters")
-    default List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
-        IEmbedBuilder builder = factory.get();
+    default List<PendingComponent> createComponents(String lang, ComponentContext ctx) {
+        ContainerBuilder builder = PendingComponent.Container.builder();
         if (isCancelReport()) {
-            builder.title("eewbot.tsunami.title");
-            getText().ifPresentOrElse(builder::description, () -> builder.description("eewbot.tsunami.cancel"));
-            builder.color(TsunamiCategory.津波なし.getColor());
+            builder.textDisplay("# " + ctx.i18n().get(lang, "eewbot.tsunami.title"));
+            getText().ifPresentOrElse(builder::textDisplay, () -> builder.textDisplay(ctx.i18n().get(lang, "eewbot.tsunami.cancel")));
+            builder.accentColor(TsunamiCategory.津波なし.getColor());
         } else {
             List<TsunamiItem> items = getForecastItems();
             TsunamiCategory highest = null;
@@ -90,29 +89,28 @@ public interface VTSE41 extends JMAReport, RenderTsunami, ExternalData {
                 groupedAreas.computeIfAbsent(categoryName, k -> new ArrayList<>()).add(line.toString());
             }
 
-            for (Map.Entry<String, List<String>> entry : groupedAreas.entrySet()) {
-                builder.addField(entry.getKey(), String.join("\n", entry.getValue()), false);
-            }
+            builder.textDisplay("# " + ctx.i18n().get(lang, highest != null ? highest.getTitleKey() : "eewbot.tsunami.title"));
+            builder.accentColor(highest != null ? highest.getColor() : TsunamiCategory.津波なし.getColor());
 
-            builder.title(highest != null ? highest.getTitleKey() : "eewbot.tsunami.title");
-            builder.color(highest != null ? highest.getColor() : TsunamiCategory.津波なし.getColor());
+            for (Map.Entry<String, List<String>> entry : groupedAreas.entrySet()) {
+                builder.textDisplay("**" + ctx.i18n().get(lang, entry.getKey()) + "**\n" + String.join("\n", entry.getValue()));
+            }
 
             if (highest != null && highest.getLevel() > 0 && ctx.renderer().isAvailable()) {
                 try {
-                    builder.image(ctx.renderer().generateURL(this));
+                    builder.separator().mediaGallery(PendingComponent.MediaGalleryItem.of(ctx.renderer().generateURL(this), null, false));
                 } catch (Exception e) {
                     Log.logger.error("Failed to generate renderer query", e);
                 }
             }
 
-//            getWarningComment().ifPresent(comment -> builder.addField("", comment.getText(), false));
-            getFreeFormComment().ifPresent(comment -> builder.addField("", comment, false));
-            getText().ifPresent(text -> builder.addField("", text, false));
+            getFreeFormComment().ifPresent(builder::textDisplay);
+            getText().ifPresent(builder::textDisplay);
         }
 
-        builder.footer(getPublishingOffice(), null);
-        builder.timestamp(getReportDateTime());
-        return List.of(builder.toPending());
+        builder.textDisplay("-# " + ctx.i18n().get(lang, getPublishingOffice())
+                + " • <t:" + getReportDateTime().getEpochSecond() + ":F>");
+        return List.of(builder.build());
     }
 
     @Override

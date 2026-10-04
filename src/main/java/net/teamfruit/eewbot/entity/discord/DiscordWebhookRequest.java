@@ -22,13 +22,20 @@ public class DiscordWebhookRequest {
         return this.webhook;
     }
 
+    /** Returns an immutable snapshot; use {@link #addTarget(String)} to add normalized destinations. */
     public List<String> getTargets() {
-        return this.targets;
+        return List.copyOf(this.targets);
     }
 
     public DiscordWebhookRequest addTarget(String target) {
-        this.targets.add(target);
+        this.targets.add(componentsV2Url(target));
         return this;
+    }
+
+    public static String componentsV2Url(final String target) {
+        if (target.contains("with_components="))
+            return target;
+        return target + (target.contains("?") ? "&" : "?") + "with_components=true";
     }
 
 }

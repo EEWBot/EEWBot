@@ -6,7 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.teamfruit.eewbot.QuakeInfoStore;
-import net.teamfruit.eewbot.entity.EmbedContext;
+import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.external.ExternalData;
@@ -40,8 +40,8 @@ class AllExpectedJsonGeneratorTest {
     private static ObjectMapper xmlMapper;
     private static Gson gson;
     private static I18n i18n;
-    private static EmbedContext embedContext;
-    private static EmbedContext embedContextWithRenderer;
+    private static ComponentContext componentContext;
+    private static ComponentContext componentContextWithRenderer;
     private static String rendererHash;
 
     // テレグラムタイプと実装クラスのマッピング
@@ -63,14 +63,14 @@ class AllExpectedJsonGeneratorTest {
         QuakeInfoStore store = new QuakeInfoStore();
 
         RendererQueryFactory rendererDisabled = new RendererQueryFactory(null, null);
-        embedContext = new EmbedContext(rendererDisabled, store, i18n);
+        componentContext = new ComponentContext(rendererDisabled, store, i18n);
 
         String rendererAddress = System.getenv("EEWBOT_RENDERER_ADDRESS");
         String rendererKey = System.getenv("EEWBOT_RENDERER_KEY");
         rendererHash = BaseWebhookTest.computeRendererHash(rendererAddress, rendererKey);
         if (rendererHash != null) {
             RendererQueryFactory rendererEnabled = new RendererQueryFactory(rendererAddress, rendererKey);
-            embedContextWithRenderer = new EmbedContext(rendererEnabled, store, i18n);
+            componentContextWithRenderer = new ComponentContext(rendererEnabled, store, i18n);
         }
 
         xmlMapper = XmlMapper.builder()
@@ -179,7 +179,7 @@ class AllExpectedJsonGeneratorTest {
 
         // 1. Discord Webhook用JSON生成（rendererなし）
         // 分割されたらページ1だけ書き出して黙って壊れるので、ここで止める
-        List<DiscordWebhook> webhooks = report.createWebhooks("ja_jp", embedContext);
+        List<DiscordWebhook> webhooks = report.createWebhooks("ja_jp", componentContext);
         assertThat(webhooks).hasSize(1);
         DiscordWebhook webhook = webhooks.get(0);
         String discordJson = gson.toJson(webhook).replaceAll("\\R", "\n");
@@ -187,13 +187,13 @@ class AllExpectedJsonGeneratorTest {
         System.out.printf("[%s] Discord Webhook JSON生成: %s%n", caseName, discordPath);
 
         // 1b. Discord Webhook用JSON生成（renderer有効、環境変数設定時のみ）
-        if (embedContextWithRenderer != null) {
+        if (componentContextWithRenderer != null) {
             // renderer有効版はXMLを再読み込みして生成
             InputStream xmlStreamForRenderer = getClass().getClassLoader().getResourceAsStream(xmlPath);
             assertThat(xmlStreamForRenderer).isNotNull();
             AbstractJMAReport reportForRenderer = xmlMapper.readValue(xmlStreamForRenderer, implClass);
 
-            List<DiscordWebhook> webhooksWithRenderer = reportForRenderer.createWebhooks("ja_jp", embedContextWithRenderer);
+            List<DiscordWebhook> webhooksWithRenderer = reportForRenderer.createWebhooks("ja_jp", componentContextWithRenderer);
             assertThat(webhooksWithRenderer).hasSize(1);
             String discordJsonWithRenderer = gson.toJson(webhooksWithRenderer.get(0)).replaceAll("\\R", "\n");
             Path discordRendererPath = Paths.get(baseOutputPath + "_discord_expected_" + rendererHash + ".json");

@@ -1,10 +1,9 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.QuakeInfoStore;
-import net.teamfruit.eewbot.entity.EmbedContext;
+import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
-import net.teamfruit.eewbot.entity.discord.PendingEmbed;
+import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
@@ -18,7 +17,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 public class VXSE52Impl extends JmxSeis implements VXSE52 {
 
@@ -30,9 +28,9 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     }
 
     @Override
-    public List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
+    public List<PendingComponent> createComponents(String lang, ComponentContext ctx) {
         this.quakeInfoStore = ctx.store();
-        return VXSE52.super.createEmbeds(lang, ctx, factory);
+        return VXSE52.super.createComponents(lang, ctx);
     }
 
     private Optional<QuakeInfo> getVXSE51() {

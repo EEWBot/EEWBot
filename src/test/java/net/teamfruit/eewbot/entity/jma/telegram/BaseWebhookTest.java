@@ -6,7 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.teamfruit.eewbot.QuakeInfoStore;
-import net.teamfruit.eewbot.entity.EmbedContext;
+import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.external.ExternalData;
@@ -47,7 +47,7 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
     protected static ObjectMapper xmlMapper;
     protected static Gson gson;
     protected static I18n i18n;
-    protected static EmbedContext embedContext;
+    protected static ComponentContext componentContext;
     protected static String rendererHash;
     private static boolean initialized = false;
 
@@ -72,7 +72,7 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
         String rendererKey = System.getenv("EEWBOT_RENDERER_KEY");
         RendererQueryFactory renderer = new RendererQueryFactory(rendererAddress, rendererKey);
         QuakeInfoStore store = new QuakeInfoStore();
-        embedContext = new EmbedContext(renderer, store, i18n);
+        componentContext = new ComponentContext(renderer, store, i18n);
         rendererHash = computeRendererHash(rendererAddress, rendererKey);
 
         xmlMapper = XmlMapper.builder()
@@ -150,7 +150,7 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
 
         // 2. Entity → DiscordWebhook変換
         // 既存フィクスチャは分割されないはず。分割されたら意図せぬ回帰なのでここで落とす
-        List<DiscordWebhook> webhooks = report.createWebhooks("ja_jp", embedContext);
+        List<DiscordWebhook> webhooks = report.createWebhooks("ja_jp", componentContext);
         assertThat(webhooks).hasSize(1);
         DiscordWebhook webhook = webhooks.get(0);
         assertThat(webhook).isNotNull();
