@@ -1,30 +1,35 @@
 {
-  "embeds": [
+  "components": [
     {
-      "title": "地震情報（顕著な地震の震源要素更新のお知らせ）",
-      "description": "\u003ct:1765203300:f\u003e頃発生した地震の、地震の発生場所と規模を更新します。",
-      "timestamp": "2025-12-08T17:00:00Z",
-      "color": 0,
-      "footer": {
-        "text": "気象庁"
-      },
-      "fields": [
+      "type": 17,
+      "components": [
         {
-          "name": "震央",
-          "value": "青森県東方沖",
-          "inline": true
+          "type": 10,
+          "content": "# 地震情報（顕著な地震の震源要素更新のお知らせ）"
         },
         {
-          "name": "深さ",
-          "value": "54km",
-          "inline": true
+          "type": 10,
+          "content": "\u003ct:1765203300:f\u003e頃発生した地震の、地震の発生場所と規模を更新します。"
         },
         {
-          "name": "マグニチュード",
-          "value": "7.5",
-          "inline": true
+          "type": 10,
+          "content": "**震央**\n青森県東方沖"
+        },
+        {
+          "type": 10,
+          "content": "**深さ**\n54km"
+        },
+        {
+          "type": 10,
+          "content": "**マグニチュード**\n7.5"
+        },
+        {
+          "type": 10,
+          "content": "-# 気象庁 • \u003ct:1765213200:F\u003e"
         }
-      ]
+      ],
+      "spoiler": false
     }
-  ]
+  ],
+  "flags": 32768
 }
