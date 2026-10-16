@@ -153,7 +153,7 @@ public class GatewayManager implements AutoCloseable {
         this.scheduledExecutor.execute(new JMAXmlLGateway(this.httpClient, this.quakeInfoStore, this.config.getDebug().getJmaXmlFeedRoot()));
     }
 
-    private void handleJMAReport(AbstractJMAReport data) {
+    void handleJMAReport(AbstractJMAReport data) {
         MDC.put("gateway", "jma-xml");
         MDC.put("event.id", data.getEventId());
         if (data instanceof VTSE41) {
@@ -164,17 +164,16 @@ public class GatewayManager implements AutoCloseable {
             MDC.put("event.type", "report");
         }
         try {
-            if (data instanceof QuakeInfo quakeInfo) {
-                ChannelFilter filter = EEWFilterClassifier.classifyQuakeInfo(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
-                submitMessage(() -> this.service.sendMessage(filter, data));
-            }
-            if (data instanceof VTSE41) {
-                ChannelFilter filter = EEWFilterClassifier.classifyTsunami();
-                submitMessage(() -> this.service.sendMessage(filter, data));
-            }
-            if (data instanceof ExternalData externalData) {
-                submitMessage(() -> this.externalWebhookService.sendExternalWebhook(externalData));
-            }
+            ChannelFilter filter = data instanceof QuakeInfo quakeInfo
+                    ? EEWFilterClassifier.classifyQuakeInfo(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN))
+                    : data instanceof VTSE41 ? EEWFilterClassifier.classifyTsunami() : null;
+            // Accept both destinations in one submission so a rejection cannot partially accept a report.
+            submitMessageOrThrow(() -> {
+                if (filter != null)
+                    this.service.sendMessage(filter, data);
+                if (data instanceof ExternalData externalData)
+                    this.externalWebhookService.sendExternalWebhook(externalData);
+            });
         } finally {
             MDC.clear();
         }
@@ -185,14 +184,6 @@ public class GatewayManager implements AutoCloseable {
             this.scheduledTasks.add(
                     this.scheduledExecutor.scheduleAtFixedRate(this.service::handleWebhookSenderNotFounds, 15, 15, TimeUnit.SECONDS)
             );
-        }
-    }
-
-    private void submitMessage(Runnable task) {
-        try {
-            submitMessageOrThrow(task);
-        } catch (RejectedExecutionException e) {
-            Log.logger.debug("Message dispatch skipped (executor shut down)");
         }
     }
 
