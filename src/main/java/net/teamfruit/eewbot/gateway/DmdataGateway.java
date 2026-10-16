@@ -162,11 +162,15 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                 .compare(current.getReportDateTime(), previous.getReportDateTime());
         if (timeOrder < 0)
             return false;
+        // Equal timestamps can contain successive reports; a higher serial takes precedence
+        // over the previous telegram's InfoType, including corrections and cancellations.
+        if (timeOrder == 0 && serialNo > state.serialNo())
+            return true;
         int typeOrder = Integer.compare(infoTypePriority(current.getInfoType()), infoTypePriority(previous.getInfoType()));
         if (timeOrder == 0 && typeOrder < 0)
             return false;
-        // Later corrections/cancellations may reuse or lower the serial. At equal times, prefer
-        // cancellation, correction, announcement, then delayed reports, in that order.
+        // Later corrections/cancellations may reuse or lower the serial. With equal times and
+        // no serial increase, prefer cancellation, correction, announcement, then delayed reports.
         boolean administrative = current.getInfoType() == JMAInfoType.訂正 || current.isCancelReport();
         if (administrative && (timeOrder > 0 || typeOrder > 0))
             return true;

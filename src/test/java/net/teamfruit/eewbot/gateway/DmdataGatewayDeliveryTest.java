@@ -366,15 +366,37 @@ class DmdataGatewayDeliveryTest {
 
     @ParameterizedTest
     @EnumSource(value = JMAInfoType.class, names = {"訂正", "取消"})
-    void equalTimeKeepsCorrectionOrCancellationAheadOfAnnouncement(JMAInfoType type) throws IOException {
+    void equalTimeAndSerialKeepCorrectionOrCancellationAheadOfAnnouncement(JMAInfoType type) throws IOException {
         String revised = type == JMAInfoType.取消 ? fixture("cancel_same_serial.xml") : serial(fixture("forecast_normal.xml"), 8);
+        receive("initial-id", reportTime(serial(fixture("forecast_normal.xml"), 8), "2026-05-11T10:26:00+09:00"));
         receive("revised-id", reportTime(infoType(revised, type), "2026-05-11T10:26:00+09:00"));
         receive("announcement-id", reportTime(serial(fixture("forecast_normal.xml"), 8), "2026-05-11T10:26:00+09:00"));
-        receive("higher-serial-id", reportTime(serial(fixture("forecast_normal.xml"), 9), "2026-05-11T10:26:00+09:00"));
         receive("probe-id", reportTime(serial(fixture("forecast_normal.xml"), 10), "2026-05-11T10:27:00+09:00"));
 
         assertThat(this.updates.getLast().prev().getInfoType()).isEqualTo(type);
+        assertThat(this.updates.getLast().prev().getSerial()).isEqualTo("8");
         assertThat(this.deliveries).hasSize(4);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = JMAInfoType.class, names = {"訂正", "取消"})
+    void equalTimeHigherSerialReplacesCorrectionOrCancellationAndNextReportUsesIt(JMAInfoType type) throws IOException {
+        String revised = type == JMAInfoType.取消 ? fixture("cancel_same_serial.xml") : serial(fixture("forecast_normal.xml"), 8);
+        receive("revised-id", reportTime(infoType(revised, type), "2026-05-11T10:26:00+09:00"));
+        String next = serial(fixture("forecast_normal.xml"), 9).replace("<From>4</From>", "<From>2</From>");
+        receive("higher-serial-id", reportTime(next, "2026-05-11T10:26:00+09:00"));
+        receive("following-id", reportTime(serial(next, 10), "2026-05-11T10:27:00+09:00"));
+
+        EEW previous = this.updates.getLast().prev();
+        assertThat(previous.getSerial()).isEqualTo("9");
+        assertThat(previous.getInfoType()).isEqualTo(JMAInfoType.発表);
+        assertThat(previous.getForecastMaxInt().from()).isEqualTo("2");
+        assertThat(this.updates.getLast().maxIntensityBefore()).isEqualTo(type == JMAInfoType.取消 ? SeismicIntensity.TWO : SeismicIntensity.FOUR);
+        // The unchanged tenth report is compared to the ninth report and decimated as usual.
+        assertThat(lastDelivery().direct()).containsOnlyKeys(4L, 10L);
+        assertThat(lastDelivery().webhook()).isEmpty();
+        assertThat(this.deliveries).hasSize(3);
+        verify(this.externalWebhookService, times(3)).sendExternalWebhook(any(EEW.class));
     }
 
     @Test
