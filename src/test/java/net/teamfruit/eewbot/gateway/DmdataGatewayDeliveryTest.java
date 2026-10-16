@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.gateway;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -143,16 +144,61 @@ class DmdataGatewayDeliveryTest {
     }
 
     private void receive(DmdataGateway.WebSocketConnection.WebSocketListener socket, String id, String xml) {
+        receive(socket, id, xml, null);
+    }
+
+    private void receive(DmdataGateway.WebSocketConnection.WebSocketListener socket, String id, String body, String compression) {
         Map<String, Object> data = new HashMap<>(Map.of("type", "data", "version", "2.0",
-                "head", Map.of("type", "VXSE45", "test", false), "body", xml));
+                "head", Map.of("type", "VXSE45", "test", false), "body", body));
         if (id != null)
             data.put("id", id);
+        if (compression != null)
+            data.put("compression", compression);
         String message = Codecs.GSON.toJson(data);
         socket.onText(this.webSocket, message, true);
     }
 
     private DeliveryPartition lastDelivery() {
         return this.deliveries.getLast();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"xml", "gzip", "zip"})
+    void knownIdSkipsBodyDecodingAndParsingAndRequestsNextFrame(String format) throws IOException {
+        receive("known-id", fixture("forecast_normal.xml"));
+        Logger logger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            // An attempted body decode/parse would fail and log an error. A known ID must bypass it.
+            receive(this.socket2, "known-id", format.equals("xml") ? "<Report>" : "invalid-base64",
+                    format.equals("xml") ? null : format);
+
+            assertThat(appender.list).noneMatch(event -> event.getLevel().isGreaterOrEqual(Level.ERROR));
+            assertThat(this.updates).hasSize(1);
+            assertThat(this.deliveries).hasSize(1);
+            verify(this.messageExecutor).submit(any(Runnable.class));
+            verify(this.externalWebhookService).sendExternalWebhook(any(EEW.class));
+            verify(this.webSocket, times(2)).request(1L);
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"gzip", "zip"})
+    void bodyDecodingFailureDoesNotPreventRetryWithSameId(String compression) throws IOException {
+        receive(this.socket1, "retry-id", "invalid-base64", compression);
+        assertThat(this.updates).isEmpty();
+        assertThat(this.deliveries).isEmpty();
+        receive(this.socket2, "retry-id", fixture("forecast_normal.xml"));
+
+        assertThat(this.updates).hasSize(1);
+        assertThat(this.updates.getLast().prev()).isNull();
+        assertThat(this.deliveries).hasSize(1);
+        verify(this.externalWebhookService).sendExternalWebhook(any(EEW.class));
     }
 
     @ParameterizedTest

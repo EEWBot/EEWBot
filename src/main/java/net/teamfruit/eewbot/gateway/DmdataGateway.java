@@ -532,6 +532,13 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                             break;
                         case DATA:
                             DmdataWSData wsData = Codecs.GSON.fromJson(dataString, DmdataWSData.class);
+                            // Skip body decoding for committed IDs. processEEW still checks atomically
+                            // when concurrent arrivals both reach here before the first one commits.
+                            if (StringUtils.isNotBlank(wsData.getId()) &&
+                                    DmdataGateway.this.receivedTelegramIds.getIfPresent("id:" + wsData.getId()) != null) {
+                                Log.logger.debug("DMDATA WebSocket {}: duplicate telegram ID: {}", WebSocketConnection.this.connectionName, wsData.getId());
+                                break;
+                            }
                             Log.logger.info("DMDATA WebSocket {}: data: {}", WebSocketConnection.this.connectionName, wsData);
 
                             if (!wsData.getVersion().equals("2.0")) {
