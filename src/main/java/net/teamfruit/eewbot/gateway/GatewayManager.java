@@ -13,7 +13,6 @@ import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Strings;
 import org.slf4j.MDC;
 
 import java.net.http.HttpClient;
@@ -102,16 +101,26 @@ public class GatewayManager implements AutoCloseable {
         );
     }
 
-    private void handleDmdataEEW(DmdataEEWUpdate update) {
+    void handleDmdataEEW(DmdataEEWUpdate update) {
         EEW eew = update.current();
         MDC.put("gateway", "dmdata");
         MDC.put("event.type", "eew");
         MDC.put("event.id", eew.getEventId());
         try {
-            if (eew.hasEarthquake() &&
-                    Strings.CS.equals(eew.getCondition(), "仮定震源要素") &&
-                    eew.getForecastRegions() == null)
+            if (!update.isDeliveryTarget())
                 return;
+
+            if (eew.isCancelReport()) {
+                if (update.deliveryHistory().isEmpty())
+                    Log.logger.warn("DMDATA cancellation without delivery history: eventId={}, serial={}; using unfiltered EEW subscriptions",
+                            eew.getEventId(), eew.getSerial());
+                List<ChannelFilter> filters = EEWFilterClassifier.classifyDmdataCancellation(update.deliveryHistory());
+                submitMessage(() -> {
+                    this.service.sendMessage(filters, eew);
+                    this.externalWebhookService.sendExternalWebhook(eew);
+                });
+                return;
+            }
 
             boolean isWarning = EEWFilterClassifier.isDmdataWarning(eew, update.prev());
             boolean isImportant = EEWFilterClassifier.isDmdataImportant(eew, update.prev());

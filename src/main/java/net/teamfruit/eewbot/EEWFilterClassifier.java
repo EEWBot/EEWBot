@@ -1,9 +1,13 @@
 package net.teamfruit.eewbot;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.dmdata.DmdataEEWUpdate.DeliveryHistory;
 import net.teamfruit.eewbot.entity.jma.telegram.EEW;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class EEWFilterClassifier {
 
@@ -26,8 +30,22 @@ public final class EEWFilterClassifier {
         return current.isCancelReport() ? prev != null && prev.isEEWWarning() : current.isEEWWarning();
     }
 
+    public static List<ChannelFilter> classifyDmdataCancellation(DeliveryHistory history) {
+        if (history.isEmpty()) {
+            // Lost history: accept either EEW subscription, without intensity or decimation filters.
+            return List.of(ChannelFilter.builder().eewAlert(true).build(),
+                    ChannelFilter.builder().eewPrediction(true).build());
+        }
+        List<ChannelFilter> filters = new ArrayList<>();
+        if (history.warningMaxIntensity() != null)
+            filters.add(classifyEEW(true, true, history.warningMaxIntensity()));
+        if (history.forecastMaxIntensity() != null)
+            filters.add(classifyEEW(false, true, history.forecastMaxIntensity()));
+        return List.copyOf(filters);
+    }
+
     public static boolean isDmdataImportant(EEW current, @Nullable EEW prev) {
-        if (prev == null)
+        if (prev == null || prev.isCancelReport())
             return true;
         EEW.ForecastMaxInt currentMaxInt = current.getForecastMaxInt();
         EEW.ForecastMaxInt prevMaxInt = prev.getForecastMaxInt();

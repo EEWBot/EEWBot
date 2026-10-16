@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.dmdata.DmdataEEWUpdate.DeliveryHistory;
 import net.teamfruit.eewbot.entity.jma.telegram.AbstractEEW;
 import net.teamfruit.eewbot.entity.jma.telegram.EEW;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE43Impl;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -169,6 +171,43 @@ class EEWFilterClassifierTest {
         EEW prev = parseFixture("forecast_normal.xml");
 
         assertThat(EEWFilterClassifier.isDmdataImportant(current, prev)).isTrue();
+    }
+
+    @Test
+    void cancellationKeepsSeparateIntensitiesAndIgnoresDecimation() {
+        List<ChannelFilter> filters = EEWFilterClassifier.classifyDmdataCancellation(
+                new DeliveryHistory(SeismicIntensity.FIVE_PLUS, SeismicIntensity.THREE));
+
+        assertThat(filters).hasSize(2);
+        assertThat(filters.get(0).getEewAlert()).isTrue();
+        assertThat(filters.get(0).getIntensity()).isEqualTo(SeismicIntensity.FIVE_PLUS);
+        assertThat(filters.get(1).getEewPrediction()).isTrue();
+        assertThat(filters.get(1).getIntensity()).isEqualTo(SeismicIntensity.THREE);
+        assertThat(filters).allSatisfy(filter -> assertThat(filter.isEewDecimationPresent()).isFalse());
+    }
+
+    @Test
+    void cancellationWithoutHistoryDoesNotFilterIntensityOrDecimation() {
+        List<ChannelFilter> filters = EEWFilterClassifier.classifyDmdataCancellation(DeliveryHistory.EMPTY);
+
+        assertThat(filters).hasSize(2);
+        assertThat(filters.get(0).getEewAlert()).isTrue();
+        assertThat(filters.get(1).getEewPrediction()).isTrue();
+        assertThat(filters).allSatisfy(filter -> {
+            assertThat(filter.isIntensityPresent()).isFalse();
+            assertThat(filter.isEewDecimationPresent()).isFalse();
+        });
+    }
+
+    @Test
+    void cancellationWithKnownUnknownIntensityDoesNotUseMissingHistoryFallback() {
+        List<ChannelFilter> filters = EEWFilterClassifier.classifyDmdataCancellation(
+                new DeliveryHistory(null, SeismicIntensity.UNKNOWN));
+
+        assertThat(filters).hasSize(1);
+        assertThat(filters.getFirst().getEewPrediction()).isTrue();
+        assertThat(filters.getFirst().isIntensityPresent()).isTrue();
+        assertThat(filters.getFirst().getIntensity()).isEqualTo(SeismicIntensity.UNKNOWN);
     }
 
     @Test

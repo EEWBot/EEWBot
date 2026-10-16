@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.registry.destination.delivery;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.junit.jupiter.api.DisplayName;
@@ -8,10 +9,27 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class DeliverySnapshotTest {
+
+    @Test
+    void matchingAnyFiltersDeduplicatesEvenWhenTransportChangesBetweenLookups() {
+        DeliveryTarget direct = new DeliveryTarget(1L, "ja_jp", null);
+        DeliveryTarget webhook = new DeliveryTarget(1L, "ja_jp", "https://example.test/webhook");
+        DestinationDeliveryRegistry registry = filter -> filter.isEewAlertPresent()
+                ? new DeliveryPartition(Map.of(), Map.of(1L, direct))
+                : new DeliveryPartition(Map.of(1L, webhook), Map.of());
+
+        DeliveryPartition partition = registry.getDeliveryChannelsMatchingAny(List.of(
+                ChannelFilter.builder().eewAlert(true).build(),
+                ChannelFilter.builder().eewPrediction(true).build()));
+
+        assertThat(partition.webhook()).containsOnlyKeys(1L);
+        assertThat(partition.direct()).isEmpty();
+    }
 
     private static DeliverySnapshot.DeliveryChannel dc(long targetId, long channelId, Long threadId, Long guildId,
                                                        boolean eewAlert, boolean eewPrediction, boolean eewDecimation, boolean quakeInfo,
