@@ -23,6 +23,8 @@ public final class QuakeReports {
                                           SeismicIntensity intensity, Instant time) throws IOException {
         String xml = Files.readString(Path.of("src/test/resources/jmaxml/" + type.name().toLowerCase(java.util.Locale.ROOT) + "/case1.xml"));
         xml = xml.replaceAll("<Serial(?:>.*?</Serial>|\\s*/>)", "<Serial>" + serial + "</Serial>")
+                .replaceAll("<EventID>.*?</EventID>", "<EventID>" + EVENT + "</EventID>")
+                .replaceAll("<OriginTime>.*?</OriginTime>", "<OriginTime>" + START.plusSeconds(900) + "</OriginTime>")
                 .replaceAll("<InfoType>.*?</InfoType>", "<InfoType>" + infoType + "</InfoType>")
                 .replaceAll("<DateTime>.*?</DateTime>", "<DateTime>" + time + "</DateTime>")
                 .replaceAll("<ReportDateTime>.*?</ReportDateTime>", "<ReportDateTime>" + time + "</ReportDateTime>");

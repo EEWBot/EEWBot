@@ -12,11 +12,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 import java.time.*;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import static net.teamfruit.eewbot.testutil.QuakeReports.*;
 import static org.assertj.core.api.Assertions.*;
@@ -25,7 +29,8 @@ import static org.mockito.Mockito.*;
 
 class JMAQuakeDeliveryTest {
 
-    private final QuakeInfoStore store = new QuakeInfoStore(Clock.fixed(START, ZoneOffset.UTC), () -> 0);
+    private final AtomicLong ticks = new AtomicLong();
+    private final QuakeInfoStore store = new QuakeInfoStore(Clock.fixed(START, ZoneOffset.UTC), this.ticks::get);
     private final EEWService service = mock(EEWService.class);
     private final ExternalWebhookService external = mock(ExternalWebhookService.class);
     private final ExecutorService executor = mock(ExecutorService.class);
@@ -86,7 +91,7 @@ class JMAQuakeDeliveryTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = JMAXmlType.class, names = {"VXSE51", "VXSE52", "VXSE53"})
+    @EnumSource(value = JMAXmlType.class, names = {"VXSE51", "VXSE52", "VXSE53", "VXSE61"})
     void cancellationDoesNotReadAbsentBodyFieldsAndUsesUnfilteredSubscription(JMAXmlType type) throws Exception {
         var cancel = report(type, 2, JMAInfoType.取消, null, START.plusSeconds(1800));
         deliver(cancel);
@@ -104,6 +109,85 @@ class JMAQuakeDeliveryTest {
     private void deliver(AbstractJMAReport report) {
         this.store.putReport((QuakeInfo) report);
         this.manager.handleJMAReport(report);
+    }
+
+    static Stream<Arguments> referenceTypes() {
+        return Stream.of(Arguments.of(JMAXmlType.VXSE61, JMAXmlType.VXSE53),
+                Arguments.of(JMAXmlType.VXSE52, JMAXmlType.VXSE51));
+    }
+
+    @ParameterizedTest
+    @MethodSource("referenceTypes")
+    void relatedIntensityRemainsAvailableHoursLaterAndUsesLatestCorrection(JMAXmlType type, JMAXmlType source) throws Exception {
+        var high = (QuakeInfo) report(source, 1, JMAInfoType.発表, SeismicIntensity.FIVE_PLUS, START.plusSeconds(1500));
+        this.store.putReport(high);
+        this.ticks.set(Duration.ofHours(6).toNanos());
+        var update = report(type, 1, JMAInfoType.発表, null, START.plus(Duration.ofHours(6)));
+        deliver(update);
+        assertThat(((QuakeInfo) update).getQuakeInfoMaxInt()).contains(SeismicIntensity.FIVE_PLUS);
+        var low = (QuakeInfo) report(source, 2, JMAInfoType.訂正, SeismicIntensity.THREE, START.plusSeconds(1600));
+        this.store.putReport(low);
+        this.store.putReport((QuakeInfo) report(source, 3, JMAInfoType.取消, null, START.plusSeconds(1700)));
+        this.store.putReport(high); // Delayed old normal report must not replace its correction.
+        deliver(report(type, 2, JMAInfoType.発表, null, START.plus(Duration.ofHours(7))));
+        var filters = ArgumentCaptor.forClass(ChannelFilter.class);
+        verify(this.service, times(2)).sendMessage(filters.capture(), any(AbstractJMAReport.class));
+        assertThat(filters.getAllValues()).extracting(ChannelFilter::getIntensity)
+                .containsExactly(SeismicIntensity.FIVE_PLUS, SeismicIntensity.THREE);
+        assertThat(filters.getAllValues().getFirst().test(channel(true, SeismicIntensity.FIVE_PLUS))).isTrue();
+        assertThat(filters.getAllValues().getFirst().test(channel(true, SeismicIntensity.SIX_MINUS))).isFalse();
+    }
+
+    @ParameterizedTest
+    @MethodSource("referenceTypes")
+    void missingAndExpiredReferenceBypassIntensityForEnabledSubscriptions(JMAXmlType type, JMAXmlType source) throws Exception {
+        deliver(report(type, 1, JMAInfoType.発表, null, START.plusSeconds(1600)));
+        this.store.putReport((QuakeInfo) report(source, 1, JMAInfoType.発表, SeismicIntensity.FIVE_PLUS, START.plusSeconds(1500)));
+        this.ticks.set(Duration.ofHours(25).toNanos());
+        deliver(report(type, 2, JMAInfoType.発表, null, START.plus(Duration.ofHours(25))));
+        var filters = ArgumentCaptor.forClass(ChannelFilter.class);
+        verify(this.service, times(2)).sendMessage(filters.capture(), any(AbstractJMAReport.class));
+        assertThat(filters.getAllValues()).allSatisfy(filter -> {
+            assertThat(filter.isIntensityPresent()).isFalse();
+            assertThat(filter.test(channel(true, SeismicIntensity.SEVEN))).isTrue();
+            assertThat(filter.test(channel(false, SeismicIntensity.ONE))).isFalse();
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("referenceTypes")
+    void unknownAndIncompleteReferenceBypassIntensityAndCancellationStaysUnfiltered(JMAXmlType type, JMAXmlType source) throws Exception {
+        this.store.putReport((QuakeInfo) report(source, 1, JMAInfoType.発表, SeismicIntensity.UNKNOWN, START.plusSeconds(1500)));
+        deliver(report(type, 1, JMAInfoType.発表, null, START.plusSeconds(1600)));
+        String incomplete = "<Report><Head><EventID>" + EVENT + "</EventID></Head></Report>";
+        this.store.putReport((QuakeInfo) Codecs.XML_MAPPER.readValue(incomplete, source.getReportClass()));
+        // Also cover an event whose only reference has no Body at all.
+        var emptyStore = new QuakeInfoStore();
+        emptyStore.putReport((QuakeInfo) Codecs.XML_MAPPER.readValue(incomplete, source.getReportClass()));
+        var standalone = (QuakeInfo) report(type, 1, JMAInfoType.発表, null, START.plusSeconds(1600));
+        standalone.initQuakeInfoStore(emptyStore);
+        assertThat(standalone.getQuakeInfoMaxInt()).isEmpty();
+        this.store.putReport((QuakeInfo) report(source, 2, JMAInfoType.発表, SeismicIntensity.THREE, START.plusSeconds(1700)));
+        deliver(report(type, 2, JMAInfoType.発表, null, START.plusSeconds(1800)));
+        deliver(report(type, 3, JMAInfoType.取消, null, START.plusSeconds(1900)));
+        var filters = ArgumentCaptor.forClass(ChannelFilter.class);
+        verify(this.service, times(3)).sendMessage(filters.capture(), any(AbstractJMAReport.class));
+        assertThat(filters.getAllValues().getFirst().isIntensityPresent()).isFalse();
+        assertThat(filters.getAllValues().getLast().isIntensityPresent()).isFalse();
+    }
+
+    @ParameterizedTest
+    @MethodSource("referenceTypes")
+    void cancellationUsesOwnAcceptedMaximumRatherThanOtherTypeHistory(JMAXmlType type, JMAXmlType source) throws Exception {
+        this.store.putReport((QuakeInfo) report(source, 1, JMAInfoType.発表, SeismicIntensity.FIVE_PLUS, START.plusSeconds(1500)));
+        deliver(report(type, 1, JMAInfoType.発表, null, START.plusSeconds(1600)));
+        this.store.putReport((QuakeInfo) report(source, 2, JMAInfoType.訂正, SeismicIntensity.THREE, START.plusSeconds(1700)));
+        deliver(report(type, 2, JMAInfoType.発表, null, START.plusSeconds(1800)));
+        deliver(report(type, 3, JMAInfoType.取消, null, START.plusSeconds(1900)));
+        var filters = ArgumentCaptor.forClass(ChannelFilter.class);
+        verify(this.service, times(3)).sendMessage(filters.capture(), any(AbstractJMAReport.class));
+        assertThat(filters.getAllValues().getLast().getIntensity()).isEqualTo(SeismicIntensity.FIVE_PLUS);
+        assertThat(filters.getAllValues().getLast().isIntensityPresent()).isTrue();
     }
 
     private static DeliverySnapshot.DeliveryChannel channel(boolean quakeInfo, SeismicIntensity minimum) {

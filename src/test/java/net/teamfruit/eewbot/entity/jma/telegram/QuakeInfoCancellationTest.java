@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class QuakeInfoCancellationTest {
 
     @ParameterizedTest
-    @EnumSource(value = JMAXmlType.class, names = {"VXSE51", "VXSE52", "VXSE53"})
+    @EnumSource(value = JMAXmlType.class, names = {"VXSE51", "VXSE52", "VXSE53", "VXSE61"})
     void cancellationStillCreatesDiscordEmbedWithoutHypocenterOrComments(JMAXmlType type) throws Exception {
         var cancel = report(type, 2, JMAInfoType.取消, null, START.plusSeconds(1800));
         var context = new EmbedContext(new RendererQueryFactory(null, null), new QuakeInfoStore(), new I18n("ja_jp"));

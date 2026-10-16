@@ -16,7 +16,8 @@ public class VXSE53Impl extends JmxSeis implements VXSE53 {
 
     @Override
     public Optional<SeismicIntensity> getQuakeInfoMaxInt() {
-        return Optional.ofNullable(getBody().getIntensity()).map(Intensity::getObservation).map(Intensity.IntensityDetail::getMaxInt);
+        return Optional.ofNullable(getBody()).map(Body::getIntensity)
+                .map(Intensity::getObservation).map(Intensity.IntensityDetail::getMaxInt);
     }
 
     private Earthquake getEarthquake() {
