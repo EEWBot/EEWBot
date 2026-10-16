@@ -139,14 +139,14 @@ public interface VXSE53 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
                 // 震源情報
                 .originTime(!isCancelReport() ? getOriginTime().getEpochSecond() : null)
                 .hypocenterName(!isCancelReport() ? getHypocenterName() : null)
-                .hypocenterDetailedName(getHypocenterDetailedName().orElse(null))
+                .hypocenterDetailedName(!isCancelReport() ? getHypocenterDetailedName().orElse(null) : null)
                 .latitude(coord != null ? coord.getLat() : null)
                 .longitude(coord != null ? coord.getLon() : null)
-                .depth(getDepth().orElse(null))
+                .depth(!isCancelReport() ? getDepth().orElse(null) : null)
                 .magnitude(!isCancelReport() ? getMagnitude() : null)
                 // コメント
-                .forecastComment(getForecastComment().map(Comment.CommentForm::getText).orElse(null))
-                .freeFormComment(getFreeFormComment().orElse(null))
+                .forecastComment(!isCancelReport() ? getForecastComment().map(Comment.CommentForm::getText).orElse(null) : null)
+                .freeFormComment(!isCancelReport() ? getFreeFormComment().orElse(null) : null)
                 .build();
     }
 }

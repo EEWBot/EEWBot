@@ -69,6 +69,12 @@ public final class EEWFilterClassifier {
                 .build();
     }
 
+    public static ChannelFilter classifyQuakeInfoCancellation(QuakeInfoStore.DeliveryHistory history) {
+        if (history.complete() && history.maxIntensity() != null)
+            return classifyQuakeInfo(history.maxIntensity());
+        return ChannelFilter.builder().quakeInfo(true).build();
+    }
+
     public static ChannelFilter classifyTsunami() {
         return ChannelFilter.builder()
                 .tsunami(true)

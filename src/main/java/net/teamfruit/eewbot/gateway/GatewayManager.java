@@ -6,6 +6,7 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEWUpdate;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
+import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.EEW;
 import net.teamfruit.eewbot.entity.jma.telegram.VTSE41;
@@ -165,7 +166,7 @@ public class GatewayManager implements AutoCloseable {
         }
         try {
             ChannelFilter filter = data instanceof QuakeInfo quakeInfo
-                    ? EEWFilterClassifier.classifyQuakeInfo(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN))
+                    ? classifyQuakeInfo(data, quakeInfo)
                     : data instanceof VTSE41 ? EEWFilterClassifier.classifyTsunami() : null;
             // Accept both destinations in one submission so a rejection cannot partially accept a report.
             submitMessageOrThrow(() -> {
@@ -174,9 +175,22 @@ public class GatewayManager implements AutoCloseable {
                 if (data instanceof ExternalData externalData)
                     this.externalWebhookService.sendExternalWebhook(externalData);
             });
+            if (data instanceof QuakeInfo quakeInfo && !data.isCancelReport())
+                this.quakeInfoStore.recordDelivery(quakeInfo, filter.getIntensity());
         } finally {
             MDC.clear();
         }
+    }
+
+    private ChannelFilter classifyQuakeInfo(AbstractJMAReport report, QuakeInfo quakeInfo) {
+        if (!report.isCancelReport())
+            return EEWFilterClassifier.classifyQuakeInfo(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
+        JMAXmlType type = JMAXmlType.from(report.getClass());
+        QuakeInfoStore.DeliveryHistory history = this.quakeInfoStore.getDeliveryHistory(report.getEventId(), type);
+        if (!history.complete())
+            Log.logger.warn("JMA cancellation without complete delivery history: eventId={}, type={}, reason={}; ignoring intensity filter",
+                    report.getEventId(), type, history.reason());
+        return EEWFilterClassifier.classifyQuakeInfoCancellation(history);
     }
 
     private void initWebhookSenderHealth() {

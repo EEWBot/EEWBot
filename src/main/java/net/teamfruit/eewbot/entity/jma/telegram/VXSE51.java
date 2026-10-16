@@ -121,8 +121,8 @@ public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
                 .depth(null)
                 .magnitude(null)
                 // コメント
-                .forecastComment(getForecastComment().map(Comment.CommentForm::getText).orElse(null))
-                .freeFormComment(getFreeFormComment().orElse(null))
+                .forecastComment(!isCancelReport() ? getForecastComment().map(Comment.CommentForm::getText).orElse(null) : null)
+                .freeFormComment(!isCancelReport() ? getFreeFormComment().orElse(null) : null)
                 .build();
     }
 }
