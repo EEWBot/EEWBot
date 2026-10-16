@@ -14,6 +14,7 @@ import net.teamfruit.eewbot.entity.dmdata.api.DmdataError;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketList;
 import net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketStart;
 import net.teamfruit.eewbot.entity.dmdata.ws.*;
+import net.teamfruit.eewbot.entity.jma.JMAInfoType;
 import net.teamfruit.eewbot.entity.jma.JMAStatus;
 import net.teamfruit.eewbot.entity.jma.telegram.AbstractEEW;
 import net.teamfruit.eewbot.entity.jma.telegram.EEW;
@@ -31,10 +32,12 @@ import java.net.URI;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
@@ -57,11 +60,13 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
     private WebSocketConnection webSocket1;
     private WebSocketConnection webSocket2;
 
-    private final Cache<String, EEWState> prev;
+    private final Cache<String, EEWState> eventStates;
+    private final Cache<String, Boolean> receivedTelegramIds;
 
     private record EEWState(EEW eew, int serialNo, SeismicIntensity maxIntensitySoFar,
                             DmdataEEWUpdate.DeliveryHistory deliveryHistory, boolean finalReceived, boolean cancelled) {
         boolean isActive() {
+            // Completion history stays terminal even if later ordinary telegrams are delivered.
             return !this.finalReceived && !this.cancelled;
         }
     }
@@ -83,56 +88,100 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
         this.listener = listener;
         this.reconnectScheduler = reconnectScheduler;
         this.wsBaseTest = wsBaseTest != null ? wsBaseTest : "";
-        this.prev = Caffeine.newBuilder()
+        this.eventStates = Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofHours(1))
                 .maximumSize(10_000)
+                .ticker(ticker)
+                .build();
+        this.receivedTelegramIds = Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofHours(1))
+                .maximumSize(100_000)
                 .ticker(ticker)
                 .build();
     }
 
     // Serialize acceptance and listener submission, including active-event numbering across sockets.
     // The listener only enqueues delivery; Discord I/O remains asynchronous.
-    synchronized void processEEW(EEW eew) {
+    synchronized void processEEW(@Nullable String telegramId, EEW eew, String xml) {
         if (this.closed)
             return;
-        int serialNo = Integer.parseInt(eew.getSerial());
-        EEWState existing = this.prev.getIfPresent(eew.getEventId());
-        // This check shares the gateway monitor with all writes. Avoid a cache write for discarded
-        // telegrams: even compute returning the same value can renew expireAfterWrite.
-        if (existing != null && (eew.isCancelReport()
-                ? existing.eew().isCancelReport()
-                : serialNo <= existing.serialNo()))
+        String telegramKey = telegramKey(telegramId, xml);
+        // Read without rewriting duplicates, so retransmission does not renew the TTL.
+        if (this.receivedTelegramIds.getIfPresent(telegramKey) != null)
             return;
-        AtomicReference<DmdataEEWUpdate> accepted = new AtomicReference<>();
-        this.prev.asMap().compute(eew.getEventId(), (key, state) -> {
-            EEW previous = state != null ? state.eew() : null;
-            int maxActiveIndex = this.prev.asMap().entrySet().stream()
-                    .filter(entry -> !entry.getKey().equals(key) && entry.getValue().isActive())
-                    .mapToInt(entry -> entry.getValue().eew().getConcurrentIndex())
-                    .max().orElse(0);
-            if (previous == null) {
-                eew.setConcurrentIndex(maxActiveIndex + 1);
-                eew.setConcurrent(maxActiveIndex > 0);
-            } else {
-                eew.setConcurrentIndex(previous.getConcurrentIndex());
-                eew.setConcurrent(previous.isConcurrent() || state.isActive() && maxActiveIndex > 0);
-            }
+        int serialNo = Integer.parseInt(eew.getSerial());
+        EEWState state = this.eventStates.getIfPresent(eew.getEventId());
+        EEW previous = state != null ? state.eew() : null;
+        int maxActiveIndex = this.eventStates.asMap().entrySet().stream()
+                .filter(entry -> !entry.getKey().equals(eew.getEventId()) && entry.getValue().isActive())
+                .mapToInt(entry -> entry.getValue().eew().getConcurrentIndex())
+                .max().orElse(0);
+        if (previous == null) {
+            eew.setConcurrentIndex(maxActiveIndex + 1);
+            eew.setConcurrent(maxActiveIndex > 0);
+        } else {
+            eew.setConcurrentIndex(previous.getConcurrentIndex());
+            eew.setConcurrent(previous.isConcurrent() || state.isActive() && maxActiveIndex > 0);
+        }
 
-            SeismicIntensity maxBefore = state != null ? state.maxIntensitySoFar() : SeismicIntensity.UNKNOWN;
-            DmdataEEWUpdate.DeliveryHistory history = state != null ? state.deliveryHistory() : DmdataEEWUpdate.DeliveryHistory.EMPTY;
-            DmdataEEWUpdate update = new DmdataEEWUpdate(eew, previous, maxBefore, history);
-            SeismicIntensity runningMax = update.maxIntensityEEW();
-            if (!eew.isCancelReport() && update.isDeliveryTarget()) {
-                // Normal delivery uses the event-wide running maximum, including after a classification switch.
-                history = history.include(eew.isEEWWarning(), runningMax);
-            }
-            accepted.set(new DmdataEEWUpdate(eew, previous, maxBefore, history));
-            return new EEWState(eew, serialNo, runningMax, history,
-                    !eew.isCancelReport() && eew.isLastInfo() || state != null && state.finalReceived(),
-                    eew.isCancelReport() || state != null && state.cancelled());
-        });
-        if (accepted.get() != null)
-            onNewData(accepted.get());
+        SeismicIntensity maxBefore = state != null ? state.maxIntensitySoFar() : SeismicIntensity.UNKNOWN;
+        DmdataEEWUpdate.DeliveryHistory history = state != null ? state.deliveryHistory() : DmdataEEWUpdate.DeliveryHistory.EMPTY;
+        DmdataEEWUpdate update = new DmdataEEWUpdate(eew, previous, maxBefore, history);
+        SeismicIntensity runningMax = update.maxIntensityEEW();
+        if (!eew.isCancelReport() && update.isDeliveryTarget()) {
+            // Accumulate delivery history even when this telegram does not replace the latest state.
+            history = history.include(eew.isEEWWarning(), runningMax);
+        }
+        boolean latest = state == null || replacesLatest(eew, serialNo, state);
+        EEWState next = new EEWState(latest ? eew : previous, latest ? serialNo : state.serialNo(), runningMax, history,
+                state != null && state.finalReceived() || latest && !eew.isCancelReport() && eew.isLastInfo(),
+                state != null && state.cancelled() || latest && eew.isCancelReport());
+
+        // Success means the listener has classified the telegram and enqueued delivery (or intentionally
+        // filtered it). Do not commit state or the ID if parsing, classification or enqueueing fails.
+        // Actual Discord/external-webhook delivery is asynchronous and outside this guarantee.
+        onNewData(new DmdataEEWUpdate(eew, previous, maxBefore, history));
+        this.eventStates.put(eew.getEventId(), next);
+        this.receivedTelegramIds.put(telegramKey, true);
+    }
+
+    private static String telegramKey(@Nullable String id, String xml) {
+        if (StringUtils.isNotBlank(id))
+            return "id:" + id;
+        // Only missing IDs use a body hash; keep its namespace separate from DMDATA IDs.
+        try {
+            return "xml:" + HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(xml.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is unavailable", e);
+        }
+    }
+
+    private static boolean replacesLatest(EEW current, int serialNo, EEWState state) {
+        EEW previous = state.eew();
+        int timeOrder = Comparator.<Instant>nullsFirst(Comparator.naturalOrder())
+                .compare(current.getReportDateTime(), previous.getReportDateTime());
+        if (timeOrder < 0)
+            return false;
+        int typeOrder = Integer.compare(infoTypePriority(current.getInfoType()), infoTypePriority(previous.getInfoType()));
+        if (timeOrder == 0 && typeOrder < 0)
+            return false;
+        // Later corrections/cancellations may reuse or lower the serial. At equal times, prefer
+        // cancellation, correction, announcement, then delayed reports, in that order.
+        boolean administrative = current.getInfoType() == JMAInfoType.訂正 || current.isCancelReport();
+        if (administrative && (timeOrder > 0 || typeOrder > 0))
+            return true;
+        return serialNo >= state.serialNo();
+    }
+
+    private static int infoTypePriority(@Nullable JMAInfoType type) {
+        if (type == null)
+            return -1;
+        return switch (type) {
+            case 遅延 -> 0;
+            case 発表 -> 1;
+            case 訂正 -> 2;
+            case 取消 -> 3;
+        };
     }
 
     @Override
@@ -514,7 +563,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                             Log.logger.info(isTest ? "DMDATA WebSocket {}: test EEW: {}" : "DMDATA WebSocket {}:  EEW: {}", WebSocketConnection.this.connectionName, eew);
 
                             if (!isTest) {
-                                processEEW(eew);
+                                processEEW(wsData.getId(), eew, bodyString);
                             }
                             break;
                         case ERROR:
@@ -526,6 +575,8 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                     Log.logger.error("DMDATA WebSocket {}: failed to parse message: {}", WebSocketConnection.this.connectionName, dataString, e);
                 } catch (IOException e) {
                     Log.logger.error("DMDATA WebSocket {}: failed to decompress message: {}", WebSocketConnection.this.connectionName, dataString, e);
+                } catch (RuntimeException e) {
+                    Log.logger.error("DMDATA WebSocket {}: failed to process message", WebSocketConnection.this.connectionName, e);
                 } finally {
                     MDC.clear();
                 }

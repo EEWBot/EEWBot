@@ -123,10 +123,21 @@ class EEWFilterClassifierTest {
 
     @Test
     void isDmdataImportant_unchanged() throws IOException {
-        EEW current = parseFixture("forecast_normal.xml");
+        EEW current = Codecs.XML_MAPPER.readValue(
+                readFixture("forecast_normal.xml").replace("<Serial>2</Serial>", "<Serial>3</Serial>"), VXSE45Impl.class);
         EEW prev = parseFixture("forecast_normal.xml");
 
         assertThat(EEWFilterClassifier.isDmdataImportant(current, prev)).isFalse();
+    }
+
+    @Test
+    void isDmdataImportant_correctionWithHigherSerialAndUnchangedForecast() throws IOException {
+        EEW current = Codecs.XML_MAPPER.readValue(readFixture("forecast_normal.xml")
+                .replace("<Serial>2</Serial>", "<Serial>3</Serial>")
+                .replace("<InfoType>発表</InfoType>", "<InfoType>訂正</InfoType>"), VXSE45Impl.class);
+        EEW prev = parseFixture("forecast_normal.xml");
+
+        assertThat(EEWFilterClassifier.isDmdataImportant(current, prev)).isTrue();
     }
 
     @Test

@@ -115,7 +115,7 @@ public class GatewayManager implements AutoCloseable {
                     Log.logger.warn("DMDATA cancellation without delivery history: eventId={}, serial={}; using unfiltered EEW subscriptions",
                             eew.getEventId(), eew.getSerial());
                 List<ChannelFilter> filters = EEWFilterClassifier.classifyDmdataCancellation(update.deliveryHistory());
-                submitMessage(() -> {
+                submitMessageOrThrow(() -> {
                     this.service.sendMessage(filters, eew);
                     this.externalWebhookService.sendExternalWebhook(eew);
                 });
@@ -126,7 +126,7 @@ public class GatewayManager implements AutoCloseable {
             boolean isImportant = EEWFilterClassifier.isDmdataImportant(eew, update.prev());
             SeismicIntensity maxIntensity = update.maxIntensityEEW();
             ChannelFilter filter = EEWFilterClassifier.classifyEEW(isWarning, isImportant, maxIntensity);
-            submitMessage(() -> {
+            submitMessageOrThrow(() -> {
                 this.service.sendMessage(filter, eew);
                 this.externalWebhookService.sendExternalWebhook(eew);
             });
@@ -189,12 +189,15 @@ public class GatewayManager implements AutoCloseable {
     }
 
     private void submitMessage(Runnable task) {
-        Runnable wrapped = MdcUtil.wrapWithMdc(task);
         try {
-            this.messageExecutor.submit(wrapped);
+            submitMessageOrThrow(task);
         } catch (RejectedExecutionException e) {
             Log.logger.debug("Message dispatch skipped (executor shut down)");
         }
+    }
+
+    private void submitMessageOrThrow(Runnable task) {
+        this.messageExecutor.submit(MdcUtil.wrapWithMdc(task));
     }
 
     @Override
