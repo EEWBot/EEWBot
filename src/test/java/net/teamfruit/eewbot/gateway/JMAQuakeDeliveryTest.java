@@ -113,6 +113,24 @@ class JMAQuakeDeliveryTest {
     }
 
     @Test
+    void synchronousDiscordFailureDoesNotPreventExternalWebhookAfterAcceptance() throws Exception {
+        doThrow(new IllegalStateException("rendering failed")).when(this.service)
+                .sendMessage(any(ChannelFilter.class), any(AbstractJMAReport.class));
+        var normal = report(JMAXmlType.VXSE53, 1, JMAInfoType.発表, SeismicIntensity.FIVE_PLUS, START.plusSeconds(1500));
+        assertThatCode(() -> deliver(normal)).doesNotThrowAnyException();
+        verify(this.external).sendExternalWebhook((ExternalData) normal);
+        assertThat(this.store.getDeliveryHistory(EVENT, JMAXmlType.VXSE53).maxIntensity()).isEqualTo(SeismicIntensity.FIVE_PLUS);
+    }
+
+    @Test
+    void synchronousExternalFailureDoesNotUndoDiscordDispatch() throws Exception {
+        doThrow(new IllegalStateException("serialization failed")).when(this.external).sendExternalWebhook(any());
+        var normal = report(JMAXmlType.VXSE53, 1, JMAInfoType.発表, SeismicIntensity.FIVE_PLUS, START.plusSeconds(1500));
+        assertThatCode(() -> deliver(normal)).doesNotThrowAnyException();
+        verify(this.service).sendMessage(any(ChannelFilter.class), same(normal));
+    }
+
+    @Test
     void rejectedSubmissionDoesNotRecordDeliveryHistory() throws Exception {
         when(this.executor.submit(any(Runnable.class))).thenThrow(new RejectedExecutionException("closed"));
         var normal = report(JMAXmlType.VXSE53, 1, JMAInfoType.発表, SeismicIntensity.FIVE_PLUS, START.plusSeconds(1500));

@@ -17,6 +17,7 @@ import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.MDC;
 
 import java.net.http.HttpClient;
@@ -119,10 +120,7 @@ public class GatewayManager implements AutoCloseable {
                     Log.logger.warn("DMDATA cancellation without delivery history: eventId={}, serial={}; using unfiltered EEW subscriptions",
                             eew.getEventId(), eew.getSerial());
                 List<ChannelFilter> filters = EEWFilterClassifier.classifyDmdataCancellation(update.deliveryHistory());
-                submitMessageOrThrow(() -> {
-                    this.service.sendMessage(filters, eew);
-                    this.externalWebhookService.sendExternalWebhook(eew);
-                });
+                submitDelivery(() -> this.service.sendMessage(filters, eew), eew);
                 return;
             }
 
@@ -130,10 +128,7 @@ public class GatewayManager implements AutoCloseable {
             boolean isImportant = EEWFilterClassifier.isDmdataImportant(eew, update.prev());
             SeismicIntensity maxIntensity = update.maxIntensityEEW();
             ChannelFilter filter = EEWFilterClassifier.classifyEEW(isWarning, isImportant, maxIntensity);
-            submitMessageOrThrow(() -> {
-                this.service.sendMessage(filter, eew);
-                this.externalWebhookService.sendExternalWebhook(eew);
-            });
+            submitDelivery(() -> this.service.sendMessage(filter, eew), eew);
         } finally {
             MDC.clear();
         }
@@ -172,12 +167,10 @@ public class GatewayManager implements AutoCloseable {
                     ? classifyQuakeInfo(data, quakeInfo)
                     : data instanceof VTSE41 ? EEWFilterClassifier.classifyTsunami() : null;
             // Accept both destinations in one submission so a rejection cannot partially accept a report.
-            submitMessageOrThrow(() -> {
+            submitDelivery(() -> {
                 if (filter != null)
                     this.service.sendMessage(filter, data);
-                if (data instanceof ExternalData externalData)
-                    this.externalWebhookService.sendExternalWebhook(externalData);
-            });
+            }, data instanceof ExternalData externalData ? externalData : null);
             if (data instanceof QuakeInfo quakeInfo && !data.isCancelReport())
                 this.quakeInfoStore.recordDelivery(quakeInfo, filter.getIntensity());
         } finally {
@@ -216,6 +209,22 @@ public class GatewayManager implements AutoCloseable {
 
     private void submitMessageOrThrow(Runnable task) {
         this.messageExecutor.submit(MdcUtil.wrapWithMdc(task));
+    }
+
+    private void submitDelivery(Runnable discordDelivery, @Nullable ExternalData externalData) {
+        submitMessageOrThrow(() -> {
+            try {
+                discordDelivery.run();
+            } catch (Exception error) {
+                Log.logger.error("Discord dispatch failed after queue acceptance: {}", LogSanitizer.safeExceptionMessage(error));
+            }
+            try {
+                if (externalData != null)
+                    this.externalWebhookService.sendExternalWebhook(externalData);
+            } catch (Exception error) {
+                Log.logger.error("External webhook dispatch failed after queue acceptance: {}", error.getClass().getSimpleName());
+            }
+        });
     }
 
     @Override
