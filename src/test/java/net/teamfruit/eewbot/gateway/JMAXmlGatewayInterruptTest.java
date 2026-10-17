@@ -4,8 +4,6 @@ import net.teamfruit.eewbot.QuakeInfoStore;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
@@ -17,6 +15,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,13 +39,13 @@ class JMAXmlGatewayInterruptTest {
         // The gateway processes new entries in reverse feed order.
         String updatedFeed = feed(entry(LATER_REPORT.toString()) + entry(INTERRUPTED_REPORT.toString()) + knownEntry);
         String reportXml = Files.readString(Path.of("src/test/resources/jmaxml/vxse53/case1.xml"));
-        HttpResponse<InputStream> initialFeedResponse = response(feed(knownEntry));
-        HttpResponse<InputStream> updatedFeedResponse = response(updatedFeed);
-        HttpResponse<InputStream> laterReportResponse = response(reportXml);
-        when(httpClient.<InputStream>send(any(HttpRequest.class), any()))
+        var initialFeedResponse = CompletableFuture.completedFuture(response(feed(knownEntry)));
+        var updatedFeedResponse = CompletableFuture.completedFuture(response(updatedFeed));
+        var laterReportResponse = CompletableFuture.completedFuture(response(reportXml));
+        when(httpClient.<byte[]>sendAsync(any(HttpRequest.class), any()))
                 .thenReturn(initialFeedResponse)
                 .thenReturn(updatedFeedResponse)
-                .thenThrow(new InterruptedException("Report fetch interrupted"))
+                .thenReturn(CompletableFuture.failedFuture(new InterruptedException("Report fetch interrupted")))
                 .thenReturn(laterReportResponse);
 
         List<AbstractJMAReport> dispatched = new ArrayList<>();
@@ -58,8 +57,8 @@ class JMAXmlGatewayInterruptTest {
 
             assertAll(
                     () -> assertTrue(Thread.currentThread().isInterrupted(), "Interrupt flag must be restored"),
-                    () -> verify(httpClient).send(argThat(request -> request.uri().equals(INTERRUPTED_REPORT)), any()),
-                    () -> verify(httpClient, never()).send(argThat(request -> request.uri().equals(LATER_REPORT)), any()),
+                    () -> verify(httpClient).sendAsync(argThat(request -> request.uri().equals(INTERRUPTED_REPORT)), any()),
+                    () -> verify(httpClient, never()).sendAsync(argThat(request -> request.uri().equals(LATER_REPORT)), any()),
                     () -> assertTrue(dispatched.isEmpty(), "No reports may be dispatched after interruption")
             );
         } finally {
@@ -85,10 +84,10 @@ class JMAXmlGatewayInterruptTest {
     }
 
     @SuppressWarnings("unchecked")
-    private static HttpResponse<InputStream> response(String body) {
-        HttpResponse<InputStream> response = mock(HttpResponse.class);
+    private static HttpResponse<byte[]> response(String body) {
+        HttpResponse<byte[]> response = mock(HttpResponse.class);
         when(response.statusCode()).thenReturn(200);
-        when(response.body()).thenReturn(new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)));
+        when(response.body()).thenReturn(body.getBytes(StandardCharsets.UTF_8));
         when(response.headers()).thenReturn(HttpHeaders.of(
                 Map.of("Last-Modified", List.of("Tue, 28 Jul 2026 16:41:00 GMT")),
                 (name, value) -> true

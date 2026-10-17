@@ -7,6 +7,7 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.Earthquake;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Hypocenter;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.JmxSeis;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -16,7 +17,8 @@ public class VXSE53Impl extends JmxSeis implements VXSE53 {
 
     @Override
     public Optional<SeismicIntensity> getQuakeInfoMaxInt() {
-        return Optional.ofNullable(getBody().getIntensity()).map(Intensity::getObservation).map(Intensity.IntensityDetail::getMaxInt);
+        return Optional.ofNullable(getBody()).map(Body::getIntensity)
+                .map(Intensity::getObservation).map(Intensity.IntensityDetail::getMaxInt);
     }
 
     private Earthquake getEarthquake() {
@@ -29,11 +31,10 @@ public class VXSE53Impl extends JmxSeis implements VXSE53 {
         return Objects.requireNonNull(getEarthquake().getHypocenter());
     }
 
-    private Intensity.IntensityDetail getObservation() {
+    private @Nullable Intensity.IntensityDetail getObservation() {
         if (isCancelReport())
             throw new IllegalStateException("Cancel report");
-        Intensity intensity = Objects.requireNonNull(getBody().getIntensity());
-        return Objects.requireNonNull(intensity.getObservation());
+        return Optional.ofNullable(getBody()).map(Body::getIntensity).map(Intensity::getObservation).orElse(null);
     }
 
     private Comment getComments() {
@@ -49,7 +50,7 @@ public class VXSE53Impl extends JmxSeis implements VXSE53 {
 
     @Override
     public SeismicIntensity getMaxInt() {
-        return getObservation().getMaxInt();
+        return getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN);
     }
 
     @Override
@@ -98,6 +99,7 @@ public class VXSE53Impl extends JmxSeis implements VXSE53 {
     }
 
     @Override
+    @Nullable
     public Intensity.IntensityDetail getIntensityDetail() {
         return getObservation();
     }

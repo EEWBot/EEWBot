@@ -298,7 +298,7 @@ class DmdataGatewayDeliveryTest {
     }
 
     @Test
-    void enqueueFailureDoesNotCommitIdOrEventStateAndCanBeRetried() throws IOException {
+    void enqueueFailureRetainsReceivedSerialWithoutCommittingIdOrEventState() throws IOException {
         receive("initial-id", fixture("forecast_normal.xml"));
         doThrow(new RejectedExecutionException("test rejection")).doAnswer(invocation -> {
             invocation.getArgument(0, Runnable.class).run();
@@ -306,6 +306,9 @@ class DmdataGatewayDeliveryTest {
         }).when(this.messageExecutor).submit(any(Runnable.class));
 
         receive("retry-id", warning(8));
+        assertThat(this.updates).hasSize(1);
+        assertThat(this.deliveries).hasSize(1);
+        receive("older-id", warning(7));
         assertThat(this.updates).hasSize(1);
         assertThat(this.deliveries).hasSize(1);
         receive(this.socket2, "retry-id", warning(8));
@@ -350,26 +353,28 @@ class DmdataGatewayDeliveryTest {
     }
 
     @Test
-    void expiredIdIsAcceptedWhileMoreRecentEventStateIsRetained() throws IOException {
+    void expiredIdDoesNotAllowAnOlderAnnouncementWhileSerialHistoryIsRetained() throws IOException {
         receive("old-id", fixture("forecast_normal.xml"));
         this.time.addAndGet(Duration.ofMinutes(59).toNanos());
         receive("new-id", reportTime(serial(fixture("forecast_normal.xml"), 3), "2026-05-11T10:23:41+09:00"));
         this.time.addAndGet(Duration.ofMinutes(2).toNanos());
         receive("old-id", fixture("forecast_normal.xml"));
-        assertThat(this.updates).hasSize(3);
-        assertThat(this.updates.getLast().prev().getSerial()).isEqualTo("3");
+        assertThat(this.updates).hasSize(2);
+        assertThat(this.updates.getLast().current().getSerial()).isEqualTo("3");
         receive("probe-id", reportTime(serial(fixture("forecast_normal.xml"), 4), "2026-05-11T10:23:42+09:00"));
 
         assertThat(this.updates.getLast().prev().getSerial()).isEqualTo("3");
-        assertThat(this.deliveries).hasSize(4);
+        assertThat(this.deliveries).hasSize(3);
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = {8, 10})
-    void earlierReportTimeDoesNotReplaceLatestEvenWithHigherSerial(int lateSerial) throws IOException {
+    @Test
+    void earlierReportTimeDoesNotReplaceLatestButStillAdvancesReceivedSerial() throws IOException {
         receive("latest-id", reportTime(serial(fixture("forecast_normal.xml"), 9), "2026-05-11T10:26:00+09:00"));
-        receive("late-id", reportTime(serial(fixture("forecast_normal.xml"), lateSerial), "2026-05-11T10:25:00+09:00")
+        receive("late-id", reportTime(serial(fixture("forecast_normal.xml"), 10), "2026-05-11T10:25:00+09:00")
                 .replace("<From>4</From>", "<From>2</From>"));
+        assertThat(this.updates).hasSize(2);
+        assertThat(this.deliveries).hasSize(2);
+        receive("older-id", reportTime(serial(fixture("forecast_normal.xml"), 9), "2026-05-11T10:26:30+09:00"));
         assertThat(this.updates).hasSize(2);
         assertThat(this.deliveries).hasSize(2);
 
@@ -383,23 +388,33 @@ class DmdataGatewayDeliveryTest {
     }
 
     @Test
-    void lowerSerialAnnouncementWithLaterTimeIsDeliveredWithoutReplacingLatest() throws IOException {
+    void lowerSerialAnnouncementWithLaterTimeIsDiscardedWithoutChangingStateOrIntensityHistory() throws IOException {
         receive("latest-id", reportTime(serial(fixture("forecast_normal.xml"), 9), "2026-05-11T10:26:00+09:00"));
-        receive("lower-id", reportTime(serial(fixture("forecast_normal.xml"), 8), "2026-05-11T10:27:00+09:00"));
-        assertThat(this.deliveries).hasSize(2);
-        assertThat(lastDelivery().direct()).containsOnlyKeys(2L, 4L, 10L);
+        receive("lower-id", reportTime(warning(8), "2026-05-11T10:27:00+09:00"));
+        assertThat(this.updates).hasSize(1);
+        assertThat(this.deliveries).hasSize(1);
         receive("probe-id", reportTime(serial(fixture("forecast_normal.xml"), 10), "2026-05-11T10:28:00+09:00"));
 
         assertThat(this.updates.getLast().prev().getSerial()).isEqualTo("9");
         assertThat(this.updates.getLast().prev().getReportDateTime()).isEqualTo(Instant.parse("2026-05-11T01:26:00Z"));
+        assertThat(this.updates.getLast().maxIntensityBefore()).isEqualTo(SeismicIntensity.FOUR);
+        assertThat(this.updates.getLast().deliveryHistory().warningMaxIntensity()).isNull();
+        assertThat(this.updates.getLast().deliveryHistory().forecastMaxIntensity()).isEqualTo(SeismicIntensity.FOUR);
+        assertThat(this.updates).hasSize(2);
+        assertThat(this.deliveries).hasSize(2);
+        verify(this.messageExecutor, times(2)).submit(any(Runnable.class));
+        verify(this.externalWebhookService, times(2)).sendExternalWebhook(any(EEW.class));
     }
 
     @ParameterizedTest
     @EnumSource(value = JMAInfoType.class, names = {"訂正", "取消"})
-    void laterCorrectionOrCancellationCanReplaceLatestWithLowerSerial(JMAInfoType type) throws IOException {
+    void lowerSerialCorrectionOrCancellationDoesNotRollBackAnnouncementSerial(JMAInfoType type) throws IOException {
         receive("initial-id", reportTime(serial(fixture("forecast_normal.xml"), 9), "2026-05-11T10:26:00+09:00"));
         String revised = type == JMAInfoType.取消 ? fixture("cancel_same_serial.xml") : fixture("forecast_normal.xml");
         receive("revised-id", reportTime(infoType(serial(revised, 2), type), "2026-05-11T10:27:00+09:00"));
+        receive("older-id", reportTime(warning(8), "2026-05-11T10:27:30+09:00"));
+        assertThat(this.updates).hasSize(2);
+        assertThat(this.deliveries).hasSize(2);
         receive("probe-id", reportTime(serial(fixture("forecast_normal.xml"), 10), "2026-05-11T10:28:00+09:00"));
 
         EEW previous = this.updates.getLast().prev();
@@ -407,7 +422,97 @@ class DmdataGatewayDeliveryTest {
         assertThat(previous.getInfoType()).isEqualTo(type);
         assertThat(previous.getReportDateTime()).isEqualTo(Instant.parse("2026-05-11T01:27:00Z"));
         assertThat(this.updates.getLast().maxIntensityBefore()).isEqualTo(SeismicIntensity.FOUR);
+        assertThat(this.updates.getLast().deliveryHistory().warningMaxIntensity()).isNull();
         assertThat(this.deliveries).hasSize(3);
+        receive("correction-id", reportTime(infoType(serial(fixture("forecast_normal.xml"), 10), JMAInfoType.訂正),
+                "2026-05-11T10:29:00+09:00"));
+        assertThat(this.updates).extracting(update -> update.current().getSerial()).containsExactly("9", "2", "10", "10");
+        assertThat(this.updates.getLast().current().getInfoType()).isEqualTo(JMAInfoType.訂正);
+        assertThat(this.deliveries).hasSize(4);
+        verify(this.externalWebhookService, times(4)).sendExternalWebhook(any(EEW.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = JMAInfoType.class, names = {"訂正", "取消"})
+    void higherSerialCorrectionOrCancellationDoesNotAdvanceAnnouncementSerial(JMAInfoType type) throws IOException {
+        receive("initial-id", serial(fixture("forecast_normal.xml"), 9));
+        String revised = type == JMAInfoType.取消 ? fixture("cancel_same_serial.xml") : fixture("forecast_normal.xml");
+        receive("revised-id", reportTime(infoType(serial(revised, 13), type), "2026-05-11T10:27:00+09:00"));
+        receive("next-id", reportTime(serial(fixture("forecast_normal.xml"), 10), "2026-05-11T10:28:00+09:00"));
+
+        assertThat(this.updates).extracting(update -> update.current().getSerial()).containsExactly("9", "13", "10");
+        receive("older-id", reportTime(serial(fixture("forecast_normal.xml"), 9), "2026-05-11T10:29:00+09:00"));
+        assertThat(this.updates).hasSize(3);
+        assertThat(this.deliveries).hasSize(3);
+    }
+
+    @Test
+    void discardedAnnouncementIdSkipsBodyDecodingOnTheOtherSocket() throws IOException {
+        receive("latest-id", serial(fixture("forecast_normal.xml"), 9));
+        receive("discarded-id", serial(fixture("forecast_normal.xml"), 8));
+        Logger logger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            receive(this.socket2, "discarded-id", "invalid-base64", "gzip");
+
+            assertThat(appender.list).noneMatch(event -> event.getLevel().isGreaterOrEqual(Level.ERROR));
+            assertThat(this.updates).hasSize(1);
+            assertThat(this.deliveries).hasSize(1);
+            verify(this.messageExecutor).submit(any(Runnable.class));
+            verify(this.externalWebhookService).sendExternalWebhook(any(EEW.class));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {65, 1439})
+    void announcementSerialHistorySurvivesEventStateExpiry(int minutes) throws IOException {
+        receive("initial-id", serial(fixture("forecast_normal.xml"), 9));
+        this.time.addAndGet(Duration.ofMinutes(minutes).toNanos());
+        receive("older-id", reportTime(warning(8), "2026-05-11T10:27:00+09:00"));
+        assertThat(this.updates).hasSize(1);
+        assertThat(this.deliveries).hasSize(1);
+
+        receive("next-id", reportTime(serial(fixture("forecast_normal.xml"), 10), "2026-05-11T10:28:00+09:00"));
+        assertThat(this.updates).hasSize(2);
+        assertThat(this.updates.getLast().prev()).isNull();
+        assertThat(this.updates.getLast().maxIntensityBefore()).isEqualTo(SeismicIntensity.UNKNOWN);
+        assertThat(this.updates.getLast().deliveryHistory().warningMaxIntensity()).isNull();
+        this.time.addAndGet(Duration.ofMinutes(2).toNanos());
+        receive("still-older-id", reportTime(serial(fixture("forecast_normal.xml"), 9), "2026-05-11T10:29:00+09:00"));
+        assertThat(this.updates).hasSize(2);
+        assertThat(this.deliveries).hasSize(2);
+    }
+
+    @Test
+    void discardedAnnouncementsAndAdministrativeReportsDoNotRenewSerialHistory() throws IOException {
+        receive("initial-id", serial(fixture("forecast_normal.xml"), 9));
+        this.time.addAndGet(Duration.ofHours(24).minusMinutes(1).toNanos());
+        receive("older-id", serial(fixture("forecast_normal.xml"), 8));
+        receive("correction-id", infoType(serial(fixture("forecast_normal.xml"), 2), JMAInfoType.訂正));
+        receive("cancel-id", serial(fixture("cancel_same_serial.xml"), 2));
+        assertThat(this.updates).hasSize(3);
+        this.time.addAndGet(Duration.ofMinutes(2).toNanos());
+        receive("after-expiry-id", reportTime(serial(fixture("forecast_normal.xml"), 8), "2026-05-11T10:28:00+09:00"));
+
+        assertThat(this.updates).hasSize(4);
+        assertThat(this.updates.getLast().current().getSerial()).isEqualTo("8");
+        assertThat(this.deliveries).hasSize(4);
+    }
+
+    @Test
+    void announcementSerialHistoryIsScopedToEachEvent() throws IOException {
+        receive("event-a-id", serial(fixture("forecast_normal.xml"), 9));
+        receive("event-b-id", fixture("forecast_normal.xml").replace("20260511102316", "event-b"));
+
+        assertThat(this.updates).hasSize(2);
+        assertThat(this.updates.getLast().current().getEventId()).isEqualTo("event-b");
+        assertThat(this.updates.getLast().prev()).isNull();
+        assertThat(this.deliveries).hasSize(2);
     }
 
     @ParameterizedTest
@@ -469,7 +574,7 @@ class DmdataGatewayDeliveryTest {
         receive("probe-id", reportTime(serial(fixture("forecast_normal.xml"), 10), "2026-05-11T10:27:00+09:00"));
         assertThat(this.updates.getLast().prev().getSerial()).isEqualTo("9");
         assertThat(this.updates.getLast().prev().getForecastMaxInt().from()).isEqualTo("4");
-        assertThat(this.updates.getLast().maxIntensityBefore()).isEqualTo(cancelled ? SeismicIntensity.FOUR : SeismicIntensity.FIVE_PLUS);
+        assertThat(this.updates.getLast().maxIntensityBefore()).isEqualTo(SeismicIntensity.FOUR);
     }
 
     @ParameterizedTest
@@ -542,14 +647,15 @@ class DmdataGatewayDeliveryTest {
 
     @ParameterizedTest
     @ValueSource(ints = {-1, 2, 8, 13})
-    void normalReportsAfterFinalOrCancellationAcceptDistinctIds(int cancelSerial) throws Exception {
+    void normalReportsAfterFinalOrCancellationStillRejectOlderSerials(int cancelSerial) throws Exception {
         receive(fixture("final.xml"));
         if (cancelSerial >= 0)
             receive(serial(fixture("cancel_same_serial.xml"), cancelSerial));
         int lastSerial = cancelSerial >= 0 ? cancelSerial : 8;
+        int nextSerial = Math.max(8, lastSerial) + 1;
         int acceptedBefore = this.updates.size();
 
-        String next = reportTime(serial(fixture("forecast_normal.xml"), lastSerial + 1), "2026-05-11T10:26:00+09:00");
+        String next = reportTime(serial(fixture("forecast_normal.xml"), nextSerial), "2026-05-11T10:26:00+09:00");
         receiveOnBothSockets("normal-after-terminal", next);
         assertThat(this.updates).hasSize(acceptedBefore + 1);
         assertThat(this.deliveries).hasSize(acceptedBefore + 1);
@@ -562,14 +668,15 @@ class DmdataGatewayDeliveryTest {
         receive("same-serial-edit", reportTime(next, "2026-05-11T10:26:01+09:00").replace("<Text/>", "<Text>更新</Text>"));
         assertThat(lastDelivery().direct()).containsOnlyKeys(2L, 4L, 9L, 10L);
         assertThat(lastDelivery().webhook()).containsOnlyKeys(3L);
-        receive("older-report", serial(fixture("forecast_normal.xml"), lastSerial));
-        assertThat(this.updates).hasSize(acceptedBefore + 3);
+        receive("older-report", serial(fixture("forecast_normal.xml"), nextSerial - 1));
+        assertThat(this.updates).hasSize(acceptedBefore + 2);
+        assertThat(this.deliveries).hasSize(acceptedBefore + 2);
 
-        receive(reportTime(serial(fixture("forecast_normal.xml"), lastSerial + 2), "2026-05-11T10:26:02+09:00"));
+        receive(reportTime(serial(fixture("forecast_normal.xml"), nextSerial + 1), "2026-05-11T10:26:02+09:00"));
         assertThat(lastDelivery().direct()).containsOnlyKeys(4L, 10L);
         assertThat(lastDelivery().webhook()).isEmpty();
-        assertThat(this.updates.getLast().prev().getSerial()).isEqualTo(Integer.toString(lastSerial + 1));
-        verify(this.externalWebhookService, times(acceptedBefore + 4)).sendExternalWebhook(any(EEW.class));
+        assertThat(this.updates.getLast().prev().getSerial()).isEqualTo(Integer.toString(nextSerial));
+        verify(this.externalWebhookService, times(acceptedBefore + 3)).sendExternalWebhook(any(EEW.class));
     }
 
     @Test

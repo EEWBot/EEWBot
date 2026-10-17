@@ -78,11 +78,11 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
                 .hypocenterDetailedName(null)
                 .latitude(coord != null ? coord.getLat() : null)
                 .longitude(coord != null ? coord.getLon() : null)
-                .depth(getDepth().orElse(null))
+                .depth(!isCancelReport() ? getDepth().orElse(null) : null)
                 .magnitude(!isCancelReport() ? getMagnitude() : null)
                 // コメント
                 .forecastComment(null)
-                .freeFormComment(getFreeFormComment().orElse(null))
+                .freeFormComment(!isCancelReport() ? getFreeFormComment().orElse(null) : null)
                 .build();
     }
 }

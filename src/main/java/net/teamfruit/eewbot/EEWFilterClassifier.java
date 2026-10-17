@@ -62,11 +62,17 @@ public final class EEWFilterClassifier {
                 !Objects.equals(current.getHypocenterName(), prev.getHypocenterName());
     }
 
-    public static ChannelFilter classifyQuakeInfo(SeismicIntensity maxIntensity) {
-        return ChannelFilter.builder()
-                .quakeInfo(true)
-                .intensity(maxIntensity)
-                .build();
+    public static ChannelFilter classifyQuakeInfo(@Nullable SeismicIntensity maxIntensity) {
+        ChannelFilter.Builder builder = ChannelFilter.builder().quakeInfo(true);
+        if (maxIntensity != null)
+            builder.intensity(maxIntensity);
+        return builder.build();
+    }
+
+    public static ChannelFilter classifyQuakeInfoCancellation(QuakeInfoStore.DeliveryHistory history) {
+        if (history.complete() && history.maxIntensity() != null)
+            return classifyQuakeInfo(history.maxIntensity());
+        return classifyQuakeInfo(null);
     }
 
     public static ChannelFilter classifyTsunami() {

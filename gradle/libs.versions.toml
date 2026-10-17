@@ -23,6 +23,7 @@ caffeine = "3.3.1"
 testcontainers = "2.0.5"
 mockito = "5.24.0"
 logstash-logback-encoder = "9.0"
+reactor = "3.8.6"
 
 [libraries]
 ch-qos-logback-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "ch-qos-logback-logback-classic" }
@@ -50,6 +51,7 @@ testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgr
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
 logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
+reactor-test = { module = "io.projectreactor:reactor-test", version.ref = "reactor" }
 
 [plugins]
 shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar" }
