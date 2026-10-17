@@ -117,22 +117,20 @@ class JMAXmlGatewayRetryTest {
     }
 
     @Test
-    void unattemptedReportsDeferredByBudgetAreRetainedThrough304() {
+    void processesAllNewReportsInOnePollWithoutRedeliveryOn304() {
         for (int i = 0; i < 20; i++)
             this.entries = entry("report" + i, UPDATED) + this.entries;
         this.gateway.run();
-        assertThat(this.dispatched).hasSize(7);
+        assertThat(this.dispatched).hasSize(20);
         this.feedStatus = 304;
         this.gateway.run();
-        assertThat(this.dispatched).hasSize(14);
-        this.gateway.run();
-        this.gateway.run();
         assertThat(this.dispatched).hasSize(20);
+        assertThat(this.hits).hasSize(20);
         assertThat(this.hits.values()).containsOnly(1);
     }
 
     @Test
-    void unsupportedEntriesDoNotConsumeHttpAttemptBudget() {
+    void unsupportedEntriesDoNotFetchReports() {
         this.entries = entry("report", UPDATED);
         for (int i = 0; i < 10; i++)
             this.entries += entry("unsupported" + i, UPDATED).replace("震源・震度に関する情報", "季節観測");
@@ -142,26 +140,30 @@ class JMAXmlGatewayRetryTest {
     }
 
     @Test
-    void retryBudgetPrioritizesNewReportsAndRotatesLargeDueBacklog() {
+    void processesAllDueRetriesAfterNewReportsInOnePoll() {
         for (int i = 0; i < 12; i++) {
             this.entries = entry("failed" + i, UPDATED) + this.entries;
             this.statuses.put("/failed" + i + ".xml", 503);
         }
         this.gateway.run();
-        this.gateway.run(); // Remaining first attempts; no retry is due yet.
+        assertThat(this.hits).hasSize(12);
+        assertThat(this.hits.values()).containsOnly(1);
         this.clock.advance(Duration.ofMinutes(1));
+        this.statuses.clear();
         this.entries = entry("fresh", UPDATED) + this.entries;
+        List<String> expectedRequests = new ArrayList<>(List.of("/eqvol.xml", "/fresh.xml"));
+        for (int i = 0; i < 12; i++)
+            expectedRequests.add("/failed" + i + ".xml");
         int before = this.requests.size();
         this.gateway.run();
         assertThat(this.requests.subList(before, this.requests.size())).extracting(request -> request.uri().getPath())
-                .containsExactly("/eqvol.xml", "/fresh.xml", "/failed0.xml", "/failed1.xml", "/failed2.xml");
-        assertThat(this.dispatched).hasSize(1);
+                .containsExactlyElementsOf(expectedRequests);
+        assertThat(this.dispatched).hasSize(13);
         this.feedStatus = 304;
-        for (int poll = 0; poll < 3; poll++) {
-            before = this.requests.size();
-            this.gateway.run();
-            assertThat(this.requests.size() - before).isEqualTo(4); // Feed plus three retries.
-        }
+        before = this.requests.size();
+        this.gateway.run();
+        assertThat(this.requests.size() - before).isEqualTo(1);
+        assertThat(this.dispatched).hasSize(13);
         assertThat(this.hits).containsEntry("/fresh.xml", 1);
         for (int i = 0; i < 12; i++)
             assertThat(this.hits).containsEntry("/failed" + i + ".xml", 2);

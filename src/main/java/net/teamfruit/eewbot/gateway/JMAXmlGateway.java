@@ -33,8 +33,6 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
     private static final int MAX_RECENT = 10_000;
     private static final int MAX_PENDING = 10_000;
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
-    private static final int MAX_NEW_REPORTS_PER_POLL = 7;
-    private static final int MAX_RETRIES_PER_POLL = 3;
 
     private final java.net.http.HttpClient httpClient;
     private final QuakeInfoStore store;
@@ -111,27 +109,13 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
         } catch (Exception e) {
             onError(new EEWGatewayException(e));
         }
-        // Give unattempted reports priority and reserve separate retry capacity. Work deferred by
-        // either budget stays pending, including entries no longer published and unchanged feeds.
+        // Give unattempted reports priority, then process every retry whose backoff has elapsed.
         List<EntryKey> candidates = new ArrayList<>(this.pending.keySet());
         candidates.sort(Comparator.comparing(key -> this.pending.get(key).failures > 0));
-        int newAttempts = 0;
-        int retries = 0;
         for (EntryKey key : candidates) {
             PendingEntry pendingEntry = this.pending.get(key);
             if (this.clock.instant().isBefore(pendingEntry.retryAt))
                 continue;
-            boolean requiresFetch = pendingEntry.entry.getTitle()
-                    .map(type -> type.getReportClass() != null).orElse(false);
-            if (requiresFetch && pendingEntry.failures == 0) {
-                if (newAttempts >= MAX_NEW_REPORTS_PER_POLL)
-                    continue;
-                newAttempts++;
-            } else if (requiresFetch) {
-                if (retries >= MAX_RETRIES_PER_POLL)
-                    continue;
-                retries++;
-            }
             try {
                 if (Thread.currentThread().isInterrupted())
                     return;
@@ -144,7 +128,7 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
             } catch (Exception e) {
                 long delaySeconds = Math.min(3600, 60L << Math.min(pendingEntry.failures++, 6));
                 pendingEntry.retryAt = this.clock.instant().plusSeconds(delaySeconds);
-                // Rotate attempted failures so a large due backlog gets a fair share of later polls.
+                // Keep attempted failures at the end of the pending order for later polls.
                 this.pending.remove(key);
                 this.pending.put(key, pendingEntry);
                 Log.logger.warn("Failed to process JMA XML Report: {}; retry at {} (still published: {})",
