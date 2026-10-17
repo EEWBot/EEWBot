@@ -10,16 +10,20 @@ import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @SuppressWarnings("NonAsciiCharacters")
 public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
@@ -28,6 +32,9 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
     private static final String REMOTE = "eqvol.xml";
     private static final int MAX_RECENT = 10_000;
     private static final int MAX_PENDING = 10_000;
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
+    private static final int MAX_NEW_REPORTS_PER_POLL = 7;
+    private static final int MAX_RETRIES_PER_POLL = 3;
 
     private final java.net.http.HttpClient httpClient;
     private final QuakeInfoStore store;
@@ -35,6 +42,7 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
     private final String remoteRoot;
     private final Clock clock;
     private final Instant catchUpSince;
+    private final Duration requestTimeout;
 
     // Published successes never expire. Keep a bounded tail for incomplete/reordered feeds.
     private Set<EntryKey> published = Set.of();
@@ -70,10 +78,18 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
     }
 
     JMAXmlGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store, Listener listener, String debugFeedRoot, Clock clock) {
+        this(httpClient, store, listener, debugFeedRoot, clock, REQUEST_TIMEOUT);
+    }
+
+    JMAXmlGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store, Listener listener, String debugFeedRoot,
+                  Clock clock, Duration requestTimeout) {
         this.httpClient = httpClient;
         this.store = store;
         this.listener = listener;
         this.clock = clock;
+        if (requestTimeout.isZero() || requestTimeout.isNegative())
+            throw new IllegalArgumentException("Request timeout must be positive");
+        this.requestTimeout = requestTimeout;
         this.catchUpSince = clock.instant().minus(Duration.ofMinutes(10));
         String root = StringUtils.isNotEmpty(debugFeedRoot) ? debugFeedRoot : DEFAULT_REMOTE_ROOT;
         this.remoteRoot = Strings.CS.appendIfMissing(root, "/");
@@ -95,26 +111,44 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
         } catch (Exception e) {
             onError(new EEWGatewayException(e));
         }
-        // Retry independently of feed availability, including 304 and entries no longer published.
-        for (var it = this.pending.entrySet().iterator(); it.hasNext(); ) {
-            var item = it.next();
-            PendingEntry pendingEntry = item.getValue();
+        // Give unattempted reports priority and reserve separate retry capacity. Work deferred by
+        // either budget stays pending, including entries no longer published and unchanged feeds.
+        List<EntryKey> candidates = new ArrayList<>(this.pending.keySet());
+        candidates.sort(Comparator.comparing(key -> this.pending.get(key).failures > 0));
+        int newAttempts = 0;
+        int retries = 0;
+        for (EntryKey key : candidates) {
+            PendingEntry pendingEntry = this.pending.get(key);
             if (this.clock.instant().isBefore(pendingEntry.retryAt))
                 continue;
+            boolean requiresFetch = pendingEntry.entry.getTitle()
+                    .map(type -> type.getReportClass() != null).orElse(false);
+            if (requiresFetch && pendingEntry.failures == 0) {
+                if (newAttempts >= MAX_NEW_REPORTS_PER_POLL)
+                    continue;
+                newAttempts++;
+            } else if (requiresFetch) {
+                if (retries >= MAX_RETRIES_PER_POLL)
+                    continue;
+                retries++;
+            }
             try {
                 if (Thread.currentThread().isInterrupted())
                     return;
                 processReport(pendingEntry.entry);
-                markProcessed(item.getKey());
-                it.remove();
+                markProcessed(key);
+                this.pending.remove(key);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
             } catch (Exception e) {
                 long delaySeconds = Math.min(3600, 60L << Math.min(pendingEntry.failures++, 6));
                 pendingEntry.retryAt = this.clock.instant().plusSeconds(delaySeconds);
+                // Rotate attempted failures so a large due backlog gets a fair share of later polls.
+                this.pending.remove(key);
+                this.pending.put(key, pendingEntry);
                 Log.logger.warn("Failed to process JMA XML Report: {}; retry at {} (still published: {})",
-                        item.getKey(), pendingEntry.retryAt, this.published.contains(item.getKey()), e);
+                        key, pendingEntry.retryAt, this.published.contains(key), e);
             }
         }
     }
@@ -122,65 +156,64 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
     private void pollFeed() throws Exception {
         HttpRequest.Builder request = HttpRequest.newBuilder()
                 .uri(URI.create(this.remoteRoot + REMOTE))
+                .timeout(this.requestTimeout)
                 .header("User-Agent", "eewbot").GET();
         if (this.lastModified != null)
             request.header("If-Modified-Since", this.lastModified);
-        HttpResponse<InputStream> response = this.httpClient.send(request.build(), HttpResponse.BodyHandlers.ofInputStream());
-        try (InputStream body = response.body()) {
-            if (response.statusCode() == 304)
-                return;
-            if (response.statusCode() != 200) {
-                Log.logger.warn("Failed to fetch JMA XML: HTTP {}", response.statusCode());
-                return;
-            }
-            JMAFeed feed = Codecs.XML_MAPPER.readValue(body, JMAFeed.class);
-            List<JMAFeed.Entry> entries = feed.getEntries() == null ? List.of() : feed.getEntries();
-            Set<EntryKey> current = new HashSet<>();
-            entries.forEach(entry -> current.add(EntryKey.of(entry)));
-            this.published = current;
-            for (var it = this.processed.iterator(); it.hasNext(); ) {
-                EntryKey key = it.next();
-                if (!current.contains(key)) {
-                    this.recent.add(key);
-                    it.remove();
-                }
-            }
-            for (var it = this.recent.iterator(); it.hasNext(); ) {
-                EntryKey key = it.next();
-                if (current.contains(key)) {
-                    this.processed.add(key);
-                    it.remove();
-                }
-            }
-            trimRecent();
-            // Atom feeds are newest first; process older reports before their corrections.
-            for (var it = entries.listIterator(entries.size()); it.hasPrevious(); ) {
-                JMAFeed.Entry entry = it.previous();
-                EntryKey key = EntryKey.of(entry);
-                if (this.processed.contains(key) || this.recent.contains(key) || this.pending.containsKey(key))
-                    continue;
-                if (!this.initialized && isBeforeCatchUp(entry)) {
-                    markProcessed(key);
-                } else {
-                    this.pending.put(key, new PendingEntry(entry));
-                }
-            }
-            int missing = 0;
-            for (EntryKey key : this.pending.keySet()) {
-                if (!current.contains(key))
-                    missing++;
-            }
-            for (var it = this.pending.keySet().iterator(); missing > MAX_PENDING && it.hasNext(); ) {
-                EntryKey key = it.next();
-                if (!current.contains(key)) {
-                    it.remove();
-                    missing--;
-                    Log.logger.error("JMA XML retry capacity exceeded; evicting unresolved unpublished entry: {}", key);
-                }
-            }
-            this.initialized = true;
-            this.lastModified = response.headers().firstValue("Last-Modified").orElse(null);
+        HttpResponse<byte[]> response = send(request.build());
+        if (response.statusCode() == 304)
+            return;
+        if (response.statusCode() != 200) {
+            Log.logger.warn("Failed to fetch JMA XML: HTTP {}", response.statusCode());
+            return;
         }
+        JMAFeed feed = Codecs.XML_MAPPER.readValue(response.body(), JMAFeed.class);
+        List<JMAFeed.Entry> entries = feed.getEntries() == null ? List.of() : feed.getEntries();
+        Set<EntryKey> current = new HashSet<>();
+        entries.forEach(entry -> current.add(EntryKey.of(entry)));
+        this.published = current;
+        for (var it = this.processed.iterator(); it.hasNext(); ) {
+            EntryKey key = it.next();
+            if (!current.contains(key)) {
+                this.recent.add(key);
+                it.remove();
+            }
+        }
+        for (var it = this.recent.iterator(); it.hasNext(); ) {
+            EntryKey key = it.next();
+            if (current.contains(key)) {
+                this.processed.add(key);
+                it.remove();
+            }
+        }
+        trimRecent();
+        // Atom feeds are newest first; process older reports before their corrections.
+        for (var it = entries.listIterator(entries.size()); it.hasPrevious(); ) {
+            JMAFeed.Entry entry = it.previous();
+            EntryKey key = EntryKey.of(entry);
+            if (this.processed.contains(key) || this.recent.contains(key) || this.pending.containsKey(key))
+                continue;
+            if (!this.initialized && isBeforeCatchUp(entry)) {
+                markProcessed(key);
+            } else {
+                this.pending.put(key, new PendingEntry(entry));
+            }
+        }
+        int missing = 0;
+        for (EntryKey key : this.pending.keySet()) {
+            if (!current.contains(key))
+                missing++;
+        }
+        for (var it = this.pending.keySet().iterator(); missing > MAX_PENDING && it.hasNext(); ) {
+            EntryKey key = it.next();
+            if (!current.contains(key)) {
+                it.remove();
+                missing--;
+                Log.logger.error("JMA XML retry capacity exceeded; evicting unresolved unpublished entry: {}", key);
+            }
+        }
+        this.initialized = true;
+        this.lastModified = response.headers().firstValue("Last-Modified").orElse(null);
     }
 
     private boolean isBeforeCatchUp(JMAFeed.Entry entry) {
@@ -215,14 +248,12 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
         if (reportClass == null)
             return;
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(entry.getLink().getHref()))
+                .timeout(this.requestTimeout)
                 .header("User-Agent", "eewbot").GET().build();
-        HttpResponse<InputStream> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
-        String xml;
-        try (InputStream body = response.body()) {
-            if (response.statusCode() != 200)
-                throw new java.io.IOException("JMA XML report HTTP " + response.statusCode() + ": " + request.uri());
-            xml = new String(body.readAllBytes(), StandardCharsets.UTF_8);
-        }
+        HttpResponse<byte[]> response = send(request);
+        if (response.statusCode() != 200)
+            throw new IOException("JMA XML report HTTP " + response.statusCode() + ": " + request.uri());
+        String xml = new String(response.body(), StandardCharsets.UTF_8);
         AbstractJMAReport report = Codecs.XML_MAPPER.readValue(xml, reportClass);
         report.setRawData(xml);
         if (report.getControl().getStatus() == JMAStatus.通常) {
@@ -230,6 +261,25 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                 this.store.putReport(quakeInfo);
             Log.logger.info("JMA XML Report: {}", report);
             onNewData(report);
+        }
+    }
+
+    private HttpResponse<byte[]> send(HttpRequest request) throws Exception {
+        // ofInputStream completes at headers, leaving reads outside the request deadline.
+        // Wait for the whole body and explicitly cancel on timeout or interruption.
+        var response = this.httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray());
+        try {
+            return response.get(this.requestTimeout.toNanos(), TimeUnit.NANOSECONDS);
+        } catch (TimeoutException e) {
+            response.cancel(true);
+            throw new HttpTimeoutException("JMA XML request timed out: " + request.uri());
+        } catch (InterruptedException e) {
+            response.cancel(true);
+            throw e;
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof Exception cause)
+                throw cause;
+            throw new IOException("JMA XML request failed: " + request.uri(), e.getCause());
         }
     }
 }
