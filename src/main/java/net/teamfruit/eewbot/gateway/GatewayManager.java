@@ -11,6 +11,7 @@ import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.EEW;
 import net.teamfruit.eewbot.entity.jma.telegram.VTSE41;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE52;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE53;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE61;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
@@ -187,9 +188,11 @@ public class GatewayManager implements AutoCloseable {
     private ChannelFilter classifyQuakeInfo(AbstractJMAReport report, QuakeInfo quakeInfo) {
         if (!report.isCancelReport()) {
             SeismicIntensity intensity = quakeInfo.getQuakeInfoMaxInt().orElse(null);
-            if ((report instanceof VXSE61 || report instanceof VXSE52)
-                    && (intensity == null || intensity == SeismicIntensity.UNKNOWN)) {
-                Log.logger.warn("JMA reference intensity unavailable: eventId={}, type={}; ignoring intensity filter",
+            boolean missingObservedIntensity = report instanceof VXSE53 && intensity == null;
+            boolean missingReferenceIntensity = (report instanceof VXSE61 || report instanceof VXSE52)
+                    && (intensity == null || intensity == SeismicIntensity.UNKNOWN);
+            if (missingObservedIntensity || missingReferenceIntensity) {
+                Log.logger.warn("JMA intensity unavailable: eventId={}, type={}; ignoring intensity filter",
                         report.getEventId(), JMAXmlType.from(report.getClass()));
                 return EEWFilterClassifier.classifyQuakeInfo(null);
             }

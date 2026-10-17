@@ -11,6 +11,7 @@ import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
+import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
 import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
 import org.apache.commons.lang3.StringUtils;
@@ -104,19 +105,22 @@ public interface VXSE53 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
         Coordinate coord = null;
 
         if (!isCancelReport()) {
-            maxIntStr = getMaxInt() != null ? getMaxInt().getSymbolIntensity() : null;
+            maxIntStr = getQuakeInfoMaxInt().map(SeismicIntensity::getSymbolIntensity).orElse(null);
             coord = getCoordinate();
 
-            intensityList = new ArrayList<>();
-            for (IntensityPref pref : getIntensityDetail().getIntensityPref()) {
-                for (var area : pref.getAreas()) {
-                    intensityList.add(QuakeInfoExternalData.IntensityAreaInfo.builder()
-                            .prefName(pref.getName())
-                            .prefCode(pref.getCode())
-                            .areaName(area.getName())
-                            .areaCode(area.getCode())
-                            .maxInt(area.getMaxInt() != null ? area.getMaxInt().getSymbolIntensity() : null)
-                            .build());
+            Intensity.IntensityDetail observation = getIntensityDetail();
+            if (observation != null) {
+                intensityList = new ArrayList<>();
+                for (IntensityPref pref : Optional.ofNullable(observation.getIntensityPref()).orElse(List.of())) {
+                    for (var area : pref.getAreas()) {
+                        intensityList.add(QuakeInfoExternalData.IntensityAreaInfo.builder()
+                                .prefName(pref.getName())
+                                .prefCode(pref.getCode())
+                                .areaName(area.getName())
+                                .areaCode(area.getCode())
+                                .maxInt(area.getMaxInt() != null ? area.getMaxInt().getSymbolIntensity() : null)
+                                .build());
+                    }
                 }
             }
         }

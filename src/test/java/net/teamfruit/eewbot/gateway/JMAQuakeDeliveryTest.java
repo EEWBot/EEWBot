@@ -17,6 +17,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 import java.time.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -80,6 +82,34 @@ class JMAQuakeDeliveryTest {
         assertThat(cancellation.isIntensityPresent()).isFalse();
         assertThat(cancellation.test(channel(true, SeismicIntensity.SEVEN))).isTrue();
         assertThat(cancellation.test(channel(false, SeismicIntensity.ONE))).isFalse();
+    }
+
+    @Test
+    void ordinaryVxse53WithoutObservedIntensityReachesAllQuakeSubscriptions() throws Exception {
+        String xml = Files.readString(Path.of("src/test/resources/jmaxml/quakeinfo/overseas_without_intensity.xml"));
+        var normal = Codecs.XML_MAPPER.readValue(xml, net.teamfruit.eewbot.entity.jma.telegram.VXSE53Impl.class);
+        assertThat(normal.getQuakeInfoMaxInt()).isEmpty();
+        deliver(normal);
+        deliver(report(JMAXmlType.VXSE53, 2, JMAInfoType.取消, null, START.plusSeconds(1800)));
+        var filters = ArgumentCaptor.forClass(ChannelFilter.class);
+        verify(this.service, times(2)).sendMessage(filters.capture(), any(AbstractJMAReport.class));
+        assertThat(filters.getAllValues()).allSatisfy(filter -> {
+            assertThat(filter.isIntensityPresent()).isFalse();
+            assertThat(filter.test(channel(true, SeismicIntensity.ONE))).isTrue();
+            assertThat(filter.test(channel(true, SeismicIntensity.SEVEN))).isTrue();
+            assertThat(filter.test(channel(false, SeismicIntensity.ONE))).isFalse();
+        });
+        verify(this.external).sendExternalWebhook(normal);
+        assertThat(this.store.getDeliveryHistory(EVENT, JMAXmlType.VXSE53).complete()).isFalse();
+    }
+
+    @Test
+    void ordinaryVxse53WithExplicitUnknownIntensityKeepsExistingFilter() throws Exception {
+        deliver(report(JMAXmlType.VXSE53, 1, JMAInfoType.発表, SeismicIntensity.UNKNOWN, START.plusSeconds(1500)));
+        var filters = ArgumentCaptor.forClass(ChannelFilter.class);
+        verify(this.service).sendMessage(filters.capture(), any(AbstractJMAReport.class));
+        assertThat(filters.getValue().isIntensityPresent()).isTrue();
+        assertThat(filters.getValue().getIntensity()).isEqualTo(SeismicIntensity.UNKNOWN);
     }
 
     @Test
