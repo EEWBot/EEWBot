@@ -1,11 +1,13 @@
 package net.teamfruit.eewbot;
 
+import com.google.gson.JsonParser;
+import discord4j.core.object.component.TextDisplay;
 import discord4j.core.spec.MessageCreateSpec;
-import net.teamfruit.eewbot.entity.EmbedContext;
+import net.teamfruit.eewbot.entity.ComponentContext;
 import net.teamfruit.eewbot.entity.Entity;
+import net.teamfruit.eewbot.entity.discord.DiscordComponent;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
-import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
-import net.teamfruit.eewbot.entity.discord.PendingEmbed;
+import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
@@ -31,7 +33,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -61,7 +62,7 @@ class EEWServiceWebhookSenderFallbackTest {
         assertThat(httpClient.sentRequests).hasSize(1);
         assertThat(httpClient.sentRequests.get(0).uri()).isEqualTo(URI.create("http://webhook-sender.test/api/send"));
         assertThat(httpClient.asyncRequests).hasSize(1);
-        assertThat(httpClient.asyncRequests.get(0).uri()).isEqualTo(URI.create(WEBHOOK_URL));
+        assertThat(httpClient.asyncRequests.get(0).uri()).isEqualTo(URI.create(WEBHOOK_URL + "?with_components=true"));
     }
 
     @Test
@@ -73,17 +74,20 @@ class EEWServiceWebhookSenderFallbackTest {
 
         assertThat(httpClient.sentRequests).hasSize(1);
         assertThat(httpClient.asyncRequests).hasSize(1);
-        assertThat(httpClient.asyncRequests.get(0).uri()).isEqualTo(URI.create(WEBHOOK_URL));
+        assertThat(httpClient.asyncRequests.get(0).uri()).isEqualTo(URI.create(WEBHOOK_URL + "?with_components=true"));
     }
 
     @Test
-    void sendMessageDoesNotFallbackWhenWebhookSenderReturnsSuccess() {
+    void sendMessageDoesNotFallbackWhenWebhookSenderReturnsSuccess() throws Exception {
         FakeHttpClient httpClient = FakeHttpClient.sendStatus(204, "");
         EEWService service = createService(httpClient, "");
 
         service.sendMessage(ChannelFilter.builder().build(), testEntity());
 
         assertThat(httpClient.sentRequests).hasSize(1);
+        assertThat(JsonParser.parseString(bodyOf(httpClient.sentRequests.get(0))).getAsJsonArray().get(0)
+                .getAsJsonObject().getAsJsonArray("targets").get(0).getAsString())
+                .isEqualTo(WEBHOOK_URL + "?with_components=true");
         assertThat(httpClient.asyncRequests).isEmpty();
     }
 
@@ -134,7 +138,8 @@ class EEWServiceWebhookSenderFallbackTest {
         assertThat(httpClient.sentRequests).isEmpty();
         assertThat(httpClient.asyncRequests).hasSize(2);
         verify(service, times(1)).directSendMessagePassErrors(eq(123L), any());
-        verify(service).directSendMessagePassErrors(123L, messageSpec(PAGE_2));
+        verify(service).directSendMessagePassErrors(eq(123L), argThat(spec ->
+                ((TextDisplay) spec.componentsOrElse(List.of()).getFirst()).getContent().equals(PAGE_2)));
     }
 
     private EEWService createService(FakeHttpClient httpClient, String customHeader) {
@@ -147,7 +152,7 @@ class EEWServiceWebhookSenderFallbackTest {
         config.getWebhookSender().setCustomHeader(customHeader);
 
         I18n i18n = new I18n("ja_JP");
-        EmbedContext embedContext = new EmbedContext(null, null, i18n);
+        ComponentContext componentContext = new ComponentContext(null, null, i18n);
         DestinationAdminRegistry adminRegistry = mock(DestinationAdminRegistry.class);
 
         return new EEWService(
@@ -159,7 +164,7 @@ class EEWServiceWebhookSenderFallbackTest {
                 adminRegistry,
                 "https://example.com/avatar.png",
                 i18n,
-                embedContext,
+                componentContext,
                 this.executor,
                 httpClient,
                 config
@@ -169,18 +174,18 @@ class EEWServiceWebhookSenderFallbackTest {
     private static Entity testEntity() {
         return new Entity() {
             @Override
-            public List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
+            public List<PendingComponent> createComponents(String lang, ComponentContext ctx) {
                 return List.of();
             }
 
             @Override
-            public List<MessageCreateSpec> createMessages(String lang, EmbedContext ctx) {
-                return List.of(MessageCreateSpec.builder().content("fallback").build());
+            public List<MessageCreateSpec> createMessages(String lang, ComponentContext ctx) {
+                return List.of(messageSpec("fallback"));
             }
 
             @Override
-            public List<DiscordWebhook> createWebhooks(String lang, EmbedContext ctx) {
-                return List.of(DiscordWebhook.builder().content("webhook").build());
+            public List<DiscordWebhook> createWebhooks(String lang, ComponentContext ctx) {
+                return List.of(webhook("webhook"));
             }
         };
     }
@@ -191,27 +196,31 @@ class EEWServiceWebhookSenderFallbackTest {
     private static Entity twoPageEntity() {
         return new Entity() {
             @Override
-            public List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
+            public List<PendingComponent> createComponents(String lang, ComponentContext ctx) {
                 return List.of();
             }
 
             @Override
-            public List<MessageCreateSpec> createMessages(String lang, EmbedContext ctx) {
+            public List<MessageCreateSpec> createMessages(String lang, ComponentContext ctx) {
                 return List.of(messageSpec(PAGE_1), messageSpec(PAGE_2));
             }
 
             @Override
-            public List<DiscordWebhook> createWebhooks(String lang, EmbedContext ctx) {
+            public List<DiscordWebhook> createWebhooks(String lang, ComponentContext ctx) {
                 return List.of(
-                        DiscordWebhook.builder().content(PAGE_1).build(),
-                        DiscordWebhook.builder().content(PAGE_2).build()
+                        webhook(PAGE_1),
+                        webhook(PAGE_2)
                 );
             }
         };
     }
 
     private static MessageCreateSpec messageSpec(String content) {
-        return MessageCreateSpec.builder().content(content).build();
+        return MessageCreateSpec.builder().addComponent(TextDisplay.of(content)).build();
+    }
+
+    private static DiscordWebhook webhook(String content) {
+        return DiscordWebhook.builder().components(List.of(new DiscordComponent.TextDisplay(10, content))).build();
     }
 
     private static String bodyOf(HttpRequest request) throws InterruptedException {

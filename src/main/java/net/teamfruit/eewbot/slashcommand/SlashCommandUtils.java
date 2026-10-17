@@ -3,16 +3,18 @@ package net.teamfruit.eewbot.slashcommand;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.event.domain.interaction.InteractionCreateEvent;
+import discord4j.core.object.component.TopLevelMessageComponent;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
-import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.Log;
-import net.teamfruit.eewbot.entity.discord.I18nEmbedBuilder;
-import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
+import net.teamfruit.eewbot.entity.discord.ComponentRenderer;
+import net.teamfruit.eewbot.entity.discord.ContainerBuilder;
+import net.teamfruit.eewbot.entity.discord.PendingComponent;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 public class SlashCommandUtils {
 
@@ -23,27 +25,25 @@ public class SlashCommandUtils {
         return channel.getLang();
     }
 
-    public static Mono<Void> replyOrFollowUp(DeferrableInteractionEvent event, boolean defer, EmbedCreateSpec spec) {
+    public static Mono<Void> replyOrFollowUp(DeferrableInteractionEvent event, boolean defer, List<TopLevelMessageComponent> components) {
         if (defer)
-            return event.createFollowup().withEmbeds(spec)
+            return event.createFollowup().withComponents(components)
                     .doOnError(err -> Log.logger.error("Error during follow-up message", err))
                     .then();
-        return event.reply().withEmbeds(spec)
+        return event.reply().withComponents(components)
                 .doOnError(err -> Log.logger.error("Error during reply", err));
     }
 
-    public static IEmbedBuilder createEmbed(final String lang, final SlashCommandContext ctx) {
-        return I18nEmbedBuilder.builder(lang, ctx.i18n())
-                .color(Color.of(7506394))
-                .author(ctx.username(), "https://github.com/EEWBot/EEWBot", ctx.avatarUrl())
-                .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png");
+    public static ContainerBuilder createContainer() {
+        return PendingComponent.Container.builder().accentColor(7506394);
     }
 
-    public static IEmbedBuilder createErrorEmbed(final String lang, final SlashCommandContext ctx) {
-        return I18nEmbedBuilder.builder(lang, ctx.i18n())
-                .color(Color.of(255, 64, 64))
-                .author(ctx.username(), "https://github.com/EEWBot/EEWBot", ctx.avatarUrl())
-                .footer("EEWBot/EEWBot", "http://i.imgur.com/gFHBoZA.png");
+    public static ContainerBuilder createErrorContainer() {
+        return PendingComponent.Container.builder().accentColor(0xff4040);
+    }
+
+    public static List<TopLevelMessageComponent> render(final ContainerBuilder builder) {
+        return ComponentRenderer.toDiscord4J(List.of(builder.build()));
     }
 
     /**
