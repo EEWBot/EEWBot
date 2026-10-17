@@ -64,6 +64,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
     private volatile WebSocketConnection webSocket2;
 
     private final Cache<String, EEWState> eventStates;
+    private final Cache<String, Integer> maximumAnnouncementSerials;
     private final Cache<String, Boolean> receivedTelegramIds;
 
     private record EEWState(EEW eew, int serialNo, SeismicIntensity maxIntensitySoFar,
@@ -96,6 +97,13 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                 .maximumSize(10_000)
                 .ticker(ticker)
                 .build();
+        // Keep ordinary-report ordering beyond the shorter-lived display/delivery state.
+        // Only non-stale announcements renew this history; administrative reports cannot reset it.
+        this.maximumAnnouncementSerials = Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofHours(24))
+                .maximumSize(10_000)
+                .ticker(ticker)
+                .build();
         this.receivedTelegramIds = Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofHours(1))
                 .maximumSize(100_000)
@@ -113,6 +121,17 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
         if (this.receivedTelegramIds.getIfPresent(telegramKey) != null)
             return;
         int serialNo = Integer.parseInt(eew.getSerial());
+        if (eew.getInfoType() == JMAInfoType.発表) {
+            Integer maximumSerial = this.maximumAnnouncementSerials.getIfPresent(eew.getEventId());
+            if (maximumSerial != null && serialNo < maximumSerial) {
+                Log.logger.debug("Skipping older DMDATA EEW announcement: event {}, serial {} < {}",
+                        eew.getEventId(), serialNo, maximumSerial);
+                this.receivedTelegramIds.put(telegramKey, true);
+                return;
+            }
+            // Receipt ordering is independent of enqueue success. Equal serials can still retry.
+            this.maximumAnnouncementSerials.put(eew.getEventId(), serialNo);
+        }
         EEWState state = this.eventStates.getIfPresent(eew.getEventId());
         EEW previous = state != null ? state.eew() : null;
         int maxActiveIndex = this.eventStates.asMap().entrySet().stream()
@@ -141,7 +160,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                 state != null && state.cancelled() || latest && eew.isCancelReport());
 
         // Success means the listener has classified the telegram and enqueued delivery (or intentionally
-        // filtered it). Do not commit state or the ID if parsing, classification or enqueueing fails.
+        // filtered it). Do not commit delivery state or the ID if classification or enqueueing fails.
         // Actual Discord/external-webhook delivery is asynchronous and outside this guarantee.
         onNewData(new DmdataEEWUpdate(eew, previous, maxBefore, history));
         this.eventStates.put(eew.getEventId(), next);
