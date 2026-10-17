@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.gateway;
 
 import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.MdcUtil;
 import org.slf4j.MDC;
 
 import java.util.concurrent.ExecutorService;
@@ -14,6 +15,7 @@ public abstract class AbstractDmdataWsLivenessChecker implements Runnable {
 
     private Future<?> ws1ReconnectFuture;
     private Future<?> ws2ReconnectFuture;
+    private Future<?> initializationFuture;
 
     protected AbstractDmdataWsLivenessChecker(DmdataGateway gateway, ExecutorService reconnectExecutor) {
         this.gateway = gateway;
@@ -26,6 +28,15 @@ public abstract class AbstractDmdataWsLivenessChecker implements Runnable {
         MDC.put("gateway", "dmdata");
         MDC.put("gateway.task", "liveness");
         try {
+            if (this.gateway.needsInitialization()
+                    && (this.initializationFuture == null || this.initializationFuture.isDone())) {
+                try {
+                    Log.logger.warn("DMDATA WebSocket connection missing, scheduling initialization retry...");
+                    this.initializationFuture = this.reconnectExecutor.submit(MdcUtil.wrapWithMdc(this.gateway));
+                } catch (RejectedExecutionException e) {
+                    Log.logger.debug("Initialization retry skipped (executor shut down)");
+                }
+            }
             if (this.gateway.getWebSocket1() != null)
                 check(this.gateway.getWebSocket1(), false);
             if (this.gateway.getWebSocket2() != null)
