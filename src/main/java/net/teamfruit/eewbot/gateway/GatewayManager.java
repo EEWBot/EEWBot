@@ -171,7 +171,7 @@ public class GatewayManager implements AutoCloseable {
                 if (filter != null)
                     this.service.sendMessage(filter, data);
             }, data instanceof ExternalData externalData ? externalData : null);
-            if (data instanceof QuakeInfo quakeInfo && !data.isCancelReport())
+            if (data instanceof QuakeInfo quakeInfo && !data.isCancelReport() && filter != null)
                 this.quakeInfoStore.recordDelivery(quakeInfo, filter.getIntensity());
         } finally {
             MDC.clear();
