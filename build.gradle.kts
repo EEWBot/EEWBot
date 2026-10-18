@@ -47,6 +47,7 @@ dependencies {
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit.jupiter)
+    testImplementation(libs.reactor.test)
 }
 
 group = "net.teamfruit"

@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
@@ -58,6 +59,7 @@ public class EEWService {
     private final HttpClient httpClient;
     private final URI webhookSenderAddress;
     private final String[] webhookSenderHeader;
+    private final Scheduler deliveryScheduler;
 
     public EEWService(
             GatewayDiscordClient gateway,
@@ -70,6 +72,13 @@ public class EEWService {
             HttpClient httpClient,
             ConfigV2 config
     ) {
+        this(gateway, deliveryRegistry, adminRegistry, avatarUrl, i18n, embedContext, executor, httpClient, config,
+                Schedulers.parallel());
+    }
+
+    EEWService(GatewayDiscordClient gateway, DestinationDeliveryRegistry deliveryRegistry,
+               DestinationAdminRegistry adminRegistry, String avatarUrl, I18n i18n, EmbedContext embedContext,
+               ScheduledExecutorService executor, HttpClient httpClient, ConfigV2 config, Scheduler deliveryScheduler) {
         this.gateway = gateway;
         this.deliveryRegistry = deliveryRegistry;
         this.adminRegistry = adminRegistry;
@@ -78,6 +87,7 @@ public class EEWService {
         this.embedContext = embedContext;
         this.executor = executor;
         this.httpClient = httpClient;
+        this.deliveryScheduler = deliveryScheduler;
         this.webhookSenderHeader = parseWebhookSenderHeader(config.getWebhookSender().getCustomHeader());
 
         if (StringUtils.isNotEmpty(config.getWebhookSender().getAddress()))
@@ -116,7 +126,8 @@ public class EEWService {
         Map<Long, DeliveryTarget> webhookChannels = partition.webhook();
         if (!webhookChannels.isEmpty()) {
             WebhookFallback botFallback = (id, target, fromChunkIndex) ->
-                    sendMessagesInOrder(id, remainingMessages(msgByLang.get(target.lang()), fromChunkIndex)).subscribe();
+                    sendMessagesInOrder(id, remainingMessages(msgByLang.get(target.lang()), fromChunkIndex))
+                            .onErrorResume(error -> Mono.empty()).subscribe();
 
             if (this.webhookSenderAddress == null) {
                 Log.logger.info("Sending webhook message to {} channels", webhookChannels.size());
@@ -135,8 +146,13 @@ public class EEWService {
         }
     }
 
-    private Flux<Message> sendMessagesInOrder(long channelId, List<MessageCreateSpec> specs) {
-        return Flux.fromIterable(specs).concatMap(spec -> directSendMessagePassErrors(channelId, spec));
+    Flux<Message> sendMessagesInOrder(long channelId, List<MessageCreateSpec> specs) {
+        Map<String, String> context = MDC.getCopyOfContextMap();
+        var retry = DeliveryRetry.policy(this.deliveryScheduler, "Discord channel " + channelId);
+        return Flux.fromIterable(specs).concatMap(spec -> Mono.defer(() -> directSendMessagePassErrors(channelId, spec))
+                .retryWhen(retry)
+                .doOnError(error -> MdcUtil.wrapWithMdc(() -> Log.logger.error(
+                        "Bot delivery failed: channelId={}, error={}", channelId, DeliveryRetry.describe(error)), context).run()));
     }
 
     private static List<MessageCreateSpec> remainingMessages(List<MessageCreateSpec> specs, int fromIndex) {
@@ -167,8 +183,6 @@ public class EEWService {
                                 })
                                 .onErrorResume(e -> Mono.empty()))
                         .collect(Collectors.toList()))
-                .parallel()
-                .runOn(Schedulers.parallel())
                 .doOnComplete(() -> {
                     if (!erroredChannels.isEmpty()) {
                         submitCleanup(() -> {
@@ -186,7 +200,7 @@ public class EEWService {
                         });
                     }
                 })
-                .subscribe();
+                .subscribe(ignored -> { }, error -> Log.logger.error("Bot delivery fan-out failed: {}", DeliveryRetry.describe(error)));
     }
 
     private void sendWebhook(List<List<DiscordWebhookRequest>> webhookChunks, int fromChunkIndex, Map<Long, DeliveryTarget> webhookChannels, WebhookFallback onError) {

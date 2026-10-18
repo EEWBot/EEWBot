@@ -14,7 +14,10 @@ public final class MdcUtil {
      * After execution, the previous MDC state is restored (not cleared).
      */
     public static Runnable wrapWithMdc(Runnable task) {
-        Map<String, String> captured = MDC.getCopyOfContextMap();
+        return wrapWithMdc(task, MDC.getCopyOfContextMap());
+    }
+
+    static Runnable wrapWithMdc(Runnable task, Map<String, String> captured) {
         return () -> {
             Map<String, String> previous = MDC.getCopyOfContextMap();
             if (captured != null) MDC.setContextMap(captured);
