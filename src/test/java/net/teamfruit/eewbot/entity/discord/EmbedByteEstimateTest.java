@@ -4,134 +4,98 @@ import discord4j.rest.util.Color;
 import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.entity.discord.PendingEmbed.PendingField;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * パッカーはシリアライズ後サイズの見積もりに基づいて動く。見積もりが楽観的だと Discord は
- * 診断情報のない 500 を返すため、ここで実際の Gson 出力と突き合わせて検証する。
- */
 class EmbedByteEstimateTest {
 
     private static String serialize(final List<PendingEmbed> message) {
-        final DiscordWebhook webhook = DiscordWebhook.builder()
-                .embeds(EmbedRenderer.toDiscordEmbeds(message))
-                .build();
-        webhook.avatar_url = "https://cdn.discordapp.com/avatars/000000000000000000/0123456789abcdef0123456789abcdef.png";
-        webhook.username = "EEWBot";
-        return Codecs.GSON.toJson(webhook);
+        return Codecs.GSON.toJson(DiscordWebhook.builder()
+                .embeds(EmbedRenderer.toDiscordEmbeds(message)).build());
     }
 
-    private static PendingEmbed embedOf(final int fieldCount, final String value) {
+    @Test
+    void jsonEscapesDoNotConsumeTheDecodedTextBudget() {
+        final PendingEmbed source = PendingEmbed.empty().withDescription("<&='\"\\\n\u2028\u2029".repeat(300));
+        final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(source));
+
+        assertThat(messages).hasSize(1);
+        assertThat(messages.getFirst().getFirst().description()).isEqualTo(source.description());
+        assertThat(serialize(messages.getFirst()).getBytes(StandardCharsets.UTF_8).length)
+                .isGreaterThan(EmbedWebhookCost.OBSERVED_BUDGET);
+        assertThat(EmbedWebhookCost.fits(messages.getFirst())).isTrue();
+    }
+
+    @Test
+    void preservesDescriptionAcrossByteAndCharacterBoundaries() {
+        for (final String description : List.of("あ".repeat(9000), "😀".repeat(5000),
+                "line\n".repeat(2000), "x".repeat(9000))) {
+            final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(
+                    new PendingEmbed("title", description, null, Instant.EPOCH, Color.RED,
+                            "footer", null, null, null, "author", null, null, List.of())));
+            final List<PendingEmbed> pages = messages.stream().flatMap(List::stream).toList();
+            assertThat(pages.stream().map(PendingEmbed::description).filter(java.util.Objects::nonNull)
+                    .collect(Collectors.joining())).isEqualTo(description);
+            assertThat(pages.getFirst().title()).isEqualTo("title");
+            assertThat(pages.getLast().footerText()).isEqualTo("footer");
+            for (final List<PendingEmbed> message : messages) {
+                assertThat(EmbedWebhookCost.fits(message)).isTrue();
+                assertThat(message.stream().mapToInt(PendingEmbed::charCount).sum()).isLessThanOrEqualTo(6000);
+                message.forEach(page -> assertThat(DiscordLimits.codePoints(page.description())).isLessThanOrEqualTo(4096));
+            }
+        }
+    }
+
+    @Test
+    void preservesFieldsWhenTheDescriptionConsumesTheFirstPage() {
+        final String description = "あ".repeat(4000);
+        final String value = "😀\n地名".repeat(700);
+        final PendingEmbed source = PendingEmbed.empty().withDescription(description)
+                .withFields(List.of(new PendingField("地域", value, true)));
+        final List<PendingEmbed> pages = EmbedPacker.pack(List.of(source)).stream().flatMap(List::stream).toList();
+        assertThat(pages.stream().map(PendingEmbed::description).filter(java.util.Objects::nonNull)
+                .collect(Collectors.joining())).isEqualTo(description);
+        final List<PendingField> fields = pages.stream().flatMap(page -> page.fields().stream()).toList();
+        assertThat(fields.stream().map(PendingField::value).collect(Collectors.joining())).isEqualTo(value);
+        assertThat(fields.getFirst().name()).isEqualTo("地域");
+        fields.forEach(field -> {
+            assertThat(DiscordLimits.codePoints(field.value())).isLessThanOrEqualTo(1024);
+            assertThat(field.inline()).isTrue();
+        });
+    }
+
+    @Test
+    void splitsBeforeMeasuredFailureBoundaries() {
+        final List<PendingEmbed> sources = new ArrayList<>();
+        sources.add(PendingEmbed.empty().withDescription("あ".repeat(4000)));
         final List<PendingField> fields = new ArrayList<>();
-        for (int i = 0; i < fieldCount; i++)
-            fields.add(new PendingField("フィールド名" + i, value, false));
-        return new PendingEmbed("タイトル", "説明文", null, Instant.EPOCH, Color.RED,
-                "気象庁", null, "https://example.com/render/quake?id=1234567890", null,
-                null, null, null, fields);
-    }
-
-    @Test
-    void estimateIsNotOptimisticForJapaneseContent() {
-        for (final List<PendingEmbed> message : EmbedPacker.pack(List.of(embedOf(120, "あ".repeat(200))))) {
-            final int actual = serialize(message).getBytes(StandardCharsets.UTF_8).length;
-            final int estimated = message.stream().mapToInt(PendingEmbed::byteCount).sum()
-                    + EmbedPacker.MESSAGE_JSON_OVERHEAD;
-
-            assertThat(actual)
-                    .as("見積もりが実際のペイロードを下回ってはならない")
-                    .isLessThanOrEqualTo(estimated);
-            assertThat(actual).isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
-        }
-    }
-
-    @Test
-    void everyPackedMessageStaysUnderTheRealByteWall() {
-        final List<PendingEmbed> many = new ArrayList<>();
-        for (int i = 0; i < 40; i++)
-            many.add(embedOf(8, "テスト地域名".repeat(30)));
-
-        final List<List<PendingEmbed>> messages = EmbedPacker.pack(many);
+        for (int i = 0; i < 25; i++)
+            fields.add(new PendingField("名".repeat(256), "あ".repeat(1024), i % 2 == 0));
+        sources.add(PendingEmbed.empty().withFields(fields));
+        final List<List<PendingEmbed>> messages = EmbedPacker.pack(sources);
         assertThat(messages).hasSizeGreaterThan(1);
-
         for (final List<PendingEmbed> message : messages)
-            assertThat(serialize(message).getBytes(StandardCharsets.UTF_8).length)
-                    .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"\u2028", "\u2029"})
-    void unicodeSeparatorsStayUnderEstimatedAndRealByteLimits(final String separator) {
-        final PendingEmbed embed = embedOf(0, "").withDescription(separator.repeat(2000));
-
-        for (final List<PendingEmbed> message : EmbedPacker.pack(List.of(embed))) {
-            final int actual = serialize(message).getBytes(StandardCharsets.UTF_8).length;
-            final int estimated = message.stream().mapToInt(PendingEmbed::byteCount).sum()
-                    + EmbedPacker.MESSAGE_JSON_OVERHEAD;
-
-            assertThat(actual).isLessThanOrEqualTo(estimated);
-            assertThat(actual).isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
-        }
+            assertThat(EmbedWebhookCost.fits(message)).isTrue();
+        assertThat(messages.stream().flatMap(List::stream).flatMap(page -> page.fields().stream()).toList())
+                .containsExactlyElementsOf(fields);
     }
 
     @Test
-    void longJapaneseDescriptionStaysUnderTheRealByteWall() {
-        // description は固定のバイト上限ではなくメッセージの実サイズで抑えられる。
-        // 境界を担保するのは定数ではなく、実際にシリアライズしたペイロード
-        final PendingEmbed embed = new PendingEmbed("タイトル", "あ".repeat(4000), null,
-                Instant.EPOCH, Color.RED, "気象庁", null, null, null, null, null, null,
-                List.of(new PendingField("地域", "テスト地域名".repeat(50), false)));
-
-        for (final List<PendingEmbed> message : EmbedPacker.pack(List.of(embed)))
-            assertThat(serialize(message).getBytes(StandardCharsets.UTF_8).length)
-                    .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
-    }
-
-    @Test
-    void urlHeavyChromeStaysUnderTheRealByteWall() {
-        // URL は文字数制限にも算入されず、フィールドがなければフィールド側の切り詰めも働かない。
-        // 6 プロパティすべてが上限近くでも、実ペイロードは壁を越えてはならない
-        final String url = "https://example.com/" + "あ".repeat(1980);
-        final PendingEmbed embed = new PendingEmbed("t".repeat(256), "d".repeat(4000), url,
-                Instant.EPOCH, Color.RED, "f".repeat(2048), url, url, url,
-                "a".repeat(256), url, url, List.of());
-
-        for (final List<PendingEmbed> message : EmbedPacker.pack(List.of(embed)))
-            assertThat(serialize(message).getBytes(StandardCharsets.UTF_8).length)
-                    .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
-    }
-
-    @Test
-    void heavyFieldNamesAndLongUrlsStillFit() {
-        // フィールド名は切り詰められない。Gson が < を < に展開して 1 文字 6 バイトになるため、
-        // 名前だけで 1.5KB を超える。見積もりではなく実ペイロードで壁の内側にいることを確かめる
-        final String heavyName = "<".repeat(256);
+    void movesTailToItsOwnPageWithoutTrimmingTheLastField() {
         final String image = "https://example.com/" + "あ".repeat(2000);
-        final PendingEmbed embed = new PendingEmbed(null, null, null, Instant.EPOCH, Color.RED,
-                "f".repeat(2048), null, image, null, "a".repeat(256), null, null,
-                List.of(new PendingField("n", "v", false), new PendingField(heavyName, "値", false)));
-
-        for (final List<PendingEmbed> message : EmbedPacker.pack(List.of(embed)))
-            assertThat(serialize(message).getBytes(StandardCharsets.UTF_8).length)
-                    .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
-    }
-
-    @Test
-    void escapeHeavyContentStillFits() {
-        // 引用符・バックスラッシュ・改行は JSON エスケープでそれぞれサイズが倍になる
-        final List<PendingEmbed> many = new ArrayList<>();
-        for (int i = 0; i < 20; i++)
-            many.add(embedOf(6, "\"\\\n".repeat(200)));
-
-        for (final List<PendingEmbed> message : EmbedPacker.pack(many))
-            assertThat(serialize(message).getBytes(StandardCharsets.UTF_8).length)
-                    .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
+        final List<PendingField> fields = List.of(new PendingField("name", "😀".repeat(1024), false));
+        final PendingEmbed source = new PendingEmbed(null, null, null, Instant.EPOCH, Color.RED,
+                "f".repeat(2048), null, image, null, "author", null, null, fields);
+        final List<PendingEmbed> pages = EmbedPacker.pack(List.of(source)).stream().flatMap(List::stream).toList();
+        assertThat(pages).hasSize(2);
+        assertThat(pages.getFirst().fields()).containsExactlyElementsOf(fields);
+        assertThat(pages.getLast().image()).isEqualTo(image);
+        assertThat(pages.getLast().footerText()).isEqualTo(source.footerText());
     }
 }
