@@ -99,10 +99,10 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                 .maximumSize(10_000)
                 .ticker(ticker)
                 .build();
-        // Keep ordinary-report ordering beyond the shorter-lived display/delivery state.
+        // Keep ordinary-report ordering independent of display/delivery state.
         // Only non-stale announcements renew this history; administrative reports cannot reset it.
         this.maximumAnnouncementSerials = Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofHours(24))
+                .expireAfterWrite(Duration.ofHours(1))
                 .maximumSize(10_000)
                 .ticker(ticker)
                 .build();

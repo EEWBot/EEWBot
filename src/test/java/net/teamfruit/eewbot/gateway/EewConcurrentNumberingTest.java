@@ -45,7 +45,7 @@ class EewConcurrentNumberingTest {
         numbering.commit(second);
         for (int i = 0; i < 20; i++)
             numbering.commit(numbering.prepare("terminal-" + i, false, id -> true));
-        time.addAndGet(Duration.ofHours(25).toNanos());
+        time.addAndGet(Duration.ofHours(2).toNanos());
 
         EewConcurrentNumbering.Plan retained = numbering.prepare("b", true, id -> true);
         assertThat(retained.number()).isEqualTo(second.number());
@@ -61,7 +61,7 @@ class EewConcurrentNumberingTest {
     }
 
     @Test
-    void endedHistoryExpiresAfter24HoursWithoutRenewalByLateReports() {
+    void endedHistoryExpiresAfterOneHourWithoutRenewalByLateReports() {
         AtomicLong time = new AtomicLong();
         EewConcurrentNumbering numbering = new EewConcurrentNumbering(time::get);
         numbering.commit(numbering.prepare("a", true, id -> true));
@@ -69,11 +69,11 @@ class EewConcurrentNumberingTest {
         numbering.commit(numbering.prepare("a", false, id -> true));
         EewConcurrentNumbering.Plan ended = numbering.prepare("b", false, id -> true);
         numbering.commit(ended);
-        time.addAndGet(Duration.ofHours(23).toNanos());
+        time.addAndGet(Duration.ofMinutes(59).toNanos());
         EewConcurrentNumbering.Plan delayed = numbering.prepare("b", false, id -> false);
         assertThat(delayed.number()).isEqualTo(ended.number());
         numbering.commit(delayed);
-        time.addAndGet(Duration.ofHours(1).toNanos());
+        time.addAndGet(Duration.ofMinutes(1).toNanos());
 
         EewConcurrentNumbering.Plan expired = numbering.prepare("b", false, id -> false);
         assertThat(expired.number().groupId()).isNotEqualTo(ended.number().groupId());

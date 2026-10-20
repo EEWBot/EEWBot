@@ -25,7 +25,7 @@ final class EewConcurrentNumbering {
 
     EewConcurrentNumbering(Ticker ticker, long maximumHistorySize) {
         this.history = Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofHours(24))
+                .expireAfterWrite(Duration.ofHours(1))
                 .maximumSize(maximumHistorySize)
                 .ticker(ticker)
                 .build();

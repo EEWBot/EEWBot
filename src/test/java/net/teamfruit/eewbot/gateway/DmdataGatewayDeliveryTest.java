@@ -495,30 +495,33 @@ class DmdataGatewayDeliveryTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = {65, 1439})
-    void announcementSerialHistorySurvivesEventStateExpiry(int minutes) throws IOException {
+    @Test
+    void announcementSerialHistoryExpiresAfterOneHour() throws IOException {
         receive("initial-id", serial(fixture("forecast_normal.xml"), 9));
-        this.time.addAndGet(Duration.ofMinutes(minutes).toNanos());
-        receive("older-id", reportTime(warning(8), "2026-05-11T10:27:00+09:00"));
+        this.time.addAndGet(Duration.ofMinutes(59).toNanos());
+        receive("before-expiry-id", serial(fixture("forecast_normal.xml"), 8));
         assertThat(this.updates).hasSize(1);
         assertThat(this.deliveries).hasSize(1);
 
-        receive("next-id", reportTime(serial(fixture("forecast_normal.xml"), 10), "2026-05-11T10:28:00+09:00"));
+        this.time.addAndGet(Duration.ofMinutes(1).toNanos());
+        receive("after-expiry-id", serial(fixture("forecast_normal.xml"), 8));
         assertThat(this.updates).hasSize(2);
         assertThat(this.updates.getLast().prev()).isNull();
         assertThat(this.updates.getLast().maxIntensityBefore()).isEqualTo(SeismicIntensity.UNKNOWN);
-        assertThat(this.updates.getLast().deliveryHistory().warningMaxIntensity()).isNull();
+        receive("older-id", serial(fixture("forecast_normal.xml"), 7));
+        assertThat(this.updates).hasSize(2);
+        receive("next-id", reportTime(serial(fixture("forecast_normal.xml"), 10), "2026-05-11T10:28:00+09:00"));
+        assertThat(this.updates.getLast().prev().getSerial()).isEqualTo("8");
         this.time.addAndGet(Duration.ofMinutes(2).toNanos());
         receive("still-older-id", reportTime(serial(fixture("forecast_normal.xml"), 9), "2026-05-11T10:29:00+09:00"));
-        assertThat(this.updates).hasSize(2);
-        assertThat(this.deliveries).hasSize(2);
+        assertThat(this.updates).hasSize(3);
+        assertThat(this.deliveries).hasSize(3);
     }
 
     @Test
     void discardedAnnouncementsAndAdministrativeReportsDoNotRenewSerialHistory() throws IOException {
         receive("initial-id", serial(fixture("forecast_normal.xml"), 9));
-        this.time.addAndGet(Duration.ofHours(24).minusMinutes(1).toNanos());
+        this.time.addAndGet(Duration.ofMinutes(59).toNanos());
         receive("older-id", serial(fixture("forecast_normal.xml"), 8));
         receive("correction-id", infoType(serial(fixture("forecast_normal.xml"), 2), JMAInfoType.訂正));
         receive("cancel-id", serial(fixture("cancel_same_serial.xml"), 2));
@@ -988,8 +991,8 @@ class DmdataGatewayDeliveryTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {65, 1439})
-    void endedAssignmentsOutliveEventStateAndNeverRejoinANewGroup(int minutes) throws IOException {
+    @ValueSource(ints = {59, 60, 65})
+    void endedAssignmentsAreRetainedForOneHourAndNeverRejoinANewGroup(int minutes) throws IOException {
         receive(announcement("a", 1));
         receive(announcement("b", 1));
         receive(event("a", forecastFinal()));
@@ -998,10 +1001,14 @@ class DmdataGatewayDeliveryTest {
         receive(announcement("c", 1));
         assertLastNumber(1, false);
         receive(event("b", fixture("cancel_same_serial.xml")));
-        assertLastNumber(2, true);
-        assertThat(this.updates.getLast().prev()).isNull();
+        boolean retained = minutes < 60;
+        assertLastNumber(retained ? 2 : 1, retained);
+        if (retained)
+            assertThat(this.updates.getLast().prev()).isNotNull();
+        else
+            assertThat(this.updates.getLast().prev()).isNull();
         receive(announcement("b", 9));
-        assertLastNumber(2, true);
+        assertLastNumber(retained ? 2 : 1, retained);
         receive(announcement("d", 1));
         assertLastNumber(2, true);
         receive(event("c", forecastFinal()));
