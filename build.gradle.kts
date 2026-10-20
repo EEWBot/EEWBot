@@ -71,6 +71,8 @@ sourceSets {
 val rendererAddress = providers.environmentVariable("EEWBOT_RENDERER_ADDRESS")
 val rendererKey = providers.environmentVariable("EEWBOT_RENDERER_KEY")
 val webhookUrl = providers.environmentVariable("DISCORD_WEBHOOK_URL")
+val discordBotToken = providers.environmentVariable("DISCORD_BOT_TOKEN")
+val discordTestChannelId = providers.environmentVariable("DISCORD_TEST_CHANNEL_ID")
 
 tasks {
     named("jar") {
@@ -109,6 +111,8 @@ tasks {
         rendererAddress.orNull?.let { environment("EEWBOT_RENDERER_ADDRESS", it) }
         rendererKey.orNull?.let { environment("EEWBOT_RENDERER_KEY", it) }
         webhookUrl.orNull?.let { environment("DISCORD_WEBHOOK_URL", it) }
+        discordBotToken.orNull?.let { environment("DISCORD_BOT_TOKEN", it) }
+        discordTestChannelId.orNull?.let { environment("DISCORD_TEST_CHANNEL_ID", it) }
     }
 
     register<Test>("allTests") {

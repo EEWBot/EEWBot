@@ -94,6 +94,16 @@ both sides of each one-byte boundary and also tests escaped JSON. Output is limi
 to variant names, sizes and statuses, and saved under ignored `build/embed-measurement/`.
 The webhook's default identity affects results. Media resolution can also change.
 
+Use `--transport both` to compare Execute Webhook and `POST /api/v10/channels/{id}/messages`
+in the same test channel. For Message Create the script reads `DISCORD_BOT_TOKEN`
+from `.env`, falling back to `config.json`'s `base.discordToken`, and resolves the
+channel (or thread) from the test webhook. Credentials and channel IDs are not printed.
+Optional `--seed path/to/prior-results.json` accelerates discovery using previous webhook
+boundaries; the successful boundary and failing next byte are still checked live.
+Results are saved as `build/embed-measurement/results-{transport}.json`.
+If the documented character limit is reached before a size failure, the result marks
+`character_limit_reached` instead of claiming an exact processed-size boundary.
+
 Run ordinary regressions with `.\gradlew.bat test`.
 For live generated-payload tests, export only `DISCORD_WEBHOOK_URL` from `.env`, then
 run `.\gradlew.bat integrationTest --tests '*EmbedWebhookIntegrationTest'`.
@@ -101,3 +111,83 @@ The integration test is opt-in and excluded from ordinary `test`. On this run,
 all 17 generated messages were accepted, including long Japanese descriptions,
 maximum-length fields, inline fields, emoji, continuation fields, escaped text,
 resolved media, a nanosecond timestamp and an 80-emoji webhook username.
+
+To run the generated-payload test on **both** endpoints, additionally export
+`DISCORD_BOT_TOKEN` and `DISCORD_TEST_CHANNEL_ID` (the same channel/thread as the
+test webhook). Without these the Message Create case is skipped; the test does
+not implicitly load a production token from `config.json`.
+
+## Message Create comparison (2026-10-20 JST)
+
+Compared the same embed payloads on Execute Webhook and bot-authenticated
+`POST /api/v10/channels/{id}/messages`, in the test webhook's channel. Bot credentials
+were read from the local configuration and never written to the results.
+All 29 shared variants had an exact one-byte boundary on both endpoints: HTTP 200
+at the recorded maximum and HTTP 413 at the next byte. The same accepted text was
+also accepted with JSON Unicode escapes. In addition, Message Create accepted the
+webhook's maximum and its failing next byte for every shared variant.
+The five username/avatar override variants are webhook-only and were rechecked there.
+
+Maximum description filler **decoded UTF-8 bytes**, excluding other text:
+
+| Variant | Execute Webhook | Message Create | Difference |
+| --- | ---: | ---: | ---: |
+| `base` | 10143 | 10158 | +15 |
+| `fields1` | 10130 | 10145 | +15 |
+| `fields2` | 10117 | 10132 | +15 |
+| `fields25` | 9818 | 9833 | +15 |
+| `embeds2` | 10114 | 10129 | +15 |
+| `embeds10` | 9882 | 9897 | +15 |
+| `color` | 10136 | 10151 | +15 |
+| `timestamp` | 10135 | 10150 | +15 |
+| `title` | 10134 | 10149 | +15 |
+| `footer` | 10132 | 10147 | +15 |
+| `author` | 10133 | 10148 | +15 |
+| `url` | 10118 | 10133 | +15 |
+| `image` | 10112 | 10132 | +20 |
+| `thumbnail` | 10112 | 10132 | +20 |
+| `footerIcon` | 10100 | 10120 | +20 |
+| `authorUrls` | 10077 | 10097 | +20 |
+| `content` | 10136 | 10151 | +15 |
+| `escapes` | 9693 | 9708 | +15 |
+| `color0` | 10141 | 10156 | +15 |
+| `field127` | 9875 | 9890 | +15 |
+| `field128` | 9869 | 9884 | +15 |
+| `fieldLong` | 6799 | 6814 | +15 |
+| `imageResolved` | 9997 | 10017 | +20 |
+| `thumbnailResolved` | 9997 | 10017 | +20 |
+| `footerResolved` | 10079 | 10099 | +20 |
+| `authorResolved` | 10081 | 10101 | +20 |
+| `timestampNanos` | 10130 | 10145 | +15 |
+| `baseEmoji` | 10143 | 10158 | +15 |
+| `combined` | 6306 | 6326 | +20 |
+
+Message Create was never stricter in this test. Most payloads had 15 more filler
+bytes available; tested image/icon-bearing payloads had 20 more. Relative to each
+endpoint's bare-description baseline, the latter therefore cost 5 less on Message
+Create. The combined variant has four media properties but still shows a 20-byte
+boundary difference: do not infer a universally additive 5-byte cost per image or
+claim an internal serialization format from this observation. The bare-embed,
+field, string and media charges remain empirical, identity-dependent estimates.
+
+Consequently **retain the stricter webhook budget 10172 and the existing conservative
+structural/media allowances for both paths**. No numeric relaxation or separate
+Message Create limit is introduced. `Entity.createMessages()` and `createWebhooks()`
+already use the same `EmbedPacker`, so bot deliveries cannot bypass this shared
+admission test. A regression case now covers text accepted by Message Create but
+over the webhook boundary and requires lossless splitting for both paths.
+
+The generated-payload integration test now runs both endpoints: all 17 messages
+per endpoint (34 total) were accepted, including maximum fields, inline fields,
+Japanese, emoji, escaped text and resolved media. The webhook case additionally
+uses an 80-emoji display name and resolved avatar. Ordinary unit tests also passed.
+
+Reproduce the comparison with:
+
+```powershell
+python scripts/measure_discord_embeds.py --transport both
+```
+
+This posts test messages. `--seed build/embed-measurement/results-both.json` can
+accelerate a later repeat; only the webhook measurements seed the search and each
+endpoint's accepted boundary and failing next byte are still rechecked.

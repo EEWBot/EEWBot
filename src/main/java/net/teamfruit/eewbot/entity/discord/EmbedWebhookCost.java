@@ -3,12 +3,14 @@ package net.teamfruit.eewbot.entity.discord;
 import java.util.List;
 
 /**
- * Empirical Execute Webhook accounting, measured on 2026-10-19. This is neither
+ * Shared Message Create / Execute Webhook admission budget. Calibrated on webhooks
+ * on 2026-10-19 and compared with both endpoints on 2026-10-20. This is neither
  * the JSON request length nor a documented size of Discord's internal representation.
  * See docs/discord-embed-limits.md for measurements and conservative allowances.
  */
 public final class EmbedWebhookCost {
 
+    // Keep the stricter webhook scale for both delivery paths, including bot messages.
     public static final int OBSERVED_BUDGET = 10172;
     // The packer does not know the destination webhook's display name (up to 80 code points).
     private static final int WEBHOOK_NAME_ALLOWANCE = 320;

@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.entity.discord;
 
+import discord4j.rest.util.Color;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -31,5 +32,20 @@ class EmbedWebhookCostTest {
         final DiscordWebhook webhook = DiscordWebhook.builder().embeds(EmbedRenderer.toDiscordEmbeds(message))
                 .username("EEWBot").avatar_url("https://example.com/avatar.png").build();
         assertThat(EmbedWebhookCost.estimate(webhook)).isEqualTo(EmbedWebhookCost.estimate(message));
+    }
+
+    @Test
+    void usesTheStricterWebhookBudgetEvenForBotMessageDelivery() {
+        // 10,140 description bytes + red color fit the measured Message Create boundary
+        // (10,151), but exceed the webhook boundary (10,136). Both paths share this packer.
+        final PendingEmbed source = new PendingEmbed(null, "あ".repeat(3380), null, null, Color.RED,
+                null, null, null, null, null, null, null, List.of());
+        assertThat(EmbedWebhookCost.fits(List.of(source))).isFalse();
+        final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(source));
+        assertThat(messages).hasSize(2);
+        assertThat(messages.stream().flatMap(List::stream).map(PendingEmbed::description)
+                .filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.joining()))
+                .isEqualTo(source.description());
+        messages.forEach(message -> assertThat(EmbedWebhookCost.fits(message)).isTrue());
     }
 }
