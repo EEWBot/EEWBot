@@ -66,6 +66,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
     private final Cache<String, EEWState> eventStates;
     private final Cache<String, Integer> maximumAnnouncementSerials;
     private final Cache<String, Boolean> receivedTelegramIds;
+    private final EewConcurrentNumbering concurrentNumbering;
 
     private record EEWState(EEW eew, int serialNo, SeismicIntensity maxIntensitySoFar,
                             DmdataEEWUpdate.DeliveryHistory deliveryHistory, boolean finalReceived, boolean cancelled) {
@@ -92,6 +93,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
         this.listener = listener;
         this.reconnectScheduler = reconnectScheduler;
         this.wsBaseTest = wsBaseTest != null ? wsBaseTest : "";
+        this.concurrentNumbering = new EewConcurrentNumbering(ticker);
         this.eventStates = Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofHours(1))
                 .maximumSize(10_000)
@@ -134,18 +136,6 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
         }
         EEWState state = this.eventStates.getIfPresent(eew.getEventId());
         EEW previous = state != null ? state.eew() : null;
-        int maxActiveIndex = this.eventStates.asMap().entrySet().stream()
-                .filter(entry -> !entry.getKey().equals(eew.getEventId()) && entry.getValue().isActive())
-                .mapToInt(entry -> entry.getValue().eew().getConcurrentIndex())
-                .max().orElse(0);
-        if (previous == null) {
-            eew.setConcurrentIndex(maxActiveIndex + 1);
-            eew.setConcurrent(maxActiveIndex > 0);
-        } else {
-            eew.setConcurrentIndex(previous.getConcurrentIndex());
-            eew.setConcurrent(previous.isConcurrent() || state.isActive() && maxActiveIndex > 0);
-        }
-
         SeismicIntensity maxBefore = state != null ? state.maxIntensitySoFar() : SeismicIntensity.UNKNOWN;
         DmdataEEWUpdate.DeliveryHistory history = state != null ? state.deliveryHistory() : DmdataEEWUpdate.DeliveryHistory.EMPTY;
         DmdataEEWUpdate update = new DmdataEEWUpdate(eew, previous, maxBefore, history);
@@ -158,11 +148,18 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
         EEWState next = new EEWState(latest ? eew : previous, latest ? serialNo : state.serialNo(), runningMax, history,
                 state != null && state.finalReceived() || latest && !eew.isCancelReport() && eew.isLastInfo(),
                 state != null && state.cancelled() || latest && eew.isCancelReport());
+        EewConcurrentNumbering.Plan numbering = this.concurrentNumbering.prepare(eew.getEventId(), next.isActive(), id -> {
+            EEWState activeState = this.eventStates.getIfPresent(id);
+            return activeState != null && activeState.isActive();
+        });
+        eew.setConcurrentIndex(numbering.number().index());
+        eew.setConcurrent(numbering.number().everConcurrent());
 
         // Success means the listener has classified the telegram and enqueued delivery (or intentionally
-        // filtered it). Do not commit delivery state or the ID if classification or enqueueing fails.
+        // filtered it). Do not commit numbering, delivery state or the ID if classification or enqueueing fails.
         // Actual Discord/external-webhook delivery is asynchronous and outside this guarantee.
         onNewData(new DmdataEEWUpdate(eew, previous, maxBefore, history));
+        this.concurrentNumbering.commit(numbering);
         this.eventStates.put(eew.getEventId(), next);
         this.receivedTelegramIds.put(telegramKey, true);
     }

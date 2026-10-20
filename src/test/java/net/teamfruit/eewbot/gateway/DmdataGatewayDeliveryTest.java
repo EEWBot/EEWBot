@@ -7,11 +7,17 @@ import ch.qos.logback.core.read.ListAppender;
 import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.EEWService;
 import net.teamfruit.eewbot.ExternalWebhookService;
+import net.teamfruit.eewbot.QuakeInfoStore;
+import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.entity.discord.I18nEmbedBuilder;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEWUpdate;
+import net.teamfruit.eewbot.entity.external.EEWExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAInfoType;
 import net.teamfruit.eewbot.entity.jma.telegram.EEW;
+import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
+import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
@@ -108,6 +114,27 @@ class DmdataGatewayDeliveryTest {
 
     private static String serial(String xml, int serial) {
         return xml.replaceAll("<Serial>\\d+</Serial>", "<Serial>" + serial + "</Serial>");
+    }
+
+    private static String event(String eventId, String xml) {
+        return xml.replace("20260511102316", eventId);
+    }
+
+    private static String announcement(String eventId, int serial) throws IOException {
+        return event(eventId, serial(fixture("forecast_normal.xml"), serial));
+    }
+
+    private void assertLastNumber(int index, boolean concurrent) {
+        EEW current = this.updates.getLast().current();
+        assertThat(current.getConcurrentIndex()).isEqualTo(index);
+        assertThat(current.isConcurrent()).isEqualTo(concurrent);
+    }
+
+    private void rejectNextEnqueue() {
+        doThrow(new RejectedExecutionException("test rejection")).doAnswer(invocation -> {
+            invocation.getArgument(0, Runnable.class).run();
+            return CompletableFuture.completedFuture(null);
+        }).when(this.messageExecutor).submit(any(Runnable.class));
     }
 
     private static String warning(int serial) throws IOException {
@@ -797,6 +824,270 @@ class DmdataGatewayDeliveryTest {
         receive(fixture("forecast_normal.xml").replace("20260511102316", "event-c"));
         assertThat(this.updates.getLast().current().isConcurrent()).isTrue();
         assertThat(this.updates.getLast().current().getConcurrentIndex()).isEqualTo(3);
+    }
+
+    @Test
+    void completedSingleEventDoesNotConsumeNumbersInTheNextGroup() throws IOException {
+        receive(announcement("a", 1));
+        assertLastNumber(1, false);
+        receive(event("a", forecastFinal()));
+        assertLastNumber(1, false);
+        receive(announcement("b", 1));
+        assertLastNumber(1, false);
+        receive(announcement("c", 1));
+        assertLastNumber(2, true);
+        receive(announcement("b", 2));
+        assertLastNumber(1, true);
+        receive(announcement("c", 2));
+        assertLastNumber(2, true);
+    }
+
+    @Test
+    void overlapIsRememberedForBothEventsWithoutMutatingAlreadySubmittedReports() throws IOException {
+        receive(announcement("a", 1));
+        EEW first = this.updates.getLast().current();
+        receive(announcement("a", 2));
+        EEW second = this.updates.getLast().current();
+        assertLastNumber(1, false);
+        receive(announcement("b", 1));
+        assertLastNumber(2, true);
+        // B finishes before A's next report. A still remembers the overlap.
+        receive(event("b", forecastFinal()));
+        assertLastNumber(2, true);
+        receive(announcement("a", 3));
+        assertLastNumber(1, true);
+        receive(event("a", forecastFinal()));
+        assertLastNumber(1, true);
+        assertThat(first.isConcurrent()).isFalse();
+        assertThat(second.isConcurrent()).isFalse();
+        assertThat(first.getConcurrentIndex()).isEqualTo(1);
+    }
+
+    @Test
+    void groupNeverReusesEvenTheHighestFinishedNumber() throws IOException {
+        receive(announcement("a", 1));
+        receive(announcement("b", 1));
+        receive(announcement("c", 1));
+        assertLastNumber(3, true);
+        receive(event("c", forecastFinal()));
+        receive(event("a", forecastFinal()));
+        assertLastNumber(1, true);
+        receive(announcement("d", 1));
+        assertLastNumber(4, true);
+        receive(announcement("b", 2));
+        assertLastNumber(2, true);
+    }
+
+    @Test
+    void closedGroupResetsNumbersAndLateCancellationKeepsItsOriginalAssignment() throws IOException {
+        receive(announcement("a", 1));
+        receive(announcement("b", 1));
+        receive(event("a", forecastFinal()));
+        receive(event("b", forecastFinal()));
+        assertLastNumber(2, true);
+        receive(announcement("c", 1));
+        assertLastNumber(1, false);
+        receive(event("b", fixture("cancel_same_serial.xml")));
+        assertLastNumber(2, true);
+        receive(announcement("d", 1));
+        assertLastNumber(2, true);
+        receive(announcement("c", 2));
+        assertLastNumber(1, true);
+        receive(event("a", fixture("cancel_same_serial.xml")));
+        assertLastNumber(1, true);
+        receive(announcement("e", 1));
+        assertLastNumber(3, true);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = JMAInfoType.class, names = {"訂正", "取消"})
+    void administrativeReportsAndDistinctTelegramIdsKeepTheEventNumber(JMAInfoType type) throws IOException {
+        receive(announcement("a", 1));
+        receive(announcement("b", 1));
+        String revised = event("b", infoType(serial(fixture(type == JMAInfoType.取消
+                ? "cancel_same_serial.xml" : "forecast_normal.xml"), 3), type));
+        receive("revision-1", revised);
+        assertLastNumber(2, true);
+        receive(this.socket2, "revision-2", revised);
+        assertLastNumber(2, true);
+        receive(announcement("c", 1));
+        assertLastNumber(3, true);
+        receive(announcement("b", 9));
+        assertLastNumber(2, true);
+        assertThat(this.updates).hasSize(6);
+    }
+
+    @Test
+    void discardedOldSerialDoesNotChangeGroupMembershipOrConsumeNumbers() throws IOException {
+        receive(announcement("a", 9));
+        receive(announcement("b", 1));
+        receive(event("a", serial(forecastFinal(), 8)));
+        assertThat(this.updates).hasSize(2);
+        receive(event("b", forecastFinal()));
+        receive(announcement("a", 10));
+        assertLastNumber(1, true);
+        receive(announcement("c", 1));
+        assertLastNumber(3, true);
+    }
+
+    @Test
+    void simultaneousSocketDuplicatesConsumeOnlyOneNumber() throws Exception {
+        receive(announcement("a", 1));
+        receiveOnBothSockets("b-first", announcement("b", 1));
+        assertLastNumber(2, true);
+        receiveOnBothSockets("c-first", announcement("c", 1));
+        assertLastNumber(3, true);
+        receive(announcement("a", 2));
+        assertLastNumber(1, true);
+        assertThat(this.updates).hasSize(4);
+    }
+
+    @Test
+    void failedFirstEnqueueDoesNotStartAGroupOrConsumeItsFirstNumber() throws IOException {
+        rejectNextEnqueue();
+        receive("a-retry", announcement("a", 1));
+        assertThat(this.updates).isEmpty();
+        receive(announcement("b", 1));
+        assertLastNumber(1, false);
+        receive(this.socket2, "a-retry", announcement("a", 1));
+        assertLastNumber(2, true);
+        assertThat(this.updates.getLast().prev()).isNull();
+    }
+
+    @Test
+    void failedConcurrentEnqueueDoesNotMarkOtherEventsOrSkipANumberOnRetry() throws IOException {
+        receive(announcement("a", 1));
+        rejectNextEnqueue();
+        receive("b-retry", announcement("b", 1));
+        assertThat(this.updates).hasSize(1);
+        receive(announcement("a", 2));
+        assertLastNumber(1, false);
+        receive(this.socket2, "b-retry", announcement("b", 1));
+        assertLastNumber(2, true);
+        receive(announcement("c", 1));
+        assertLastNumber(3, true);
+        receive(announcement("a", 3));
+        assertLastNumber(1, true);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"final.xml", "cancel_same_serial.xml"})
+    void failedTerminalEnqueueDoesNotCloseTheGroup(String terminal) throws IOException {
+        receive(announcement("a", 1));
+        rejectNextEnqueue();
+        receive("terminal-retry", event("a", fixture(terminal)));
+        assertThat(this.updates).hasSize(1);
+        receive(announcement("b", 1));
+        assertLastNumber(2, true);
+        receive(this.socket2, "terminal-retry", event("a", fixture(terminal)));
+        assertLastNumber(1, true);
+        assertThat(this.updates.getLast().prev().getSerial()).isEqualTo("1");
+        receive(event("b", forecastFinal()));
+        receive(announcement("c", 1));
+        assertLastNumber(1, false);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {65, 1439})
+    void endedAssignmentsOutliveEventStateAndNeverRejoinANewGroup(int minutes) throws IOException {
+        receive(announcement("a", 1));
+        receive(announcement("b", 1));
+        receive(event("a", forecastFinal()));
+        receive(event("b", forecastFinal()));
+        this.time.addAndGet(Duration.ofMinutes(minutes).toNanos());
+        receive(announcement("c", 1));
+        assertLastNumber(1, false);
+        receive(event("b", fixture("cancel_same_serial.xml")));
+        assertLastNumber(2, true);
+        assertThat(this.updates.getLast().prev()).isNull();
+        receive(announcement("b", 9));
+        assertLastNumber(2, true);
+        receive(announcement("d", 1));
+        assertLastNumber(2, true);
+        receive(event("c", forecastFinal()));
+        receive(event("d", forecastFinal()));
+        receive(announcement("e", 1));
+        assertLastNumber(1, false);
+    }
+
+    @Test
+    void expiredActiveEventsCloseTheirGroupButKeepTheirNumbersForLateReports() throws IOException {
+        receive(announcement("a", 1));
+        receive(announcement("b", 1));
+        this.time.addAndGet(Duration.ofMinutes(65).toNanos());
+        receive(announcement("c", 1));
+        assertLastNumber(1, false);
+        receive(announcement("b", 2));
+        assertLastNumber(2, true);
+        assertThat(this.updates.getLast().prev()).isNull();
+        receive(announcement("d", 1));
+        assertLastNumber(2, true);
+        receive(event("c", forecastFinal()));
+        receive(event("d", forecastFinal()));
+        receive(announcement("e", 1));
+        assertLastNumber(1, false);
+    }
+
+    @Test
+    void oneExpiredMemberDoesNotResetAGroupWithAnotherActiveMember() throws IOException {
+        receive(announcement("a", 1));
+        receive(announcement("b", 1));
+        this.time.addAndGet(Duration.ofMinutes(59).toNanos());
+        receive(announcement("b", 2));
+        this.time.addAndGet(Duration.ofMinutes(2).toNanos());
+        receive(announcement("c", 1));
+        assertLastNumber(3, true);
+        receive(infoType(announcement("a", 2), JMAInfoType.訂正));
+        assertLastNumber(1, true);
+        receive(event("b", forecastFinal()));
+        receive(event("c", forecastFinal()));
+        receive(announcement("d", 1));
+        assertLastNumber(1, false);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"final.xml", "cancel_same_serial.xml"})
+    void unknownTerminalOnlyEventDoesNotJoinOrMarkTheActiveGroup(String terminal) throws IOException {
+        receive(announcement("a", 1));
+        receive(event("unknown", fixture(terminal)));
+        assertLastNumber(1, false);
+        receive(announcement("a", 2));
+        assertLastNumber(1, false);
+        receive(announcement("b", 1));
+        assertLastNumber(2, true);
+        receive(announcement("unknown", 9));
+        assertLastNumber(1, false);
+        receive(event("a", forecastFinal()));
+        receive(event("b", forecastFinal()));
+        receive(announcement("c", 1));
+        assertLastNumber(1, false);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"forecast_normal.xml", "final.xml", "cancel_same_serial.xml"})
+    void embedsAndExternalWebhookDtosUseTheSameImmutableNumbering(String report) throws IOException {
+        receive(announcement("a", 1));
+        receive(announcement("b", 1));
+        receive(event("b", fixture(report)));
+        assertLastNumber(2, true);
+        receive(announcement("a", 2));
+        assertLastNumber(1, true);
+
+        EmbedContext context = new EmbedContext(new RendererQueryFactory(null, null), new QuakeInfoStore(), new I18n("ja_jp"));
+        for (DmdataEEWUpdate update : this.updates) {
+            EEW eew = update.current();
+            verify(this.externalWebhookService).sendExternalWebhook(same(eew));
+            EEWExternalData dto = (EEWExternalData) eew.toExternalDto();
+            assertThat(dto.isConcurrent()).isEqualTo(eew.isConcurrent());
+            assertThat(dto.getConcurrentIndex()).isEqualTo(eew.getConcurrentIndex());
+            String title = eew.createEmbeds("ja_jp", context, () -> new I18nEmbedBuilder("ja_jp", context.i18n()))
+                    .getFirst().title();
+            if (dto.isConcurrent())
+                assertThat(title).startsWith("#" + dto.getConcurrentIndex() + " ");
+            else
+                assertThat(title).doesNotContain("#");
+        }
+        assertThat(this.updates.getFirst().current().isConcurrent()).isFalse();
     }
 
     @Test
