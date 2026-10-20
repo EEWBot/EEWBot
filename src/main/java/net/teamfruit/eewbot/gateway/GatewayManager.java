@@ -6,14 +6,18 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEWUpdate;
 import net.teamfruit.eewbot.entity.external.ExternalData;
 import net.teamfruit.eewbot.entity.jma.AbstractJMAReport;
+import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.EEW;
 import net.teamfruit.eewbot.entity.jma.telegram.VTSE41;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE52;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE53;
+import net.teamfruit.eewbot.entity.jma.telegram.VXSE61;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Strings;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.MDC;
 
 import java.net.http.HttpClient;
@@ -102,25 +106,29 @@ public class GatewayManager implements AutoCloseable {
         );
     }
 
-    private void handleDmdataEEW(DmdataEEWUpdate update) {
+    void handleDmdataEEW(DmdataEEWUpdate update) {
         EEW eew = update.current();
         MDC.put("gateway", "dmdata");
         MDC.put("event.type", "eew");
         MDC.put("event.id", eew.getEventId());
         try {
-            if (eew.hasEarthquake() &&
-                    Strings.CS.equals(eew.getCondition(), "仮定震源要素") &&
-                    eew.getForecastRegions() == null)
+            if (!update.isDeliveryTarget())
                 return;
+
+            if (eew.isCancelReport()) {
+                if (update.deliveryHistory().isEmpty())
+                    Log.logger.warn("DMDATA cancellation without delivery history: eventId={}, serial={}; using unfiltered EEW subscriptions",
+                            eew.getEventId(), eew.getSerial());
+                List<ChannelFilter> filters = EEWFilterClassifier.classifyDmdataCancellation(update.deliveryHistory());
+                submitDelivery(() -> this.service.sendMessage(filters, eew), eew);
+                return;
+            }
 
             boolean isWarning = EEWFilterClassifier.isDmdataWarning(eew, update.prev());
             boolean isImportant = EEWFilterClassifier.isDmdataImportant(eew, update.prev());
             SeismicIntensity maxIntensity = update.maxIntensityEEW();
             ChannelFilter filter = EEWFilterClassifier.classifyEEW(isWarning, isImportant, maxIntensity);
-            submitMessage(() -> {
-                this.service.sendMessage(filter, eew);
-                this.externalWebhookService.sendExternalWebhook(eew);
-            });
+            submitDelivery(() -> this.service.sendMessage(filter, eew), eew);
         } finally {
             MDC.clear();
         }
@@ -144,7 +152,7 @@ public class GatewayManager implements AutoCloseable {
         this.scheduledExecutor.execute(new JMAXmlLGateway(this.httpClient, this.quakeInfoStore, this.config.getDebug().getJmaXmlFeedRoot()));
     }
 
-    private void handleJMAReport(AbstractJMAReport data) {
+    void handleJMAReport(AbstractJMAReport data) {
         MDC.put("gateway", "jma-xml");
         MDC.put("event.id", data.getEventId());
         if (data instanceof VTSE41) {
@@ -155,20 +163,40 @@ public class GatewayManager implements AutoCloseable {
             MDC.put("event.type", "report");
         }
         try {
-            if (data instanceof QuakeInfo quakeInfo) {
-                ChannelFilter filter = EEWFilterClassifier.classifyQuakeInfo(quakeInfo.getQuakeInfoMaxInt().orElse(SeismicIntensity.UNKNOWN));
-                submitMessage(() -> this.service.sendMessage(filter, data));
-            }
-            if (data instanceof VTSE41) {
-                ChannelFilter filter = EEWFilterClassifier.classifyTsunami();
-                submitMessage(() -> this.service.sendMessage(filter, data));
-            }
-            if (data instanceof ExternalData externalData) {
-                submitMessage(() -> this.externalWebhookService.sendExternalWebhook(externalData));
-            }
+            ChannelFilter filter = data instanceof QuakeInfo quakeInfo
+                    ? classifyQuakeInfo(data, quakeInfo)
+                    : data instanceof VTSE41 ? EEWFilterClassifier.classifyTsunami() : null;
+            // Accept both destinations in one submission so a rejection cannot partially accept a report.
+            submitDelivery(() -> {
+                if (filter != null)
+                    this.service.sendMessage(filter, data);
+            }, data instanceof ExternalData externalData ? externalData : null);
+            if (data instanceof QuakeInfo quakeInfo && !data.isCancelReport() && filter != null)
+                this.quakeInfoStore.recordDelivery(quakeInfo, filter.getIntensity());
         } finally {
             MDC.clear();
         }
+    }
+
+    private ChannelFilter classifyQuakeInfo(AbstractJMAReport report, QuakeInfo quakeInfo) {
+        if (!report.isCancelReport()) {
+            SeismicIntensity intensity = quakeInfo.getQuakeInfoMaxInt().orElse(null);
+            boolean missingObservedIntensity = report instanceof VXSE53 && intensity == null;
+            boolean missingReferenceIntensity = (report instanceof VXSE61 || report instanceof VXSE52)
+                    && (intensity == null || intensity == SeismicIntensity.UNKNOWN);
+            if (missingObservedIntensity || missingReferenceIntensity) {
+                Log.logger.warn("JMA intensity unavailable: eventId={}, type={}; ignoring intensity filter",
+                        report.getEventId(), JMAXmlType.from(report.getClass()));
+                return EEWFilterClassifier.classifyQuakeInfo(null);
+            }
+            return EEWFilterClassifier.classifyQuakeInfo(intensity != null ? intensity : SeismicIntensity.UNKNOWN);
+        }
+        JMAXmlType type = JMAXmlType.from(report.getClass());
+        QuakeInfoStore.DeliveryHistory history = this.quakeInfoStore.getDeliveryHistory(report.getEventId(), type);
+        if (!history.complete())
+            Log.logger.warn("JMA cancellation without complete delivery history: eventId={}, type={}, reason={}; ignoring intensity filter",
+                    report.getEventId(), type, history.reason());
+        return EEWFilterClassifier.classifyQuakeInfoCancellation(history);
     }
 
     private void initWebhookSenderHealth() {
@@ -179,13 +207,24 @@ public class GatewayManager implements AutoCloseable {
         }
     }
 
-    private void submitMessage(Runnable task) {
-        Runnable wrapped = MdcUtil.wrapWithMdc(task);
-        try {
-            this.messageExecutor.submit(wrapped);
-        } catch (RejectedExecutionException e) {
-            Log.logger.debug("Message dispatch skipped (executor shut down)");
-        }
+    private void submitMessageOrThrow(Runnable task) {
+        this.messageExecutor.submit(MdcUtil.wrapWithMdc(task));
+    }
+
+    private void submitDelivery(Runnable discordDelivery, @Nullable ExternalData externalData) {
+        submitMessageOrThrow(() -> {
+            try {
+                discordDelivery.run();
+            } catch (Exception error) {
+                Log.logger.error("Discord dispatch failed after queue acceptance: {}", LogSanitizer.safeExceptionMessage(error));
+            }
+            try {
+                if (externalData != null)
+                    this.externalWebhookService.sendExternalWebhook(externalData);
+            } catch (Exception error) {
+                Log.logger.error("External webhook dispatch failed after queue acceptance: {}", error.getClass().getSimpleName());
+            }
+        });
     }
 
     @Override

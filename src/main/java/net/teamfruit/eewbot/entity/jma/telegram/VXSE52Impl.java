@@ -36,7 +36,8 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     }
 
     private Optional<QuakeInfo> getVXSE51() {
-        return this.quakeInfoStore.getReport(getHead().getEventID(), JMAXmlType.VXSE51);
+        return Optional.ofNullable(this.quakeInfoStore)
+                .flatMap(store -> store.getReport(getHead().getEventID(), JMAXmlType.VXSE51));
     }
 
     private Earthquake getEarthquake() {
@@ -87,7 +88,10 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
 
     @Override
     public Optional<SeismicIntensity> getQuakeInfoMaxInt() {
-        return getVXSE51().flatMap(QuakeInfo::getQuakeInfoMaxInt);
+        if (isCancelReport())
+            return Optional.empty();
+        return getVXSE51().flatMap(QuakeInfo::getQuakeInfoMaxInt)
+                .filter(intensity -> intensity != SeismicIntensity.UNKNOWN);
     }
 
     @Override

@@ -11,6 +11,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
@@ -53,6 +55,16 @@ class GatewayManagerCloseTest {
         this.gatewayManager.close();
 
         verify(this.mockMessageExecutor).shutdown();
+    }
+
+    @Test
+    void jmaQueueRejectionIsPropagatedToGateway() {
+        when(this.mockMessageExecutor.submit(any(Runnable.class)))
+                .thenThrow(new java.util.concurrent.RejectedExecutionException("closed"));
+        var report = mock(net.teamfruit.eewbot.entity.jma.AbstractJMAReport.class);
+        when(report.getEventId()).thenReturn("test");
+        assertThrows(java.util.concurrent.RejectedExecutionException.class,
+                () -> this.gatewayManager.handleJMAReport(report));
     }
 
     @Test

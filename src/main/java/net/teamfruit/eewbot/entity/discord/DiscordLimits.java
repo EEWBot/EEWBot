@@ -21,13 +21,6 @@ public final class DiscordLimits {
      */
     public static final int MAX_TOTAL_CHARS_PER_MESSAGE = 6000;
 
-    /**
-     * リクエストボディ全体の UTF-8 サイズに対するマージン込みの上限
-     * <p>
-     * 10KB を超えると、文字数制限をすべて守っていても Discordは {@code HTTP 500} を返す
-     */
-    public static final int MAX_REQUEST_BYTES = 9000;
-
     private DiscordLimits() {
     }
 
@@ -37,31 +30,6 @@ public final class DiscordLimits {
 
     public static int utf8Bytes(final String s) {
         return s == null ? 0 : s.getBytes(StandardCharsets.UTF_8).length;
-    }
-
-    public static int jsonTextBytes(final String s) {
-        if (s == null)
-            return 0;
-        int total = utf8Bytes(s);
-        for (int i = 0; i < s.length(); i++) {
-            final char c = s.charAt(i);
-            if (c == '"' || c == '\\' || c == '\n' || c == '\r' || c == '\t' || c == '\b' || c == '\f')
-                total += 1;
-            else if (c < 0x20 || c == '<' || c == '>' || c == '&' || c == '=' || c == '\'')
-                total += 5;
-            else if (c == '\u2028' || c == '\u2029')
-                total += 3;
-        }
-        return total;
-    }
-
-    public static String truncateBytes(final String s, final int maxBytes) {
-        if (s == null || jsonTextBytes(s) <= maxBytes)
-            return s;
-        int count = codePoints(s);
-        while (count > 0 && jsonTextBytes(truncate(s, count)) > maxBytes)
-            count = Math.max(0, count - Math.max(1, (jsonTextBytes(truncate(s, count)) - maxBytes) / 4));
-        return truncate(s, count);
     }
 
     public static String truncate(final String s, final int maxCodePoints) {

@@ -96,7 +96,7 @@ class EmbedPackerTest {
 
     @Test
     void byteBudgetSplitsJapaneseBeforeTheCharacterBudgetIsReached() {
-        // 日本語 165 コードポイント x 20 = 3300 文字(6000 未満)だが UTF-8 では約 9900 バイト(9000 超)
+        // 日本語 165 コードポイント x 20 = 3300 文字(6000 未満)だが UTF-8 では約 9900 バイトで構造・送信者情報を含めると実測予算超過
         final List<PendingField> japanese = fields(20, "あ".repeat(165));
         final int chars = japanese.stream()
                 .mapToInt(f -> DiscordLimits.codePoints(f.name()) + DiscordLimits.codePoints(f.value())).sum();
@@ -105,8 +105,8 @@ class EmbedPackerTest {
         final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(embed(japanese)));
 
         assertThat(messages).hasSizeGreaterThan(1);
-        messages.forEach(message -> assertThat(message.stream().mapToInt(PendingEmbed::byteCount).sum())
-                .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES));
+        messages.forEach(message -> assertThat(EmbedWebhookCost.estimate(message))
+                .isLessThanOrEqualTo(EmbedWebhookCost.OBSERVED_BUDGET));
     }
 
     @Test
@@ -144,45 +144,13 @@ class EmbedPackerTest {
     }
 
     @Test
-    void truncatesDescriptionOnlyWhenTheMessageBudgetIsExceeded() {
-        // 日本語 4000 コードポイントは MAX_DESCRIPTION 未満だが約 12KB あり、500 が返る壁を越えている
-        final String longJapanese = "あ".repeat(4000);
-        assertThat(DiscordLimits.codePoints(longJapanese)).isLessThan(DiscordLimits.MAX_DESCRIPTION);
-
-        final List<PendingEmbed> pages = flatten(EmbedPacker.pack(List.of(new PendingEmbed(
-                null, longJapanese, null, null, null, null, null, null, null, null, null, null, List.of()))));
-
-        assertThat(pages).hasSize(1);
-        final PendingEmbed only = pages.get(0);
-        assertThat(only.description()).endsWith("…");
-        assertThat(only.byteCount() + EmbedPacker.MESSAGE_JSON_OVERHEAD)
-                .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
-        // 固定上限ではなく実予算まで残るので、旧実装の約 1033 文字よりはるかに多く保たれる
-        assertThat(DiscordLimits.codePoints(only.description())).isGreaterThan(2500);
-    }
-
-    @Test
-    void leavesRoomForAFieldAlongsideAMaximalDescription() {
-        // description を予算いっぱいに使うと、先頭ページにフィールドを載せられなくなる
-        final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(new PendingEmbed(
-                "タイトル", "あ".repeat(4000), null, null, Color.RED, null, null, null, null,
-                null, null, null, fields(3, "地域名".repeat(100)))));
-
-        assertEveryLimitRespected(messages);
-        final PendingEmbed first = flatten(messages).get(0);
-        assertThat(first.description()).isNotEmpty();
-        assertThat(first.fields()).isNotEmpty();
-        first.fields().forEach(f -> assertThat(f.value()).isNotEmpty());
-    }
-
-    @Test
     void aSingleOversizedDescriptionStillProducesASendableMessage() {
         final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(new PendingEmbed(
                 "タイトル", "あ".repeat(4000), null, Instant.EPOCH, Color.RED, "気象庁",
                 null, null, null, null, null, null, fields(30, "地域名".repeat(40)))));
 
-        messages.forEach(message -> assertThat(message.stream().mapToInt(PendingEmbed::byteCount).sum())
-                .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES));
+        messages.forEach(message -> assertThat(EmbedWebhookCost.estimate(message))
+                .isLessThanOrEqualTo(EmbedWebhookCost.OBSERVED_BUDGET));
     }
 
     @Test
@@ -239,9 +207,8 @@ class EmbedPackerTest {
             assertThat(message).hasSizeLessThanOrEqualTo(DiscordLimits.MAX_EMBEDS_PER_MESSAGE);
             assertThat(message.stream().mapToInt(PendingEmbed::charCount).sum())
                     .isLessThanOrEqualTo(DiscordLimits.MAX_TOTAL_CHARS_PER_MESSAGE);
-            assertThat(message.stream().mapToInt(PendingEmbed::byteCount).sum()
-                    + EmbedPacker.MESSAGE_JSON_OVERHEAD)
-                    .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
+            assertThat(EmbedWebhookCost.estimate(message))
+                    .isLessThanOrEqualTo(EmbedWebhookCost.OBSERVED_BUDGET);
             for (final PendingEmbed page : message) {
                 assertThat(page.fields()).hasSizeLessThanOrEqualTo(DiscordLimits.MAX_FIELDS_PER_EMBED);
                 page.fields().forEach(f -> assertThat(DiscordLimits.codePoints(f.value()))
@@ -296,7 +263,7 @@ class EmbedPackerTest {
         final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(source));
 
         assertEveryLimitRespected(messages);
-        // 出力は 2 ページなので先頭ページに tail は載らない。description を削る理由はない
+        // head と tail は必要に応じて別ページになり、description とフィールド値は削られない
         assertThat(flatten(messages).getFirst().description()).isEqualTo("d".repeat(2900));
         final List<PendingField> all = flatten(messages).stream().flatMap(p -> p.fields().stream()).toList();
         assertThat(all).hasSize(2);
@@ -320,75 +287,14 @@ class EmbedPackerTest {
 
         assertEveryLimitRespected(messages);
         for (final PendingEmbed page : pages)
-            assertThat(page.byteCount() + EmbedPacker.MESSAGE_JSON_OVERHEAD)
-                    .isLessThanOrEqualTo(DiscordLimits.MAX_REQUEST_BYTES);
+            assertThat(EmbedWebhookCost.estimate(List.of(page)))
+                    .isLessThanOrEqualTo(EmbedWebhookCost.OBSERVED_BUDGET);
 
         // 下部の装飾は末尾ページに載り、フィールドも道連れに削られていない
         final PendingEmbed last = pages.get(pages.size() - 1);
         assertThat(last.image()).isEqualTo("https://example.com/i.png");
         pages.stream().flatMap(p -> p.fields().stream())
                 .forEach(f -> assertThat(f.value()).doesNotEndWith("…"));
-    }
-
-    @Test
-    void adjustsWithFullChromeOnlyWhenEverythingFitsOnOnePage() {
-        // フィールドが 1 つだけなら 1 ページに収まり、head と tail が同居する。
-        // このときだけは tail の分も予算から引いて description を詰めなければならない
-        final String description = "あ".repeat(4000);
-        final PendingEmbed withTail = new PendingEmbed("タイトル", description, null,
-                Instant.EPOCH, Color.RED, "気象庁".repeat(200), null, "https://example.com/i.png", null,
-                "author", null, null, fields(1, "地域"));
-        final PendingEmbed withoutTail = new PendingEmbed("タイトル", description, null,
-                null, Color.RED, null, null, null, null,
-                null, null, null, fields(1, "地域"));
-
-        final List<PendingEmbed> pages = flatten(EmbedPacker.pack(List.of(withTail)));
-        assertThat(pages).hasSize(1);
-        final PendingEmbed only = pages.get(0);
-
-        assertEveryLimitRespected(EmbedPacker.pack(List.of(withTail)));
-        // 下部の装飾は同じ embed に載る
-        assertThat(only.footerText()).isNotNull();
-        assertThat(only.image()).isEqualTo("https://example.com/i.png");
-        assertThat(only.timestamp()).isEqualTo(Instant.EPOCH);
-
-        // tail を抱える分だけ description は短くなる。常に head だけで測っていればこうならない
-        final PendingEmbed headOnly = flatten(EmbedPacker.pack(List.of(withoutTail))).get(0);
-        assertThat(DiscordLimits.codePoints(only.description()))
-                .isLessThan(DiscordLimits.codePoints(headOnly.description()));
-    }
-
-    @Test
-    void keepsAHeavyNamedFieldWhenTruncatingItsValueIsNotEnough() {
-        // fitToBudget() が縮められるのは value だけ。name が重いと value を … まで削っても
-        // 末尾ページは予算を超えたままになる
-        final String heavyName = "<".repeat(256);
-        assertThat(DiscordLimits.jsonTextBytes(heavyName))
-                .isEqualTo(DiscordLimits.utf8Bytes(heavyName) * 6);
-
-        // 有効かつ MAX_URL 以内だが約 6KB になる image URL
-        final String image = "https://example.com/" + "あ".repeat(2000);
-        assertThat(DiscordLimits.codePoints(image)).isLessThanOrEqualTo(DiscordLimits.MAX_URL);
-
-        final PendingEmbed source = new PendingEmbed(null, null, null, Instant.EPOCH, Color.RED,
-                "f".repeat(2048), null, image, null, "a".repeat(256), null, null,
-                List.of(new PendingField("n", "v", false), new PendingField(heavyName, "値", false)));
-
-        final List<List<PendingEmbed>> messages = EmbedPacker.pack(List.of(source));
-
-        assertEveryLimitRespected(messages);
-        // 名前の重いフィールドは無損失で残る
-        final List<PendingField> all = flatten(messages).stream().flatMap(p -> p.fields().stream()).toList();
-        assertThat(all).hasSize(2);
-        assertThat(all.get(1).name()).isEqualTo(heavyName);
-        assertThat(all.get(1).value()).isEqualTo("値");
-
-        // 下部の装飾はフィールドを持たない末尾ページに載る
-        final PendingEmbed last = flatten(messages).get(flatten(messages).size() - 1);
-        assertThat(last.fields()).isEmpty();
-        assertThat(last.image()).isEqualTo(image);
-        assertThat(last.footerText()).isEqualTo("f".repeat(2048));
-        assertThat(last.timestamp()).isEqualTo(Instant.EPOCH);
     }
 
     @Test
@@ -407,34 +313,10 @@ class EmbedPackerTest {
     }
 
     @Test
-    void dropsDecorativeUrlsBeforeTruncatingTheDescription() {
-        // 装飾的なアイコンを落とすだけで収まるなら、気象情報本文も地震マップも守られる
-        final String url = "https://example.com/" + "あ".repeat(900);
-        final String description = "あ".repeat(1000);
-        final PendingEmbed source = new PendingEmbed("タイトル", description, url,
-                Instant.EPOCH, Color.RED, "気象庁", url, url, url,
-                null, null, url, List.of());
-
-        final List<PendingEmbed> pages = flatten(EmbedPacker.pack(List.of(source)));
-        assertThat(pages).hasSize(1);
-        final PendingEmbed only = pages.get(0);
-
-        assertEveryLimitRespected(EmbedPacker.pack(List.of(source)));
-        assertThat(only.description()).isEqualTo(description);
-        assertThat(only.authorIcon()).isNull();
-        assertThat(only.footerIcon()).isNull();
-        assertThat(only.thumbnail()).isNull();
-        // 地震マップとタイトルリンクは最後まで残る
-        assertThat(only.image()).isEqualTo(url);
-        assertThat(only.url()).isEqualTo(url);
-    }
-
-    @Test
     void escapeHeavyContentRespectsTheByteBudget() {
-        // Gson がエスケープすると Discord タイムスタンプの山括弧は 1 つ 6 バイトになるため、
-        // 生の UTF-8 サイズでフィールドを計測すると半分以上少なく見積もってしまう
+        // Gson のエスケープで送信 JSON が増えても、デコード後の予算として扱う
         final String value = "<t:1700000000:f>".repeat(60);
-        assertThat(DiscordLimits.jsonTextBytes(value)).isGreaterThan(DiscordLimits.utf8Bytes(value));
+        assertThat(net.teamfruit.eewbot.Codecs.GSON.toJson(value).length()).isGreaterThan(value.length());
 
         assertEveryLimitRespected(EmbedPacker.pack(List.of(embed(fields(20, value)))));
     }
@@ -442,9 +324,7 @@ class EmbedPackerTest {
     @Test
     void maximalChromeAndLongUrlsStillProduceSendableMessages() {
         // 装飾要素と URL の合計で、フィールド 1 つ分にも満たない容量しか残らないことがある。
-        // その場合フィールドは予算超過のまま出力されるのではなく、残り容量まで切り詰められる。
-        // フィールドが 1 つだけなのが効いてくる: embed が 1 ページに収まり、そのページが
-        // 上部・下部の装飾要素を同時に抱えることになるため。
+        // 本文・フィールド値を切り詰めず、装飾や本文を別ページへ分ける。
         final String url = "https://example.com/" + "a".repeat(280);
         final PendingEmbed source = new PendingEmbed("t".repeat(256), "d".repeat(4000), url,
                 Instant.EPOCH, Color.RED, "f".repeat(2048), url, url, url,

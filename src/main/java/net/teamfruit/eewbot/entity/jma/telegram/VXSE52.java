@@ -91,11 +91,11 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
                 .hypocenterDetailedName(null)
                 .latitude(coord != null ? coord.getLat() : null)
                 .longitude(coord != null ? coord.getLon() : null)
-                .depth(getDepth().orElse(null))
+                .depth(!isCancelReport() ? getDepth().orElse(null) : null)
                 .magnitude(!isCancelReport() ? getMagnitude() : null)
                 // コメント
-                .forecastComment(getForecastComment().map(Comment.CommentForm::getText).orElse(null))
-                .freeFormComment(getFreeFormComment().orElse(null))
+                .forecastComment(!isCancelReport() ? getForecastComment().map(Comment.CommentForm::getText).orElse(null) : null)
+                .freeFormComment(!isCancelReport() ? getFreeFormComment().orElse(null) : null)
                 .build();
     }
 }

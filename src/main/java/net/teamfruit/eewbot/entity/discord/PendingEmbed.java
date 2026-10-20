@@ -69,32 +69,4 @@ public record PendingEmbed(
         return total;
     }
 
-    public int byteCount() {
-        int total = EmbedPacker.EMBED_JSON_OVERHEAD;
-        total += property(this.title, 11);            // "title":"",
-        total += property(this.description, 17);      // "description":"",
-        total += property(this.url, 9);               // "url":"",
-        total += property(this.footerText, 22);       // "footer":{"text":""},
-        total += property(this.footerIcon, 14);       // "icon_url":"",
-        total += property(this.image, 21);            // "image":{"url":""},
-        total += property(this.thumbnail, 25);        // "thumbnail":{"url":""},
-        total += property(this.authorName, 22);       // "author":{"name":""},
-        total += property(this.authorUrl, 9);
-        total += property(this.authorIcon, 14);
-        if (this.color != null)
-            total += 18;                              // "color":16777215,
-        if (this.timestamp != null)
-            total += 40;                              // "timestamp":"2024-01-01T00:00:00Z",
-        if (!this.fields.isEmpty())
-            total += EmbedPacker.FIELDS_ARRAY_JSON_OVERHEAD;
-        for (final PendingField field : this.fields)
-            total += EmbedPacker.FIELD_JSON_OVERHEAD
-                    + DiscordLimits.jsonTextBytes(field.name())
-                    + DiscordLimits.jsonTextBytes(field.value());
-        return total;
-    }
-
-    private static int property(final String value, final int keyOverhead) {
-        return value == null ? 0 : keyOverhead + DiscordLimits.jsonTextBytes(value);
-    }
 }

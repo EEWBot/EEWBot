@@ -8,7 +8,7 @@ import discord4j.rest.http.client.ClientException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.Entity;
-import net.teamfruit.eewbot.entity.discord.DiscordLimits;
+import net.teamfruit.eewbot.entity.discord.EmbedWebhookCost;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
 import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
@@ -31,7 +32,6 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -58,6 +58,7 @@ public class EEWService {
     private final HttpClient httpClient;
     private final URI webhookSenderAddress;
     private final String[] webhookSenderHeader;
+    private final Scheduler deliveryScheduler;
 
     public EEWService(
             GatewayDiscordClient gateway,
@@ -70,6 +71,13 @@ public class EEWService {
             HttpClient httpClient,
             ConfigV2 config
     ) {
+        this(gateway, deliveryRegistry, adminRegistry, avatarUrl, i18n, embedContext, executor, httpClient, config,
+                Schedulers.parallel());
+    }
+
+    EEWService(GatewayDiscordClient gateway, DestinationDeliveryRegistry deliveryRegistry,
+               DestinationAdminRegistry adminRegistry, String avatarUrl, I18n i18n, EmbedContext embedContext,
+               ScheduledExecutorService executor, HttpClient httpClient, ConfigV2 config, Scheduler deliveryScheduler) {
         this.gateway = gateway;
         this.deliveryRegistry = deliveryRegistry;
         this.adminRegistry = adminRegistry;
@@ -78,6 +86,7 @@ public class EEWService {
         this.embedContext = embedContext;
         this.executor = executor;
         this.httpClient = httpClient;
+        this.deliveryScheduler = deliveryScheduler;
         this.webhookSenderHeader = parseWebhookSenderHeader(config.getWebhookSender().getCustomHeader());
 
         if (StringUtils.isNotEmpty(config.getWebhookSender().getAddress()))
@@ -87,10 +96,16 @@ public class EEWService {
     }
 
     public void sendMessage(final ChannelFilter filter, final Entity entity) {
+        sendMessage(this.deliveryRegistry.getDeliveryChannels(filter), entity);
+    }
+
+    public void sendMessage(final List<ChannelFilter> filters, final Entity entity) {
+        sendMessage(this.deliveryRegistry.getDeliveryChannelsMatchingAny(filters), entity);
+    }
+
+    public void sendMessage(final DeliveryPartition partition, final Entity entity) {
         Map<String, List<MessageCreateSpec>> msgByLang = new HashMap<>();
         this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessages(lang, this.embedContext)));
-
-        DeliveryPartition partition = this.deliveryRegistry.getDeliveryChannels(filter);
 
         List<List<DiscordWebhookRequest>> webhookChunks = new ArrayList<>();
         this.i18n.getLanguages().keySet().forEach(lang -> {
@@ -110,7 +125,8 @@ public class EEWService {
         Map<Long, DeliveryTarget> webhookChannels = partition.webhook();
         if (!webhookChannels.isEmpty()) {
             WebhookFallback botFallback = (id, target, fromChunkIndex) ->
-                    sendMessagesInOrder(id, remainingMessages(msgByLang.get(target.lang()), fromChunkIndex)).subscribe();
+                    sendMessagesInOrder(id, remainingMessages(msgByLang.get(target.lang()), fromChunkIndex))
+                            .onErrorResume(error -> Mono.empty()).subscribe();
 
             if (this.webhookSenderAddress == null) {
                 Log.logger.info("Sending webhook message to {} channels", webhookChannels.size());
@@ -129,8 +145,13 @@ public class EEWService {
         }
     }
 
-    private Flux<Message> sendMessagesInOrder(long channelId, List<MessageCreateSpec> specs) {
-        return Flux.fromIterable(specs).concatMap(spec -> directSendMessagePassErrors(channelId, spec));
+    Flux<Message> sendMessagesInOrder(long channelId, List<MessageCreateSpec> specs) {
+        Map<String, String> context = MDC.getCopyOfContextMap();
+        var retry = DeliveryRetry.policy(this.deliveryScheduler, "Discord channel " + channelId);
+        return Flux.fromIterable(specs).concatMap(spec -> Mono.defer(() -> directSendMessagePassErrors(channelId, spec))
+                .retryWhen(retry)
+                .doOnError(error -> MdcUtil.wrapWithMdc(() -> Log.logger.error(
+                        "Bot delivery failed: channelId={}, error={}", channelId, DeliveryRetry.describe(error)), context).run()));
     }
 
     private static List<MessageCreateSpec> remainingMessages(List<MessageCreateSpec> specs, int fromIndex) {
@@ -161,8 +182,6 @@ public class EEWService {
                                 })
                                 .onErrorResume(e -> Mono.empty()))
                         .collect(Collectors.toList()))
-                .parallel()
-                .runOn(Schedulers.parallel())
                 .doOnComplete(() -> {
                     if (!erroredChannels.isEmpty()) {
                         submitCleanup(() -> {
@@ -180,7 +199,7 @@ public class EEWService {
                         });
                     }
                 })
-                .subscribe();
+                .subscribe(ignored -> { }, error -> Log.logger.error("Bot delivery fan-out failed: {}", DeliveryRetry.describe(error)));
     }
 
     private void sendWebhook(List<List<DiscordWebhookRequest>> webhookChunks, int fromChunkIndex, Map<Long, DeliveryTarget> webhookChannels, WebhookFallback onError) {
@@ -189,10 +208,10 @@ public class EEWService {
             Map<String, String> jsonByLang = new HashMap<>();
             webhookChunks.get(i).forEach(req -> {
                 String json = Codecs.GSON.toJson(req.getWebhook());
-                int bytes = json.getBytes(StandardCharsets.UTF_8).length;
-                if (bytes > DiscordLimits.MAX_REQUEST_BYTES)
-                    Log.logger.error("Webhook payload for language {} is {} bytes, over the {} byte budget; Discord may answer 500",
-                            req.getLang(), bytes, DiscordLimits.MAX_REQUEST_BYTES);
+                int cost = EmbedWebhookCost.estimate(req.getWebhook());
+                if (cost > EmbedWebhookCost.OBSERVED_BUDGET)
+                    Log.logger.error("Webhook payload for language {} has effective cost {}, over the {} budget",
+                            req.getLang(), cost, EmbedWebhookCost.OBSERVED_BUDGET);
                 jsonByLang.put(req.getLang(), json);
             });
             jsonByChunkAndLang.add(jsonByLang);

@@ -1,0 +1,42 @@
+<Report xmlns="http://xml.kishou.go.jp/jmaxml1/" xmlns:jmx="http://xml.kishou.go.jp/jmaxml1/">
+    <Control>
+        <Title>震源・震度に関する情報</Title>
+        <DateTime>2025-12-08T14:25:00Z</DateTime>
+        <Status>通常</Status>
+        <EditorialOffice>気象庁本庁</EditorialOffice>
+        <PublishingOffice>気象庁</PublishingOffice>
+    </Control>
+    <Head xmlns="http://xml.kishou.go.jp/jmaxml1/informationBasis1/">
+        <Title>遠地地震に関する情報</Title>
+        <ReportDateTime>2025-12-08T23:25:00+09:00</ReportDateTime>
+        <TargetDateTime>2025-12-08T23:15:00+09:00</TargetDateTime>
+        <EventID>20251208231519</EventID>
+        <InfoType>発表</InfoType>
+        <Serial>1</Serial>
+        <InfoKind>地震情報</InfoKind>
+        <InfoKindVersion>1.0_1</InfoKindVersion>
+        <Headline><Text>海外で規模の大きな地震がありました。</Text></Headline>
+    </Head>
+    <Body xmlns="http://xml.kishou.go.jp/jmaxml1/body/seismology1/" xmlns:jmx_eb="http://xml.kishou.go.jp/jmaxml1/elementBasis1/">
+        <Earthquake>
+            <OriginTime>2025-12-08T23:15:00+09:00</OriginTime>
+            <ArrivalTime>2025-12-08T23:15:00+09:00</ArrivalTime>
+            <Hypocenter>
+                <Area>
+                    <Name>南太平洋</Name>
+                    <DetailedName>ソロモン諸島</DetailedName>
+                    <Code type="震央地名">999</Code>
+                    <jmx_eb:Coordinate description="南緯９．０度　東経１５９．０度　深さ１０ｋｍ">-9.0+159.0-10000/</jmx_eb:Coordinate>
+                </Area>
+            </Hypocenter>
+            <jmx_eb:Magnitude type="Mj" description="Ｍ７．０">7.0</jmx_eb:Magnitude>
+        </Earthquake>
+        <Comments>
+            <ForecastComment codeType="固定付加文">
+                <Text>この地震による日本への津波の影響はありません。</Text>
+                <Code>0215</Code>
+            </ForecastComment>
+            <FreeFormComment>海外で規模の大きな地震がありました。</FreeFormComment>
+        </Comments>
+    </Body>
+</Report>
