@@ -7,9 +7,10 @@ import net.teamfruit.eewbot.gateway.GatewayManager;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.DestinationBackend;
+import net.teamfruit.eewbot.registry.destination.DestinationCleanup;
 import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.RevisionPoller;
-import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
 import reactor.core.Disposable;
 
 import java.io.IOException;
@@ -28,7 +29,8 @@ public class EEWBot implements AutoCloseable {
     private final ConfigV2 config;
     private final DestinationDeliveryRegistry deliveryRegistry;
     private final DestinationAdminRegistry adminRegistry;
-    private final ChannelRegistrySql sqlRegistry;
+    private final DestinationBackend destinationBackend;
+    private final DestinationCleanup destinationCleanup;
     private final RevisionPoller revisionPoller;
     private final I18n i18n;
     private final QuakeInfoStore quakeInfoStore;
@@ -52,7 +54,8 @@ public class EEWBot implements AutoCloseable {
             ConfigV2 config,
             DestinationDeliveryRegistry deliveryRegistry,
             DestinationAdminRegistry adminRegistry,
-            ChannelRegistrySql sqlRegistry,
+            DestinationBackend destinationBackend,
+            DestinationCleanup destinationCleanup,
             RevisionPoller revisionPoller,
             I18n i18n,
             QuakeInfoStore quakeInfoStore,
@@ -71,7 +74,8 @@ public class EEWBot implements AutoCloseable {
         this.config = config;
         this.deliveryRegistry = deliveryRegistry;
         this.adminRegistry = adminRegistry;
-        this.sqlRegistry = sqlRegistry;
+        this.destinationBackend = destinationBackend;
+        this.destinationCleanup = destinationCleanup;
         this.revisionPoller = revisionPoller;
         this.i18n = i18n;
         this.quakeInfoStore = quakeInfoStore;
@@ -96,10 +100,10 @@ public class EEWBot implements AutoCloseable {
         if (!this.closed.compareAndSet(false, true)) return;
         Log.logger.info("Shutdown");
         if (this.gatewayManager != null) {
-            this.gatewayManager.close();
+            shutdownStep("Gateway manager close", this.gatewayManager::close);
         }
         if (this.revisionPoller != null) {
-            this.revisionPoller.stop();
+            shutdownStep("Revision poller stop", this.revisionPoller::stop);
         }
         try {
             if (this.gateway != null) {
@@ -108,24 +112,32 @@ public class EEWBot implements AutoCloseable {
         } catch (final Exception e) {
             Log.logger.error("Gateway logout failed", e);
         }
-        this.eventSubscriptions.forEach(Disposable::dispose);
+        this.eventSubscriptions.forEach(subscription -> shutdownStep("Listener disposal", subscription::dispose));
         this.listenersStopped.set(true);
-        awaitExecutorShutdown(this.scheduledExecutor, 10, TimeUnit.SECONDS);
-        awaitExecutorShutdown(this.snapshotReloadExecutor, 5, TimeUnit.SECONDS);
+        shutdownStep("Worker shutdown", () -> awaitExecutorShutdown(this.scheduledExecutor, 10, TimeUnit.SECONDS));
+        shutdownStep("Snapshot executor shutdown", () -> awaitExecutorShutdown(this.snapshotReloadExecutor, 5, TimeUnit.SECONDS));
         try {
             this.adminRegistry.save();
-        } catch (final IOException e) {
+        } catch (final IOException | RuntimeException e) {
             Log.logger.error("Save failed", e);
         }
-        if (this.sqlRegistry != null) {
-            this.sqlRegistry.close();
+        if (this.destinationBackend != null) {
+            shutdownStep("Destination backend close", this.destinationBackend::close);
         }
         if (this.externalWebhookService != null) {
-            this.externalWebhookService.shutdown();
+            shutdownStep("External webhook shutdown", this.externalWebhookService::shutdown);
         }
     }
 
-    private void awaitExecutorShutdown(ExecutorService executor, long timeout, TimeUnit unit) {
+    private static void shutdownStep(String action, Runnable cleanup) {
+        try {
+            cleanup.run();
+        } catch (RuntimeException e) {
+            Log.logger.error("{} failed", action, e);
+        }
+    }
+
+    static void awaitExecutorShutdown(ExecutorService executor, long timeout, TimeUnit unit) {
         executor.shutdown();
         try {
             if (!executor.awaitTermination(timeout, unit)) {
@@ -154,10 +166,9 @@ public class EEWBot implements AutoCloseable {
     void handleDeletion(long id, boolean isGuild) {
         try {
             if (isGuild)
-                this.adminRegistry.removeByGuildId(id);
+                this.destinationCleanup.guildDeleted(id);
             else
-                this.adminRegistry.remove(id);
-            this.adminRegistry.save();
+                this.destinationCleanup.destinationDeleted(id);
         } catch (Exception e) {
             if (this.listenersStopped.get()) {
                 Log.logger.debug("Ignoring deletion error after listener shutdown for id={}", id, e);

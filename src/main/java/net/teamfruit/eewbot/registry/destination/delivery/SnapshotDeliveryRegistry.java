@@ -1,9 +1,9 @@
 package net.teamfruit.eewbot.registry.destination.delivery;
 
 import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.registry.destination.DestinationConfigSource;
 import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
-import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
@@ -16,19 +16,16 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
 
-    private final DeliverySnapshotLoader snapshotLoader;
-    private final ConfigRevisionStore revisionStore;
+    private final DestinationConfigSource configSource;
     private final ExecutorService reloadExecutor;
     private final AtomicReference<DeliverySnapshot> snapshotRef;
     private final AtomicBoolean reloadScheduled = new AtomicBoolean(false);
 
     public SnapshotDeliveryRegistry(
-            DeliverySnapshotLoader snapshotLoader,
-            ConfigRevisionStore revisionStore,
+            DestinationConfigSource configSource,
             ExecutorService reloadExecutor
     ) {
-        this.snapshotLoader = snapshotLoader;
-        this.revisionStore = revisionStore;
+        this.configSource = configSource;
         this.reloadExecutor = reloadExecutor;
         this.snapshotRef = new AtomicReference<>();
     }
@@ -39,7 +36,7 @@ public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
      */
     public void initializeSnapshot() {
         Log.logger.info("Initializing delivery snapshot...");
-        DeliverySnapshot snapshot = this.snapshotLoader.loadInTransaction();
+        DeliverySnapshot snapshot = this.configSource.loadSnapshot();
         this.snapshotRef.set(snapshot);
         Log.logger.info("Delivery snapshot initialized: {} channels, revision {}",
                 snapshot.size(), snapshot.getRevision());
@@ -54,7 +51,7 @@ public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
 
     /**
      * Request a snapshot reload. Coalesces multiple requests into one.
-     * Used by both SqlAdminRegistry writes and RevisionPoller.
+     * Used by committed management writes and RevisionPoller.
      */
     public void requestReload() {
         if (this.reloadScheduled.compareAndSet(false, true)) {
@@ -77,7 +74,7 @@ public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
         }
         // Check if another reload is needed after completion
         try {
-            long latest = this.revisionStore.getRevision();
+            long latest = this.configSource.getRevision();
             DeliverySnapshot cur = this.snapshotRef.get();
             if (cur == null || cur.getRevision() < latest) {
                 requestReload();
@@ -89,7 +86,7 @@ public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
 
     private void reloadSnapshotLoop() {
         DeliverySnapshot current = this.snapshotRef.get();
-        DeliverySnapshot loaded = this.snapshotLoader.loadInTransaction();
+        DeliverySnapshot loaded = this.configSource.loadSnapshot();
         if (current != null && current.getRevision() >= loaded.getRevision()) {
             return; // Already up to date
         }
