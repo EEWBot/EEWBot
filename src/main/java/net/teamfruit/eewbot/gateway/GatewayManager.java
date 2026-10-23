@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot.gateway;
 
-import discord4j.core.GatewayDiscordClient;
 import net.teamfruit.eewbot.*;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEWUpdate;
@@ -14,7 +13,6 @@ import net.teamfruit.eewbot.entity.jma.telegram.VXSE52;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE53;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE61;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
-import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
@@ -48,12 +46,10 @@ public class GatewayManager implements AutoCloseable {
             ScheduledExecutorService scheduledExecutor,
             ScheduledExecutorService dmdataReconnectExecutor,
             HttpClient httpClient,
-            GatewayDiscordClient client,
-            DestinationAdminRegistry adminRegistry,
             QuakeInfoStore quakeInfoStore,
             ExternalWebhookService externalWebhookService
     ) {
-        this(service, config, applicationId, scheduledExecutor, dmdataReconnectExecutor, httpClient, client, adminRegistry, quakeInfoStore, externalWebhookService,
+        this(service, config, applicationId, scheduledExecutor, dmdataReconnectExecutor, httpClient, quakeInfoStore, externalWebhookService,
                 Executors.newVirtualThreadPerTaskExecutor());
     }
 
@@ -64,8 +60,6 @@ public class GatewayManager implements AutoCloseable {
             ScheduledExecutorService scheduledExecutor,
             ScheduledExecutorService dmdataReconnectExecutor,
             HttpClient httpClient,
-            GatewayDiscordClient client,
-            DestinationAdminRegistry adminRegistry,
             QuakeInfoStore quakeInfoStore,
             ExternalWebhookService externalWebhookService,
             ExecutorService messageExecutor

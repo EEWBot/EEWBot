@@ -9,6 +9,7 @@ import net.teamfruit.eewbot.entity.discord.PendingEmbed;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.store.RegistryDestinationCleanup;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
@@ -156,7 +157,7 @@ class EEWServiceWebhookSenderFallbackTest {
                         Map.of(123L, new DeliveryTarget(123L, "ja_jp", WEBHOOK_URL)),
                         Collections.emptyMap()
                 ),
-                adminRegistry,
+                new RegistryDestinationCleanup(adminRegistry),
                 "https://example.com/avatar.png",
                 i18n,
                 embedContext,

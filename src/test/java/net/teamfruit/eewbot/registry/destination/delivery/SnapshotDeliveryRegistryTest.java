@@ -1,11 +1,13 @@
 package net.teamfruit.eewbot.registry.destination.delivery;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.DestinationConfigSource;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
-import net.teamfruit.eewbot.registry.destination.store.ConfigRevisionStore;
 import org.junit.jupiter.api.*;
 
 import java.util.List;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,8 +16,61 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class SnapshotDeliveryRegistryTest {
+
+    @Test
+    void deliveryDoesNotReadSourceAfterInitialization() {
+        DestinationConfigSource source = mock(DestinationConfigSource.class);
+        when(source.loadSnapshot()).thenReturn(new DeliverySnapshot(1, List.of(simpleDc(1))));
+        SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(source, this.reloadExecutor);
+        registry.initializeSnapshot();
+        clearInvocations(source);
+
+        for (int i = 0; i < 100; i++) {
+            assertThat(registry.getDeliveryChannels(ChannelFilter.builder().eewAlert(true).build()).direct())
+                    .containsOnlyKeys(1L);
+        }
+
+        verifyNoInteractions(source);
+    }
+
+    @Test
+    void failedInitialLoadFailsFast() {
+        DestinationConfigSource source = mock(DestinationConfigSource.class);
+        when(source.loadSnapshot()).thenThrow(new IllegalStateException("unavailable"));
+        SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(source, this.reloadExecutor);
+
+        assertThatThrownBy(registry::initializeSnapshot).isInstanceOf(IllegalStateException.class);
+        assertThat(registry.getSnapshot()).isNull();
+    }
+
+    @Test
+    void failedReloadRetainsSnapshotAndLaterReloadRecovers() {
+        DestinationConfigSource source = mock(DestinationConfigSource.class);
+        DeliverySnapshot old = new DeliverySnapshot(1, List.of(simpleDc(1)));
+        DeliverySnapshot updated = new DeliverySnapshot(2, List.of(simpleDc(2)));
+        when(source.loadSnapshot()).thenReturn(old)
+                .thenThrow(new IllegalStateException("unavailable"))
+                .thenReturn(updated);
+        when(source.getRevision()).thenReturn(2L);
+        ExecutorService executor = mock(ExecutorService.class);
+        Queue<Runnable> tasks = new ArrayDeque<>();
+        doAnswer(call -> tasks.add(call.getArgument(0))).when(executor).execute(any(Runnable.class));
+        SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(source, executor);
+        registry.initializeSnapshot();
+
+        registry.requestReload();
+        tasks.remove().run();
+        assertThat(registry.getSnapshot()).isSameAs(old);
+        assertThat(registry.getDeliveryChannels(null).direct()).containsOnlyKeys(1L);
+
+        tasks.remove().run();
+        assertThat(registry.getSnapshot()).isSameAs(updated);
+        assertThat(registry.getDeliveryChannels(null).direct()).containsOnlyKeys(2L);
+        assertThat(tasks).isEmpty();
+    }
 
     private ExecutorService reloadExecutor;
 
@@ -38,34 +93,31 @@ class SnapshotDeliveryRegistryTest {
     }
 
     /**
-     * Test stub for DeliverySnapshotLoader that delegates to a Supplier.
+     * Snapshot supplier that delegates to a Supplier.
      */
-    private static class TestSnapshotLoader extends DeliverySnapshotLoader {
+    private static class TestSnapshotLoader implements Supplier<DeliverySnapshot> {
         private final Supplier<DeliverySnapshot> supplier;
 
         TestSnapshotLoader(Supplier<DeliverySnapshot> supplier) {
-            super(null, null);
             this.supplier = supplier;
         }
 
         @Override
-        public DeliverySnapshot loadInTransaction() {
+        public DeliverySnapshot get() {
             return this.supplier.get();
         }
     }
 
     /**
-     * Stub ConfigRevisionStore that doesn't need a database.
+     * Revision stub that doesn't need a database.
      */
-    private static class StubRevisionStore extends ConfigRevisionStore {
+    private static class StubRevisionStore {
         private volatile long revision;
 
         StubRevisionStore(long initialRevision) {
-            super(null, null);
             this.revision = initialRevision;
         }
 
-        @Override
         public long getRevision() {
             return this.revision;
         }
@@ -85,7 +137,7 @@ class SnapshotDeliveryRegistryTest {
             TestSnapshotLoader loader = new TestSnapshotLoader(() -> new DeliverySnapshot(1L, List.of()));
             StubRevisionStore revisionStore = new StubRevisionStore(0L);
 
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(new FakeDestinationConfigSource(loader, revisionStore::getRevision), reloadExecutor);
 
             assertThatThrownBy(() -> registry.getDeliveryChannels(ChannelFilter.builder().build()))
                     .isInstanceOf(IllegalStateException.class)
@@ -104,7 +156,7 @@ class SnapshotDeliveryRegistryTest {
                     () -> new DeliverySnapshot(1L, List.of(simpleDc(10L), simpleDc(20L))));
             StubRevisionStore revisionStore = new StubRevisionStore(1L);
 
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(new FakeDestinationConfigSource(loader, revisionStore::getRevision), reloadExecutor);
             registry.initializeSnapshot();
 
             DeliveryPartition partition = registry.getDeliveryChannels(ChannelFilter.builder().build());
@@ -118,7 +170,7 @@ class SnapshotDeliveryRegistryTest {
                     () -> new DeliverySnapshot(5L, List.of(simpleDc(1L))));
             StubRevisionStore revisionStore = new StubRevisionStore(5L);
 
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(new FakeDestinationConfigSource(loader, revisionStore::getRevision), reloadExecutor);
             registry.initializeSnapshot();
 
             assertThat(registry.getSnapshot()).isNotNull();
@@ -147,7 +199,7 @@ class SnapshotDeliveryRegistryTest {
                 return new DeliverySnapshot(rev, List.of(simpleDc(count)));
             });
 
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(new FakeDestinationConfigSource(loader, revisionStore::getRevision), reloadExecutor);
             registry.initializeSnapshot();
 
             assertThat(registry.getSnapshot().getRevision()).isEqualTo(1L);
@@ -195,7 +247,7 @@ class SnapshotDeliveryRegistryTest {
                 return snapshot;
             });
 
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(new FakeDestinationConfigSource(loader, revisionStore::getRevision), reloadExecutor);
             registry.initializeSnapshot(); // loadCount = 1
 
             // Trigger first reload (will block in loader)
@@ -231,7 +283,7 @@ class SnapshotDeliveryRegistryTest {
             reloadExecutor.shutdownNow();
             StubRevisionStore revisionStore = new StubRevisionStore(1L);
             TestSnapshotLoader loader = new TestSnapshotLoader(() -> new DeliverySnapshot(1L, List.of()));
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(new FakeDestinationConfigSource(loader, revisionStore::getRevision), reloadExecutor);
 
             assertThatCode(() -> registry.requestReload()).doesNotThrowAnyException();
         }
@@ -247,7 +299,7 @@ class SnapshotDeliveryRegistryTest {
                 return new DeliverySnapshot(1L, List.of(simpleDc(1L)));
             });
 
-            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(loader, revisionStore, reloadExecutor);
+            SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(new FakeDestinationConfigSource(loader, revisionStore::getRevision), reloadExecutor);
             registry.initializeSnapshot();
 
             // Request reload without changing revision - snapshot should not change

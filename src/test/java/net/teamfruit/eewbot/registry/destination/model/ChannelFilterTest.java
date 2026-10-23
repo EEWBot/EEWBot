@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.registry.destination.model;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.store.ChannelFilterSql;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
 import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
 import net.teamfruit.eewbot.registry.destination.store.DatabaseInitializer;
@@ -403,7 +404,7 @@ class ChannelFilterTest {
         private Set<Long> queryTargetIds(ChannelFilter filter) {
             return this.dsl.select(field(name("target_id"), Long.class))
                     .from(table(name("destinations")))
-                    .where(filter.toCondition())
+                    .where(ChannelFilterSql.toCondition(filter))
                     .fetchSet(field(name("target_id"), Long.class));
         }
 

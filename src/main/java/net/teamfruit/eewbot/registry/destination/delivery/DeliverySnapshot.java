@@ -9,6 +9,8 @@ import java.util.*;
 /**
  * Immutable snapshot of all delivery channels for zero-DB-access delivery path.
  * Thread-safe by immutability - can be safely swapped via AtomicReference.
+ * Revision is a refresh hint and may lag behind the committed channel settings
+ * (see DestinationConfigSource).
  */
 public final class DeliverySnapshot {
 
