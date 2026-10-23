@@ -1,18 +1,65 @@
 package net.teamfruit.eewbot.registry.destination.delivery;
 
+import net.teamfruit.eewbot.entity.SeismicIntensity;
+import net.teamfruit.eewbot.registry.destination.DestinationConfigSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 class RevisionPollerTest {
+
+    @ParameterizedTest
+    @ValueSource(longs = {0, 1})
+    void newerSettingsWithLaggingRevisionEventuallyCatchUp(long laggingRevision) {
+        DestinationConfigSource source = mock(DestinationConfigSource.class);
+        var channel = new DeliverySnapshot.DeliveryChannel(123L, 123L, null, null,
+                true, false, false, false, false, SeismicIntensity.ONE, "ja_jp", null);
+        DeliverySnapshot initial = new DeliverySnapshot(0, List.of());
+        DeliverySnapshot lagging = new DeliverySnapshot(laggingRevision, List.of(channel));
+        DeliverySnapshot latest = new DeliverySnapshot(2, List.of(channel));
+        when(source.loadSnapshot()).thenReturn(initial, lagging, latest);
+        when(source.getRevision()).thenReturn(2L);
+        ExecutorService executor = mock(ExecutorService.class);
+        Queue<Runnable> reloads = new ArrayDeque<>();
+        doAnswer(call -> reloads.add(call.getArgument(0))).when(executor).execute(any(Runnable.class));
+        SnapshotDeliveryRegistry delivery = new SnapshotDeliveryRegistry(source, executor);
+        delivery.initializeSnapshot();
+        ScheduledExecutorService pollScheduler = mock(ScheduledExecutorService.class);
+        AtomicReference<Runnable> poll = new AtomicReference<>();
+        doAnswer(call -> {
+            poll.set(call.getArgument(0));
+            return mock(ScheduledFuture.class);
+        }).when(pollScheduler).scheduleAtFixedRate(any(Runnable.class), eq(2000L), eq(2000L), eq(TimeUnit.MILLISECONDS));
+        RevisionPoller poller = new RevisionPoller(delivery, source, pollScheduler);
+        poller.start();
+
+        poll.get().run();
+        reloads.remove().run();
+
+        // An unchanged revision can skip replacement; either case must request another load.
+        assertThat(delivery.getSnapshot()).isSameAs(laggingRevision == 0 ? initial : lagging);
+        assertThat(reloads).hasSize(1);
+        reloads.remove().run();
+
+        assertThat(delivery.getSnapshot()).isSameAs(latest);
+        assertThat(delivery.getDeliveryChannels(null).direct()).containsOnlyKeys(123L);
+        assertThat(reloads).isEmpty();
+        poller.stop();
+    }
 
     private ScheduledExecutorService scheduler;
     private ExecutorService reloadExecutor;

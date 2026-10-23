@@ -57,35 +57,30 @@ Snapshot管理とRevisionPollerはSQLバックエンドに含めない。
 revisionが増える。この点は既存の `sameValueUpdateDoesIncrement` テストに従い
 変更していない。値の同一性による更新省略は今回の抽象化に含めない。
 
-## Snapshotの整合性契約と既存PostgreSQLの制約
+## SnapshotのRevision契約
 
-`DestinationConfigSource.loadSnapshot()` はrevisionと配信先が同じ論理状態を
-表すSnapshotを返すことを契約とする。整合性の責任はSource側にあり、呼出側は
-事前に取得したrevisionをSnapshotへ付け直してはならない。
+Revisionは設定更新を検知するための単調増加する目印であり、返された配信先一覧と
+厳密に同じ論理状態を指す必要はない。Sourceはcommit済みの配信設定を返し、
+設定より古いRevisionを付けることができる。設定より先行したRevisionを返すと
+必要な再読込を見逃すため、それは許容しない。
+更新が止まった後は、成功する読込が最新のcommit済みRevisionへ追いつくことを要求する。
+呼出側はSourceが返したRevisionを保持し、別途読んだRevisionへ付け直さない。
 初期読込失敗は起動失敗、再読込失敗は旧Snapshotを保持する。
 
 SQLiteのWAL読取トランザクションは、2つのSELECTの間に別接続がcommitしても
-同じ状態を読む。`SqliteDestinationStorageTest` でこの状況を検証する。
+同じ状態を読む。PostgreSQLの通常のREAD COMMITTEDでは、Revision読取後に
+commitが入ると、古いRevisionに新しい配信先が組み合わされる場合がある。
+この組合せは上記契約で許容する。
 
-PostgreSQLには既存の契約違反が残る。接続の分離レベルを指定していないため、
-通常のREAD COMMITTEDではrevision読取と配信先読取の間にcommitが入ると、
-古いrevisionに新しい配信先が組み合わされる。
-[PostgreSQL公式ドキュメント](https://www.postgresql.org/docs/current/transaction-iso.html)
-でも、同一トランザクション内のSELECTごとに状態が変わり得ることを説明している。
-この変更では既存の分離レベルを変更していない。
+古いRevisionが残っていれば、再読込後のRevision確認または次回pollで追加の再読込が
+要求される。更新が止まればRevisionと設定は最新状態へ収束する。同じRevisionの
+Snapshotが既にメモリにある場合は、その回の置換が省略されても後続の確認で追いつく。
+分離レベルと既存のpolling・再読込方式は変更しない。
 
-`PostgresqlDestinationStorageTest` に次の2ケースを追加した:
-
-- `readCommittedReproducesExistingSnapshotConsistencyLimitation`: 2回のSELECT間に
-  別接続で更新し、revision=1に2配信先が組み合わされる既存の問題を再現する。
-- `transactionLocalRepeatableReadWouldKeepSnapshotConsistent`: 読取トランザクションの
-  最初に `SET TRANSACTION ISOLATION LEVEL REPEATABLE READ` を行う修正案を検証する。
-  revision=1・1配信先になり、その後の接続の分離レベルはREAD COMMITTEDに戻る。
-
-修正案はSnapshot読取トランザクションだけにREPEATABLE READを指定する方式。
-管理書込や接続プール全体の既定値は変更せず、同時更新・ロールバック・プール再利用を
-実際のPostgreSQLで検証してから適用する。今回の実行環境ではDockerデーモンが
-起動していないため、PostgreSQLテストはコンパイル確認のみで実行はスキップされた。
+`PostgresqlDestinationStorageTest.readCommittedAllowsNewerSettingsWithAnEarlierRevision`
+で、2つのSELECTの間に別接続でcommitし、Revision=1で新しい2配信先を取得する
+許容ケースを検証する。SQLに依存しないRevisionPollerのテストでは、このように
+Revisionが遅れたSnapshotから、追加の再読込で最新Revisionへ追いつくことを検証する。
 
 ## 起動と終了
 
@@ -119,14 +114,16 @@ $env:JAVA_HOME='C:\Program Files\Zulu\zulu-25'
 .\gradlew.bat test integrationTest build --console=plain
 ```
 
-3タスクとも成功。ユニットテストは486件成功・1件スキップ（明示指定時だけ動かす
-golden生成）、統合テストは205件成功・13件スキップ。統合のスキップは
-Docker未起動のPostgreSQL 10件と、Discord接続設定がない外部送信テスト3件。
+3タスクとも成功。ユニットテストは495件成功・1件スキップ（明示指定時だけ動かす
+golden生成）、統合テストは205件成功・12件スキップ。統合のスキップは
+Docker未起動のPostgreSQL 9件と、Discord接続設定がない外部送信テスト3件。
 実行可能なSQLite統合テストは成功した。Interactionsの全購読解除・部分起動失敗、
 管理機能なしの読取backend起動、cleanupの更新/save回数、共有sender transportの
-query・ヘッダ・JSON互換性も検証した。
+query・ヘッダ・JSON互換性も検証した。/testmessageのコマンド単位テストでは、
+未登録・Webhookなしの通常送信と成功応答、403・429・404・500・通信例外時の
+エラー応答、管理APIやWebhook senderを呼ばないことを検証する。
 
-将来Workers/D1へ移すときは、整合したrevision/Snapshotを取得するRemote Source、
+将来Workers/D1へ移すときは、上記Revision契約を満たすRemote Source、
 管理機能の構成切替、Gateway削除を設定所有者へ通知するDestinationCleanup実装、
 HTTP認証・障害処理・revisionの単調性の契約が必要になる。
 配信ロジックとRevisionPollerは同じインターフェースを利用できる。

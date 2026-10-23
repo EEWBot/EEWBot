@@ -7,8 +7,8 @@ import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
  * SQL configuration reader. Revision and destinations use one transaction.
  * SQLite provides a stable read snapshot. PostgreSQL currently inherits the
  * connection's isolation level: READ COMMITTED can observe a concurrent commit
- * between the two reads. This pre-existing limitation and a proposed transaction-
- * local REPEATABLE READ fix are documented in docs/destination-storage.md.
+ * between the two reads. Newer destinations with an earlier revision are allowed
+ * by DestinationConfigSource; background revision checks catch up after writes stop.
  */
 public class SqlDestinationConfigSource implements DestinationConfigSource {
 
