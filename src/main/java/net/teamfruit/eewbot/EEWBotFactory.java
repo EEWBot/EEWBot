@@ -19,6 +19,7 @@ import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.DestinationBackend;
 import net.teamfruit.eewbot.registry.destination.DestinationCleanup;
+import net.teamfruit.eewbot.registry.destination.store.RegistryDestinationCleanup;
 import net.teamfruit.eewbot.registry.destination.DestinationConfigSource;
 import net.teamfruit.eewbot.registry.destination.delivery.RevisionPoller;
 import net.teamfruit.eewbot.registry.destination.delivery.SnapshotDeliveryRegistry;
@@ -80,14 +81,17 @@ public class EEWBotFactory {
             AtomicBoolean shutdownFlag = new AtomicBoolean(false);
 
             // 6. Storage setup; the backend owns migration and SQL resource management.
+            SqlDestinationBackend localBackend = SqlDestinationBackend.open(config.getDatabase(),
+                    EEWBot.DATA_DIRECTORY != null ? Paths.get(EEWBot.DATA_DIRECTORY) : null);
             DestinationRegistries registries = initializeDestinationRegistries(
-                    SqlDestinationBackend.open(config.getDatabase(),
-                            EEWBot.DATA_DIRECTORY != null ? Paths.get(EEWBot.DATA_DIRECTORY) : null),
-                    snapshotReloadExecutor, scheduledExecutor);
+                    localBackend, snapshotReloadExecutor, scheduledExecutor);
             backend = registries.backend();
             SnapshotDeliveryRegistry deliveryRegistry = registries.deliveryRegistry();
-            DestinationAdminRegistry adminRegistry = registries.adminRegistry();
             revisionPoller = registries.revisionPoller();
+
+            // Local writes are composed separately from the read-only delivery runtime.
+            DestinationAdminRegistry adminRegistry = localBackend.createAdminRegistry(deliveryRegistry::requestReload);
+            DestinationCleanup destinationCleanup = new RegistryDestinationCleanup(adminRegistry);
 
             // 7. Discord connection
             gateway = DiscordClient.create(config.getBase().getDiscordToken())
@@ -128,32 +132,29 @@ public class EEWBotFactory {
             QuakeInfoStore quakeInfoStore = new QuakeInfoStore();
             EmbedContext embedContext = new EmbedContext(rendererQueryFactory, quakeInfoStore, i18n);
             EEWService service = new EEWService(
-                    gateway, deliveryRegistry, adminRegistry,
+                    gateway, deliveryRegistry, destinationCleanup,
                     avatarUrl, i18n, embedContext,
                     scheduledExecutor, httpClient, config
             );
             externalWebhookService = new ExternalWebhookService(config, httpClient);
             gatewayManager = new GatewayManager(
                     service, config, applicationId, scheduledExecutor, dmdataReconnectExecutor,
-                    httpClient, gateway, adminRegistry, quakeInfoStore, externalWebhookService
+                    httpClient, quakeInfoStore, externalWebhookService
             );
 
-            // 10. Slash commands
+            // 10. Local Interactions: one removable module, including command registration.
             SlashCommandContext slashCtx = new SlashCommandContext(
                     adminRegistry, i18n, config, gateway, httpClient,
-                    service, userName, avatarUrl, rendererQueryFactory,
+                    userName, avatarUrl, rendererQueryFactory,
                     quakeInfoStore, applicationId, shutdownFlag
             );
-            new SlashCommandHandler(slashCtx);
+            subscriptions.add(new SlashCommandHandler(slashCtx));
 
             // 11. Build EEWBot
             bot = new EEWBot(
-                    gateway, config, deliveryRegistry, adminRegistry, backend,
-                    DestinationCleanup.using(adminRegistry),
-                    revisionPoller, i18n, quakeInfoStore, rendererQueryFactory,
-                    service, gatewayManager, externalWebhookService,
-                    snapshotReloadExecutor, scheduledExecutor, shutdownFlag,
-                    applicationId, userName, avatarUrl
+                    gateway, config, deliveryRegistry, backend, destinationCleanup,
+                    revisionPoller, gatewayManager, externalWebhookService,
+                    snapshotReloadExecutor, scheduledExecutor, shutdownFlag
             );
 
             // 12. Event listeners (need bot instance)
@@ -217,10 +218,9 @@ public class EEWBotFactory {
             DestinationConfigSource source = backend.getConfigSource();
             SnapshotDeliveryRegistry delivery = new SnapshotDeliveryRegistry(source, snapshotReloadExecutor);
             delivery.initializeSnapshot();
-            DestinationAdminRegistry admin = backend.createAdminRegistry(delivery::requestReload);
             poller = new RevisionPoller(delivery, source, scheduledExecutor);
             poller.start();
-            return new DestinationRegistries(backend, delivery, admin, poller);
+            return new DestinationRegistries(backend, delivery, poller);
         } catch (RuntimeException | Error e) {
             if (poller != null) cleanupAfterFailure(e, poller::stop);
             cleanupAfterFailure(e, backend::close);
@@ -245,7 +245,6 @@ public class EEWBotFactory {
     record DestinationRegistries(
             DestinationBackend backend,
             SnapshotDeliveryRegistry deliveryRegistry,
-            DestinationAdminRegistry adminRegistry,
             RevisionPoller revisionPoller
     ) {
     }

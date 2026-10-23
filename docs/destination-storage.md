@@ -21,9 +21,10 @@ ChannelFilter → jOOQ Condition
 
 ```text
 EEWBotFactory → SqlDestinationBackend.open（構成の組立箇所のみ）
-             → DestinationBackend
-                 ├─ createAdminRegistry(onWrite) → DestinationAdminRegistry
-                 └─ getConfigSource() → DestinationConfigSource
+             → DestinationBackend.getConfigSource() → DestinationConfigSource
+             → SqlDestinationBackend.createAdminRegistry(onWrite)
+                 ├─ SlashCommandContext → SlashCommandHandler（Local Interactions）
+                 └─ RegistryDestinationCleanup(adminRegistry)（セルフホストの後処理）
 
 RevisionPoller ──────────┐
 SnapshotDeliveryRegistry ┴→ DestinationConfigSource
@@ -32,8 +33,10 @@ SnapshotDeliveryRegistry ┴→ DestinationConfigSource
                                   └─ ConfigRevisionStore
 
 EEWBot → DestinationBackend.close
-       → DestinationCleanup（Gateway削除）
-           └─ using(adminRegistry): 従来のremove/removeByGuildId + save
+       → DestinationCleanup（Gateway削除と終了時のsave）
+EEWService → DestinationDeliveryRegistry / DestinationCleanup
+SlashCommandContext → 管理APIと描画等の共有サービス（EEWServiceへの依存なし）
+EEWService / TestMessageSlashCommand → WebhookSenderClient（既存senderへの送信）
 
 配信 → DestinationDeliveryRegistry → immutable DeliverySnapshot（DBアクセスなし）
 SQL検索 → ChannelFilterSql → ChannelFilterの条件
@@ -93,7 +96,7 @@ Snapshot・poller初期化失敗でもbackendを閉じ、後続のDiscord接続�
 失敗では、それまでに取得したリソースを解放する。closeは多重呼出可能。
 
 通常終了の順序はGatewayManager → RevisionPoller → Discord logout →
-イベント購読解除 → worker終了待機 → Snapshot executor終了待機 → admin.save →
+イベント購読解除 → worker終了待機 → Snapshot executor終了待機 → DestinationCleanup.save →
 backend.close → 外部Webhook終了。終了処理で通常の例外が起きても後続の解放を続ける。
 Guildの一時的なunavailableイベントではDestinationCleanupを呼ばない。
 チャンネルとスレッドの削除は従来どおりtarget ID単位で行い、親削除時の新しい
@@ -116,10 +119,12 @@ $env:JAVA_HOME='C:\Program Files\Zulu\zulu-25'
 .\gradlew.bat test integrationTest build --console=plain
 ```
 
-3タスクとも成功。ユニットテストは480件成功・1件スキップ（明示指定時だけ動かす
+3タスクとも成功。ユニットテストは486件成功・1件スキップ（明示指定時だけ動かす
 golden生成）、統合テストは205件成功・13件スキップ。統合のスキップは
 Docker未起動のPostgreSQL 10件と、Discord接続設定がない外部送信テスト3件。
-実行可能なSQLite統合テストは成功した。
+実行可能なSQLite統合テストは成功した。Interactionsの全購読解除・部分起動失敗、
+管理機能なしの読取backend起動、cleanupの更新/save回数、共有sender transportの
+query・ヘッダ・JSON互換性も検証した。
 
 将来Workers/D1へ移すときは、整合したrevision/Snapshotを取得するRemote Source、
 管理機能の構成切替、Gateway削除を設定所有者へ通知するDestinationCleanup実装、
@@ -127,8 +132,39 @@ HTTP認証・障害処理・revisionの単調性の契約が必要になる。
 配信ロジックとRevisionPollerは同じインターフェースを利用できる。
 今回はWorkers/D1、HTTP API、Remote実装を追加していない。
 
-残るCore側の書込として、EEWServiceは配信エラー時の配信先削除・Webhook解除を
-DestinationAdminRegistry経由で行う。今回その挙動は変更していない。
-完全な読取専用Coreへ移す際には、Gateway削除に加え、これらの後処理も設定所有者へ
-委譲する必要がある。またSourceのrevisionは既存の比較方式に合わせて単調増加を
-前提とするため、DB復元やRemote切替時のrevision巻戻りは別途設計が必要になる。
+Coreで観測したGateway削除・配信先の403/404・Webhookの404・senderのnotfoundsは
+DestinationCleanupへ通知する。セルフホスト用RegistryDestinationCleanupは従来の管理レジストリを使い、
+1対象ごとの更新とrevision増加、save回数、URL指定時の一括処理を維持する。
+完全な読取専用Coreへ移す際にはこのadapterを設定所有者への通知実装に差し替える。
+Sourceのrevisionは既存の比較方式に合わせて単調増加を前提とするため、DB復元や
+Remote切替時のrevision巻戻りは別途設計が必要になる。
+
+## Local Interactionsの取り外し境界
+
+Factoryの「Local Interactions」ブロックが、SlashCommandContextの作成と
+SlashCommandHandlerの起動をまとめた組立箇所になる。将来このブロックを外せば、
+Coreはコマンド登録もApplicationCommand/SelectMenu/Buttonの購読も行わない。
+設定の切替機能やWorkers実装は今回追加していない。
+
+SlashCommandHandler自身がコマンド登録リクエストと3種のイベント購読を所有する。
+FactoryはDisposableとして通常の購読一覧へ追加し、正常終了・後続の起動失敗で
+解放する。Handler自身の初期化失敗でも開始済みの購読を解放し、二重disposeは安全。
+購読停止後も既に登録されたDiscordのglobal command定義は保持される。
+
+DestinationBackendには読取Sourceとcloseだけが必要であり、管理APIを要求しない。DestinationCleanupも管理APIを公開せず、
+ローカルのRegistryDestinationCleanupだけが管理レジストリに依存する。
+管理レジストリを作る能力はローカルのSqlDestinationBackendに置いている。
+管理機能なしのbackendでも初期Snapshot読込とrevision監視を起動できる。
+EEWBot・EEWService・GatewayManagerはDestinationAdminRegistryへ依存しない。
+Coreの終了時に必要な従来のsaveはDestinationCleanupのadapterで引き継ぐ。
+
+TestMessageSlashCommandは共有のWebhookSenderClientとDiscord RESTを使用し、
+SlashCommandContextからEEWServiceへの依存を除いた。既存senderの送信先URL、
+query、ヘッダ、JSON、単発送信のステータス処理は共通のtransportで維持している。
+EEWBotの未使用の管理・描画・ユーザー情報保持フィールド、GatewayManagerの未使用の
+Discordクライアント・管理レジストリ引数も削除した。
+
+CoreにはDiscordへの通常配信、Gatewayの削除イベント、I18n、Renderer、
+QuakeInfoStoreが引き続き必要であり、これらの共通機能は残している。
+将来HTTP Interactionsへ移す際にはコマンド処理の移行に加えて、quakeinfo/testmessage等が
+必要とするCoreの情報・機能への連携を設計する必要がある。

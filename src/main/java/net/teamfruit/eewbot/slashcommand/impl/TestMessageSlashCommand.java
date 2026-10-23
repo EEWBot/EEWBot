@@ -13,6 +13,7 @@ import discord4j.rest.request.Router;
 import discord4j.rest.route.Routes;
 import discord4j.rest.util.Color;
 import discord4j.rest.util.MultipartRequest;
+import net.teamfruit.eewbot.WebhookSenderClient;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
 import net.teamfruit.eewbot.entity.discord.I18nEmbedBuilder;
@@ -66,7 +67,8 @@ public class TestMessageSlashCommand implements ISlashCommand {
                         .build();
                 DiscordWebhookRequest request = new DiscordWebhookRequest(lang, webhook).addTarget(channel.getWebhook().getUrl());
                 try {
-                    int statusCode = ctx.service().sendWebhookSenderSingle(WebhookSenderRequest.from(request));
+                    int statusCode = new WebhookSenderClient(ctx.httpClient(), ctx.config().getWebhookSender())
+                            .sendSingle(WebhookSenderRequest.from(request));
                     if (statusCode >= 200 && statusCode < 300) {
                         return event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.testmessage.success.webhooksender")).then();
                     }
@@ -108,12 +110,12 @@ public class TestMessageSlashCommand implements ISlashCommand {
                             .build()))
                     .then();
         } else {
-            return ctx.service().directSendMessagePassErrors(channelId, MessageCreateSpec.builder()
+            return Mono.defer(() -> ctx.client().getRestClient().getChannelService().createMessage(channelId, MessageCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createEmbed(lang, ctx)
                                     .title("eewbot.scmd.testmessage.title")
                                     .description("eewbot.scmd.testmessage.nowebhook")
                                     .toEmbedCreateSpec())
-                            .build())
+                            .build().asRequest()))
                     .flatMap(message -> event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.testmessage.success.nowebhook")))
                     .onErrorResume(ClientException.isStatusCode(403), err -> event.createFollowup(InteractionFollowupCreateSpec.builder()
                             .addEmbed(SlashCommandUtils.createErrorEmbed(lang, ctx)

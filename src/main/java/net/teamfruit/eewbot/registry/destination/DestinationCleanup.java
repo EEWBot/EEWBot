@@ -1,9 +1,10 @@
 package net.teamfruit.eewbot.registry.destination;
 
 import java.io.IOException;
+import java.util.Collection;
 
 /**
- * Gateway-originated cleanup, separate from interactive management operations.
+ * Cleanup observed by the Gateway and delivery paths, separate from interactive management.
  * A future deployment can forward these events to the configuration owner.
  */
 public interface DestinationCleanup {
@@ -13,20 +14,14 @@ public interface DestinationCleanup {
     /** Delete a channel or thread by destination target ID. */
     void destinationDeleted(long targetId) throws IOException;
 
-    /** Preserve local registry deletion and persistence semantics. */
-    static DestinationCleanup using(DestinationAdminRegistry registry) {
-        return new DestinationCleanup() {
-            @Override
-            public void guildDeleted(long guildId) throws IOException {
-                registry.removeByGuildId(guildId);
-                registry.save();
-            }
+    void destinationsUnavailable(Collection<Long> targetIds) throws IOException;
 
-            @Override
-            public void destinationDeleted(long targetId) throws IOException {
-                registry.remove(targetId);
-                registry.save();
-            }
-        };
+    void webhooksUnavailable(Collection<Long> targetIds) throws IOException;
+
+    int webhookUrlsUnavailable(Collection<String> webhookUrls);
+
+    /** Flush pending cleanup at shutdown; transactional implementations need no extra action. */
+    default void save() throws IOException {
     }
+
 }

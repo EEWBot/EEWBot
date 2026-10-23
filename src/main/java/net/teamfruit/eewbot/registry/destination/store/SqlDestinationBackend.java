@@ -63,7 +63,7 @@ public final class SqlDestinationBackend implements DestinationBackend {
         return this.configSource;
     }
 
-    @Override
+    /** Local management capability; read-only backends need not implement it. */
     public DestinationAdminRegistry createAdminRegistry(Runnable onWrite) {
         return new SqlAdminRegistry(this.sql, this.revisionStore, onWrite);
     }

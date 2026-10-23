@@ -158,7 +158,7 @@ abstract class SqlDestinationStorageContract {
         this.admin.put(1, Channel.createDefault(10L, 1L, null, "ja_jp"));
         this.admin.put(2, Channel.createDefault(10L, 1L, 2L, "ja_jp"));
         this.admin.put(3, Channel.createDefault(20L, 3L, null, "ja_jp"));
-        DestinationCleanup cleanup = DestinationCleanup.using(this.admin);
+        DestinationCleanup cleanup = new RegistryDestinationCleanup(this.admin);
 
         cleanup.destinationDeleted(1);
         assertThat(this.admin.exists(1)).isFalse();

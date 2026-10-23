@@ -46,7 +46,7 @@ class JMAQuakeDeliveryTest {
         });
         var scheduler = mock(ScheduledExecutorService.class);
         this.manager = new GatewayManager(this.service, new ConfigV2(), 1L, scheduler, scheduler,
-                null, null, null, this.store, this.external, this.executor);
+                null, this.store, this.external, this.executor);
     }
 
     @Test

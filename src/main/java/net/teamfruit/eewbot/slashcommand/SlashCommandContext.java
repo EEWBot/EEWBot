@@ -1,7 +1,6 @@
 package net.teamfruit.eewbot.slashcommand;
 
 import discord4j.core.GatewayDiscordClient;
-import net.teamfruit.eewbot.EEWService;
 import net.teamfruit.eewbot.QuakeInfoStore;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
@@ -17,7 +16,6 @@ public record SlashCommandContext(
         ConfigV2 config,
         GatewayDiscordClient client,
         HttpClient httpClient,
-        EEWService service,
         String username,
         String avatarUrl,
         RendererQueryFactory rendererQueryFactory,

@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot;
 
-import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.DestinationBackend;
 import net.teamfruit.eewbot.registry.destination.DestinationConfigSource;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
@@ -29,7 +28,6 @@ class EEWBotFactoryDestinationTest {
                 .isSameAs(failure);
 
         verify(backend).close();
-        verify(backend, never()).createAdminRegistry(any());
         verifyNoInteractions(scheduler, reload);
     }
 
@@ -41,7 +39,6 @@ class EEWBotFactoryDestinationTest {
         ScheduledExecutorService scheduler = mock(ScheduledExecutorService.class);
         when(backend.getConfigSource()).thenReturn(source);
         when(source.loadSnapshot()).thenReturn(new DeliverySnapshot(0, List.of()));
-        when(backend.createAdminRegistry(any())).thenReturn(mock(DestinationAdminRegistry.class));
         IllegalStateException failure = new IllegalStateException("scheduler unavailable");
         when(scheduler.scheduleAtFixedRate(any(Runnable.class), anyLong(), anyLong(), any()))
                 .thenThrow(failure);
@@ -55,27 +52,34 @@ class EEWBotFactoryDestinationTest {
     }
 
     @Test
-    void successfulInitializationRetainsBackendAndWiresCommittedWriteReload() {
-        DestinationBackend backend = mock(DestinationBackend.class);
+    void successfulInitializationRequiresOnlyReadCapability() {
         DestinationConfigSource source = mock(DestinationConfigSource.class);
         ExecutorService reload = mock(ExecutorService.class);
         ScheduledExecutorService scheduler = mock(ScheduledExecutorService.class);
-        when(backend.getConfigSource()).thenReturn(source);
+        var closed = new java.util.concurrent.atomic.AtomicBoolean();
+        DestinationBackend backend = new DestinationBackend() {
+            @Override
+            public DestinationConfigSource getConfigSource() {
+                return source;
+            }
+
+            @Override
+            public void close() {
+                closed.set(true);
+            }
+        };
         DeliverySnapshot initial = new DeliverySnapshot(42, List.of());
         when(source.loadSnapshot()).thenReturn(initial);
-        when(backend.createAdminRegistry(any())).thenAnswer(call -> {
-            Runnable onWrite = call.getArgument(0);
-            onWrite.run();
-            return mock(DestinationAdminRegistry.class);
-        });
 
         var registries = EEWBotFactory.initializeDestinationRegistries(backend, reload, scheduler);
 
         assertThat(registries.backend()).isSameAs(backend);
         assertThat(registries.deliveryRegistry().getSnapshot()).isSameAs(initial);
-        verify(backend, never()).close();
-        verify(reload).execute(any(Runnable.class));
+        assertThat(closed.get()).isFalse();
+        verifyNoInteractions(reload);
         verify(scheduler).scheduleAtFixedRate(any(Runnable.class), eq(2000L), eq(2000L), any());
         registries.revisionPoller().stop();
+        backend.close();
+        assertThat(closed.get()).isTrue();
     }
 }

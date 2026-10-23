@@ -2,11 +2,8 @@ package net.teamfruit.eewbot;
 
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.guild.GuildDeleteEvent;
-import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.gateway.GatewayManager;
-import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
-import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.DestinationBackend;
 import net.teamfruit.eewbot.registry.destination.DestinationCleanup;
 import net.teamfruit.eewbot.registry.destination.DestinationDeliveryRegistry;
@@ -28,21 +25,13 @@ public class EEWBot implements AutoCloseable {
     private final GatewayDiscordClient gateway;
     private final ConfigV2 config;
     private final DestinationDeliveryRegistry deliveryRegistry;
-    private final DestinationAdminRegistry adminRegistry;
     private final DestinationBackend destinationBackend;
     private final DestinationCleanup destinationCleanup;
     private final RevisionPoller revisionPoller;
-    private final I18n i18n;
-    private final QuakeInfoStore quakeInfoStore;
-    private final RendererQueryFactory rendererQueryFactory;
-    private final EEWService service;
     private final GatewayManager gatewayManager;
     private final ExternalWebhookService externalWebhookService;
     private final ExecutorService snapshotReloadExecutor;
     private final ScheduledExecutorService scheduledExecutor;
-    private final long applicationId;
-    private final String userName;
-    private final String avatarUrl;
 
     private final AtomicBoolean closed;
     private volatile List<Disposable> eventSubscriptions = List.of();
@@ -53,42 +42,26 @@ public class EEWBot implements AutoCloseable {
             GatewayDiscordClient gateway,
             ConfigV2 config,
             DestinationDeliveryRegistry deliveryRegistry,
-            DestinationAdminRegistry adminRegistry,
             DestinationBackend destinationBackend,
             DestinationCleanup destinationCleanup,
             RevisionPoller revisionPoller,
-            I18n i18n,
-            QuakeInfoStore quakeInfoStore,
-            RendererQueryFactory rendererQueryFactory,
-            EEWService service,
             GatewayManager gatewayManager,
             ExternalWebhookService externalWebhookService,
             ExecutorService snapshotReloadExecutor,
             ScheduledExecutorService scheduledExecutor,
-            AtomicBoolean closed,
-            long applicationId,
-            String userName,
-            String avatarUrl
+            AtomicBoolean closed
     ) {
         this.gateway = gateway;
         this.config = config;
         this.deliveryRegistry = deliveryRegistry;
-        this.adminRegistry = adminRegistry;
         this.destinationBackend = destinationBackend;
         this.destinationCleanup = destinationCleanup;
         this.revisionPoller = revisionPoller;
-        this.i18n = i18n;
-        this.quakeInfoStore = quakeInfoStore;
-        this.rendererQueryFactory = rendererQueryFactory;
-        this.service = service;
         this.gatewayManager = gatewayManager;
         this.externalWebhookService = externalWebhookService;
         this.snapshotReloadExecutor = snapshotReloadExecutor;
         this.scheduledExecutor = scheduledExecutor;
         this.closed = closed;
-        this.applicationId = applicationId;
-        this.userName = userName;
-        this.avatarUrl = avatarUrl;
     }
 
     void setEventSubscriptions(List<Disposable> subscriptions) {
@@ -117,7 +90,7 @@ public class EEWBot implements AutoCloseable {
         shutdownStep("Worker shutdown", () -> awaitExecutorShutdown(this.scheduledExecutor, 10, TimeUnit.SECONDS));
         shutdownStep("Snapshot executor shutdown", () -> awaitExecutorShutdown(this.snapshotReloadExecutor, 5, TimeUnit.SECONDS));
         try {
-            this.adminRegistry.save();
+            this.destinationCleanup.save();
         } catch (final IOException | RuntimeException e) {
             Log.logger.error("Save failed", e);
         }
@@ -184,10 +157,6 @@ public class EEWBot implements AutoCloseable {
 
     public DestinationDeliveryRegistry getDeliveryRegistry() {
         return this.deliveryRegistry;
-    }
-
-    public DestinationAdminRegistry getAdminRegistry() {
-        return this.adminRegistry;
     }
 
     public static void main(final String[] args) throws Exception {

@@ -25,7 +25,7 @@ class SqlDestinationBackendIntegrationTest {
         ConfigV2.Database config = new ConfigV2.Database();
         config.getSqlite().setPath("existing.db");
         long target = 1234567890123456789L;
-        try (DestinationBackend backend = SqlDestinationBackend.open(config, this.directory)) {
+        try (SqlDestinationBackend backend = SqlDestinationBackend.open(config, this.directory)) {
             backend.createAdminRegistry(() -> {}).put(target, Channel.createDefault(null, target, null, "en_us"));
         }
 

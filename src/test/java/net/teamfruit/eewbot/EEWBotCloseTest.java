@@ -7,7 +7,7 @@ import net.teamfruit.eewbot.gateway.GatewayManager;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.delivery.RevisionPoller;
 import net.teamfruit.eewbot.registry.destination.DestinationBackend;
-import net.teamfruit.eewbot.registry.destination.DestinationCleanup;
+import net.teamfruit.eewbot.registry.destination.store.RegistryDestinationCleanup;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -240,22 +240,14 @@ class EEWBotCloseTest {
                 this.mockGateway,
                 null, // config
                 null, // deliveryRegistry
-                this.mockAdminRegistry,
                 backend,
-                DestinationCleanup.using(this.mockAdminRegistry),
+                new RegistryDestinationCleanup(this.mockAdminRegistry),
                 revisionPoller,
-                null, // i18n
-                null, // quakeInfoStore
-                null, // rendererQueryFactory
-                null, // service
                 this.mockGatewayManager,
                 externalWebhookService,
                 this.mockSnapshotReloadExecutor,
                 this.mockScheduledExecutor,
-                shutdownFlag,
-                0L,   // applicationId
-                null, // userName
-                null  // avatarUrl
+                shutdownFlag
         );
     }
 }

@@ -42,8 +42,6 @@ class GatewayManagerCloseTest {
                 this.mockScheduledExecutor,
                 this.mockDmdataReconnectExecutor,
                 null, // HttpClient
-                null, // GatewayDiscordClient
-                null, // DestinationAdminRegistry
                 null, // QuakeInfoStore
                 null, // ExternalWebhookService
                 this.mockMessageExecutor
@@ -95,7 +93,7 @@ class GatewayManagerCloseTest {
         GatewayManager manager = new GatewayManager(
                 null, createMinimalConfig(), 0L,
                 this.mockScheduledExecutor, this.mockDmdataReconnectExecutor,
-                null, null, null, null, null,
+                null, null, null,
                 this.mockMessageExecutor
         );
 
