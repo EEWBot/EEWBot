@@ -66,6 +66,8 @@ class SnapshotDeliveryRegistryTest {
         assertThat(registry.getSnapshot()).isSameAs(old);
         assertThat(registry.getDeliveryChannels(null).direct()).containsOnlyKeys(1L);
 
+        assertThat(tasks).isEmpty();
+        registry.requestReload(); // A later poll retries; failure itself must not spin.
         tasks.remove().run();
         assertThat(registry.getSnapshot()).isSameAs(updated);
         assertThat(registry.getDeliveryChannels(null).direct()).containsOnlyKeys(2L);

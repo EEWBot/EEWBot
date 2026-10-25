@@ -19,6 +19,7 @@ public class RevisionPoller {
     private final DestinationConfigSource configSource;
     private final ScheduledExecutorService scheduler;
     private final long pollIntervalMs;
+    private final boolean fixedDelay;
     private ScheduledFuture<?> pollTask;
 
     public RevisionPoller(
@@ -35,10 +36,16 @@ public class RevisionPoller {
             ScheduledExecutorService scheduler,
             long pollIntervalMs
     ) {
+        this(snapshotDeliveryRegistry, configSource, scheduler, pollIntervalMs, false);
+    }
+
+    public RevisionPoller(SnapshotDeliveryRegistry snapshotDeliveryRegistry, DestinationConfigSource configSource,
+                          ScheduledExecutorService scheduler, long pollIntervalMs, boolean fixedDelay) {
         this.snapshotDeliveryRegistry = snapshotDeliveryRegistry;
         this.configSource = configSource;
         this.scheduler = scheduler;
         this.pollIntervalMs = pollIntervalMs;
+        this.fixedDelay = fixedDelay;
     }
 
     /**
@@ -49,7 +56,9 @@ public class RevisionPoller {
             Log.logger.warn("RevisionPoller already started");
             return;
         }
-        this.pollTask = this.scheduler.scheduleAtFixedRate(
+        this.pollTask = this.fixedDelay ? this.scheduler.scheduleWithFixedDelay(
+                this::poll, this.pollIntervalMs, this.pollIntervalMs, TimeUnit.MILLISECONDS
+        ) : this.scheduler.scheduleAtFixedRate(
                 this::poll,
                 this.pollIntervalMs,
                 this.pollIntervalMs,

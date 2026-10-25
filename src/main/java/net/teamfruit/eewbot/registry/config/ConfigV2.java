@@ -82,6 +82,7 @@ public class ConfigV2 {
         private String type = "sqlite";
         private SQLite sqlite = new SQLite();
         private PostgreSQL postgresql = new PostgreSQL();
+        private Remote remote = new Remote();
 
         public String getType() {
             return this.type;
@@ -103,6 +104,10 @@ public class ConfigV2 {
             return this.postgresql;
         }
 
+        public Remote getRemote() {
+            return this.remote;
+        }
+
         public void setPostgresql(final PostgreSQL postgresql) {
             this.postgresql = postgresql;
         }
@@ -115,6 +120,21 @@ public class ConfigV2 {
                     ", postgresql=" + this.postgresql +
                     '}';
         }
+    }
+
+    /** Access credentials are deliberately absent; read them only from the environment. */
+    public static class Remote {
+        private String baseUrl = "";
+        private long pollIntervalMillis = 10000;
+        private long connectTimeoutMillis = 3000;
+        private long requestTimeoutMillis = 5000;
+        private int maxSnapshotBytes = 32 * 1024 * 1024;
+
+        public String getBaseUrl() { return this.baseUrl; }
+        public long getPollIntervalMillis() { return this.pollIntervalMillis; }
+        public long getConnectTimeoutMillis() { return this.connectTimeoutMillis; }
+        public long getRequestTimeoutMillis() { return this.requestTimeoutMillis; }
+        public int getMaxSnapshotBytes() { return this.maxSnapshotBytes; }
     }
 
     public static class SQLite {
