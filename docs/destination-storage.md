@@ -1,5 +1,10 @@
 # 配信設定のストレージ境界
 
+Cloudflare D1を読むRemote Backendの設定・障害処理・ステージング切り替えは
+[Remote Backend運用手順](remote-destination-storage.md)を参照。
+`database.type=remote`ではSQLの初期化とLocal Interactionsを省略し、読取専用Cleanupを使う。
+以下の抽象化時の比較と検証履歴はSQL構成を説明する。現在は同じSource境界にRemoteも接続する。
+
 `DestinationAdminRegistry` は管理操作（管理用の読取を含む）、
 `DestinationConfigSource` は配信用設定のバックグラウンド読取を担当する。
 管理操作の既存APIとSQLトランザクション処理は維持している。
@@ -44,7 +49,9 @@ SQL検索 → ChannelFilterSql → ChannelFilterの条件
 
 `DeliverySnapshotLoader` は `store.SqlDestinationConfigSource` に移動・改名した。
 Snapshot管理とRevisionPollerはSQLバックエンドに含めない。
-既存の2秒間隔、再読込要求の集約、AtomicReferenceによる交換を維持する。
+SQLの既存の2秒間隔、再読込要求の集約、AtomicReferenceによる交換を維持する。
+Remoteは専用schedulerで既定10秒の固定遅延を使用する。
+再読込失敗は即時再試行を繰り返さず、次回pollで再試行する。
 
 ## Revisionと更新の意味
 
@@ -127,21 +134,21 @@ query・ヘッダ・JSON互換性も検証した。/testmessageのコマンド�
 管理機能の構成切替、Gateway削除を設定所有者へ通知するDestinationCleanup実装、
 HTTP認証・障害処理・revisionの単調性の契約が必要になる。
 配信ロジックとRevisionPollerは同じインターフェースを利用できる。
-今回はWorkers/D1、HTTP API、Remote実装を追加していない。
+この抽象化時点ではRemote実装を含まなかった。現在はHTTP API v1用のRemote Sourceを追加している。
 
 Coreで観測したGateway削除・配信先の403/404・Webhookの404・senderのnotfoundsは
 DestinationCleanupへ通知する。セルフホスト用RegistryDestinationCleanupは従来の管理レジストリを使い、
 1対象ごとの更新とrevision増加、save回数、URL指定時の一括処理を維持する。
 完全な読取専用Coreへ移す際にはこのadapterを設定所有者への通知実装に差し替える。
 Sourceのrevisionは既存の比較方式に合わせて単調増加を前提とするため、DB復元や
-Remote切替時のrevision巻戻りは別途設計が必要になる。
+Remoteでは巻戻りを検出・ラッチし、旧Snapshot保持と運用者の再起動要求を行う。
 
 ## Local Interactionsの取り外し境界
 
 Factoryの「Local Interactions」ブロックが、SlashCommandContextの作成と
 SlashCommandHandlerの起動をまとめた組立箇所になる。将来このブロックを外せば、
 Coreはコマンド登録もApplicationCommand/SelectMenu/Buttonの購読も行わない。
-設定の切替機能やWorkers実装は今回追加していない。
+現在はdatabase.typeでこのブロックの起動を切り替える。Workers側コマンド実装は別作業。
 
 SlashCommandHandler自身がコマンド登録リクエストと3種のイベント購読を所有する。
 FactoryはDisposableとして通常の購読一覧へ追加し、正常終了・後続の起動失敗で

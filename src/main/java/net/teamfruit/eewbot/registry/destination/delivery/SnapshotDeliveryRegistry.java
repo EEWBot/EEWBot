@@ -69,6 +69,7 @@ public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
             reloadSnapshotLoop();
         } catch (Exception e) {
             Log.logger.error("Error reloading snapshot", e);
+            return; // Retry on the next poll; a failed load must not schedule a hot retry loop.
         } finally {
             this.reloadScheduled.set(false);
         }

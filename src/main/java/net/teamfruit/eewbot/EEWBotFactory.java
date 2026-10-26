@@ -24,6 +24,8 @@ import net.teamfruit.eewbot.registry.destination.DestinationConfigSource;
 import net.teamfruit.eewbot.registry.destination.delivery.RevisionPoller;
 import net.teamfruit.eewbot.registry.destination.delivery.SnapshotDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.store.SqlDestinationBackend;
+import net.teamfruit.eewbot.registry.destination.remote.RemoteDestinationBackend;
+import net.teamfruit.eewbot.registry.destination.remote.RemoteReadOnlyDestinationCleanup;
 import net.teamfruit.eewbot.slashcommand.SlashCommandContext;
 import net.teamfruit.eewbot.slashcommand.SlashCommandHandler;
 import reactor.core.Disposable;
@@ -39,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 public class EEWBotFactory {
 
@@ -81,17 +84,17 @@ public class EEWBotFactory {
             AtomicBoolean shutdownFlag = new AtomicBoolean(false);
 
             // 6. Storage setup; the backend owns migration and SQL resource management.
-            SqlDestinationBackend localBackend = SqlDestinationBackend.open(config.getDatabase(),
+            DestinationBackend selectedBackend = openDestinationBackend(config.getDatabase(),
                     EEWBot.DATA_DIRECTORY != null ? Paths.get(EEWBot.DATA_DIRECTORY) : null);
             DestinationRegistries registries = initializeDestinationRegistries(
-                    localBackend, snapshotReloadExecutor, scheduledExecutor);
+                    selectedBackend, snapshotReloadExecutor, scheduledExecutor);
             backend = registries.backend();
             SnapshotDeliveryRegistry deliveryRegistry = registries.deliveryRegistry();
             revisionPoller = registries.revisionPoller();
 
             // Local writes are composed separately from the read-only delivery runtime.
-            DestinationAdminRegistry adminRegistry = localBackend.createAdminRegistry(deliveryRegistry::requestReload);
-            DestinationCleanup destinationCleanup = new RegistryDestinationCleanup(adminRegistry);
+            DestinationManagement management = createDestinationManagement(backend, deliveryRegistry);
+            DestinationCleanup destinationCleanup = management.cleanup();
 
             // 7. Discord connection
             gateway = DiscordClient.create(config.getBase().getDiscordToken())
@@ -143,12 +146,12 @@ public class EEWBotFactory {
             );
 
             // 10. Local Interactions: one removable module, including command registration.
-            SlashCommandContext slashCtx = new SlashCommandContext(
-                    adminRegistry, i18n, config, gateway, httpClient,
+            GatewayDiscordClient connectedGateway = gateway;
+            startLocalInteractions(management, () -> new SlashCommandHandler(new SlashCommandContext(
+                    management.adminRegistry(), i18n, config, connectedGateway, httpClient,
                     userName, avatarUrl, rendererQueryFactory,
                     quakeInfoStore, applicationId, shutdownFlag
-            );
-            subscriptions.add(new SlashCommandHandler(slashCtx));
+            )), subscriptions);
 
             // 11. Build EEWBot
             bot = new EEWBot(
@@ -218,7 +221,9 @@ public class EEWBotFactory {
             DestinationConfigSource source = backend.getConfigSource();
             SnapshotDeliveryRegistry delivery = new SnapshotDeliveryRegistry(source, snapshotReloadExecutor);
             delivery.initializeSnapshot();
-            poller = new RevisionPoller(delivery, source, scheduledExecutor);
+            poller = backend instanceof RemoteDestinationBackend remote
+                    ? new RevisionPoller(delivery, source, remote.getPollScheduler(), remote.getPollIntervalMillis(), true)
+                    : new RevisionPoller(delivery, source, scheduledExecutor);
             poller.start();
             return new DestinationRegistries(backend, delivery, poller);
         } catch (RuntimeException | Error e) {
@@ -236,6 +241,29 @@ public class EEWBotFactory {
 
         configRegistry.loadAndNormalize(true);
         return configRegistry.getElement();
+    }
+
+    static DestinationBackend openDestinationBackend(ConfigV2.Database config, Path dataDirectory) throws IOException {
+        return "remote".equalsIgnoreCase(config.getType())
+                ? RemoteDestinationBackend.open(config.getRemote())
+                : SqlDestinationBackend.open(config, dataDirectory);
+    }
+
+    static DestinationManagement createDestinationManagement(DestinationBackend backend, SnapshotDeliveryRegistry delivery) {
+        if (backend instanceof SqlDestinationBackend sql) {
+            DestinationAdminRegistry admin = sql.createAdminRegistry(delivery::requestReload);
+            return new DestinationManagement(admin, new RegistryDestinationCleanup(admin));
+        }
+        return new DestinationManagement(null, new RemoteReadOnlyDestinationCleanup());
+    }
+
+    static void startLocalInteractions(DestinationManagement management, Supplier<Disposable> start,
+                                       List<Disposable> subscriptions) {
+        if (management.adminRegistry() != null) subscriptions.add(start.get());
+        else Log.logger.warn("Local Interactions disabled: remote configuration is read-only");
+    }
+
+    record DestinationManagement(DestinationAdminRegistry adminRegistry, DestinationCleanup cleanup) {
     }
 
     private static Path getConfigPath() {
