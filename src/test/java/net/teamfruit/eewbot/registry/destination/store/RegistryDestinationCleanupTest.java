@@ -6,6 +6,8 @@ import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -47,6 +49,17 @@ class RegistryDestinationCleanupTest {
         assertThat(new RegistryDestinationCleanup(admin).webhookUrlsUnavailable(urls)).isEqualTo(2);
 
         verify(admin).clearWebhookByUrls(urls);
+        verifyNoMoreInteractions(admin);
+    }
+
+    @Test
+    void expectedWebhookOverloadPreservesLocalSqlAdapterSemantics() throws Exception {
+        DestinationAdminRegistry admin = mock(DestinationAdminRegistry.class);
+        new RegistryDestinationCleanup(admin).webhooksUnavailable(Map.of(
+                1L, new DeliveryTarget(1L, "ja_jp", "https://discord.com/api/webhooks/123/synthetic")));
+        var order = inOrder(admin);
+        order.verify(admin).setWebhook(1L, null);
+        order.verify(admin).save();
         verifyNoMoreInteractions(admin);
     }
 }

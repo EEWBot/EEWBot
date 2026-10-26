@@ -180,7 +180,7 @@ public class EEWService {
                             Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
                             erroredChannels.forEach(channelId ->
-                                    Log.logger.info("Channel {} permission is missing or has been deleted, unregister", channelId));
+                                    Log.logger.info("Channel {} permission is missing or has been deleted; requesting cleanup", channelId));
                             try {
                                 this.destinationCleanup.destinationsUnavailable(erroredChannels);
                             } catch (IOException e) {
@@ -271,9 +271,9 @@ public class EEWService {
                 Thread.currentThread().setName("eewbot-channel-unregister-thread");
 
                 erroredChannels.forEach((channelId, channel) ->
-                        Log.logger.info("Webhook for channel {} is deleted, unregister", channelId));
+                        Log.logger.info("Webhook for channel {} returned not found; requesting cleanup", channelId));
                 try {
-                    this.destinationCleanup.webhooksUnavailable(erroredChannels.keySet());
+                    this.destinationCleanup.webhooksUnavailable(erroredChannels);
                 } catch (IOException e) {
                     Log.logger.error("Failed to save channels", e);
                 }

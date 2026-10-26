@@ -66,7 +66,7 @@ public final class RemoteConfigApiClient implements AutoCloseable {
         }
     }
 
-    private static URI validateOrigin(String value, boolean allowLoopbackHttp) {
+    static URI validateOrigin(String value, boolean allowLoopbackHttp) {
         try {
             URI uri = URI.create(value);
             boolean loopback = "127.0.0.1".equals(uri.getHost()) || "[::1]".equals(uri.getHost());
@@ -175,7 +175,7 @@ public final class RemoteConfigApiClient implements AutoCloseable {
     }
 
     /** Cancels before retaining more than limit bytes, even for chunked responses. */
-    private static final class LimitedBodySubscriber implements HttpResponse.BodySubscriber<byte[]> {
+    static final class LimitedBodySubscriber implements HttpResponse.BodySubscriber<byte[]> {
         private final int limit;
         private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         private final CompletableFuture<byte[]> body = new CompletableFuture<>();

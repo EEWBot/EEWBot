@@ -254,6 +254,10 @@ public class EEWBotFactory {
             DestinationAdminRegistry admin = sql.createAdminRegistry(delivery::requestReload);
             return new DestinationManagement(admin, new RegistryDestinationCleanup(admin));
         }
+        if (backend instanceof RemoteDestinationBackend remote) {
+            DestinationCleanup cleanup = remote.getCleanup();
+            if (cleanup != null) return new DestinationManagement(null, cleanup);
+        }
         return new DestinationManagement(null, new RemoteReadOnlyDestinationCleanup());
     }
 
