@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /** Fixed-origin writer transport. A POST is attempted once, including ambiguous failures. */
 public final class RemoteCleanupApiClient implements AutoCloseable {
@@ -61,7 +62,10 @@ public final class RemoteCleanupApiClient implements AutoCloseable {
     }
 
     public void checkCompatibility() {
-        JsonNode meta = request("meta", null);
+        request("meta", null, RemoteCleanupApiClient::validateCompatibility);
+    }
+
+    private static void validateCompatibility(JsonNode meta) {
         JsonNode version = meta.get("apiVersion");
         JsonNode capabilities = meta.get("capabilities");
         if (version == null || !version.isIntegralNumber() || !version.canConvertToInt() || version.intValue() != 1
@@ -78,15 +82,18 @@ public final class RemoteCleanupApiClient implements AutoCloseable {
 
     int mutate(String operation, Object body) {
         if (!OPERATIONS.contains(operation) || body == null) throw new RemoteConfigException("Invalid cleanup operation");
-        JsonNode result = request(operation, body);
+        JsonNode result = request(operation, body, RemoteCleanupApiClient::validateMutation);
+        return result.get("affected").intValue();
+    }
+
+    private static void validateMutation(JsonNode result) {
         JsonNode affected = result.get("affected");
         if (result.size() != 1 || affected == null || !affected.isIntegralNumber() || !affected.canConvertToInt()
                 || affected.intValue() < 0) throw new RemoteConfigException("Invalid cleanup response");
-        return affected.intValue();
     }
 
     // Only the cleanup worker calls this during runtime. One in-flight request, including sync count calls.
-    private synchronized JsonNode request(String operation, Object body) {
+    private synchronized JsonNode request(String operation, Object body, Consumer<JsonNode> validate) {
         if (this.closed.get()) throw new RemoteConfigException("Remote cleanup client is closed");
         CompletableFuture<HttpResponse<byte[]>> pending = null;
         try {
@@ -113,6 +120,13 @@ public final class RemoteCleanupApiClient implements AutoCloseable {
             }
             JsonNode result = this.mapper.readTree(response.body());
             if (result == null || !result.isObject()) throw new IllegalArgumentException();
+            try {
+                validate.accept(result);
+            } catch (RemoteConfigException e) {
+                defer(backoffMillis());
+                throw e;
+            }
+            // Only a fully validated response can release the next operation's backoff.
             this.failures = 0;
             this.nextAttempt = System.nanoTime();
             return result;

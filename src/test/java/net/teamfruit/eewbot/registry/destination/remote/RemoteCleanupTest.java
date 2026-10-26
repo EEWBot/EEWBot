@@ -45,6 +45,7 @@ class RemoteCleanupTest {
     private final AtomicInteger active = new AtomicInteger();
     private final AtomicInteger maxActive = new AtomicInteger();
     private final AtomicReference<String> responseBody = new AtomicReference<>("{\"affected\":2}");
+    private final AtomicReference<String> metaBody = new AtomicReference<>("{\"apiVersion\":1,\"capabilities\":[\"destinationCleanup\"]}");
     private volatile CountDownLatch gate;
     private volatile long delayMillis;
     private volatile boolean slowBody;
@@ -76,7 +77,7 @@ class RemoteCleanupTest {
                 }
                 if (!path.endsWith("/meta") && this.status.get() == 200) this.afterMutation.run();
                 String reply = path.endsWith("/meta") && this.status.get() == 200
-                        ? "{\"apiVersion\":1,\"capabilities\":[\"destinationCleanup\"]}" : this.responseBody.get();
+                        ? this.metaBody.get() : this.responseBody.get();
                 exchange.getResponseBody().write(reply.getBytes(StandardCharsets.UTF_8));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -246,6 +247,44 @@ class RemoteCleanupTest {
         this.responseBody.set(response);
         assertThatThrownBy(() -> this.client.mutate("guild", Map.of("guildId", "1"))).isInstanceOf(RemoteConfigException.class);
         assertThat(this.requests).hasSize(1);
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"{}", "{\"affected\":-1}"})
+    void invalidSuccessResponsesBackOffQueuedOperationsWithoutReplaying(String response) throws Exception {
+        this.responseBody.set(response);
+        queue(256, 5000, 5000);
+        this.cleanup.guildDeleted(1);
+        this.cleanup.destinationDeleted(2);
+        this.cleanup.destinationDeleted(3);
+        await(() -> this.requests.size() == 3);
+        this.cleanup.close();
+
+        assertThat(this.requests).hasSize(3);
+        assertThat(this.requests.get(0).path()).endsWith("/guild");
+        assertThat(this.requests.get(1).path()).endsWith("/destinations");
+        assertThat(this.requests.get(2).path()).endsWith("/destinations");
+        assertThat(JSON.readTree(this.requests.get(0).body())).isEqualTo(JSON.readTree("{\"guildId\":\"1\"}"));
+        assertThat(JSON.readTree(this.requests.get(1).body())).isEqualTo(JSON.readTree("{\"targetIds\":[\"2\"]}"));
+        assertThat(JSON.readTree(this.requests.get(2).body())).isEqualTo(JSON.readTree("{\"targetIds\":[\"3\"]}"));
+        // Consecutive invalid 200s must preserve the exponential failure count.
+        assertThat(this.requests.get(1).time() - this.requests.get(0).time())
+                .isGreaterThan(TimeUnit.MILLISECONDS.toNanos(450));
+        assertThat(this.requests.get(2).time() - this.requests.get(1).time())
+                .isGreaterThan(TimeUnit.MILLISECONDS.toNanos(950));
+    }
+
+    @Test void invalidMetadataAlsoBacksOffTheNextOperation() throws Exception {
+        this.metaBody.set("{\"apiVersion\":1,\"capabilities\":[]}");
+        assertThatThrownBy(this.client::checkCompatibility).hasMessageContaining("destinationCleanup capability");
+        queue(256, 5000, 5000);
+        this.cleanup.guildDeleted(1);
+        this.cleanup.close();
+
+        assertThat(this.requests).hasSize(2);
+        assertThat(this.requests.get(0).path()).endsWith("/meta");
+        assertThat(this.requests.get(1).path()).endsWith("/guild");
+        assertThat(this.requests.get(1).time() - this.requests.get(0).time())
+                .isGreaterThan(TimeUnit.MILLISECONDS.toNanos(450));
     }
 
     @Test void rejectsOversizedChunkedResponse() {

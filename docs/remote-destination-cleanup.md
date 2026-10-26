@@ -90,6 +90,9 @@ operations wait with exponential jittered backoff (0.5–1s initially, capped at
 statuses, including 405/429/503, fail and back off. The worker sleeps; Gateway and
 delivery threads do not. This is pacing of distinct notifications, not a retry of
 the failed one. Failed notifications are logged and dropped, with no durable retry.
+HTTP 200 releases backoff only after the complete response schema is validated.
+Missing/negative `affected` and invalid metadata preserve the failure count and
+defer subsequent operations; consecutive invalid responses increase the delay.
 
 `webhookUrlsUnavailable` keeps its synchronous **actual affected-row count** by
 submitting to the same worker and waiting up to **10s per 500-ID batch**, including
@@ -191,10 +194,10 @@ completed all cleanup calls and verified polling. A permanent Bot rollout and li
 Discord Gateway login were not performed or required; no Bot cutover remains pending
 in this scope. No production resources or Access policies were changed.
 
-`gradlew test integrationTest build` passed: unit **671 total / 670 passed / 1 skipped**,
+`gradlew test integrationTest build` passed: unit **674 total / 673 passed / 1 skipped**,
 integration **220 total / 205 passed / 15 skipped**, zero failures. Skips comprise
 the explicit golden generator, Docker-dependent PostgreSQL tests, unconfigured
-external Discord tests and three opt-in staging cases. The 43 RemoteCleanupTest
+external Discord tests and three opt-in staging cases. The 46 RemoteCleanupTest
 cases plus four EEWService 404/status cases and one SQL adapter compatibility case
 all passed. Local API tests separately verify stale-webhook safety and D1 rollback.
 The three opt-in cases passed separately against staging using the existing `.env`
