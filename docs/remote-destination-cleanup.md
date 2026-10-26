@@ -157,7 +157,7 @@ no increment for replay, and eventual Java poll reload. Remove only synthetic
 survivors and **never reset the revision**. No generic fixture-insertion HTTP route
 is exposed.
 
-Only then stop the identified staging Bot, back up config/JAR/SQL as described in
+For a future permanently hosted staging Bot, stop it and back up config/JAR/SQL as described in
 `remote-destination-storage.md`, provide the common credential pair, enable cleanup and
 restart. Confirm compatibility checks and revision polling, then a synthetic cleanup
 event. Rollback is `cleanupEnabled:false` plus restart (remote reads remain active).
@@ -185,10 +185,11 @@ contents were preserved exactly. Synthetic survivors were removed; revision was
 not reset. Existing public health/Interactions-denial and authenticated read smokes
 passed afterward. Secret values, webhook tokens and snapshots were not printed.
 
-Bot host/service has not been identified; API/client tests do not establish actual
-Bot cutover. The remaining operator task is to deploy the built JAR to that staging
-host, retain its common credentials, set `cleanupEnabled:true`, restart, and verify
-real Gateway/Sender events. No production resources or Access policies were changed.
+The user confirmed that no permanently hosted staging Bot exists and local execution
+is sufficient. Local Java tests opened the real backend with `cleanupEnabled:true`,
+completed all cleanup calls and verified polling. A permanent Bot rollout and live
+Discord Gateway login were not performed or required; no Bot cutover remains pending
+in this scope. No production resources or Access policies were changed.
 
 `gradlew test integrationTest build` passed: unit **671 total / 670 passed / 1 skipped**,
 integration **220 total / 205 passed / 15 skipped**, zero failures. Skips comprise
