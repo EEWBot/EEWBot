@@ -129,12 +129,14 @@ public class ConfigV2 {
         private long connectTimeoutMillis = 3000;
         private long requestTimeoutMillis = 5000;
         private int maxSnapshotBytes = 32 * 1024 * 1024;
+        private boolean cleanupEnabled = false;
 
         public String getBaseUrl() { return this.baseUrl; }
         public long getPollIntervalMillis() { return this.pollIntervalMillis; }
         public long getConnectTimeoutMillis() { return this.connectTimeoutMillis; }
         public long getRequestTimeoutMillis() { return this.requestTimeoutMillis; }
         public int getMaxSnapshotBytes() { return this.maxSnapshotBytes; }
+        public boolean isCleanupEnabled() { return this.cleanupEnabled; }
     }
 
     public static class SQLite {

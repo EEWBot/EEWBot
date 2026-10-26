@@ -131,12 +131,14 @@ ApplicationCommand/SelectMenu/Button購読を開始しない。Discord上に既�
 残っていても削除しない。この段階では管理コマンドは応答できない。
 SQLモードのLocal InteractionsとRegistryDestinationCleanupは従来どおり。
 
-Guild/Channel/Thread削除、配信不可、Webhook無効化、senderのnot-found通知は
+`cleanupEnabled`の既定値falseの場合、Guild/Channel/Thread削除、配信不可、Webhook無効化、senderのnot-found通知は
 RemoteReadOnlyDestinationCleanupへ送る。D1もローカルDBも変更せず、種別・件数だけを
 `Remote cleanup NOT applied` と警告する。URL一括無効化の返値は0件。
 終了時saveはno-op。成功した設定変更として報告しない。
 無効な配信先が次の配信時にも残り得るため、ステージング用の暫定措置。
-現時点でD1を変更する管理操作はJavaに実装されていない。
+`cleanupEnabled:true`の場合は、専用Access認証と起動時のAPI互換性確認を経て
+RemoteDestinationCleanupを使用する。詳細・制限・切り替え手順は
+[Remote Cleanup](remote-destination-cleanup.md)を参照。
 
 ## ステージング切り替え手順
 

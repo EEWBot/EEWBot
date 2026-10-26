@@ -2,6 +2,8 @@ package net.teamfruit.eewbot.registry.destination;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 
 /**
  * Cleanup observed by the Gateway and delivery paths, separate from interactive management.
@@ -17,6 +19,11 @@ public interface DestinationCleanup {
     void destinationsUnavailable(Collection<Long> targetIds) throws IOException;
 
     void webhooksUnavailable(Collection<Long> targetIds) throws IOException;
+
+    /** Uses the immutable targets actually sent, so remote cleanup can compare webhook IDs. */
+    default void webhooksUnavailable(Map<Long, DeliveryTarget> failedTargets) throws IOException {
+        this.webhooksUnavailable(failedTargets.keySet());
+    }
 
     int webhookUrlsUnavailable(Collection<String> webhookUrls);
 

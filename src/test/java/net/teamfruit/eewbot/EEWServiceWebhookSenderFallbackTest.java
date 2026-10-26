@@ -9,12 +9,15 @@ import net.teamfruit.eewbot.entity.discord.PendingEmbed;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.DestinationCleanup;
 import net.teamfruit.eewbot.registry.destination.store.RegistryDestinationCleanup;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Mono;
 
 import javax.net.ssl.SSLContext;
@@ -143,13 +146,32 @@ class EEWServiceWebhookSenderFallbackTest {
     }
 
     private EEWService createService(FakeHttpClient httpClient, String customHeader, String senderAddress) {
+        return createService(httpClient, customHeader, senderAddress,
+                new RegistryDestinationCleanup(mock(DestinationAdminRegistry.class)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {204, 403, 404, 500})
+    void only404PassesTheActualSentWebhookToCleanup(int status) throws Exception {
+        DestinationCleanup cleanup = mock(DestinationCleanup.class);
+        FakeHttpClient http = FakeHttpClient.sendStatus(200, "ok").withAsyncStatuses(status);
+        EEWService service = spy(createService(http, "", "", cleanup));
+        doReturn(Mono.empty()).when(service).directSendMessagePassErrors(anyLong(), any());
+        service.sendMessage(ChannelFilter.builder().build(), testEntity());
+        this.executor.submit(() -> { }).get(5, TimeUnit.SECONDS);
+        if (status == 404) {
+            verify(cleanup).webhooksUnavailable(Map.of(123L, new DeliveryTarget(123L, "ja_jp", WEBHOOK_URL)));
+            verifyNoMoreInteractions(cleanup);
+        } else verifyNoInteractions(cleanup);
+    }
+
+    private EEWService createService(FakeHttpClient httpClient, String customHeader, String senderAddress, DestinationCleanup cleanup) {
         ConfigV2 config = new ConfigV2();
         config.getWebhookSender().setAddress(senderAddress);
         config.getWebhookSender().setCustomHeader(customHeader);
 
         I18n i18n = new I18n("ja_JP");
         EmbedContext embedContext = new EmbedContext(null, null, i18n);
-        DestinationAdminRegistry adminRegistry = mock(DestinationAdminRegistry.class);
 
         return new EEWService(
                 null,
@@ -157,7 +179,7 @@ class EEWServiceWebhookSenderFallbackTest {
                         Map.of(123L, new DeliveryTarget(123L, "ja_jp", WEBHOOK_URL)),
                         Collections.emptyMap()
                 ),
-                new RegistryDestinationCleanup(adminRegistry),
+                cleanup,
                 "https://example.com/avatar.png",
                 i18n,
                 embedContext,
