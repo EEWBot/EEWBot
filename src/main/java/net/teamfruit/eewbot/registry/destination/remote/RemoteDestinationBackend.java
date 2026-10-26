@@ -34,7 +34,7 @@ public final class RemoteDestinationBackend implements DestinationBackend {
     // Takes ownership before compatibility discovery, including failure.
     static RemoteDestinationBackend initialize(ConfigV2.Remote config, RemoteConfigApiClient client) {
         return initialize(config, client, () -> new RemoteCleanupApiClient(config,
-                System.getenv("EEWBOT_CF_ACCESS_CLEANUP_CLIENT_ID"), System.getenv("EEWBOT_CF_ACCESS_CLEANUP_CLIENT_SECRET")));
+                System.getenv("EEWBOT_CF_ACCESS_CLIENT_ID"), System.getenv("EEWBOT_CF_ACCESS_CLIENT_SECRET")));
     }
 
     static RemoteDestinationBackend initialize(ConfigV2.Remote config, RemoteConfigApiClient client,

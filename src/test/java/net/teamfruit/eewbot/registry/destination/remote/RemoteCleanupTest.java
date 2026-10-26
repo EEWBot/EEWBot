@@ -31,8 +31,8 @@ import static org.mockito.Mockito.*;
 
 class RemoteCleanupTest {
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final String ID = "synthetic-cleanup-client-id";
-    private static final String SECRET = "synthetic-cleanup-secret";
+    private static final String ID = RemoteApiFixture.ID;
+    private static final String SECRET = RemoteApiFixture.SECRET;
     private static final String URL = "https://discord.com/api/webhooks/1234567890123456792/synthetic-webhook-token?thread_id=1234567890123456791";
     private static final long TARGET = 1234567890123456791L;
     private HttpServer server;
@@ -117,7 +117,7 @@ class RemoteCleanupTest {
         assertThat(condition.getAsBoolean()).isTrue();
     }
 
-    @Test void dedicatedCredentialsAndAllContractsKeepTokensOutOfBodies() throws Exception {
+    @Test void commonCredentialsAndAllContractsKeepTokensOutOfBodies() throws Exception {
         this.client.checkCompatibility();
         queue(256, 5000, 5000);
         this.cleanup.guildDeleted(1234567890123456789L);
@@ -272,12 +272,12 @@ class RemoteCleanupTest {
     @ParameterizedTest @ValueSource(strings = {"", " ", "bad\nvalue", "bad\u0000value"})
     void rejectsInvalidCredentialsWithoutEchoingValues(String credential) {
         assertThatThrownBy(() -> new RemoteCleanupApiClient(config(2000, true), ID, credential, true))
-                .hasMessageContaining("EEWBOT_CF_ACCESS_CLEANUP").hasNoCause();
+                .hasMessageContaining("EEWBOT_CF_ACCESS_CLIENT").hasNoCause();
     }
 
     @Test void rejectsMissingCredentials() {
         assertThatThrownBy(() -> new RemoteCleanupApiClient(config(2000, true), null, SECRET, true))
-                .hasMessageContaining("EEWBOT_CF_ACCESS_CLEANUP").hasNoCause();
+                .hasMessageContaining("EEWBOT_CF_ACCESS_CLIENT").hasNoCause();
     }
 
     @ParameterizedTest @ValueSource(strings = {"not-a-url", "https://evil.invalid/api/webhooks/123/secret",

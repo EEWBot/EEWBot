@@ -55,7 +55,7 @@ public final class RemoteCleanupApiClient implements AutoCloseable {
 
     private static String credential(String value) {
         if (value == null || value.isBlank() || !value.chars().allMatch(c -> c >= 33 && c <= 126)) {
-            throw new RemoteConfigException("Cleanup requires valid EEWBOT_CF_ACCESS_CLEANUP_CLIENT_ID and EEWBOT_CF_ACCESS_CLEANUP_CLIENT_SECRET");
+            throw new RemoteConfigException("Cleanup requires valid EEWBOT_CF_ACCESS_CLIENT_ID and EEWBOT_CF_ACCESS_CLIENT_SECRET");
         }
         return value;
     }

@@ -1,7 +1,7 @@
 # Remote destination cleanup (staging)
 
 Companion API: [eewbot-api PR #11](https://github.com/EEWBot/eewbot-api/pull/11).
-Deploy that API and configure its separate Access writer before enabling this
+Deploy that API and confirm the existing common Access control before enabling this
 feature. No production configuration, migration, or deployment is part of this change.
 
 ## Enablement and credentials
@@ -27,10 +27,12 @@ Set these variables in the Bot process environment through its secret manager:
 
 | Purpose | Client ID | Client Secret |
 | --- | --- | --- |
-| Read API | `EEWBOT_CF_ACCESS_CLIENT_ID` | `EEWBOT_CF_ACCESS_CLIENT_SECRET` |
-| Cleanup API | `EEWBOT_CF_ACCESS_CLEANUP_CLIENT_ID` | `EEWBOT_CF_ACCESS_CLEANUP_CLIENT_SECRET` |
+| Both read and cleanup APIs | `EEWBOT_CF_ACCESS_CLIENT_ID` | `EEWBOT_CF_ACCESS_CLIENT_SECRET` |
 
-No credentials belong in config.json, Git, command arguments, logs or PRs. `.env`
+No cleanup-only environment variables or Token are required. Each HTTP client
+accepts injected credentials independently, allowing future authorization separation
+without changing the cleanup queue/store contracts. No credentials belong in
+config.json, Git, command arguments, logs or PRs. `.env`
 is not loaded by the Bot. Credentials are captured at startup; rotate them in the
 service environment and restart. Never enable JDK HTTP/header debugging.
 
@@ -40,7 +42,7 @@ connecting to Discord. Missing credentials, unauthorized or incompatible writer
 fail startup and close acquired clients. No SQL fallback or silent read-only fallback.
 
 The writer fixes its origin to the validated HTTPS base URL, uses only fixed paths,
-never follows redirects, and attaches only the cleanup credentials. The existing
+never follows redirects, and attaches the common Access credentials. The existing
 connect/request timeouts apply (defaults 3s/5s; maximum 60s). Request deadline
 covers headers and complete body; chunked responses are limited to 64 KiB. Error
 bodies and raw parser/transport causes are discarded.
@@ -114,12 +116,14 @@ must reconcile failures; do not blindly replay deletion logs.
 
 ## Staging operations and validation
 
-Create **EEWBot staging cleanup writer** protecting both
-`api-staging.eewbot.net/internal/v1/cleanup` and `/internal/v1/cleanup/*`. Its Service
-Auth policy includes only **eewbot-core-staging-cleanup**. Bind its AUD to staging
-Worker `ACCESS_CLEANUP_AUD`, distinct from reader `ACCESS_AUD`. The Worker trusts
-native Access context only. Missing configuration fails closed, and read credentials
-cannot write. See the API PR's `docs/cleanup-api.md` for full setup and D1 guarantees.
+Use the existing internal Access application protecting
+`api-staging.eewbot.net/internal/*`, its Service Auth policy/Service Token, and the
+staging Worker `ACCESS_AUD`. The common token intentionally authorizes both reads
+and cleanup writes for the current Core-only usage. The Worker trusts native
+Access context only and denies missing/mismatched common configuration. No Access
+Application/AUD/Token split is added. Future Discord commands must use Discord
+signature and user permissions instead of this Service Token. See the API PR's
+`docs/cleanup-api.md` for setup and D1 guarantees.
 
 Run local verification:
 
@@ -128,15 +132,22 @@ $env:JAVA_HOME='C:\Program Files\Zulu\zulu-25'
 .\gradlew.bat test integrationTest build --console=plain
 ```
 
-After all four credentials are securely set in the current process, opt into the
-live Java check (writer meta, audience separation, empty D1 operations and unchanged
-revision). It never logs in to Discord or opens a local database:
+After both common credentials are securely set in the current process, opt into the
+live Java check (reader/cleanup meta, empty D1 operations and unchanged revision).
+Changed-row tests additionally require the verified fixture prepared by the API
+repository's `scripts/smoke-cleanup-staging.mjs --prepare-java`. Pass its nonsecret
+`.wrangler/cleanup-staging-fixture.json` as `EEWBOT_REMOTE_CLEANUP_STAGING_FIXTURE`.
+The test validates the reserved IDs/marker/disabled delivery flags before writing.
+It never logs in to Discord or opens a local database:
 
 ```powershell
 $env:EEWBOT_REMOTE_CLEANUP_STAGING_SMOKE='true'
 .\gradlew.bat integrationTest --tests '*RemoteCleanupStagingSmokeTest' --console=plain
 Remove-Item Env:EEWBOT_REMOTE_CLEANUP_STAGING_SMOKE
 ```
+
+Always run API `scripts/smoke-cleanup-staging.mjs --finish-java` afterward to remove
+the verified synthetic survivors and compare original destination contents.
 
 For actual changed-row validation, first insert unique synthetic destinations through
 an explicit staging-only D1 maintenance operation after checking the IDs are absent.
@@ -147,31 +158,43 @@ survivors and **never reset the revision**. No generic fixture-insertion HTTP ro
 is exposed.
 
 Only then stop the identified staging Bot, back up config/JAR/SQL as described in
-`remote-destination-storage.md`, provide both credential pairs, enable cleanup and
+`remote-destination-storage.md`, provide the common credential pair, enable cleanup and
 restart. Confirm compatibility checks and revision polling, then a synthetic cleanup
 event. Rollback is `cleanupEnabled:false` plus restart (remote reads remain active).
 Do not change production or claim Bot cutover without access to its actual host.
 
 ### Status on 2026-10-26
 
-API staging Worker deployment succeeded (version
-`99c8324b-608a-4123-9a68-db60cc88d3ce`). Existing read token returned 200 for meta,
-revision and empty snapshot (revision 0). Cleanup meta and POST returned 503 with
-the writer AUD unset; no staging data was modified by those requests.
+The implementation follows the updated common Access specification. No new
+Application/AUD/Token or cleanup environment variables are required. Worker version
+`cada8f76-1728-4d58-b23c-5dd244daf542` uses the existing shared Token/AUD. The same
+Token obtained cleanup metadata and snapshots with HTTP 200. Anonymous/forged-header
+cleanup attempts were denied without changing D1.
 
-The existing Wrangler OAuth cannot create Access Service Tokens (HTTP 403).
-Browser app-control approval timed out. Writer Application/token/AUD provisioning,
-live changed-row D1 writes, Java writer smoke, and actual staging Bot enablement
-remain pending. Bot host/service has not been identified. Local tests and a deployed
-fail-closed route do not establish that these operational steps are complete.
+API live smoke exercised 11 changed/no-op operations (revision 0 → 6). Seven
+synthetic Java destinations were then inserted (revision 7). The live Java suite
+passed **3 tests**: metadata/common headers, no-op counts, queued guild/channel/thread
+deletion, guarded webhook clearing, shared webhook-ID clearing and real RevisionPoller
+publication. Java operations advanced revision **7 → 12**. The initial Snapshot stayed
+unchanged until polling published revision 12. The existing reader smoke also
+confirmed a real 10-second poll at nonzero revision.
+
+Final fixture removal advanced revision to **13**, with an empty snapshot. The
+maintenance script's digest comparison confirmed that all original destination
+contents were preserved exactly. Synthetic survivors were removed; revision was
+not reset. Existing public health/Interactions-denial and authenticated read smokes
+passed afterward. Secret values, webhook tokens and snapshots were not printed.
+
+Bot host/service has not been identified; API/client tests do not establish actual
+Bot cutover. The remaining operator task is to deploy the built JAR to that staging
+host, retain its common credentials, set `cleanupEnabled:true`, restart, and verify
+real Gateway/Sender events. No production resources or Access policies were changed.
 
 `gradlew test integrationTest build` passed: unit **671 total / 670 passed / 1 skipped**,
-integration **219 total / 205 passed / 14 skipped**, zero failures. Skips comprise
+integration **220 total / 205 passed / 15 skipped**, zero failures. Skips comprise
 the explicit golden generator, Docker-dependent PostgreSQL tests, unconfigured
-external Discord tests and two opt-in staging smoke tests. The 43 RemoteCleanupTest
+external Discord tests and three opt-in staging cases. The 43 RemoteCleanupTest
 cases plus four EEWService 404/status cases and one SQL adapter compatibility case
 all passed. Local API tests separately verify stale-webhook safety and D1 rollback.
-The existing read-only RemoteStagingSmokeTest was also explicitly run against the
-deployed staging Worker and passed (1 test), including a real 10-second revision
-poll. This used the existing `.env` read token in process memory only; it does not
-substitute for the pending writer smoke or Bot cutover.
+The three opt-in cases passed separately against staging using the existing `.env`
+common token in process memory only. This does not substitute for actual Bot cutover.

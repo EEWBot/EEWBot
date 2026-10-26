@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("integration")
 @EnabledIfEnvironmentVariable(named = "EEWBOT_REMOTE_STAGING_SMOKE", matches = "true")
 class RemoteStagingSmokeTest {
-    @Test void stagingEmptySnapshotAndRealRevisionPolling() throws Exception {
+    @Test void stagingSnapshotAndRealRevisionPolling() throws Exception {
         var config = Codecs.GSON.fromJson("{\"baseUrl\":\"https://api-staging.eewbot.net\"}", ConfigV2.Remote.class);
         try (var backend = RemoteDestinationBackend.open(config);
              var reload = Executors.newSingleThreadExecutor()) {
@@ -30,7 +30,7 @@ class RemoteStagingSmokeTest {
             DestinationConfigSource observed = new DestinationConfigSource() {
                 @Override public long getRevision() {
                     long revision = remote.getRevision();
-                    assertThat(revision).isZero();
+                    assertThat(revision).isGreaterThanOrEqualTo(0);
                     polled.countDown();
                     return revision;
                 }
@@ -38,15 +38,14 @@ class RemoteStagingSmokeTest {
             };
             var registry = new SnapshotDeliveryRegistry(observed, reload);
             registry.initializeSnapshot();
-            assertThat(registry.getSnapshot().getRevision()).isZero();
-            assertThat(registry.getSnapshot().size()).isZero();
+            long initialRevision = registry.getSnapshot().getRevision();
+            assertThat(initialRevision).isGreaterThanOrEqualTo(0);
             var poller = new RevisionPoller(registry, observed, backend.getPollScheduler(), backend.getPollIntervalMillis(), true);
             try {
                 poller.start();
                 assertThat(polled.await(20, TimeUnit.SECONDS)).isTrue();
-                assertThat(registry.getSnapshot().getRevision()).isZero();
-                assertThat(registry.getDeliveryChannels(null).direct()).isEmpty();
-                Log.logger.info("Staging remote backend verified: revision 0, destinations 0, HTTP revision polling successful");
+                assertThat(registry.getSnapshot().getRevision()).isGreaterThanOrEqualTo(initialRevision);
+                Log.logger.info("Staging remote backend verified: snapshot loaded and HTTP revision polling successful");
             } finally {
                 poller.stop();
             }

@@ -136,8 +136,8 @@ RemoteReadOnlyDestinationCleanupへ送る。D1もローカルDBも変更せず�
 `Remote cleanup NOT applied` と警告する。URL一括無効化の返値は0件。
 終了時saveはno-op。成功した設定変更として報告しない。
 無効な配信先が次の配信時にも残り得るため、ステージング用の暫定措置。
-`cleanupEnabled:true`の場合は、専用Access認証と起動時のAPI互換性確認を経て
-RemoteDestinationCleanupを使用する。詳細・制限・切り替え手順は
+`cleanupEnabled:true`の場合は、共通Access認証と起動時のAPI互換性確認を経て
+RemoteDestinationCleanupを使用する（読み取りと共通のAccess認証）。詳細・制限・切り替え手順は
 [Remote Cleanup](remote-destination-cleanup.md)を参照。
 
 ## ステージング切り替え手順
@@ -156,7 +156,7 @@ RemoteDestinationCleanupを使用する。詳細・制限・切り替え手順�
    本番用Token、Discord Application、Worker、API URLを使用しない。
 5. ステージングのconfigだけを `type=remote` / `baseUrl=https://api-staging.eewbot.net` へ変更し、
    新しいJARで再起動する。
-6. `Delivery snapshot initialized: 0 channels, revision 0`、Local Interactions無効、
+6. `Delivery snapshot initialized` に現在の件数とRevisionが表示されること、Local Interactions無効、
    `RevisionPoller started with interval 10000 ms` を確認する。
    通常ログへSnapshot全文・ヘッダー・Webhook URLを出さない。配信先0件は正常。
 7. ステージングの管理下でAPI接続を一時的に遮断し、旧Snapshot保持と復旧後の収束を確認する。
