@@ -102,6 +102,20 @@ class QuakeInfoSnapshotTest {
     }
 
     @Test
+    void retainsExplicitNullDatesAndInvalidSerialSentinelInMetadata() throws Exception {
+        var report = spy(report(JMAXmlType.VXSE53,1,JMAInfoType.発表,SeismicIntensity.FOUR,START.plusSeconds(1600)));
+        doReturn(null).when(report).getReportDateTime();
+        doReturn(null).when(report).getDateTime();
+        doReturn("not-an-integer").when(report).getSerial();
+        var snapshot = QuakeInfoSnapshot.render((QuakeInfo) report,context(new QuakeInfoStore()),1,1);
+        var metadata = JsonParser.parseString(snapshot.metadataJson()).getAsJsonObject();
+        assertThat(metadata.has("reportDateTime")).isTrue();
+        assertThat(metadata.get("reportDateTime").isJsonNull()).isTrue();
+        assertThat(metadata.get("dateTime").isJsonNull()).isTrue();
+        assertThat(metadata.get("serial").getAsInt()).isEqualTo(-1);
+    }
+
+    @Test
     void notifiesOutsideTheStoreLockAndListenerFailuresDoNotInterruptReportAcceptance() throws Exception {
         var store = new QuakeInfoStore();
         var calls = new AtomicInteger();
