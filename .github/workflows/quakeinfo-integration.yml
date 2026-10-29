@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: EEWBot/eewbot-api
-          ref: 7905fd5c85f941305639cd675515477d362c4ed3
+          ref: 7d62c0920b99437a75d6b2c378714cb3ae77f736
           path: api
           persist-credentials: false
       - uses: actions/setup-java@v6
