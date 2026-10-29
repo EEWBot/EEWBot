@@ -1,0 +1,43 @@
+name: QuakeInfo publisher HTTP integration
+
+on:
+  pull_request:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+
+jobs:
+  local-workers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: core
+          submodules: recursive
+      - uses: actions/checkout@v7
+        with:
+          repository: EEWBot/eewbot-api
+          ref: 7905fd5c85f941305639cd675515477d362c4ed3
+          path: api
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: corretto
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - run: bash ./gradlew test shadowJar --no-daemon
+        working-directory: core
+      - run: npm ci
+        working-directory: api
+      - name: Verify actual Java publisher against local Workers and D1
+        run: npm run test:java
+        working-directory: api
+        env:
+          EEWBOT_CORE_DIR: ${{ github.workspace }}/core

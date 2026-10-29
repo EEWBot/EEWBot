@@ -29,10 +29,16 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
     private final java.net.http.HttpClient httpClient;
     private final QuakeInfoStore store;
     private final String remoteRoot;
+    private final Runnable onInitialLoadComplete;
 
     public JMAXmlLGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store, String debugFeedRoot) {
+        this(httpClient, store, debugFeedRoot, () -> {});
+    }
+
+    public JMAXmlLGateway(java.net.http.HttpClient httpClient, QuakeInfoStore store, String debugFeedRoot, Runnable onInitialLoadComplete) {
         this.httpClient = httpClient;
         this.store = store;
+        this.onInitialLoadComplete = onInitialLoadComplete;
         String root = StringUtils.isNotEmpty(debugFeedRoot) ? debugFeedRoot : DEFAULT_REMOTE_ROOT;
         this.remoteRoot = Strings.CS.appendIfMissing(root, "/");
     }
@@ -98,6 +104,7 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
         } catch (final Exception e) {
             onError(new EEWGatewayException(e));
         } finally {
+            this.onInitialLoadComplete.run();
             MDC.clear();
         }
     }

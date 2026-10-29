@@ -171,6 +171,7 @@ public class EEWBotFactory {
                     .subscribe(event -> initializedBot.handleDeletion(event.getChannel().getId().asLong(), false)));
 
             // 13. Gateway init
+            gatewayManager.initQuakeInfoPublisher(embedContext);
             gatewayManager.init();
 
             // 14. Shutdown hook (safety net)
