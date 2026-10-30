@@ -70,8 +70,7 @@ class RemoteCleanupStagingSmokeTest {
         String readSecret = System.getenv("EEWBOT_CF_ACCESS_CLIENT_SECRET");
         try (var reader = new RemoteConfigApiClient(config, readId, readSecret);
              var writer = new RemoteCleanupApiClient(config, readId, readSecret)) {
-            reader.checkCompatibility();
-            writer.checkCompatibility();
+            reader.revision();
             var source = new RemoteDestinationConfigSource(reader);
             long revision = source.getRevision();
             assertThat(writer.mutate("destinations", Map.of("targetIds", List.of()))).isZero();

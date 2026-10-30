@@ -36,10 +36,11 @@ config.json, Git, command arguments, logs or PRs. `.env`
 is not loaded by the Bot. Credentials are captured at startup; rotate them in the
 service environment and restart. Never enable JDK HTTP/header debugging.
 
-When enabled, backend initialization checks both reader metadata and writer
-`GET /internal/v2/cleanup/meta` for version 2 / `destinationCleanup`, before
-connecting to Discord. Missing credentials, unauthorized or incompatible writer
-fail startup and close acquired clients. No SQL fallback or silent read-only fallback.
+The API has no metadata endpoint. Backend initialization probes the reader with
+`GET /internal/v2/config/revision` before connecting to Discord; the writer shares
+the same Access credentials and has no side-effect-free endpoint, so it is only
+constructed. Missing credentials or an unauthorized reader fail startup and close
+acquired clients. No SQL fallback or silent read-only fallback.
 
 The writer fixes its origin to the validated HTTPS base URL, uses only fixed paths,
 never follows redirects, and attaches the common Access credentials. The existing
@@ -91,7 +92,7 @@ statuses, including 405/429/503, fail and back off. The worker sleeps; Gateway a
 delivery threads do not. This is pacing of distinct notifications, not a retry of
 the failed one. Failed notifications are logged and dropped, with no durable retry.
 HTTP 200 releases backoff only after the complete response schema is validated.
-Missing/negative `affected` and invalid metadata preserve the failure count and
+Missing/negative `affected` preserves the failure count and
 defer subsequent operations; consecutive invalid responses increase the delay.
 
 `webhookUrlsUnavailable` keeps its synchronous **actual affected-row count** by

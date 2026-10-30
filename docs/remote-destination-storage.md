@@ -11,7 +11,7 @@ EEWBotFactory → RemoteDestinationBackend
                 ├─ RemoteConfigApiClient（標準java.net.http.HttpClient）
                 ├─ RemoteDestinationConfigSource
                 └─ 専用Revisionポーリングscheduler
-起動 → GET meta → 互換性確認 → GET snapshot → initializeSnapshot
+起動 → GET revision（到達性・認証確認）→ GET snapshot → initializeSnapshot
      → RevisionPoller（固定遅延10秒）→ GET revision
        → 変更時だけSnapshotDeliveryRegistryの専用executorでGET snapshot
        → 全件検証 → immutable DeliverySnapshot → AtomicReference交換
@@ -20,7 +20,7 @@ EEWBotFactory → RemoteDestinationBackend
 
 SQLモードは既存のbackend、管理レジストリ、2秒ポーリングを利用する。
 Remoteではポーリング専用スレッドを使い、DMData等の共有schedulerを占有しない。
-初回読取は同期処理で、metaまたはSnapshotの取得・検証失敗はDiscord接続前に起動を中止する。
+初回読取は同期処理で、revisionまたはSnapshotの取得・検証失敗はDiscord接続前に起動を中止する。
 Revision 0・配信先0件は正常で、この場合は通常のチャンネル配信が発生しない。
 
 BackendがHTTP client、そのexecutor、ポーリングschedulerを所有する。
@@ -50,7 +50,7 @@ HTTPの終了には[標準HttpClientのshutdownNow](https://docs.oracle.com/en/j
 
 `pollIntervalMillis` は1〜3,600,000ms、両timeoutは1〜60,000ms。
 `maxSnapshotBytes` は正のintで、既定32MiB。大規模Snapshotに合わせて調整できる。
-meta/revisionは各64KiBまで。Content-Lengthのないchunkedレスポンスも制限する。
+revisionは64KiBまで。Content-Lengthのないchunkedレスポンスも制限する。
 JSONのネスト上限32、単一文字列上限8192文字。設定を巨大化するとパース後のメモリも
 増えるため、JVMのヒープ容量に合わせる。request timeoutは接続・ヘッダー・本文完了までを含む。
 
@@ -71,7 +71,6 @@ secret/environment設定を使用する。既存の手元の `.env` に `API_CLI
 
 | GETの固定パス | 必須データ |
 | --- | --- |
-| `/internal/v2/meta` | `apiVersion: 2`、capabilitiesに `configRevision` と `deliverySnapshot` |
 | `/internal/v2/config/revision` | `revision` |
 | `/internal/v2/config/snapshot` | `revision` と `destinations` 配列 |
 

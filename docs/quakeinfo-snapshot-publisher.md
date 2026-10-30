@@ -42,12 +42,11 @@ I18n maps existing locale directories ja_JP/en_US/zh_TW/ko_Hanja/ko_KP to API co
 ja_jp/en_us/zh_tw/ko_hanja/ko_kp. RendererQueryFactory stays in Java; generated
 image URLs are preserved, and the Renderer HMAC key never goes to Workers/D1.
 
-Every packed message is serialized as a separate embed array. Five languages
-are **never stored in one D1 row**; each language can occupy multiple rows,
-preserving order and boundaries even when message counts differ between languages.
+Every packed message is serialized as one embed array (1–10 embed objects).
 Actual UTF-8 limits are 64KiB/message, 512KiB/language and 2MiB/snapshot; at most
-16 messages/language. EmbedPacker applies the existing Discord limits. Any language
-or limit failure aborts rendering before uploading an incomplete snapshot.
+16 messages/language. EmbedPacker applies the existing Discord limits; Workers
+validates embeds only shallowly, so these limits are Core's responsibility. Any
+language or limit failure aborts rendering before anything is sent.
 
 Store writes notify listeners **outside** the Store lock, including long-feed
 reference loads and older VXSE51/VXSE53 reports used by VXSE52/VXSE61. The original
@@ -55,39 +54,35 @@ latest selection logic is unchanged. Store version is checked before/after the
 complete five-language render; a concurrent reference change discards that render.
 The long-feed gateway also signals after initial loading finishes. Publisher
 start requests synchronization, and periodic reconciliation repairs missed signals
-or missing remote state. Unchanged source and rendered-content fingerprints avoid
-unnecessary snapshots. Updates during work are coalesced into one pending flag.
+or missing remote state. An unchanged body fingerprint avoids unnecessary sends
+between reconciliations. Updates during work are coalesced into one pending flag.
 No HTTP request or full Embed generation runs under the Store lock.
 
-## Ordering and retries
+## Request, ordering and retries
 
-One scheduled executor owns boot UUID, epoch, monotonic sequence and immutable
-pending snapshot. Workers issues an idempotent lease per boot UUID. An old process
-fenced by a newer epoch stops publishing and **never reacquires an epoch**. Only
-the intended active Core should be restarted. UUIDs must not be reused across boots.
-Workers keeps lease retry receipts for seven days.
+Core runs as a single instance, so there are no leases, epochs, sequences,
+snapshot IDs, manifests or fencing. Publication is one request:
 
-Source order is `(reportDateTime, dateTime, parsed int serial, infoType priority)`;
-null dates are oldest and invalid int serial is -1. Priorities are announcement 0,
-correction 1, cancellation 2. A newer generation cannot replace a newer source
-with an older source. For a tied source identity, a greater epoch/sequence supports
-rerendering after new reference intensity/image information. Different source
-identities tied on ordering remain first-accepted, matching Store behavior.
+```
+PUT /internal/v2/quakeinfo/latest
+{"eventId", "reportType", "reportDateTime"|null, "dateTime"|null, "serial",
+ "infoType", "languages": {"ja_jp": [[embed, ...], ...], ...all five...}}
+→ 200 {"accepted": true|false, "revision": n}
+```
 
-Create metadata/expected manifests, PUT every language/message, then POST commit.
-Only a complete validated snapshot is published atomically. Requests use parameter-
-validated paths, finite connection/full-response timeouts, no redirects, and a
-32KiB response cap. Error diagnostics are static or allowlisted codes only.
+Workers orders by `(reportDateTime ?? "", dateTime ?? "", serial, infoType priority)`
+(発表 0, 訂正 1, 取消 2; the priority is derived from `infoType`). Invalid int serial
+is -1. A strictly newer stored report yields `accepted: false`; an equal key replaces
+the stored one, so resending identical bytes is idempotent.
 
-Retries use capped exponential backoff; new signals cannot bypass backoff.
-The same pending object retains its ID, serialized metadata, bytes and hashes.
-A newer local state replaces a failed intermediate snapshot with a new sequence.
-After an uncertain Commit (including timeout after successful publication), read
-latest/meta before deciding whether to retry. A successful remote ID is accepted;
-an already-newer source conflict is remembered until local content/source changes,
-avoiding unlimited rejected snapshots. Periodic reconciliation checks that the
-last published ID/hash still exists. GatewayManager closes the publisher before
-other executors, removes its listener, interrupts HTTP and waits up to five seconds.
+Requests use a fixed path, finite connection/full-response timeouts, no redirects,
+and a 32KiB response cap. Error diagnostics are static or allowlisted codes read
+from `{"error":{"code":"..."}}`. Only 5xx and transport failures are retried, with
+capped exponential backoff that new signals cannot bypass; a retry resends the
+same body. A 4xx is remembered for that body fingerprint and not retried until the
+rendered content changes. Periodic reconciliation resends the current latest so a
+reset remote state is repaired. GatewayManager closes the publisher before other
+executors, removes its listener, interrupts HTTP and waits up to five seconds.
 
 Workers reads saved embeds for `/quakeinfo`; it never asks Core at command time.
 Core can stop while the last committed snapshot remains available. Publication,
@@ -98,8 +93,8 @@ independent `quake_latest.quake_revision` tracks earthquake data.
 
 Run `./gradlew test` and `./gradlew shadowJar`. Unit tests reuse existing VXSE51,
 52,53,61 XML, verify five languages, exact packing, images, corrections/cancellations,
-reference enrichment, initialization from long feed, version races, failures,
-idempotent retry, ambiguous commits, reconciliation and fencing. Local HttpServer
+reference enrichment, initialization from long feed, version races, transient
+failures resending identical bytes, non-retried 4xx and reconciliation. Local HttpServer
 tests cover Access headers, redirects, slow/oversized responses and sanitization.
 
 The API repository's `npm run test:java` adds real Java → loopback Workers/D1

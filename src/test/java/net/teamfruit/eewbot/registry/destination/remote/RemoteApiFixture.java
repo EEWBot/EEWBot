@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /** Every test request stays on a bound loopback server, including redirect/error tests. */
 final class RemoteApiFixture implements AutoCloseable {
-    static final String META = "/internal/v2/meta";
     static final String REVISION = "/internal/v2/config/revision";
     static final String SNAPSHOT = "/internal/v2/config/snapshot";
     static final String ID = "synthetic-client-id";
@@ -40,7 +39,6 @@ final class RemoteApiFixture implements AutoCloseable {
         this.server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         this.server.setExecutor(this.executor);
         this.server.createContext("/", this::respond);
-        reply(META, 200, "{\"apiVersion\":2,\"capabilities\":[\"configRevision\",\"deliverySnapshot\"]}");
         reply(REVISION, 200, "{\"revision\":0}");
         reply(SNAPSHOT, 200, "{\"revision\":0,\"destinations\":[]}");
         this.server.start();

@@ -61,25 +61,6 @@ public final class RemoteCleanupApiClient implements AutoCloseable {
         return value;
     }
 
-    public void checkCompatibility() {
-        request("meta", null, RemoteCleanupApiClient::validateCompatibility);
-    }
-
-    private static void validateCompatibility(JsonNode meta) {
-        JsonNode version = meta.get("apiVersion");
-        JsonNode capabilities = meta.get("capabilities");
-        if (version == null || !version.isIntegralNumber() || !version.canConvertToInt() || version.intValue() != 2
-                || capabilities == null || !capabilities.isArray()) {
-            throw new RemoteConfigException("Incompatible remote cleanup API");
-        }
-        boolean supported = false;
-        for (JsonNode capability : capabilities) {
-            if (!capability.isTextual()) throw new RemoteConfigException("Invalid cleanup capabilities");
-            supported |= "destinationCleanup".equals(capability.textValue());
-        }
-        if (!supported) throw new RemoteConfigException("Remote API lacks destinationCleanup capability");
-    }
-
     int mutate(String operation, Object body) {
         if (!OPERATIONS.contains(operation) || body == null) throw new RemoteConfigException("Invalid cleanup operation");
         JsonNode result = request(operation, body, RemoteCleanupApiClient::validateMutation);
@@ -100,17 +81,14 @@ public final class RemoteCleanupApiClient implements AutoCloseable {
             long delay = this.nextAttempt - System.nanoTime();
             if (delay > 0) TimeUnit.NANOSECONDS.sleep(delay);
             if (this.closed.get()) throw new RemoteConfigException("Remote cleanup client is closed");
-            HttpRequest.Builder builder = HttpRequest.newBuilder(this.origin.resolve(PREFIX + operation))
+            byte[] bytes = this.mapper.writeValueAsBytes(body);
+            if (bytes.length > 128 * 1024) throw new RemoteConfigException("Cleanup body size exceeded");
+            HttpRequest request = HttpRequest.newBuilder(this.origin.resolve(PREFIX + operation))
                     .timeout(Duration.ofMillis(this.timeoutMillis))
                     .header("CF-Access-Client-Id", this.clientId).header("CF-Access-Client-Secret", this.clientSecret)
-                    .header("Accept", "application/json").header("Cache-Control", "no-store");
-            if (body == null) builder.GET();
-            else {
-                byte[] bytes = this.mapper.writeValueAsBytes(body);
-                if (bytes.length > 128 * 1024) throw new RemoteConfigException("Cleanup body size exceeded");
-                builder.header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofByteArray(bytes));
-            }
-            pending = this.http.sendAsync(builder.build(), info ->
+                    .header("Accept", "application/json").header("Cache-Control", "no-store")
+                    .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofByteArray(bytes)).build();
+            pending = this.http.sendAsync(request, info ->
                     new RemoteConfigApiClient.LimitedBodySubscriber(info.statusCode() == 200 ? 64 * 1024 : 0));
             HttpResponse<byte[]> response = pending.get(this.timeoutMillis, TimeUnit.MILLISECONDS);
             int status = response.statusCode();

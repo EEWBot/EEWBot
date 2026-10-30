@@ -31,7 +31,7 @@ public final class RemoteDestinationBackend implements DestinationBackend {
                 System.getenv("EEWBOT_CF_ACCESS_CLIENT_ID"), System.getenv("EEWBOT_CF_ACCESS_CLIENT_SECRET")));
     }
 
-    // Takes ownership before compatibility discovery, including failure.
+    // Takes ownership before the startup probe, including failure.
     static RemoteDestinationBackend initialize(ConfigV2.Remote config, RemoteConfigApiClient client) {
         return initialize(config, client, () -> new RemoteCleanupApiClient(config,
                 System.getenv("EEWBOT_CF_ACCESS_CLIENT_ID"), System.getenv("EEWBOT_CF_ACCESS_CLIENT_SECRET")));
@@ -41,11 +41,10 @@ public final class RemoteDestinationBackend implements DestinationBackend {
                                                java.util.function.Supplier<RemoteCleanupApiClient> cleanupFactory) {
         RemoteCleanupApiClient cleanupClient = null;
         try {
-            client.checkCompatibility();
-            if (config.isCleanupEnabled()) {
-                cleanupClient = cleanupFactory.get();
-                cleanupClient.checkCompatibility();
-            }
+            // Fail startup on unreachable or unauthorized Access before connecting to Discord.
+            // The writer shares these credentials and has no side-effect-free endpoint to probe.
+            client.revision();
+            if (config.isCleanupEnabled()) cleanupClient = cleanupFactory.get();
             return new RemoteDestinationBackend(config, client, cleanupClient);
         } catch (RuntimeException | Error e) {
             if (cleanupClient != null) cleanupClient.close();

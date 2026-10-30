@@ -19,6 +19,9 @@ class QuakeInfoSnapshotPublisherTest {
     static ConfigV2.QuakeInfoPublisher config() {
         return Codecs.GSON.fromJson("{\"reconcileIntervalMillis\":30,\"retryInitialMillis\":30,\"retryMaxMillis\":100}", ConfigV2.QuakeInfoPublisher.class);
     }
+    static ConfigV2.QuakeInfoPublisher slowReconcile() {
+        return Codecs.GSON.fromJson("{\"reconcileIntervalMillis\":3600000,\"retryInitialMillis\":30,\"retryMaxMillis\":100}", ConfigV2.QuakeInfoPublisher.class);
+    }
     static void await(BooleanSupplier condition) throws Exception {
         long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
         while (!condition.getAsBoolean() && System.nanoTime() < deadline) Thread.sleep(10);
@@ -28,67 +31,56 @@ class QuakeInfoSnapshotPublisherTest {
         return (QuakeInfo) report(JMAXmlType.VXSE53, serial, JMAInfoType.発表, SeismicIntensity.FOUR, START.plusSeconds(1600 + serial));
     }
     static final class Fake implements QuakeInfoSnapshotClient {
-        final List<QuakeInfoSnapshot> creates = new CopyOnWriteArrayList<>();
-        final AtomicInteger commits = new AtomicInteger();
-        final AtomicInteger reads = new AtomicInteger();
-        final AtomicInteger leases = new AtomicInteger();
-        volatile Latest latest = new Latest(null,null,0);
-        volatile boolean failCreate;
-        volatile boolean uncertainCommit;
-        volatile boolean fenced;
+        final List<QuakeInfoSnapshot> sent = new CopyOnWriteArrayList<>();
+        final AtomicInteger stored = new AtomicInteger();
+        volatile int failStatus;
+        volatile boolean newerStored;
         volatile boolean closed;
-        volatile QuakeInfoSnapshot pending;
-        @Override public long lease(String id) { leases.incrementAndGet(); return 1; }
-        @Override public void create(QuakeInfoSnapshot snapshot) {
-            creates.add(snapshot);
-            if (fenced) throw new Failure(409,"publisher_fenced");
-            if (failCreate) throw new Failure(503,"transport_or_invalid_response");
-            pending = snapshot;
+        @Override public Result publish(QuakeInfoSnapshot snapshot) {
+            sent.add(snapshot);
+            if (failStatus != 0) throw new Failure(failStatus, "synthetic");
+            if (newerStored) return new Result(false, stored.get());
+            return new Result(true, stored.incrementAndGet());
         }
-        @Override public void put(String id,String lang,int index,String body) { }
-        @Override public void commit(String id) {
-            commits.incrementAndGet(); latest = new Latest(id,pending.contentHash(),1);
-            if (uncertainCommit) { uncertainCommit = false; throw new Failure(0,"transport_or_invalid_response"); }
-        }
-        @Override public Latest latest() { reads.incrementAndGet(); return latest; }
         @Override public void close() { closed = true; }
     }
+    static String body(QuakeInfoSnapshot snapshot) { return snapshot.body(); }
     @Test void pushesPreloadedStateAndSubsequentStoreUpdatesThenCloses() throws Exception {
         var store = new QuakeInfoStore(); store.putReport(quake(1)); var client = new Fake();
-        try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,config())) {
-            publisher.start(); await(() -> client.commits.get() == 1);
-            store.putReport(quake(2)); await(() -> client.commits.get() == 2);
-            assertThat(client.creates.getLast().messages()).hasSize(5);
-            assertThat(client.creates.getLast().snapshotId()).isNotEqualTo(client.creates.getFirst().snapshotId());
+        try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,slowReconcile())) {
+            publisher.start(); await(() -> client.stored.get() == 1);
+            store.putReport(quake(2)); await(() -> client.stored.get() == 2);
+            assertThat(body(client.sent.getLast())).contains("\"serial\":2");
+            assertThat(client.sent).hasSize(2);
         }
         assertThat(client.closed).isTrue();
     }
-    @Test void failuresUseSameIdAndBytesWhileGatewayUpdatesRemainAvailable() throws Exception {
-        var store = new QuakeInfoStore(); store.putReport(quake(1)); var client = new Fake(); client.failCreate = true;
+    @Test void transientFailuresResendSameBytesWhileGatewayUpdatesRemainAvailable() throws Exception {
+        var store = new QuakeInfoStore(); store.putReport(quake(1)); var client = new Fake(); client.failStatus = 503;
         try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,config())) {
-            publisher.start(); await(() -> client.creates.size() >= 2);
-            assertThat(client.creates.get(0)).isSameAs(client.creates.get(1));
+            publisher.start(); await(() -> client.sent.size() >= 2);
+            assertThat(client.sent.get(0).body()).isEqualTo(client.sent.get(1).body());
             store.putReport(quake(2)); assertThat(store.getLatestReport()).isPresent();
-            client.failCreate = false; await(() -> client.commits.get() >= 1);
-            assertThat(client.creates.getLast().metadataJson()).contains("\"serial\":2");
+            client.failStatus = 0; await(() -> client.stored.get() >= 1);
+            assertThat(body(client.sent.getLast())).contains("\"serial\":2");
         }
     }
-    @Test void reconcilesAmbiguousCommitBeforeRetryAndRepairsMissingRemoteState() throws Exception {
-        var store = new QuakeInfoStore(); store.putReport(quake(1)); var client = new Fake(); client.uncertainCommit = true;
+    @Test void clientErrorsAreNotRetriedUntilContentChanges() throws Exception {
+        var store = new QuakeInfoStore(); store.putReport(quake(1)); var client = new Fake(); client.failStatus = 400;
         try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,config())) {
-            publisher.start(); await(() -> client.commits.get() == 1 && client.reads.get() > 0);
-            assertThat(client.creates).hasSize(1);
-            client.latest = new QuakeInfoSnapshotClient.Latest(null,null,0);
-            await(() -> client.commits.get() == 2);
+            publisher.start(); await(() -> client.sent.size() == 1);
+            Thread.sleep(200);
+            assertThat(client.sent).hasSize(1);
+            client.failStatus = 0; store.putReport(quake(2)); await(() -> client.stored.get() == 1);
+            assertThat(body(client.sent.getLast())).contains("\"serial\":2");
         }
     }
-    @Test void stopsWhenFencedAndNeverAcquiresAnotherEpoch() throws Exception {
-        var store = new QuakeInfoStore(); store.putReport(quake(1)); var client = new Fake(); client.fenced = true;
+    @Test void periodicReconcileRepublishesUnchangedContentEvenWhenNewerIsStored() throws Exception {
+        var store = new QuakeInfoStore(); store.putReport(quake(1)); var client = new Fake(); client.newerStored = true;
         try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,config())) {
-            publisher.start(); await(publisher::isFenced);
-            store.putReport(quake(2)); publisher.requestSync();
-            assertThat(client.leases).hasValue(1);
-            assertThat(client.commits).hasValue(0);
+            publisher.start(); await(() -> client.sent.size() >= 3);
+            assertThat(client.sent).extracting(QuakeInfoSnapshot::body).containsOnly(client.sent.getFirst().body());
+            assertThat(client.stored).hasValue(0);
         }
     }
     @Test void disabledByDefaultAndIndependentOfDatabaseMode() {
@@ -123,9 +115,9 @@ class QuakeInfoSnapshotPublisherTest {
             new net.teamfruit.eewbot.gateway.JMAXmlLGateway(http,store,origin,() -> {
                 assertThat(store.getLatestReport()).isPresent(); completed.incrementAndGet(); publisher.requestSync();
             }).run();
-            await(() -> client.commits.get() > 0);
+            await(() -> client.stored.get() > 0);
             assertThat(completed).hasValue(1);
-            assertThat(client.creates.getLast().metadataJson()).contains("VXSE53");
+            assertThat(body(client.sent.getLast())).contains("VXSE53");
         } finally { server.stop(0); Thread.currentThread().setName(threadName); }
     }
 
@@ -139,8 +131,8 @@ class QuakeInfoSnapshotPublisherTest {
         }).when(first).createEmbeds(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any());
         store.putReport(first);
         try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,config())) {
-            publisher.start(); await(() -> client.commits.get() > 0);
-            assertThat(client.creates).allSatisfy(snapshot -> assertThat(snapshot.metadataJson()).contains("\"serial\":2"));
+            publisher.start(); await(() -> client.stored.get() > 0);
+            assertThat(client.sent).allSatisfy(snapshot -> assertThat(snapshot.body()).contains("\"serial\":2"));
         }
     }
 }
