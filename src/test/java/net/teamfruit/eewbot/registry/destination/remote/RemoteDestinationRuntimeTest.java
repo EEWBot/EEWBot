@@ -50,7 +50,6 @@ class RemoteDestinationRuntimeTest {
     }
 
     private SnapshotDeliveryRegistry initialize() {
-        this.client.checkCompatibility();
         var source = new RemoteDestinationConfigSource(this.client);
         var registry = new SnapshotDeliveryRegistry(source, this.reload);
         registry.initializeSnapshot();

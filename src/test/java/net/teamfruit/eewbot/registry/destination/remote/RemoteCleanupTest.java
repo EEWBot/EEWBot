@@ -45,7 +45,6 @@ class RemoteCleanupTest {
     private final AtomicInteger active = new AtomicInteger();
     private final AtomicInteger maxActive = new AtomicInteger();
     private final AtomicReference<String> responseBody = new AtomicReference<>("{\"affected\":2}");
-    private final AtomicReference<String> metaBody = new AtomicReference<>("{\"apiVersion\":2,\"capabilities\":[\"destinationCleanup\"]}");
     private volatile CountDownLatch gate;
     private volatile long delayMillis;
     private volatile boolean slowBody;
@@ -75,10 +74,8 @@ class RemoteCleanupTest {
                     exchange.getResponseBody().flush();
                     Thread.sleep(this.delayMillis);
                 }
-                if (!path.endsWith("/meta") && this.status.get() == 200) this.afterMutation.run();
-                String reply = path.endsWith("/meta") && this.status.get() == 200
-                        ? this.metaBody.get() : this.responseBody.get();
-                exchange.getResponseBody().write(reply.getBytes(StandardCharsets.UTF_8));
+                if (this.status.get() == 200) this.afterMutation.run();
+                exchange.getResponseBody().write(this.responseBody.get().getBytes(StandardCharsets.UTF_8));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } finally { this.active.decrementAndGet(); }
@@ -112,6 +109,7 @@ class RemoteCleanupTest {
     private void queue(int capacity, long shutdown, long countWait) {
         this.cleanup = new RemoteDestinationCleanup(this.client, capacity, shutdown, countWait);
     }
+    private void mutateGuild() { this.client.mutate("guild", Map.of("guildId", "1")); }
     private static void await(BooleanSupplier condition) throws Exception {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         while (!condition.getAsBoolean() && System.nanoTime() < deadline) Thread.sleep(10);
@@ -119,7 +117,6 @@ class RemoteCleanupTest {
     }
 
     @Test void commonCredentialsAndAllContractsKeepTokensOutOfBodies() throws Exception {
-        this.client.checkCompatibility();
         queue(256, 5000, 5000);
         this.cleanup.guildDeleted(1234567890123456789L);
         this.cleanup.destinationDeleted(TARGET);
@@ -127,15 +124,15 @@ class RemoteCleanupTest {
         this.cleanup.webhooksUnavailable(Map.of(TARGET, new DeliveryTarget(TARGET, "ja_jp", URL)));
         assertThat(this.cleanup.webhookUrlsUnavailable(List.of(URL, URL.replace("thread_id=", "other=")))).isEqualTo(2);
         this.cleanup.close();
-        assertThat(this.requests).hasSize(6).allSatisfy(r -> {
+        assertThat(this.requests).hasSize(5).allSatisfy(r -> {
             assertThat(r.id()).isEqualTo(ID);
             assertThat(r.secret()).isEqualTo(SECRET);
             assertThat(r.body()).doesNotContain("synthetic-webhook-token", "https://", SECRET);
         });
-        assertThat(this.requests.getFirst().method()).isEqualTo("GET");
-        assertThat(JSON.readTree(this.requests.get(1).body())).isEqualTo(JSON.readTree("{\"guildId\":\"1234567890123456789\"}"));
-        assertThat(JSON.readTree(this.requests.get(3).body()).get("targetIds")).hasSize(2);
-        JsonNode guarded = JSON.readTree(this.requests.get(4).body()).get("targets").get(0);
+        assertThat(this.requests).allSatisfy(r -> assertThat(r.method()).isEqualTo("POST"));
+        assertThat(JSON.readTree(this.requests.get(0).body())).isEqualTo(JSON.readTree("{\"guildId\":\"1234567890123456789\"}"));
+        assertThat(JSON.readTree(this.requests.get(2).body()).get("targetIds")).hasSize(2);
+        JsonNode guarded = JSON.readTree(this.requests.get(3).body()).get("targets").get(0);
         assertThat(guarded.get("targetId").textValue()).isEqualTo(Long.toString(TARGET));
         assertThat(guarded.get("expectedWebhookId").textValue()).isEqualTo("1234567890123456792");
         assertThat(this.requests.getLast().path()).isEqualTo("/internal/v2/cleanup/webhook-ids");
@@ -201,7 +198,7 @@ class RemoteCleanupTest {
         this.cleanup.destinationDeleted(3);
         assertThat(this.requests).hasSize(2);
         assertThat(this.logs.list).anySatisfy(e -> assertThat(e.getFormattedMessage()).contains("queue full or closed"));
-        assertThatThrownBy(this.client::checkCompatibility).hasMessageContaining("closed");
+        assertThatThrownBy(this::mutateGuild).hasMessageContaining("closed");
     }
 
     @Test void shutdownDeadlineWarnsAndCancelsPendingOperations() throws Exception {
@@ -273,20 +270,6 @@ class RemoteCleanupTest {
                 .isGreaterThan(TimeUnit.MILLISECONDS.toNanos(950));
     }
 
-    @Test void invalidMetadataAlsoBacksOffTheNextOperation() throws Exception {
-        this.metaBody.set("{\"apiVersion\":2,\"capabilities\":[]}");
-        assertThatThrownBy(this.client::checkCompatibility).hasMessageContaining("destinationCleanup capability");
-        queue(256, 5000, 5000);
-        this.cleanup.guildDeleted(1);
-        this.cleanup.close();
-
-        assertThat(this.requests).hasSize(2);
-        assertThat(this.requests.get(0).path()).endsWith("/meta");
-        assertThat(this.requests.get(1).path()).endsWith("/guild");
-        assertThat(this.requests.get(1).time() - this.requests.get(0).time())
-                .isGreaterThan(TimeUnit.MILLISECONDS.toNanos(450));
-    }
-
     @Test void rejectsOversizedChunkedResponse() {
         this.responseBody.set(" ".repeat(65537));
         assertThatThrownBy(() -> this.client.mutate("guild", Map.of("guildId", "1")))
@@ -297,7 +280,7 @@ class RemoteCleanupTest {
         try (var other = new RemoteApiFixture()) {
             this.status.set(302);
             this.redirect = other.origin() + "/steal";
-            assertThatThrownBy(this.client::checkCompatibility).hasMessageContaining("302");
+            assertThatThrownBy(this::mutateGuild).hasMessageContaining("302");
             assertThat(other.total()).isZero();
         }
     }
@@ -331,7 +314,7 @@ class RemoteCleanupTest {
         assertThat(this.requests).isEmpty();
     }
 
-    @Test void backendChecksWriterOnlyWhenEnabledAndOwnsBothClients() throws Exception {
+    @Test void backendCreatesWriterOnlyWhenEnabledAndOwnsBothClients() throws Exception {
         try (var readerApi = new RemoteApiFixture()) {
             var disabled = new ConfigV2.Remote();
             assertThat(disabled.isCleanupEnabled()).isFalse();
@@ -346,20 +329,23 @@ class RemoteCleanupTest {
             try (var backend = RemoteDestinationBackend.initialize(enabled, readerApi.client(), () -> this.client)) {
                 assertThat(backend.getCleanup()).isInstanceOf(RemoteDestinationCleanup.class);
             }
-            assertThat(this.requests).singleElement().satisfies(r -> assertThat(r.id()).isEqualTo(ID));
+            assertThat(this.requests).isEmpty();
             assertThat(readerApi.badHeaders).hasValue(0);
-            assertThatThrownBy(this.client::checkCompatibility).hasMessageContaining("closed");
+            assertThatThrownBy(this::mutateGuild).hasMessageContaining("closed");
         }
     }
 
-    @Test void startupFailureClosesReaderAndWriterWithoutSqlFallback() throws Exception {
-        this.status.set(403);
+    @Test void startupFailureClosesReaderAndNeverOpensWriterWithoutSqlFallback() throws Exception {
         try (var readerApi = new RemoteApiFixture()) {
+            readerApi.reply(RemoteApiFixture.REVISION, 403, "{}");
             var reader = readerApi.client();
-            assertThatThrownBy(() -> RemoteDestinationBackend.initialize(config(2000, true), reader, () -> this.client))
-                    .hasMessageContaining("403");
-            assertThatThrownBy(reader::checkCompatibility).hasMessageContaining("closed");
-            assertThatThrownBy(this.client::checkCompatibility).hasMessageContaining("closed");
+            var factory = new AtomicInteger();
+            assertThatThrownBy(() -> RemoteDestinationBackend.initialize(config(2000, true), reader, () -> {
+                factory.incrementAndGet(); return this.client;
+            })).hasMessageContaining("denied");
+            assertThatThrownBy(reader::revision).hasMessageContaining("closed");
+            assertThat(factory).hasValue(0);
+            assertThat(this.requests).isEmpty();
         }
     }
 

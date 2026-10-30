@@ -89,24 +89,6 @@ public final class RemoteConfigApiClient implements AutoCloseable {
         return value;
     }
 
-    public void checkCompatibility() {
-        JsonNode meta = get("/internal/v2/meta", SMALL_RESPONSE_BYTES);
-        JsonNode version = meta.get("apiVersion");
-        JsonNode capabilities = meta.get("capabilities");
-        if (version == null || !version.isIntegralNumber() || !version.canConvertToInt() || version.intValue() != 2
-                || capabilities == null || !capabilities.isArray()) {
-            throw new RemoteConfigException("Incompatible remote configuration API");
-        }
-        boolean revision = false;
-        boolean snapshot = false;
-        for (JsonNode capability : capabilities) {
-            if (!capability.isTextual()) throw new RemoteConfigException("Invalid remote API capabilities");
-            revision |= capability.textValue().equals("configRevision");
-            snapshot |= capability.textValue().equals("deliverySnapshot");
-        }
-        if (!revision || !snapshot) throw new RemoteConfigException("Required remote API capabilities are missing");
-    }
-
     JsonNode revision() { return get("/internal/v2/config/revision", SMALL_RESPONSE_BYTES); }
     JsonNode snapshot() { return get("/internal/v2/config/snapshot", this.config.getMaxSnapshotBytes()); }
 

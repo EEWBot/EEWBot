@@ -18,7 +18,7 @@ class RemoteConfigApiClientTest {
 
     @Test void accessHeadersOnEveryEndpointAndEmptySnapshot() {
         try (var client = this.api.client()) {
-            client.checkCompatibility();
+            client.revision();
             var source = new RemoteDestinationConfigSource(client);
             assertThat(source.getRevision()).isZero();
             var snapshot = source.loadSnapshot();
@@ -54,49 +54,33 @@ class RemoteConfigApiClientTest {
 
     @ParameterizedTest @ValueSource(ints = {401, 403, 302, 429, 503})
     void httpFailuresAreSanitizedAndDeferredWithoutRedirects(int status) {
-        this.api.reply(META, status, SECRET + URL);
+        this.api.reply(REVISION, status, SECRET + URL);
         try (var client = this.api.client()) {
-            assertThatThrownBy(client::checkCompatibility).isInstanceOf(RemoteConfigException.class)
+            assertThatThrownBy(client::revision).isInstanceOf(RemoteConfigException.class)
                     .hasNoCause().hasMessageNotContaining(SECRET).hasMessageNotContaining(URL);
-            assertThatThrownBy(client::checkCompatibility).hasMessageContaining("backoff");
+            assertThatThrownBy(client::revision).hasMessageContaining("backoff");
         }
-        assertThat(this.api.count(META)).isEqualTo(1);
+        assertThat(this.api.count(REVISION)).isEqualTo(1);
         assertThat(this.api.count("/redirected")).isZero();
     }
 
     @ParameterizedTest @ValueSource(strings = {"not-json synthetic-token", "{} {}", "{\"apiVersion\":1,\"apiVersion\":2}", "[]", "null", "{\"apiVersion\":1,}"})
     void invalidJsonIsRejectedWithoutRawCause(String json) {
-        this.api.reply(META, 200, json);
+        this.api.reply(REVISION, 200, json);
         try (var client = this.api.client()) {
-            assertThatThrownBy(client::checkCompatibility).isInstanceOf(RemoteConfigException.class)
+            assertThatThrownBy(client::revision).isInstanceOf(RemoteConfigException.class)
                     .hasNoCause().hasMessageNotContaining("synthetic-token");
-        }
-    }
-
-    @ParameterizedTest @ValueSource(strings = {
-            "{\"apiVersion\":1,\"capabilities\":[\"configRevision\",\"deliverySnapshot\"]}",
-            "{\"apiVersion\":2,\"capabilities\":[\"configRevision\"]}",
-            "{\"apiVersion\":2,\"capabilities\":[]}",
-            "{\"apiVersion\":1.0,\"capabilities\":[]}",
-            "{\"apiVersion\":\"1\",\"capabilities\":[]}",
-            "{\"apiVersion\":2,\"capabilities\":[true]}"})
-    void incompatibleProtocolFailsStartup(String json) {
-        this.api.reply(META, 200, json);
-        try (var client = this.api.client()) {
-            assertThatThrownBy(() -> RemoteDestinationBackend.initialize(this.api.config(), client))
-                    .isInstanceOf(RemoteConfigException.class);
-            assertThatThrownBy(client::checkCompatibility).hasMessageContaining("closed");
         }
     }
 
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void timeoutCoversHeadersAndChunkedBody(boolean slowBody) {
-        this.api.replies.put(META, new Reply(200, "{}", 1000, slowBody));
+        this.api.replies.put(REVISION, new Reply(200, "{}", 1000, slowBody));
         try (var client = this.api.client(this.api.config(150, 1024))) {
             long start = System.nanoTime();
-            assertThatThrownBy(client::checkCompatibility).isInstanceOf(RemoteConfigException.class).hasNoCause();
+            assertThatThrownBy(client::revision).isInstanceOf(RemoteConfigException.class).hasNoCause();
             assertThat(System.nanoTime() - start).isLessThan(900_000_000L);
-            assertThatThrownBy(client::checkCompatibility).hasMessageContaining("backoff");
+            assertThatThrownBy(client::revision).hasMessageContaining("backoff");
         }
     }
 
@@ -115,7 +99,7 @@ class RemoteConfigApiClientTest {
     @Test void backendClosesClientOnDiscoveryFailure() {
         var client = mock(RemoteConfigApiClient.class);
         var failure = new RemoteConfigException("discovery failure");
-        doThrow(failure).when(client).checkCompatibility();
+        doThrow(failure).when(client).revision();
         assertThatThrownBy(() -> RemoteDestinationBackend.initialize(this.api.config(), client)).isSameAs(failure);
         verify(client).close();
     }

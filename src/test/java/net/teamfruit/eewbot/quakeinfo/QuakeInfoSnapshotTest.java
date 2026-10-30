@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.quakeinfo;
 
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.QuakeInfoStore;
@@ -13,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,6 +29,13 @@ class QuakeInfoSnapshotTest {
         return new EmbedContext(new RendererQueryFactory("https://renderer.example.test", "synthetic-renderer-key"), store, I18N);
     }
 
+    static JsonObject root(QuakeInfoSnapshot snapshot) { return JsonParser.parseString(snapshot.body()).getAsJsonObject(); }
+    static List<String> messages(QuakeInfoSnapshot snapshot, String lang) {
+        List<String> result = new ArrayList<>();
+        root(snapshot).getAsJsonObject("languages").getAsJsonArray(lang).forEach(message -> result.add(message.toString()));
+        return result;
+    }
+
     @ParameterizedTest
     @EnumSource(value = JMAXmlType.class, names = {"VXSE51", "VXSE52", "VXSE53", "VXSE61"})
     void preservesFiveLocalizedPackedMessagesImagesAndMetadata(JMAXmlType type) throws Exception {
@@ -35,27 +43,22 @@ class QuakeInfoSnapshotTest {
         var quake = (QuakeInfo) report(type, 1, JMAInfoType.発表, SeismicIntensity.FOUR, START.plusSeconds(1600));
         store.putReport(quake);
         var ctx = context(store);
-        var snapshot = QuakeInfoSnapshot.render(store.getLatestReport().orElseThrow(), ctx, 7, 8);
-        assertThat(snapshot.messages().keySet()).containsExactlyElementsOf(QuakeInfoSnapshot.LANGUAGES);
-        StringBuilder manifest = new StringBuilder();
+        var snapshot = QuakeInfoSnapshot.render(store.getLatestReport().orElseThrow(), ctx);
+        var root = root(snapshot);
+        assertThat(root.keySet()).containsExactly("eventId", "reportType", "reportDateTime", "dateTime", "serial", "infoType", "languages");
+        assertThat(root.getAsJsonObject("languages").keySet()).containsExactlyElementsOf(QuakeInfoSnapshot.LANGUAGES);
         for (String lang : QuakeInfoSnapshot.LANGUAGES) {
             var expected = EmbedPacker.pack(quake.createEmbeds(lang, ctx, () -> new I18nEmbedBuilder(lang, I18N)))
-                    .stream().map(EmbedRenderer::toDiscordEmbeds).map(Codecs.GSON::toJson).toList();
-            assertThat(snapshot.messages().get(lang)).isEqualTo(expected);
-            for (int i = 0; i < expected.size(); i++) {
-                String body = expected.get(i);
-                manifest.append(lang).append(':').append(i).append(':').append(QuakeInfoSnapshot.sha256(body))
-                        .append(':').append(body.getBytes(StandardCharsets.UTF_8).length).append('\n');
-                assertThat(body).contains("timestamp", "footer");
-            }
+                    .stream().map(EmbedRenderer::toDiscordEmbeds).map(Codecs.GSON::toJsonTree).map(Object::toString).toList();
+            assertThat(messages(snapshot, lang)).isEqualTo(expected);
+            for (String body : expected) assertThat(body).contains("timestamp", "footer");
         }
-        assertThat(snapshot.contentHash()).isEqualTo(QuakeInfoSnapshot.sha256(manifest.toString()));
-        var meta = JsonParser.parseString(snapshot.metadataJson()).getAsJsonObject();
-        assertThat(meta.get("publisherEpoch").getAsLong()).isEqualTo(7);
-        assertThat(meta.get("publisherSequence").getAsLong()).isEqualTo(8);
-        assertThat(meta.get("reportType").getAsString()).isEqualTo(type.name());
+        assertThat(snapshot.fingerprint()).isEqualTo(QuakeInfoSnapshot.sha256(snapshot.body()));
+        assertThat(root.get("reportType").getAsString()).isEqualTo(type.name());
+        assertThat(root.get("infoType").getAsString()).isEqualTo("発表");
+        assertThat(root.get("serial").getAsInt()).isEqualTo(1);
         if (type == JMAXmlType.VXSE51 || type == JMAXmlType.VXSE53)
-            assertThat(snapshot.messages().get("ja_jp").getFirst()).contains("https://renderer.example.test");
+            assertThat(messages(snapshot, "ja_jp").getFirst()).contains("https://renderer.example.test");
     }
 
     @ParameterizedTest
@@ -63,12 +66,13 @@ class QuakeInfoSnapshotTest {
     void rendersCorrectionsAndBodylessCancellations(JMAXmlType type) throws Exception {
         for (JMAInfoType infoType : List.of(JMAInfoType.訂正, JMAInfoType.取消)) {
             var quake = (QuakeInfo) report(type, 2, infoType, SeismicIntensity.THREE, START.plusSeconds(1600));
-            var snapshot = QuakeInfoSnapshot.render(quake, context(new QuakeInfoStore()), 1, 1);
-            var meta = JsonParser.parseString(snapshot.metadataJson()).getAsJsonObject();
-            assertThat(meta.get("isCancel").getAsBoolean()).isEqualTo(infoType == JMAInfoType.取消);
-            assertThat(meta.get("infoTypePriority").getAsInt()).isEqualTo(infoType == JMAInfoType.取消 ? 2 : 1);
-            assertThat(snapshot.messages()).hasSize(5);
-            if (infoType == JMAInfoType.取消) assertThat(snapshot.messages().get("ja_jp").getFirst()).contains("取り消");
+            var snapshot = QuakeInfoSnapshot.render(quake, context(new QuakeInfoStore()));
+            var root = root(snapshot);
+            assertThat(root.get("infoType").getAsString()).isEqualTo(infoType.name());
+            assertThat(root.has("isCancel")).isFalse();
+            assertThat(root.has("infoTypePriority")).isFalse();
+            assertThat(root.getAsJsonObject("languages").keySet()).hasSize(5);
+            if (infoType == JMAInfoType.取消) assertThat(messages(snapshot, "ja_jp").getFirst()).contains("取り消");
         }
     }
 
@@ -77,15 +81,15 @@ class QuakeInfoSnapshotTest {
         var quake = spy((QuakeInfo) report(JMAXmlType.VXSE53, 1, JMAInfoType.発表, SeismicIntensity.FOUR, START.plusSeconds(1600)));
         var huge = PendingEmbed.empty().withDescription("分割テスト\n".repeat(2000));
         doReturn(List.of(huge)).when(quake).createEmbeds(anyString(), any(), any());
-        var snapshot = QuakeInfoSnapshot.render(quake, context(new QuakeInfoStore()), 1, 1);
-        assertThat(snapshot.messages().get("ja_jp").size()).isGreaterThan(1);
+        var snapshot = QuakeInfoSnapshot.render(quake, context(new QuakeInfoStore()));
+        assertThat(messages(snapshot, "ja_jp").size()).isGreaterThan(1);
         StringBuilder text = new StringBuilder();
-        for (String body : snapshot.messages().get("ja_jp")) {
+        for (String body : messages(snapshot, "ja_jp")) {
             for (var e : JsonParser.parseString(body).getAsJsonArray()) text.append(e.getAsJsonObject().get("description").getAsString());
         }
         assertThat(text.toString()).isEqualTo(huge.description());
         doThrow(new IllegalStateException("synthetic render error")).when(quake).createEmbeds(eq("ko_kp"), any(), any());
-        assertThatThrownBy(() -> QuakeInfoSnapshot.render(quake, context(new QuakeInfoStore()), 1, 1)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> QuakeInfoSnapshot.render(quake, context(new QuakeInfoStore()))).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -93,12 +97,14 @@ class QuakeInfoSnapshotTest {
         var store = new QuakeInfoStore();
         var latest = (QuakeInfo) report(JMAXmlType.VXSE52, 1, JMAInfoType.発表, null, START.plusSeconds(1600));
         store.putReport(latest);
-        var before = QuakeInfoSnapshot.render(latest, context(store), 1, 1);
+        var before = QuakeInfoSnapshot.render(latest, context(store));
         store.putReport((QuakeInfo) report(JMAXmlType.VXSE51, 1, JMAInfoType.発表, SeismicIntensity.FOUR, START.plusSeconds(1500)));
-        var after = QuakeInfoSnapshot.render(latest, context(store), 1, 2);
+        var after = QuakeInfoSnapshot.render(latest, context(store));
         assertThat(store.getLatestReport()).containsSame(latest);
-        assertThat(after.sourceKey()).isEqualTo(before.sourceKey());
-        assertThat(after.contentHash()).isNotEqualTo(before.contentHash());
+        var beforeKey = root(before); beforeKey.remove("languages");
+        var afterKey = root(after); afterKey.remove("languages");
+        assertThat(afterKey).isEqualTo(beforeKey);
+        assertThat(after.fingerprint()).isNotEqualTo(before.fingerprint());
     }
 
     @Test
@@ -107,8 +113,8 @@ class QuakeInfoSnapshotTest {
         doReturn(null).when(report).getReportDateTime();
         doReturn(null).when(report).getDateTime();
         doReturn("not-an-integer").when(report).getSerial();
-        var snapshot = QuakeInfoSnapshot.render((QuakeInfo) report,context(new QuakeInfoStore()),1,1);
-        var metadata = JsonParser.parseString(snapshot.metadataJson()).getAsJsonObject();
+        var snapshot = QuakeInfoSnapshot.render((QuakeInfo) report,context(new QuakeInfoStore()));
+        var metadata = root(snapshot);
         assertThat(metadata.has("reportDateTime")).isTrue();
         assertThat(metadata.get("reportDateTime").isJsonNull()).isTrue();
         assertThat(metadata.get("dateTime").isJsonNull()).isTrue();

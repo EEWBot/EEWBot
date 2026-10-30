@@ -1,5 +1,6 @@
 package net.teamfruit.eewbot.quakeinfo;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
@@ -14,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -22,8 +22,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** Access credentials exist only in memory. Transport/parser exceptions are discarded. */
 public final class RemoteQuakeInfoSnapshotClient implements QuakeInfoSnapshotClient {
     private static final String PREFIX = "/internal/v2/quakeinfo";
-    private static final Set<String> SAFE_CODES = Set.of("publisher_fenced", "snapshot_conflict", "sequence_conflict",
-            "message_conflict", "snapshot_not_found", "incomplete_stale_or_fenced", "capacity_exceeded");
+    private static final Set<String> SAFE_CODES = Set.of("invalid_quakeinfo", "invalid_json", "body_too_large",
+            "unsupported_media_type", "access_required", "access_forbidden", "not_found", "method_not_allowed",
+            "storage_unavailable", "internal_error");
     private final HttpClient http;
     private final URI origin;
     private final String clientId;
@@ -61,32 +62,14 @@ public final class RemoteQuakeInfoSnapshotClient implements QuakeInfoSnapshotCli
         return value;
     }
 
-    private static String id(String value) {
-        if (!UUID.fromString(value).toString().equals(value)) throw new IllegalArgumentException("Invalid snapshot ID");
-        return value;
-    }
-
-    @Override public long lease(String publisherId) {
-        JsonObject body = new JsonObject(); body.addProperty("publisherId", id(publisherId));
+    @Override public Result publish(QuakeInfoSnapshot snapshot) {
+        JsonObject result = request("/latest", "PUT", snapshot.body());
         try {
-            long epoch = request("/publisher/lease", "POST", body.toString()).get("publisherEpoch").getAsLong();
-            if (epoch < 1 || epoch > 9007199254740991L) throw new Failure(0, "invalid_response");
-            return epoch;
-        } catch (Failure e) { throw e; }
-        catch (RuntimeException e) { throw new Failure(0, "invalid_response"); }
-    }
-    @Override public void create(QuakeInfoSnapshot snapshot) { request("/snapshots", "POST", snapshot.metadataJson()); }
-    @Override public void put(String snapshotId, String lang, int index, String body) {
-        if (!QuakeInfoSnapshot.LANGUAGES.contains(lang) || index < 0 || index >= 16) throw new IllegalArgumentException("Invalid snapshot message");
-        request("/snapshots/" + id(snapshotId) + "/messages/" + lang + "/" + index, "PUT", body);
-    }
-    @Override public void commit(String snapshotId) { request("/snapshots/" + id(snapshotId) + "/commit", "POST", "{}"); }
-    @Override public Latest latest() {
-        try {
-            JsonObject result = request("/latest/meta", "GET", null);
-            if (result.get("snapshot").isJsonNull()) return new Latest(null, null, 0);
-            JsonObject meta = result.getAsJsonObject("snapshot");
-            return new Latest(meta.get("snapshotId").getAsString(), meta.get("contentHash").getAsString(), meta.get("publisherEpoch").getAsLong());
+            JsonElement accepted = result.get("accepted");
+            long revision = result.get("revision").getAsLong();
+            if (!accepted.isJsonPrimitive() || !accepted.getAsJsonPrimitive().isBoolean()
+                    || revision < 0 || revision > 9007199254740991L) throw new Failure(0, "invalid_response");
+            return new Result(accepted.getAsBoolean(), revision);
         } catch (Failure e) { throw e; }
         catch (RuntimeException e) { throw new Failure(0, "invalid_response"); }
     }
@@ -107,7 +90,7 @@ public final class RemoteQuakeInfoSnapshotClient implements QuakeInfoSnapshotCli
             if (status != 200) {
                 String code = "request_rejected";
                 try {
-                    // v2 envelope: {"error":{"code":"..."}}
+                    // Envelope: {"error":{"code":"..."}}
                     String supplied = JsonParser.parseString(new String(response.body(), StandardCharsets.UTF_8))
                             .getAsJsonObject().getAsJsonObject("error").get("code").getAsString();
                     if (SAFE_CODES.contains(supplied)) code = supplied;

@@ -2,12 +2,9 @@ package net.teamfruit.eewbot.quakeinfo;
 
 /** Transport seam for deterministic tests without Access or Discord credentials. */
 public interface QuakeInfoSnapshotClient extends AutoCloseable {
-    record Latest(String snapshotId, String contentHash, long publisherEpoch) {}
-    long lease(String publisherId);
-    void create(QuakeInfoSnapshot snapshot);
-    void put(String snapshotId, String lang, int index, String body);
-    void commit(String snapshotId);
-    Latest latest();
+    /** accepted=false means the stored latest is strictly newer and the request was ignored. */
+    record Result(boolean accepted, long revision) {}
+    Result publish(QuakeInfoSnapshot snapshot);
     @Override void close();
 
     final class Failure extends RuntimeException {
@@ -20,5 +17,7 @@ public interface QuakeInfoSnapshotClient extends AutoCloseable {
         }
         public int status() { return this.status; }
         public String code() { return this.code; }
+        /** Only 5xx and transport failures (status 0) are worth retrying with the same body. */
+        public boolean retryable() { return this.status == 0 || this.status >= 500; }
     }
 }
