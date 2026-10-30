@@ -5,6 +5,7 @@ import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
@@ -23,7 +24,7 @@ class RemoteQuakeInfoSnapshotClientTest {
     @Test void sendsExistingCommonAccessHeadersAndExactJson() throws Exception {
         var server = HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
         var calls = new AtomicInteger();
-        server.createContext("/internal/v1/quakeinfo/publisher/lease",exchange -> {
+        server.createContext("/internal/v2/quakeinfo/publisher/lease",exchange -> {
             assertThat(exchange.getRequestMethod()).isEqualTo("POST");
             assertThat(exchange.getRequestHeaders().getFirst("CF-Access-Client-Id")).isEqualTo("synthetic-id");
             assertThat(exchange.getRequestHeaders().getFirst("CF-Access-Client-Secret")).isEqualTo("synthetic-secret");
@@ -42,7 +43,7 @@ class RemoteQuakeInfoSnapshotClientTest {
     void rejectsRedirectsAndSanitizesFailures(int status) throws Exception {
         var server = HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
         var redirected = new AtomicInteger();
-        server.createContext("/internal/v1/quakeinfo/publisher/lease",exchange -> {
+        server.createContext("/internal/v2/quakeinfo/publisher/lease",exchange -> {
             exchange.getRequestBody().readAllBytes();
             exchange.getResponseHeaders().set("Location","/secret-redirect");
             byte[] body = "{\"error\":\"SQL secret-token\"}".getBytes(StandardCharsets.UTF_8);
@@ -56,11 +57,32 @@ class RemoteQuakeInfoSnapshotClientTest {
             assertThat(redirected).hasValue(0);
         } finally { server.stop(0); }
     }
+    @ParameterizedTest @CsvSource(delimiter = '|', value = {
+            "409|{\"error\":{\"code\":\"publisher_fenced\"}}|publisher_fenced",
+            "409|{\"error\":{\"code\":\"snapshot_conflict\"}}|snapshot_conflict",
+            "503|{\"error\":{\"code\":\"capacity_exceeded\"}}|capacity_exceeded",
+            "503|{\"error\":{\"code\":\"storage_unavailable\"}}|request_rejected",
+            "409|{\"error\":\"publisher_fenced\"}|request_rejected",
+            "409|{\"error\":{\"code\":{}}}|request_rejected",
+            "409|{\"error\":{}}|request_rejected"})
+    void readsOnlyAllowlistedV2ErrorCodes(int status, String json, String expected) throws Exception {
+        var server = HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/internal/v2/quakeinfo/publisher/lease",exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            byte[] body = json.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(status,body.length); exchange.getResponseBody().write(body); exchange.close();
+        });
+        server.start();
+        try (var client = new RemoteQuakeInfoSnapshotClient(config("http://127.0.0.1:" + server.getAddress().getPort(),1000),"synthetic-id","synthetic-secret",true)) {
+            assertThatThrownBy(() -> client.lease(UUID.randomUUID().toString())).isInstanceOfSatisfying(QuakeInfoSnapshotClient.Failure.class,
+                    failure -> { assertThat(failure.status()).isEqualTo(status); assertThat(failure.code()).isEqualTo(expected); });
+        } finally { server.stop(0); }
+    }
     @ParameterizedTest @ValueSource(booleans = {true,false})
     void boundsSlowBodiesAndOversizedResponses(boolean slow) throws Exception {
         var server = HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
         var executor = Executors.newVirtualThreadPerTaskExecutor(); server.setExecutor(executor);
-        server.createContext("/internal/v1/quakeinfo/publisher/lease",exchange -> {
+        server.createContext("/internal/v2/quakeinfo/publisher/lease",exchange -> {
             try {
                 exchange.getRequestBody().readAllBytes(); exchange.sendResponseHeaders(200,0);
                 if (slow) Thread.sleep(1500);

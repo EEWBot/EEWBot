@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 
 /** Fixed-origin writer transport. A POST is attempted once, including ambiguous failures. */
 public final class RemoteCleanupApiClient implements AutoCloseable {
-    private static final String PREFIX = "/internal/v1/cleanup/";
+    private static final String PREFIX = "/internal/v2/cleanup/";
     private static final Set<String> OPERATIONS = Set.of("guild", "destinations", "webhooks", "webhook-ids");
     private final URI origin;
     private final String clientId;
@@ -68,7 +68,7 @@ public final class RemoteCleanupApiClient implements AutoCloseable {
     private static void validateCompatibility(JsonNode meta) {
         JsonNode version = meta.get("apiVersion");
         JsonNode capabilities = meta.get("capabilities");
-        if (version == null || !version.isIntegralNumber() || !version.canConvertToInt() || version.intValue() != 1
+        if (version == null || !version.isIntegralNumber() || !version.canConvertToInt() || version.intValue() != 2
                 || capabilities == null || !capabilities.isArray()) {
             throw new RemoteConfigException("Incompatible remote cleanup API");
         }
