@@ -67,13 +67,13 @@ secret/environment設定を使用する。既存の手元の `.env` に `API_CLI
 `API_CLIENT_SECRET` がある場合は、起動プロセス内で上記の名前にマッピングする。
 認証情報の内容を標準出力へ出したり、コマンド引数・PR・履歴・ログへ含めたりしない。
 
-## HTTP API v1の契約
+## HTTP API v2の契約
 
 | GETの固定パス | 必須データ |
 | --- | --- |
-| `/internal/v1/meta` | `apiVersion: 1`、capabilitiesに `configRevision` と `deliverySnapshot` |
-| `/internal/v1/config/revision` | `revision` |
-| `/internal/v1/config/snapshot` | `revision` と `destinations` 配列 |
+| `/internal/v2/meta` | `apiVersion: 2`、capabilitiesに `configRevision` と `deliverySnapshot` |
+| `/internal/v2/config/revision` | `revision` |
+| `/internal/v2/config/snapshot` | `revision` と `destinations` 配列 |
 
 各リクエストに `CF-Access-Client-Id` / `CF-Access-Client-Secret` を付与する。
 HTTPSを必須とし、origin以外のpath、userinfo、query、fragmentをbaseUrlで拒否する。
@@ -87,7 +87,7 @@ JSONは重複キー・末尾データ・不正JSONも拒否する。
 Snapshot API自身のrevisionを保持し、別のrevision取得結果で上書きしない。
 
 Destinationの全フィールドを必須とし、nullable項目も明示的なnullを要求する。
-targetId/channelId/threadId/guildId/webhookIdはdecimal文字列から直接long/Longに変換する。
+targetId/channelId/threadId/guildId/webhook.idはdecimal文字列から直接long/Longに変換する。
 浮動小数点を経由せず、NULLを維持する。配信フラグ5個はJSON boolean、minIntensityは
 0〜9の整数からSeismicIntensityへ変換する。langは文字列。
 targetIdの重複、型の不一致、欠落、不正値が1件でもあれば全体を拒否する。
@@ -95,11 +95,14 @@ targetIdの重複、型の不一致、欠落、不正値が1件でもあれば�
 **Snowflakeの制限:** APIは符号なし64bitを表現できるが、既存ChannelWebhook.id()や
 SQL等の符号付きlong経路との互換性のため、Java Remoteは1〜Long.MAX_VALUEの
 正規decimal文字列だけを受け入れる。Long.MAX_VALUE超はSnapshot全体を拒否し、
-別のIDへオーバーフローさせない。URL内のWebhook/thread IDにも同じ制限を適用する。
+別のIDへオーバーフローさせない。webhook.idにも同じ制限を適用する。
 
-webhookUrl=nullの場合はwebhookIdもnull。URLがある場合はDiscordのWebhook URL形式と
-webhookIdの一致を検証する。保存済みURLを `?thread_id=` や他のqueryも含めて保持する。
-thread_idの重複・不正値、他ホストやfragmentを含むWebhook URLは拒否する。
+`webhook` はnull、または `{"id": Snowflake文字列, "token": 文字列}` のobject。
+tokenは `[A-Za-z0-9_-]{20,256}` に限る。Webhook URLはCore側で
+`https://discord.com/api/webhooks/{id}/{token}` として組み立て、threadIdがnullでなければ
+`?thread_id={threadId}` を付与する。Remoteからhostやqueryを指定させない。
+
+エラー応答 `{"error":{"code":"..."}}` の本文は読まず、HTTPステータスだけで判定する。
 例外・ログには入力データや原因例外を添付しない。
 
 ## 障害・更新・巻き戻り

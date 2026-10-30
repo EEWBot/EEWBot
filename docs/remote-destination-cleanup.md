@@ -37,7 +37,7 @@ is not loaded by the Bot. Credentials are captured at startup; rotate them in th
 service environment and restart. Never enable JDK HTTP/header debugging.
 
 When enabled, backend initialization checks both reader metadata and writer
-`GET /internal/v1/cleanup/meta` for version 1 / `destinationCleanup`, before
+`GET /internal/v2/cleanup/meta` for version 2 / `destinationCleanup`, before
 connecting to Discord. Missing credentials, unauthorized or incompatible writer
 fail startup and close acquired clients. No SQL fallback or silent read-only fallback.
 
@@ -49,7 +49,7 @@ bodies and raw parser/transport causes are discarded.
 
 ## Operations and immutable delivery targets
 
-| Cleanup method | POST path under `/internal/v1/cleanup` | Body |
+| Cleanup method | POST path under `/internal/v2/cleanup` | Body |
 | --- | --- | --- |
 | `guildDeleted` | `/guild` | `guildId` decimal string |
 | `destinationDeleted`, `destinationsUnavailable` | `/destinations` | `targetIds` string array |

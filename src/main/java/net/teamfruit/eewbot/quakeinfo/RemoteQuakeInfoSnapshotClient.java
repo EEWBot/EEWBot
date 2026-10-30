@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Access credentials exist only in memory. Transport/parser exceptions are discarded. */
 public final class RemoteQuakeInfoSnapshotClient implements QuakeInfoSnapshotClient {
-    private static final String PREFIX = "/internal/v1/quakeinfo";
+    private static final String PREFIX = "/internal/v2/quakeinfo";
     private static final Set<String> SAFE_CODES = Set.of("publisher_fenced", "snapshot_conflict", "sequence_conflict",
             "message_conflict", "snapshot_not_found", "incomplete_stale_or_fenced", "capacity_exceeded");
     private final HttpClient http;
@@ -107,8 +107,9 @@ public final class RemoteQuakeInfoSnapshotClient implements QuakeInfoSnapshotCli
             if (status != 200) {
                 String code = "request_rejected";
                 try {
+                    // v2 envelope: {"error":{"code":"..."}}
                     String supplied = JsonParser.parseString(new String(response.body(), StandardCharsets.UTF_8))
-                            .getAsJsonObject().get("error").getAsString();
+                            .getAsJsonObject().getAsJsonObject("error").get("code").getAsString();
                     if (SAFE_CODES.contains(supplied)) code = supplied;
                 } catch (RuntimeException ignored) { }
                 throw new Failure(status, code);
