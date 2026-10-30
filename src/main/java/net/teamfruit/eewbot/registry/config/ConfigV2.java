@@ -14,6 +14,27 @@ public class ConfigV2 {
     private ExternalWebhook externalWebhook = new ExternalWebhook();
     private Advanced advanced = new Advanced();
     private Debug debug = new Debug();
+    private QuakeInfoPublisher quakeInfoPublisher = new QuakeInfoPublisher();
+
+    public QuakeInfoPublisher getQuakeInfoPublisher() { return this.quakeInfoPublisher; }
+
+    /** Independent of database mode. Access credentials are environment-only. */
+    public static class QuakeInfoPublisher {
+        private boolean enabled = false;
+        private String baseUrl = "https://api-staging.eewbot.net";
+        private long connectTimeoutMillis = 3000;
+        private long requestTimeoutMillis = 5000;
+        private long reconcileIntervalMillis = 60000;
+        private long retryInitialMillis = 1000;
+        private long retryMaxMillis = 60000;
+        public boolean isEnabled() { return this.enabled; }
+        public String getBaseUrl() { return this.baseUrl; }
+        public long getConnectTimeoutMillis() { return this.connectTimeoutMillis; }
+        public long getRequestTimeoutMillis() { return this.requestTimeoutMillis; }
+        public long getReconcileIntervalMillis() { return this.reconcileIntervalMillis; }
+        public long getRetryInitialMillis() { return this.retryInitialMillis; }
+        public long getRetryMaxMillis() { return this.retryMaxMillis; }
+    }
 
     public Base getBase() {
         return this.base;

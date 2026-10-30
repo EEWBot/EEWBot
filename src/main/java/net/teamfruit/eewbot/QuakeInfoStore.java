@@ -23,6 +23,12 @@ public class QuakeInfoStore {
     private final Cache<String, Map<JMAXmlType, History>> reports;
     private final AtomicReference<Instant> completeSince;
     private @Nullable QuakeInfo lastReport;
+    private long updateVersion;
+    private final java.util.concurrent.CopyOnWriteArrayList<Runnable> updateListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public void addUpdateListener(Runnable listener) { this.updateListeners.add(listener); }
+    public void removeUpdateListener(Runnable listener) { this.updateListeners.remove(listener); }
+    public synchronized long getUpdateVersion() { return this.updateVersion; }
 
     private static class History {
         private QuakeInfo latest;
@@ -59,21 +65,30 @@ public class QuakeInfoStore {
     }
 
     // Reference loading (including the long feed) never establishes delivery completeness.
-    public synchronized void putReport(QuakeInfo report) {
-        report.initQuakeInfoStore(this);
-        JMAReport jma = (JMAReport) report;
-        Map<JMAXmlType, History> event = event(report.getEventId());
-        History history = event.computeIfAbsent(JMAXmlType.from(jma.getClass()), key -> new History());
-        if (isNewer(report, history.latest))
-            history.latest = report;
-        if (!jma.isCancelReport()) {
-            if (isNewer(report, history.normal))
-                history.normal = report;
-            history.referenceMax = max(history.referenceMax, report.getQuakeInfoMaxInt().orElse(null));
+    public void putReport(QuakeInfo report) {
+        synchronized (this) {
+            report.initQuakeInfoStore(this);
+            JMAReport jma = (JMAReport) report;
+            Map<JMAXmlType, History> event = event(report.getEventId());
+            History history = event.computeIfAbsent(JMAXmlType.from(jma.getClass()), key -> new History());
+            if (isNewer(report, history.latest))
+                history.latest = report;
+            if (!jma.isCancelReport()) {
+                if (isNewer(report, history.normal))
+                    history.normal = report;
+                history.referenceMax = max(history.referenceMax, report.getQuakeInfoMaxInt().orElse(null));
+            }
+            this.reports.put(report.getEventId(), event);
+            if (isNewer(report, this.lastReport))
+                this.lastReport = report;
+            this.updateVersion++;
         }
-        this.reports.put(report.getEventId(), event);
-        if (isNewer(report, this.lastReport))
-            this.lastReport = report;
+        // A reference report can change the latest report's rendered intensity/image.
+        // Never call listeners while holding the Store lock, or let them stop normal delivery.
+        for (Runnable listener : this.updateListeners) {
+            try { listener.run(); }
+            catch (RuntimeException e) { Log.logger.warn("QuakeInfo store update listener failed"); }
+        }
     }
 
     // Called only after the message executor has accepted the ordinary report.
