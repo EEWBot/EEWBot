@@ -17,10 +17,7 @@ import static org.assertj.core.api.Assertions.*;
 
 class QuakeInfoSnapshotPublisherTest {
     static ConfigV2.QuakeInfoPublisher config() {
-        return Codecs.GSON.fromJson("{\"reconcileIntervalMillis\":30,\"retryInitialMillis\":30,\"retryMaxMillis\":100}", ConfigV2.QuakeInfoPublisher.class);
-    }
-    static ConfigV2.QuakeInfoPublisher slowReconcile() {
-        return Codecs.GSON.fromJson("{\"reconcileIntervalMillis\":3600000,\"retryInitialMillis\":30,\"retryMaxMillis\":100}", ConfigV2.QuakeInfoPublisher.class);
+        return Codecs.GSON.fromJson("{\"retryInitialMillis\":30,\"retryMaxMillis\":100}", ConfigV2.QuakeInfoPublisher.class);
     }
     static void await(BooleanSupplier condition) throws Exception {
         long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
@@ -47,7 +44,7 @@ class QuakeInfoSnapshotPublisherTest {
     static String body(QuakeInfoSnapshot snapshot) { return snapshot.body(); }
     @Test void pushesPreloadedStateAndSubsequentStoreUpdatesThenCloses() throws Exception {
         var store = new QuakeInfoStore(); store.putReport(quake(1)); var client = new Fake();
-        try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,slowReconcile())) {
+        try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,config())) {
             publisher.start(); await(() -> client.stored.get() == 1);
             store.putReport(quake(2)); await(() -> client.stored.get() == 2);
             assertThat(body(client.sent.getLast())).contains("\"serial\":2");
@@ -75,12 +72,25 @@ class QuakeInfoSnapshotPublisherTest {
             assertThat(body(client.sent.getLast())).contains("\"serial\":2");
         }
     }
-    @Test void periodicReconcileRepublishesUnchangedContentEvenWhenNewerIsStored() throws Exception {
+    @Test void sendsOnlyOnStartAndChangedContentWithoutPeriodicResend() throws Exception {
         var store = new QuakeInfoStore(); store.putReport(quake(1)); var client = new Fake(); client.newerStored = true;
         try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,config())) {
+            publisher.start(); await(() -> client.sent.size() == 1);
+            publisher.requestSync();
+            Thread.sleep(200);
+            assertThat(client.sent).hasSize(1);
+            client.newerStored = false; store.putReport(quake(2)); await(() -> client.stored.get() == 1);
+            assertThat(client.sent).hasSize(2);
+        }
+    }
+    @Test void failedSendRetriesUntilSuccessThenStops() throws Exception {
+        var store = new QuakeInfoStore(); store.putReport(quake(1)); var client = new Fake(); client.failStatus = 500;
+        try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,config())) {
             publisher.start(); await(() -> client.sent.size() >= 3);
-            assertThat(client.sent).extracting(QuakeInfoSnapshot::body).containsOnly(client.sent.getFirst().body());
-            assertThat(client.stored).hasValue(0);
+            client.failStatus = 0; await(() -> client.stored.get() == 1);
+            int sent = client.sent.size();
+            Thread.sleep(200);
+            assertThat(client.sent).hasSize(sent);
         }
     }
     @Test void disabledByDefaultAndIndependentOfDatabaseMode() {

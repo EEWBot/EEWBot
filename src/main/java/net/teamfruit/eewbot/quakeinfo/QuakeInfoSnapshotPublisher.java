@@ -7,7 +7,10 @@ import net.teamfruit.eewbot.registry.config.ConfigV2;
 
 import java.util.concurrent.*;
 
-/** One coalescing publisher; gateway callers only set a flag and schedule work. */
+/**
+ * One coalescing publisher; gateway callers only set a flag and schedule work.
+ * Publishes on start and on every Store update; a failed send stays dirty until it succeeds.
+ */
 public final class QuakeInfoSnapshotPublisher implements AutoCloseable {
     private final QuakeInfoStore store;
     private final EmbedContext context;
@@ -16,10 +19,9 @@ public final class QuakeInfoSnapshotPublisher implements AutoCloseable {
     private final ScheduledExecutorService executor;
     private final Runnable listener = this::requestSync;
     private ScheduledFuture<?> task;
-    private ScheduledFuture<?> periodic;
+    private boolean started;
     private boolean running;
     private boolean dirty;
-    private boolean reconcile;
     private boolean closed;
     // The following state is confined to the single executor.
     private long retryAt = System.nanoTime();
@@ -29,8 +31,7 @@ public final class QuakeInfoSnapshotPublisher implements AutoCloseable {
 
     public QuakeInfoSnapshotPublisher(QuakeInfoStore store, EmbedContext context, QuakeInfoSnapshotClient client,
                                       ConfigV2.QuakeInfoPublisher config) {
-        if (config.getReconcileIntervalMillis() < 10 || config.getReconcileIntervalMillis() > 3600000
-                || config.getRetryInitialMillis() < 10 || config.getRetryMaxMillis() < config.getRetryInitialMillis()
+        if (config.getRetryInitialMillis() < 10 || config.getRetryMaxMillis() < config.getRetryInitialMillis()
                 || config.getRetryMaxMillis() > 3600000)
             throw new IllegalArgumentException("Invalid QuakeInfo publisher intervals");
         this.store = store;
@@ -41,18 +42,15 @@ public final class QuakeInfoSnapshotPublisher implements AutoCloseable {
     }
 
     public synchronized void start() {
-        if (this.closed || this.periodic != null) return;
+        if (this.closed || this.started) return;
+        this.started = true;
         this.store.addUpdateListener(this.listener);
-        this.periodic = this.executor.scheduleWithFixedDelay(() -> request(true),
-                this.config.getReconcileIntervalMillis(), this.config.getReconcileIntervalMillis(), TimeUnit.MILLISECONDS);
-        request(true);
+        requestSync();
     }
 
-    public void requestSync() { request(false); }
-    private synchronized void request(boolean reconcile) {
+    public synchronized void requestSync() {
         if (this.closed) return;
         this.dirty = true;
-        this.reconcile |= reconcile;
         schedule();
     }
     private synchronized void schedule() {
@@ -62,17 +60,14 @@ public final class QuakeInfoSnapshotPublisher implements AutoCloseable {
     }
 
     private void run() {
-        boolean republish;
         synchronized (this) {
             this.task = null;
             if (this.closed) return;
             this.running = true;
             this.dirty = false;
-            republish = this.reconcile;
-            this.reconcile = false;
         }
         try {
-            synchronizeLatest(republish);
+            synchronizeLatest();
             this.retryDelay = 0;
             this.retryAt = System.nanoTime();
         } catch (QuakeInfoSnapshotClient.Failure e) {
@@ -87,16 +82,14 @@ public final class QuakeInfoSnapshotPublisher implements AutoCloseable {
         }
     }
 
-    private void synchronizeLatest(boolean republish) {
+    private void synchronizeLatest() {
         long version = this.store.getUpdateVersion();
         var latest = this.store.getLatestReport();
         if (latest.isEmpty()) return;
         QuakeInfoSnapshot rendered = QuakeInfoSnapshot.render(latest.get(), this.context);
         if (this.store.getUpdateVersion() != version) { requestSync(); return; }
         String fingerprint = rendered.fingerprint();
-        if (fingerprint.equals(this.rejectedFingerprint)) return;
-        // Periodic reconciliation resends unchanged content; an equal ordering key replaces it idempotently.
-        if (fingerprint.equals(this.lastFingerprint) && !republish) return;
+        if (fingerprint.equals(this.rejectedFingerprint) || fingerprint.equals(this.lastFingerprint)) return;
         try {
             this.client.publish(rendered);
         } catch (QuakeInfoSnapshotClient.Failure e) {
@@ -116,7 +109,6 @@ public final class QuakeInfoSnapshotPublisher implements AutoCloseable {
                 : Math.min(this.config.getRetryMaxMillis(), this.retryDelay * 2);
         this.retryAt = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(this.retryDelay);
         this.dirty = true;
-        this.reconcile = true;
     }
 
     @Override public void close() {

@@ -11,7 +11,6 @@ SQLite, PostgreSQL and remote destination storage independently.
     "baseUrl": "https://api-staging.eewbot.net",
     "connectTimeoutMillis": 3000,
     "requestTimeoutMillis": 5000,
-    "reconcileIntervalMillis": 60000,
     "retryInitialMillis": 1000,
     "retryMaxMillis": 60000
   }
@@ -21,7 +20,7 @@ SQLite, PostgreSQL and remote destination storage independently.
 Preserve the rest of config.json. Default is disabled, which creates no publisher
 or HTTP requests. The origin must be HTTPS without userinfo, path, query or fragment.
 Literal loopback HTTP is available only through package-local test constructors.
-Timeouts are 1–60000ms, reconciliation 10–3600000ms, retries 10–3600000ms with
+Timeouts are 1–60000ms, retries 10–3600000ms with
 maximum >= initial. The repository currently builds Java 21 sources with Java 25
 in CI; this change preserves that existing toolchain.
 
@@ -53,9 +52,9 @@ reference loads and older VXSE51/VXSE53 reports used by VXSE52/VXSE61. The origi
 latest selection logic is unchanged. Store version is checked before/after the
 complete five-language render; a concurrent reference change discards that render.
 The long-feed gateway also signals after initial loading finishes. Publisher
-start requests synchronization, and periodic reconciliation repairs missed signals
-or missing remote state. An unchanged body fingerprint avoids unnecessary sends
-between reconciliations. Updates during work are coalesced into one pending flag.
+start requests synchronization. There is no periodic resend: Core publishes only
+on start and on Store updates, and a failed send stays pending until it succeeds.
+An unchanged body fingerprint avoids resending identical content. Updates during work are coalesced into one pending flag.
 No HTTP request or full Embed generation runs under the Store lock.
 
 ## Request, ordering and retries
@@ -80,8 +79,8 @@ and a 32KiB response cap. Error diagnostics are static or allowlisted codes read
 from `{"error":{"code":"..."}}`. Only 5xx and transport failures are retried, with
 capped exponential backoff that new signals cannot bypass; a retry resends the
 same body. A 4xx is remembered for that body fingerprint and not retried until the
-rendered content changes. Periodic reconciliation resends the current latest so a
-reset remote state is repaired. GatewayManager closes the publisher before other
+rendered content changes. A reset remote state is repopulated on the next Core
+start or quake update. GatewayManager closes the publisher before other
 executors, removes its listener, interrupts HTTP and waits up to five seconds.
 
 Workers reads saved embeds for `/quakeinfo`; it never asks Core at command time.
@@ -94,7 +93,7 @@ independent `quake_latest.quake_revision` tracks earthquake data.
 Run `./gradlew test` and `./gradlew shadowJar`. Unit tests reuse existing VXSE51,
 52,53,61 XML, verify five languages, exact packing, images, corrections/cancellations,
 reference enrichment, initialization from long feed, version races, transient
-failures resending identical bytes, non-retried 4xx and reconciliation. Local HttpServer
+failures resending identical bytes, non-retried 4xx and no periodic resend. Local HttpServer
 tests cover Access headers, redirects, slow/oversized responses and sanitization.
 
 The API repository's `npm run test:java` adds real Java → loopback Workers/D1
