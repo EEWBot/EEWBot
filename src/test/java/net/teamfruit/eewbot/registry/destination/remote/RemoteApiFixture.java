@@ -18,12 +18,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /** Every test request stays on a bound loopback server, including redirect/error tests. */
 final class RemoteApiFixture implements AutoCloseable {
-    static final String META = "/internal/v1/meta";
-    static final String REVISION = "/internal/v1/config/revision";
-    static final String SNAPSHOT = "/internal/v1/config/snapshot";
+    static final String META = "/internal/v2/meta";
+    static final String REVISION = "/internal/v2/config/revision";
+    static final String SNAPSHOT = "/internal/v2/config/snapshot";
     static final String ID = "synthetic-client-id";
     static final String SECRET = "synthetic-client-secret";
-    static final String URL = "https://discord.com/api/webhooks/1234567890123456792/synthetic-token?thread_id=1234567890123456791";
+    static final String WEBHOOK_ID = "1234567890123456792";
+    static final String TOKEN = "synthetic-token-xxxxxxxxxxxx";
+    static final String URL = "https://discord.com/api/webhooks/" + WEBHOOK_ID + "/" + TOKEN + "?thread_id=1234567890123456791";
     static final long TARGET = 1234567890123456791L;
     static final ObjectMapper JSON = new ObjectMapper();
     final HttpServer server;
@@ -38,7 +40,7 @@ final class RemoteApiFixture implements AutoCloseable {
         this.server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         this.server.setExecutor(this.executor);
         this.server.createContext("/", this::respond);
-        reply(META, 200, "{\"apiVersion\":1,\"capabilities\":[\"configRevision\",\"deliverySnapshot\"]}");
+        reply(META, 200, "{\"apiVersion\":2,\"capabilities\":[\"configRevision\",\"deliverySnapshot\"]}");
         reply(REVISION, 200, "{\"revision\":0}");
         reply(SNAPSHOT, 200, "{\"revision\":0,\"destinations\":[]}");
         this.server.start();
@@ -103,8 +105,9 @@ final class RemoteApiFixture implements AutoCloseable {
         d.put("tsunami", true);
         d.put("minIntensity", 4);
         d.put("lang", "ja_jp");
-        d.put("webhookUrl", URL);
-        d.put("webhookId", "1234567890123456792");
+        ObjectNode webhook = d.putObject("webhook");
+        webhook.put("id", WEBHOOK_ID);
+        webhook.put("token", TOKEN);
         return d;
     }
 

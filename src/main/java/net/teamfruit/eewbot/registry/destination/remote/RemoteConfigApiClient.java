@@ -90,10 +90,10 @@ public final class RemoteConfigApiClient implements AutoCloseable {
     }
 
     public void checkCompatibility() {
-        JsonNode meta = get("/internal/v1/meta", SMALL_RESPONSE_BYTES);
+        JsonNode meta = get("/internal/v2/meta", SMALL_RESPONSE_BYTES);
         JsonNode version = meta.get("apiVersion");
         JsonNode capabilities = meta.get("capabilities");
-        if (version == null || !version.isIntegralNumber() || !version.canConvertToInt() || version.intValue() != 1
+        if (version == null || !version.isIntegralNumber() || !version.canConvertToInt() || version.intValue() != 2
                 || capabilities == null || !capabilities.isArray()) {
             throw new RemoteConfigException("Incompatible remote configuration API");
         }
@@ -107,8 +107,8 @@ public final class RemoteConfigApiClient implements AutoCloseable {
         if (!revision || !snapshot) throw new RemoteConfigException("Required remote API capabilities are missing");
     }
 
-    JsonNode revision() { return get("/internal/v1/config/revision", SMALL_RESPONSE_BYTES); }
-    JsonNode snapshot() { return get("/internal/v1/config/snapshot", this.config.getMaxSnapshotBytes()); }
+    JsonNode revision() { return get("/internal/v2/config/revision", SMALL_RESPONSE_BYTES); }
+    JsonNode snapshot() { return get("/internal/v2/config/snapshot", this.config.getMaxSnapshotBytes()); }
 
     // At most one request in flight across polling, reload and convergence checks.
     private synchronized JsonNode get(String path, int limit) {

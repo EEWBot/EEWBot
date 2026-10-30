@@ -74,12 +74,12 @@ class RemoteConfigApiClientTest {
     }
 
     @ParameterizedTest @ValueSource(strings = {
-            "{\"apiVersion\":2,\"capabilities\":[\"configRevision\",\"deliverySnapshot\"]}",
-            "{\"apiVersion\":1,\"capabilities\":[\"configRevision\"]}",
-            "{\"apiVersion\":1,\"capabilities\":[]}",
+            "{\"apiVersion\":1,\"capabilities\":[\"configRevision\",\"deliverySnapshot\"]}",
+            "{\"apiVersion\":2,\"capabilities\":[\"configRevision\"]}",
+            "{\"apiVersion\":2,\"capabilities\":[]}",
             "{\"apiVersion\":1.0,\"capabilities\":[]}",
             "{\"apiVersion\":\"1\",\"capabilities\":[]}",
-            "{\"apiVersion\":1,\"capabilities\":[true]}"})
+            "{\"apiVersion\":2,\"capabilities\":[true]}"})
     void incompatibleProtocolFailsStartup(String json) {
         this.api.reply(META, 200, json);
         try (var client = this.api.client()) {

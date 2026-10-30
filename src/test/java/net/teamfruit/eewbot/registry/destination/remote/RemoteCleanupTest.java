@@ -45,7 +45,7 @@ class RemoteCleanupTest {
     private final AtomicInteger active = new AtomicInteger();
     private final AtomicInteger maxActive = new AtomicInteger();
     private final AtomicReference<String> responseBody = new AtomicReference<>("{\"affected\":2}");
-    private final AtomicReference<String> metaBody = new AtomicReference<>("{\"apiVersion\":1,\"capabilities\":[\"destinationCleanup\"]}");
+    private final AtomicReference<String> metaBody = new AtomicReference<>("{\"apiVersion\":2,\"capabilities\":[\"destinationCleanup\"]}");
     private volatile CountDownLatch gate;
     private volatile long delayMillis;
     private volatile boolean slowBody;
@@ -138,7 +138,7 @@ class RemoteCleanupTest {
         JsonNode guarded = JSON.readTree(this.requests.get(4).body()).get("targets").get(0);
         assertThat(guarded.get("targetId").textValue()).isEqualTo(Long.toString(TARGET));
         assertThat(guarded.get("expectedWebhookId").textValue()).isEqualTo("1234567890123456792");
-        assertThat(this.requests.getLast().path()).endsWith("/webhook-ids");
+        assertThat(this.requests.getLast().path()).isEqualTo("/internal/v2/cleanup/webhook-ids");
         assertThat(JSON.readTree(this.requests.getLast().body()).get("webhookIds")).hasSize(1);
         assertThat(this.maxActive).hasValue(1);
     }
@@ -274,7 +274,7 @@ class RemoteCleanupTest {
     }
 
     @Test void invalidMetadataAlsoBacksOffTheNextOperation() throws Exception {
-        this.metaBody.set("{\"apiVersion\":1,\"capabilities\":[]}");
+        this.metaBody.set("{\"apiVersion\":2,\"capabilities\":[]}");
         assertThatThrownBy(this.client::checkCompatibility).hasMessageContaining("destinationCleanup capability");
         queue(256, 5000, 5000);
         this.cleanup.guildDeleted(1);

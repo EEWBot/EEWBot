@@ -26,7 +26,7 @@ class RemoteDestinationConfigSourceTest {
         ObjectNode channel = destination();
         channel.put("targetId", "9223372036854775807");
         channel.put("channelId", "9223372036854775807");
-        for (String name : new String[]{"threadId", "guildId", "webhookUrl", "webhookId"}) channel.putNull(name);
+        for (String name : new String[]{"threadId", "guildId", "webhook"}) channel.putNull(name);
         for (String name : new String[]{"eewAlert", "eewPrediction", "eewDecimation", "quakeInfo", "tsunami"}) {
             channel.put(name, !thread.get(name).booleanValue());
         }
@@ -49,7 +49,7 @@ class RemoteDestinationConfigSourceTest {
         assertThat(t.minIntensity()).isEqualTo(SeismicIntensity.FOUR);
         assertThat(t.webhook().getUrl()).isEqualTo(URL);
         assertThat(t.webhook().id()).isEqualTo(1234567890123456792L);
-        assertThat(t.webhook().token()).isEqualTo("synthetic-token");
+        assertThat(t.webhook().token()).isEqualTo(TOKEN);
         var c = snapshot.get(Long.MAX_VALUE);
         assertThat(c.channelId()).isEqualTo(Long.MAX_VALUE);
         assertThat(c.threadId()).isNull();
@@ -72,7 +72,7 @@ class RemoteDestinationConfigSourceTest {
     }
 
     @ParameterizedTest @ValueSource(strings = {"targetId", "channelId", "threadId", "guildId", "eewAlert", "eewPrediction",
-            "eewDecimation", "quakeInfo", "tsunami", "minIntensity", "lang", "webhookUrl", "webhookId"})
+            "eewDecimation", "quakeInfo", "tsunami", "minIntensity", "lang", "webhook"})
     void everyFieldIsRequired(String field) {
         var d = destination();
         d.remove(field);
@@ -82,7 +82,7 @@ class RemoteDestinationConfigSourceTest {
 
     @ParameterizedTest @CsvSource({"eewAlert,1", "eewPrediction,\"true\"", "eewDecimation,null", "quakeInfo,0", "tsunami,{}",
             "minIntensity,-1", "minIntensity,10", "minIntensity,4.5", "minIntensity,\"4\"", "lang,null", "lang,4",
-            "targetId,1234567890123456791", "channelId,1.2", "guildId,1", "threadId,true", "webhookUrl,1", "webhookId,1"})
+            "targetId,1234567890123456791", "channelId,1.2", "guildId,1", "threadId,true", "webhook,1", "webhook,[]", "webhook,\"https://discord.com/api/webhooks/1/x\""})
     void invalidTypesAndIntensityRejectSnapshot(String field, String json) throws Exception {
         var d = destination();
         d.set(field, JSON.readTree(json));
@@ -106,26 +106,46 @@ class RemoteDestinationConfigSourceTest {
         assertInvalid();
     }
 
-    @ParameterizedTest @ValueSource(strings = {"https://discord.com/api/webhooks/1234567890123456793/synthetic-token",
-            "https://discord.com/api/webhooks/1234567890123456792/synthetic-token?thread_id=18446744073709551615",
-            "https://discord.com/api/webhooks/1234567890123456792/synthetic-token?thread_id=1&thread_id=2",
-            "https://discord.com/api/webhooks/1234567890123456792/synthetic-token#fragment",
-            "https://elsewhere.example/api/webhooks/1234567890123456792/synthetic-token"})
-    void inconsistentOrInvalidWebhooksAreSanitized(String url) {
+    @Test void webhookUrlIsBuiltFromIdTokenAndThread() {
+        var unthreaded = destination();
+        unthreaded.put("targetId", "1234567890123456795");
+        unthreaded.putNull("threadId");
+        this.api.snapshot(1, destination(), unthreaded);
+        var snapshot = this.source.loadSnapshot();
+        assertThat(snapshot.get(TARGET).webhook().getUrl()).isEqualTo(URL);
+        assertThat(snapshot.get(1234567890123456795L).webhook().getUrl())
+                .isEqualTo("https://discord.com/api/webhooks/" + WEBHOOK_ID + "/" + TOKEN);
+    }
+
+    @ParameterizedTest @CsvSource(delimiter = '|', value = {
+            "id|null", "id|1", "id|\"0\"", "id|\"9223372036854775808\"", "id|\"https://elsewhere.example\"",
+            "token|null", "token|1", "token|\"short-token-xxxxxxx\"", "token|\"synthetic-token-xxxxxxxxxxx/\"",
+            "token|\"synthetic-token-xxxxxxxxxxxx?thread_id=1\"", "token|\"synthetic.token.xxxxxxxxxxxx\""})
+    void invalidWebhookObjectsAreSanitized(String field, String json) throws Exception {
         var d = destination();
-        d.put("webhookUrl", url);
+        ((ObjectNode) d.get("webhook")).set(field, JSON.readTree(json));
         this.api.snapshot(1, d);
         assertInvalid();
     }
 
-    @Test void nullWebhookMustHaveNullWebhookId() {
+    @ParameterizedTest @ValueSource(strings = {"id", "token"})
+    void webhookObjectRequiresIdAndToken(String field) {
         var d = destination();
-        d.putNull("webhookUrl");
+        ((ObjectNode) d.get("webhook")).remove(field);
         this.api.snapshot(1, d);
         assertInvalid();
-        d = destination();
-        d.putNull("webhookId");
+    }
+
+    @Test void tokenLengthBoundsAreInclusive() {
+        var d = destination();
+        ((ObjectNode) d.get("webhook")).put("token", "a".repeat(20));
         this.api.snapshot(1, d);
+        assertThat(this.source.loadSnapshot().get(TARGET).webhook().token()).hasSize(20);
+        ((ObjectNode) d.get("webhook")).put("token", "a".repeat(256));
+        this.api.snapshot(2, d);
+        assertThat(this.source.loadSnapshot().get(TARGET).webhook().token()).hasSize(256);
+        ((ObjectNode) d.get("webhook")).put("token", "a".repeat(257));
+        this.api.snapshot(3, d);
         assertInvalid();
     }
 

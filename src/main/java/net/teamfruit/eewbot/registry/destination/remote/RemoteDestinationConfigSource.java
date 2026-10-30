@@ -6,21 +6,16 @@ import net.teamfruit.eewbot.registry.destination.DestinationConfigSource;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 
-import java.net.URI;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Strict, all-or-nothing v1 conversion; never used by delivery lookups. */
+/** Strict, all-or-nothing v2 conversion; never used by delivery lookups. */
 public final class RemoteDestinationConfigSource implements DestinationConfigSource {
     private static final long MAX_REVISION = 9007199254740991L;
-    private static final Pattern WEBHOOK = Pattern.compile(
-            "https://discord\\.com/api/webhooks/([1-9][0-9]{0,18})/[A-Za-z0-9_-]+(?:\\?[^#\\s]*)?");
+    private static final Pattern TOKEN = Pattern.compile("[A-Za-z0-9_-]{20,256}");
     private final RemoteConfigApiClient client;
     private long lastSnapshotRevision = -1;
     private long lastPolledRevision = -1;
@@ -58,9 +53,7 @@ public final class RemoteDestinationConfigSource implements DestinationConfigSou
                 if (!targets.add(target)) throw invalid();
                 int intensity = integer(required(destination, "minIntensity"), 9).intValue();
                 String lang = string(required(destination, "lang"));
-                JsonNode webhookUrl = required(destination, "webhookUrl");
-                Long webhookId = snowflake(required(destination, "webhookId"), true);
-                ChannelWebhook webhook = webhook(webhookUrl, webhookId);
+                ChannelWebhook webhook = webhook(required(destination, "webhook"), thread);
                 channels.add(new DeliverySnapshot.DeliveryChannel(target, channel, thread, guild,
                         flag(destination, "eewAlert"), flag(destination, "eewPrediction"),
                         flag(destination, "eewDecimation"), flag(destination, "quakeInfo"), flag(destination, "tsunami"),
@@ -127,28 +120,15 @@ public final class RemoteDestinationConfigSource implements DestinationConfigSou
         return value.booleanValue();
     }
 
-    private static ChannelWebhook webhook(JsonNode value, Long id) {
-        if (value.isNull()) {
-            if (id != null) throw invalid();
-            return null;
-        }
-        String url = string(value);
-        Matcher matcher = WEBHOOK.matcher(url);
-        if (id == null || !matcher.matches() || Long.parseLong(matcher.group(1)) != id) throw invalid();
-        // Validate query Snowflakes without rebuilding or discarding the stored query.
-        String query = URI.create(url).getRawQuery();
-        int threads = 0;
-        if (query != null) {
-            for (String parameter : query.split("&")) {
-                String[] pair = parameter.split("=", 2);
-                if (URLDecoder.decode(pair[0], StandardCharsets.UTF_8).equals("thread_id")) {
-                    if (++threads > 1 || pair.length != 2) throw invalid();
-                    String thread = URLDecoder.decode(pair[1], StandardCharsets.UTF_8);
-                    if (!thread.matches("[1-9][0-9]{0,18}") || Long.parseLong(thread) <= 0) throw invalid();
-                }
-            }
-        }
-        return new ChannelWebhook(url);
+    private static ChannelWebhook webhook(JsonNode value, Long thread) {
+        if (value.isNull()) return null;
+        if (!value.isObject()) throw invalid();
+        long id = snowflake(required(value, "id"), false);
+        String token = string(required(value, "token"));
+        if (!TOKEN.matcher(token).matches()) throw invalid();
+        // v2 sends id/token only; Core owns the host and thread query so the remote cannot redirect delivery.
+        String url = "https://discord.com/api/webhooks/" + id + "/" + token;
+        return new ChannelWebhook(thread == null ? url : url + "?thread_id=" + thread);
     }
 
     private static RemoteConfigException invalid() {
