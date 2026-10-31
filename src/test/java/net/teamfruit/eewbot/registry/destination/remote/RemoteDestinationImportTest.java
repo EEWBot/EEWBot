@@ -127,19 +127,29 @@ class RemoteDestinationImportTest {
         insert(201, 201, 202L, 10L, 1, 1, "ja_jp", null);                    // thread target != thread_id
         insert(203, 203, 203L, 10L, 1, 1, "ja_jp", null);                    // thread whose parent is itself
         insert(204, 204, null, 10L, 1, 1, "fr_fr", null);                    // unknown lang
-        insert(205, 205, null, 10L, 1, 1, "ja_jp", "https://example.com/x"); // not a Discord webhook
-        insert(206, 206, null, 10L, 1, 1, "ja_jp", "https://discord.com/api/webhooks/300/short");
-        insert(207, 207, null, 10L, 1, 1, "ja_jp", "https://discord.com/api/webhooks/300/" + TOKEN + "/github");
         insert(208, 208, null, 10L, 1, 10, "ja_jp", null);                   // intensity out of range
-        insert(209, 209, null, 10L, 1, 1, "ja_jp", "https://discord.com/api/webhooks/abc/" + TOKEN);
+        // Unusable webhooks keep the row, imported without the webhook.
+        insert(300, 300, null, 10L, 1, 1, "ja_jp", "https://example.com/x");
+        insert(301, 301, null, 10L, 1, 1, "ja_jp", "https://discord.com/api/webhooks/300/short");
+        insert(302, 302, null, 10L, 1, 1, "ja_jp", "https://discord.com/api/webhooks/300/" + TOKEN + "/github");
+        insert(303, 303, null, 10L, 1, 1, "ja_jp", "https://discord.com/api/webhooks/abc/" + TOKEN);
+        insert(304, 304, null, 10L, 1, 1, "ja_jp", "https://discord.com/api/webhooks/0/" + TOKEN);
+        // The legacy discordapp.com host is normalized; the thread query stays out of the token.
+        insert(305, 300, 305L, 10L, 1, 1, "ja_jp", "https://discordapp.com/api/webhooks/301/" + TOKEN + "?thread_id=305");
 
         ChannelRegistrySql registry = ChannelRegistrySql.forSQLite(this.db);
         RemoteDestinationImport.Conversion conversion;
         try { conversion = RemoteDestinationImport.convert(registry.getDsl()); } finally { registry.close(); }
 
-        assertThat(conversion.skipped()).containsOnlyKeys(200L, 201L, 203L, 204L, 205L, 206L, 207L, 208L, 209L);
+        assertThat(conversion.skipped()).containsOnlyKeys(200L, 201L, 203L, 204L, 208L);
+        assertThat(conversion.webhookDropped()).containsOnlyKeys(300L, 301L, 302L, 303L, 304L);
         assertThat(conversion.skipped().values()).noneMatch(reason -> reason.contains(TOKEN));
-        assertThat((JsonNode) JSON.valueToTree(conversion.destinations())).isEqualTo(JSON.readTree("""
+        assertThat(conversion.webhookDropped().values()).noneMatch(reason -> reason.contains(TOKEN));
+        List<Map<String, Object>> rest = conversion.destinations().subList(3, conversion.destinations().size());
+        assertThat(rest).extracting(d -> d.get("targetId")).containsExactly("300", "301", "302", "303", "304", "305");
+        assertThat(rest.subList(0, 5)).allMatch(d -> d.containsKey("webhook") && d.get("webhook") == null);
+        assertThat(rest.get(5).get("webhook")).isEqualTo(Map.of("id", "301", "token", TOKEN));
+        assertThat((JsonNode) JSON.valueToTree(conversion.destinations().subList(0, 3))).isEqualTo(JSON.readTree("""
                 [{"targetId":"100","channelId":"100","threadId":null,"guildId":"10","eewAlert":true,"eewPrediction":false,
                   "eewDecimation":false,"quakeInfo":true,"tsunami":true,"minIntensity":4,"lang":"ja_jp",
                   "webhook":{"id":"300","token":"%1$s"}},
@@ -157,7 +167,7 @@ class RemoteDestinationImportTest {
 
         RemoteDestinationImport.Summary summary = execute("--chunk-size", "2");
 
-        assertThat(summary).isEqualTo(new RemoteDestinationImport.Summary(3, 3, 1, 0));
+        assertThat(summary).isEqualTo(new RemoteDestinationImport.Summary(3, 3, 1, 0, 0));
         assertThat(this.bodies).hasSize(2);
         assertThat(JSON.readTree(this.bodies.get(0)).get("destinations")).extracting(d -> d.get("targetId").textValue())
                 .containsExactly("100", "101");
@@ -166,13 +176,13 @@ class RemoteDestinationImportTest {
         assertThat(this.badCredentials).isFalse();
 
         // A re-run is a no-op upsert: everything is sent again, nothing is affected.
-        assertThat(execute()).isEqualTo(new RemoteDestinationImport.Summary(3, 0, 1, 0));
+        assertThat(execute()).isEqualTo(new RemoteDestinationImport.Summary(3, 0, 1, 0, 0));
     }
 
     @Test void retriesServerErrorsAndStopsOnClientErrors() throws Exception {
         insertValid();
         this.statuses.addAll(List.of(503, 429));
-        assertThat(execute()).isEqualTo(new RemoteDestinationImport.Summary(3, 3, 0, 0));
+        assertThat(execute()).isEqualTo(new RemoteDestinationImport.Summary(3, 3, 0, 0, 0));
         assertThat(this.bodies).hasSize(3).allMatch(this.bodies.getFirst()::equals);
 
         this.bodies.clear();

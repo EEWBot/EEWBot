@@ -32,6 +32,8 @@ public final class RemoteDestinationImport {
     static final Set<String> LANGS = Set.of("ja_jp", "en_us", "zh_tw", "ko_hanja", "ko_kp");
     // Core's snapshot reader requires 20-256 characters; a shorter token would make the whole snapshot unloadable.
     private static final Pattern TOKEN = Pattern.compile("[A-Za-z0-9_-]{20,256}");
+    private static final String WEBHOOK_PREFIX = "https://discord.com/api/webhooks/";
+    private static final String LEGACY_WEBHOOK_PREFIX = "https://discordapp.com/api/webhooks/";
 
     private static final Field<Long> TARGET_ID = field(name("target_id"), SQLDataType.BIGINT);
     private static final Field<Long> CHANNEL_ID = field(name("channel_id"), SQLDataType.BIGINT);
@@ -86,12 +88,16 @@ public final class RemoteDestinationImport {
         }
         conversion.skipped().forEach((targetId, reason) ->
                 Log.logger.warn("Skipping legacy destination {}: {}", targetId, reason));
-        Log.logger.info("Converted {} legacy destinations, skipped {}", conversion.destinations().size(), conversion.skipped().size());
+        conversion.webhookDropped().forEach((targetId, reason) ->
+                Log.logger.warn("Importing legacy destination {} without its webhook: {}", targetId, reason));
+        Log.logger.info("Converted {} legacy destinations, skipped {}, webhook dropped {}", conversion.destinations().size(),
+                conversion.skipped().size(), conversion.webhookDropped().size());
 
         if (options.dryRun) {
-            Log.logger.info("DRY RUN: would send {} destinations in {} chunks, skipped {}", conversion.destinations().size(),
-                    chunkCount(conversion.destinations().size(), options.chunkSize), conversion.skipped().size());
-            return new Summary(0, 0, conversion.skipped().size(), 0);
+            Log.logger.info("DRY RUN: would send {} destinations in {} chunks, skipped {}, webhook dropped {}",
+                    conversion.destinations().size(), chunkCount(conversion.destinations().size(), options.chunkSize),
+                    conversion.skipped().size(), conversion.webhookDropped().size());
+            return new Summary(0, 0, conversion.skipped().size(), conversion.webhookDropped().size(), 0);
         }
 
         String clientId = env.apply("EEWBOT_CF_ACCESS_CLIENT_ID");
@@ -109,14 +115,15 @@ public final class RemoteDestinationImport {
                 Log.logger.info("Imported chunk {}-{} of {} (affected {})", from + 1, from + chunk.size(), all.size(), changed);
             }
         } finally {
-            Log.logger.info("Import sent {} destinations, affected {}, skipped {}", sent, affected, conversion.skipped().size());
+            Log.logger.info("Import sent {} destinations, affected {}, skipped {}, webhook dropped {}", sent, affected,
+                    conversion.skipped().size(), conversion.webhookDropped().size());
         }
 
         int verifyFailures = 0;
         if (options.verify) {
             verifyFailures = verify(conversion.destinations(), options, clientId, clientSecret, allowLoopbackHttp);
         }
-        return new Summary(sent, affected, conversion.skipped().size(), verifyFailures);
+        return new Summary(sent, affected, conversion.skipped().size(), conversion.webhookDropped().size(), verifyFailures);
     }
 
     private static ChannelRegistrySql openLegacy(Options options) throws Exception {
@@ -137,10 +144,14 @@ public final class RemoteDestinationImport {
         return ChannelRegistrySql.forPostgreSQL(pg);
     }
 
-    /** Reads every legacy row in target_id order; rows the Worker would reject are skipped, never sent. */
+    /**
+     * Reads every legacy row in target_id order; rows the Worker would reject are skipped, never sent.
+     * An unusable webhook alone does not skip the row: it is imported without one and can be restored by /setup.
+     */
     static Conversion convert(DSLContext dsl) {
         List<Map<String, Object>> destinations = new ArrayList<>();
         Map<Long, String> skipped = new LinkedHashMap<>();
+        Map<Long, String> webhookDropped = new LinkedHashMap<>();
         dsl.select(TARGET_ID, CHANNEL_ID, THREAD_ID, GUILD_ID, EEW_ALERT, EEW_PREDICTION, EEW_DECIMATION, QUAKE_INFO,
                         TSUNAMI, MIN_INTENSITY, LANG, WEBHOOK_URL)
                 .from(table(name("destinations")))
@@ -148,15 +159,15 @@ public final class RemoteDestinationImport {
                 .fetch()
                 .forEach(r -> {
                     try {
-                        destinations.add(convert(r));
+                        destinations.add(convert(r, webhookDropped));
                     } catch (Skip e) {
                         skipped.put(r.get(TARGET_ID), e.getMessage());
                     }
                 });
-        return new Conversion(destinations, skipped);
+        return new Conversion(destinations, skipped, webhookDropped);
     }
 
-    static Map<String, Object> convert(Record r) {
+    static Map<String, Object> convert(Record r, Map<Long, String> webhookDropped) {
         long targetId = snowflake(r.get(TARGET_ID), "targetId");
         long channelId = snowflake(r.get(CHANNEL_ID), "channelId");
         Long threadId = r.get(THREAD_ID) == null ? null : snowflake(r.get(THREAD_ID), "threadId");
@@ -181,7 +192,13 @@ public final class RemoteDestinationImport {
         d.put("tsunami", flag(r.get(TSUNAMI), "tsunami"));
         d.put("minIntensity", intensity.intValue());
         d.put("lang", lang);
-        d.put("webhook", webhook(r.get(WEBHOOK_URL)));
+        Map<String, Object> webhook = null;
+        try {
+            webhook = webhook(r.get(WEBHOOK_URL));
+        } catch (Skip e) {
+            webhookDropped.put(targetId, e.getMessage());
+        }
+        d.put("webhook", webhook);
         return d;
     }
 
@@ -199,6 +216,8 @@ public final class RemoteDestinationImport {
         if (url == null) return null;
         long id;
         String token;
+        // Legacy rows may still hold the old host; id and token are the same on both.
+        if (url.startsWith(LEGACY_WEBHOOK_PREFIX)) url = WEBHOOK_PREFIX + url.substring(LEGACY_WEBHOOK_PREFIX.length());
         try {
             ChannelWebhook webhook = new ChannelWebhook(url);
             id = webhook.id();
@@ -299,9 +318,9 @@ public final class RemoteDestinationImport {
         System.out.println("  --request-timeout-millis <n>  Per-request timeout (default: 30000)");
     }
 
-    record Conversion(List<Map<String, Object>> destinations, Map<Long, String> skipped) { }
+    record Conversion(List<Map<String, Object>> destinations, Map<Long, String> skipped, Map<Long, String> webhookDropped) { }
 
-    record Summary(int sent, int affected, int skipped, int verifyFailures) { }
+    record Summary(int sent, int affected, int skipped, int webhookDropped, int verifyFailures) { }
 
     private static final class Skip extends RuntimeException {
         Skip(String reason) { super(reason, null, false, false); }
