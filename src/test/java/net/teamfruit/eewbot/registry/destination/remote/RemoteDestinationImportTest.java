@@ -15,7 +15,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.DriverManager;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -218,6 +220,60 @@ class RemoteDestinationImportTest {
         int code = RemoteDestinationImport.run(new String[]{"--source-path", this.db.toString(), "--dry-run"}, key -> null, true);
         assertThat(code).isZero();
         assertThat(this.bodies).isEmpty();
+    }
+
+    @Test void dryRunPreservesTheSourceDatabaseAndItsDeleteJournalMode() throws Exception {
+        insertValid();
+        useDeleteJournalMode();
+        byte[] original = Files.readAllBytes(this.db);
+
+        assertThat(run("--dry-run")).isZero();
+
+        assertThat(this.bodies).isEmpty();
+        assertSourceUnchanged(original);
+    }
+
+    @Test void importsFromAReadOnlySourceDatabase() throws Exception {
+        insertValid();
+        useDeleteJournalMode();
+        byte[] original = Files.readAllBytes(this.db);
+        assertThat(this.db.toFile().setReadOnly()).isTrue();
+        try {
+            assertThat(execute()).isEqualTo(new RemoteDestinationImport.Summary(3, 3, 0, 0, 0));
+        } finally {
+            assertThat(this.db.toFile().setWritable(true)).isTrue();
+        }
+
+        assertSourceUnchanged(original);
+    }
+
+    @Test void importsAndVerifiesTheLargestPositiveSnowflake() throws Exception {
+        insert(Long.MAX_VALUE, Long.MAX_VALUE, null, null, 1, 1, "ja_jp", null);
+
+        assertThat(execute()).isEqualTo(new RemoteDestinationImport.Summary(1, 1, 0, 0, 0));
+        assertThat(this.remote).containsOnlyKeys(Long.toString(Long.MAX_VALUE));
+    }
+
+    private void useDeleteJournalMode() throws Exception {
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + this.db);
+             var statement = connection.createStatement();
+             var result = statement.executeQuery("PRAGMA journal_mode=DELETE")) {
+            assertThat(result.next()).isTrue();
+            assertThat(result.getString(1)).isEqualTo("delete");
+        }
+    }
+
+    private void assertSourceUnchanged(byte[] original) throws Exception {
+        assertThat(Files.readAllBytes(this.db)).isEqualTo(original);
+        assertThat(this.db.resolveSibling("channels.db-wal")).doesNotExist();
+        assertThat(this.db.resolveSibling("channels.db-shm")).doesNotExist();
+        assertThat(this.db.resolveSibling("channels.db-journal")).doesNotExist();
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + this.db);
+             var statement = connection.createStatement();
+             var result = statement.executeQuery("PRAGMA journal_mode")) {
+            assertThat(result.next()).isTrue();
+            assertThat(result.getString(1)).isEqualTo("delete");
+        }
     }
 
     @Test void rejectsMissingSourceAndBadArguments() {

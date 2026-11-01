@@ -9,10 +9,13 @@ import net.teamfruit.eewbot.registry.destination.store.ChannelRegistrySql;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
+import org.jooq.SQLDialect;
 import org.jooq.impl.SQLDataType;
+import org.sqlite.SQLiteConfig;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -79,13 +82,7 @@ public final class RemoteDestinationImport {
     }
 
     static Summary execute(Options options, Function<String, String> env, boolean allowLoopbackHttp) throws Exception {
-        Conversion conversion;
-        ChannelRegistrySql legacy = openLegacy(options);
-        try {
-            conversion = convert(legacy.getDsl());
-        } finally {
-            legacy.close();
-        }
+        Conversion conversion = readLegacy(options);
         conversion.skipped().forEach((targetId, reason) ->
                 Log.logger.warn("Skipping legacy destination {}: {}", targetId, reason));
         conversion.webhookDropped().forEach((targetId, reason) ->
@@ -126,12 +123,16 @@ public final class RemoteDestinationImport {
         return new Summary(sent, affected, conversion.skipped().size(), conversion.webhookDropped().size(), verifyFailures);
     }
 
-    private static ChannelRegistrySql openLegacy(Options options) throws Exception {
+    private static Conversion readLegacy(Options options) throws Exception {
         if (options.sourceType.equals("sqlite")) {
             Path path = Path.of(options.sourcePath);
-            // forSQLite would otherwise create an empty file and silently import nothing.
             if (Files.notExists(path)) throw new IllegalArgumentException("SQLite file not found: " + path);
-            return ChannelRegistrySql.forSQLite(path);
+            // Bypass the registry's WAL initialization and disallow writes or creating a missing database.
+            SQLiteConfig config = new SQLiteConfig();
+            config.setReadOnly(true);
+            try (Connection connection = config.createConnection("jdbc:sqlite:" + path)) {
+                return convert(using(connection, SQLDialect.SQLITE));
+            }
         }
         ConfigV2.PostgreSQL pg = new ConfigV2.PostgreSQL();
         pg.setHost(options.sourceHost);
@@ -141,7 +142,12 @@ public final class RemoteDestinationImport {
         pg.setPassword(options.sourcePassword);
         pg.setMaxPoolSize(2);
         pg.setMinIdle(0);
-        return ChannelRegistrySql.forPostgreSQL(pg);
+        ChannelRegistrySql legacy = ChannelRegistrySql.forPostgreSQL(pg);
+        try {
+            return convert(legacy.getDsl());
+        } finally {
+            legacy.close();
+        }
     }
 
     /**
