@@ -169,26 +169,38 @@ class RemoteDestinationConfigSourceTest {
         assertThat(this.source.loadSnapshot().getRevision()).isEqualTo(2);
     }
 
-    @ParameterizedTest @ValueSource(booleans = {false, true})
-    void rollbackLatchesUntilOperatorRestart(boolean snapshotRollback) {
-        this.api.snapshot(10, destination());
-        this.source.loadSnapshot();
-        this.api.reply(REVISION, 200, "{\"revision\":0}");
-        this.api.snapshot(0);
-        assertThatThrownBy(() -> { if (snapshotRollback) this.source.loadSnapshot(); else this.source.getRevision(); })
-                .hasMessageContaining("rollback").hasMessageContaining("restart");
-        int requests = this.api.total();
-        assertThatThrownBy(this.source::getRevision).hasMessageContaining("restart");
-        assertThatThrownBy(this.source::loadSnapshot).hasMessageContaining("restart");
-        assertThat(this.api.total()).isEqualTo(requests);
-        assertThat(new RemoteDestinationConfigSource(this.client).loadSnapshot().getRevision()).isZero();
+    @Test void unknownLanguageFallsBackOnlyForThatDestination() {
+        var unknown = destination();
+        unknown.put("lang", "future_language");
+        var known = destination();
+        known.put("targetId", "10");
+        known.put("threadId", "10");
+        known.put("lang", "en_us");
+        this.api.snapshot(1, unknown, known);
+        var snapshot = this.source.loadSnapshot();
+        assertThat(snapshot.size()).isEqualTo(2);
+        assertThat(snapshot.get(TARGET).lang()).isEqualTo("ja_jp");
+        assertThat(snapshot.get(10).lang()).isEqualTo("en_us");
     }
 
-    @Test void rollbackBetweenTwoPollsIsAlsoDetected() {
+    @Test void restoredRevisionIsAcceptedAndSubsequentUpdatesRemainReadable() {
+        this.api.snapshot(10, destination());
+        assertThat(this.source.loadSnapshot().getRevision()).isEqualTo(10);
+        this.api.reply(REVISION, 200, "{\"revision\":0}");
+        this.api.snapshot(0);
+        assertThat(this.source.getRevision()).isZero();
+        assertThat(this.source.loadSnapshot().getRevision()).isZero();
+        this.api.reply(REVISION, 200, "{\"revision\":1}");
+        this.api.snapshot(1, destination());
+        assertThat(this.source.getRevision()).isEqualTo(1);
+        assertThat(this.source.loadSnapshot().getRevision()).isEqualTo(1);
+    }
+
+    @Test void lowerRevisionBetweenTwoPollsIsAccepted() {
         this.api.reply(REVISION, 200, "{\"revision\":5}");
         assertThat(this.source.getRevision()).isEqualTo(5);
         this.api.reply(REVISION, 200, "{\"revision\":4}");
-        assertThatThrownBy(this.source::getRevision).hasMessageContaining("rollback");
+        assertThat(this.source.getRevision()).isEqualTo(4);
     }
 
     private void assertInvalid() {

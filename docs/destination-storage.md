@@ -140,8 +140,8 @@ Coreで観測したGateway削除・配信先の403/404・Webhookの404・sender�
 DestinationCleanupへ通知する。セルフホスト用RegistryDestinationCleanupは従来の管理レジストリを使い、
 1対象ごとの更新とrevision増加、save回数、URL指定時の一括処理を維持する。
 完全な読取専用Coreへ移す際にはこのadapterを設定所有者への通知実装に差し替える。
-Sourceのrevisionは既存の比較方式に合わせて単調増加を前提とするため、DB復元や
-Remoteでは巻戻りを検出・ラッチし、旧Snapshot保持と運用者の再起動要求を行う。
+Sourceのrevisionは一致・不一致で比較する。DB復元でrevisionが小さく戻っても、
+次のpollで復元後のSnapshotを読み込み、その後の更新へ追従する。
 
 ## Local Interactionsの取り外し境界
 

@@ -120,11 +120,13 @@ HTTPアクセスはSource/transport内で直列化し、同時リクエスト数
 再読込要求は既存registryで集約し、取得失敗直後の即時reload再帰を行わない。
 正常reload後のrevision再確認と追加reloadは維持し、更新終了後に最新へ収束する。
 
-revision応答が直前の成功pollまたは採用済みSnapshotより小さい場合、またはSnapshotの
-revisionが前回成功Snapshotより小さい場合、巻き戻りとしてラッチする。
-旧Snapshotを保持し、以降のRemote読取を停止して**運用者による再起動が必要**と報告する。
-既存registryの単調増加比較を変更せず、古い設定へ黙って固定されることを防ぐ。
-復元されたD1の状態とURLを確認してからBotを再起動すると、Revision 0も再受入できる。
+revisionは大小ではなく一致・不一致で比較する。D1 Time Travel等でrevisionが小さく戻った
+場合も、再起動を要求せず復元後のSnapshotへ置き換える。reload後のrevision再確認も同じ
+比較を使い、その後の更新へ追従する。同じrevisionのまま内容だけ変わった場合は検出できない。
+
+Workerを先に更新してCoreがまだ知らない言語コードが届いた場合、その配信先だけを
+`ja_jp`にフォールバックする。対応言語はCore同梱の`lang/languages.json`を参照し、
+Snapshot全体や他の配信先を捨てない。言語が文字列でない場合などの不正データは従来どおり拒否する。
 
 ## 管理操作とCleanup
 

@@ -1,25 +1,30 @@
 package net.teamfruit.eewbot.registry.destination.remote;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.gson.JsonParser;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.DestinationConfigSource;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-/** Strict, all-or-nothing v2 conversion; never used by delivery lookups. */
+/** Validates v2 snapshots, falling back to Japanese for unknown language codes. */
 public final class RemoteDestinationConfigSource implements DestinationConfigSource {
     private static final long MAX_REVISION = 9007199254740991L;
     private static final Pattern TOKEN = Pattern.compile("[A-Za-z0-9_-]{20,256}");
+    private static final Set<String> LANGUAGES = loadLanguages();
     private final RemoteConfigApiClient client;
-    private long lastSnapshotRevision = -1;
-    private long lastPolledRevision = -1;
-    private boolean rollback;
 
     public RemoteDestinationConfigSource(RemoteConfigApiClient client) {
         this.client = client;
@@ -27,19 +32,13 @@ public final class RemoteDestinationConfigSource implements DestinationConfigSou
 
     @Override
     public synchronized long getRevision() {
-        checkRollback();
-        long revision = revision(this.client.revision());
-        detectRollback(revision, Math.max(this.lastSnapshotRevision, this.lastPolledRevision));
-        this.lastPolledRevision = revision;
-        return revision;
+        return revision(this.client.revision());
     }
 
     @Override
     public synchronized DeliverySnapshot loadSnapshot() {
-        checkRollback();
         JsonNode json = this.client.snapshot();
         long revision = revision(json);
-        detectRollback(revision, this.lastSnapshotRevision);
         List<DeliverySnapshot.DeliveryChannel> channels = new ArrayList<>();
         Set<Long> targets = new HashSet<>();
         try {
@@ -53,6 +52,7 @@ public final class RemoteDestinationConfigSource implements DestinationConfigSou
                 if (!targets.add(target)) throw invalid();
                 int intensity = integer(required(destination, "minIntensity"), 9).intValue();
                 String lang = string(required(destination, "lang"));
+                if (!LANGUAGES.contains(lang)) lang = "ja_jp";
                 ChannelWebhook webhook = webhook(required(destination, "webhook"), thread);
                 channels.add(new DeliverySnapshot.DeliveryChannel(target, channel, thread, guild,
                         flag(destination, "eewAlert"), flag(destination, "eewPrediction"),
@@ -63,21 +63,17 @@ public final class RemoteDestinationConfigSource implements DestinationConfigSou
             // Never retain parser/URL/numeric exceptions that can contain confidential input.
             throw invalid();
         }
-        DeliverySnapshot snapshot = new DeliverySnapshot(revision, channels);
-        this.lastSnapshotRevision = revision;
-        return snapshot;
+        return new DeliverySnapshot(revision, channels);
     }
 
-    private void detectRollback(long revision, long previous) {
-        if (revision < previous) {
-            this.rollback = true;
-            checkRollback();
+    private static Set<String> loadLanguages() {
+        try (var reader = new InputStreamReader(Objects.requireNonNull(
+                RemoteDestinationConfigSource.class.getResourceAsStream("/lang/languages.json")), StandardCharsets.UTF_8)) {
+            return JsonParser.parseReader(reader).getAsJsonObject().keySet().stream()
+                    .map(code -> code.toLowerCase(Locale.ROOT)).collect(Collectors.toUnmodifiableSet());
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load supported language codes", e);
         }
-    }
-
-    private void checkRollback() {
-        if (this.rollback) throw new RemoteConfigException(
-                "Remote revision rollback detected; retaining last snapshot. Operator restart required to accept restored D1 state");
     }
 
     private static long revision(JsonNode object) {

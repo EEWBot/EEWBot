@@ -77,7 +77,7 @@ public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
         try {
             long latest = this.configSource.getRevision();
             DeliverySnapshot cur = this.snapshotRef.get();
-            if (cur == null || cur.getRevision() < latest) {
+            if (cur == null || cur.getRevision() != latest) {
                 requestReload();
             }
         } catch (Exception e) {
@@ -88,7 +88,7 @@ public class SnapshotDeliveryRegistry implements DestinationDeliveryRegistry {
     private void reloadSnapshotLoop() {
         DeliverySnapshot current = this.snapshotRef.get();
         DeliverySnapshot loaded = this.configSource.loadSnapshot();
-        if (current != null && current.getRevision() >= loaded.getRevision()) {
+        if (current != null && current.getRevision() == loaded.getRevision()) {
             return; // Already up to date
         }
         this.snapshotRef.set(loaded);

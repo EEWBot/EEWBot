@@ -74,6 +74,27 @@ class SnapshotDeliveryRegistryTest {
         assertThat(tasks).isEmpty();
     }
 
+    @Test
+    void postReloadCheckAlsoDetectsRestoreToLowerRevision() {
+        DestinationConfigSource source = mock(DestinationConfigSource.class);
+        when(source.loadSnapshot()).thenReturn(new DeliverySnapshot(10, List.of(simpleDc(1))),
+                new DeliverySnapshot(11, List.of(simpleDc(2))), new DeliverySnapshot(0, List.of()));
+        when(source.getRevision()).thenReturn(0L);
+        ExecutorService executor = mock(ExecutorService.class);
+        Queue<Runnable> tasks = new ArrayDeque<>();
+        doAnswer(call -> tasks.add(call.getArgument(0))).when(executor).execute(any(Runnable.class));
+        SnapshotDeliveryRegistry registry = new SnapshotDeliveryRegistry(source, executor);
+        registry.initializeSnapshot();
+        registry.requestReload();
+        tasks.remove().run();
+        assertThat(registry.getSnapshot().getRevision()).isEqualTo(11);
+        assertThat(tasks).hasSize(1);
+        tasks.remove().run();
+        assertThat(registry.getSnapshot().getRevision()).isZero();
+        assertThat(registry.getSnapshot().size()).isZero();
+        assertThat(tasks).isEmpty();
+    }
+
     private ExecutorService reloadExecutor;
 
     @BeforeEach
@@ -291,7 +312,7 @@ class SnapshotDeliveryRegistryTest {
         }
 
         @Test
-        @DisplayName("should not update snapshot if loaded revision is not newer")
+        @DisplayName("should not update snapshot if loaded revision is unchanged")
         void skipReloadWhenUpToDate() throws Exception {
             AtomicInteger loadCount = new AtomicInteger(0);
             StubRevisionStore revisionStore = new StubRevisionStore(1L);

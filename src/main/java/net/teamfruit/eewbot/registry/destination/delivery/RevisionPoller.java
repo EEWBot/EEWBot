@@ -82,7 +82,7 @@ public class RevisionPoller {
         try {
             long sourceRevision = this.configSource.getRevision();
             DeliverySnapshot current = this.snapshotDeliveryRegistry.getSnapshot();
-            if (current == null || current.getRevision() < sourceRevision) {
+            if (current == null || current.getRevision() != sourceRevision) {
                 Log.logger.debug("Revision change detected: current={}, source={}",
                         current != null ? current.getRevision() : "null", sourceRevision);
                 this.snapshotDeliveryRegistry.requestReload();

@@ -8,7 +8,7 @@ import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
  */
 public interface DestinationConfigSource {
 
-    /** Monotonically increasing committed revision, used as a refresh hint. */
+    /** Committed revision used as a refresh hint; it may decrease after a database restore. */
     long getRevision();
 
     /**

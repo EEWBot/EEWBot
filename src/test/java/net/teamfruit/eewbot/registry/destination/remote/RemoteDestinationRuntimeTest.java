@@ -152,17 +152,23 @@ class RemoteDestinationRuntimeTest {
         assertLogsSafe();
     }
 
-    @Test void revisionRollbackRetainsSnapshotAndReportsRestart() {
+    @Test void revisionRollbackReloadsRestoredStateAndLaterUpdates() {
         this.api.snapshot(10, destination());
         var registry = initialize();
-        var old = registry.getSnapshot();
-        this.poll.get().run(); // API revision 0
-        assertThat(registry.getSnapshot()).isSameAs(old);
+        this.api.snapshot(0);
+        this.poll.get().run(); // API revision 0 after restore
+        assertThat(this.reloads).hasSize(1);
+        this.reloads.remove().run();
+        assertThat(registry.getSnapshot().getRevision()).isZero();
+        assertThat(registry.getSnapshot().size()).isZero();
         assertThat(this.reloads).isEmpty();
-        assertThat(this.logs.list).anySatisfy(event -> {
-            assertThat(event.getThrowableProxy()).isNotNull();
-            assertThat(event.getThrowableProxy().getMessage()).contains("restart");
-        });
+        this.api.reply(REVISION, 200, "{\"revision\":1}");
+        this.api.snapshot(1, destination());
+        this.poll.get().run();
+        this.reloads.remove().run();
+        assertThat(registry.getSnapshot().getRevision()).isEqualTo(1);
+        assertThat(registry.getSnapshot().size()).isEqualTo(1);
+        assertThat(this.reloads).isEmpty();
     }
 
     @Test void initialLoadFailureDoesNotPublishEmptySnapshot() {
