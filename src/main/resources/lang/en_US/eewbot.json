@@ -147,5 +147,7 @@
   "eewbot.scmd.quakeinfo.partial": "Some messages could not be sent. Already sent messages were not reposted.",
   "eewbot.scmd.quakeinfo.kind.announcement": "Announcement",
   "eewbot.scmd.quakeinfo.kind.correction": "Correction",
-  "eewbot.scmd.quakeinfo.kind.cancel": "Cancelled"
+  "eewbot.scmd.quakeinfo.kind.cancel": "Cancelled",
+  "eewbot.scmd.image.refresh.label": "Click here if the image does not appear",
+  "eewbot.scmd.image.refresh.error.start": "Could not start reloading the image."
 }

@@ -92,6 +92,25 @@ class EEWServiceWebhookSenderFallbackTest {
     }
 
     @Test
+    void imageNotificationsIncludeRecoveryButtonsInSenderWebhookAndBotFallback() throws Exception {
+        FakeHttpClient httpClient = FakeHttpClient.sendStatus(500, "failed").withAsyncStatuses(500);
+        EEWService service = spy(createService(httpClient, ""));
+        doReturn(Mono.empty()).when(service).directSendMessagePassErrors(anyLong(), any());
+        Entity entity = (lang, ctx, factory) -> List.of(factory.get()
+                .title("notification").image("https://example.com/map.png").toPending());
+
+        service.sendMessage(ChannelFilter.builder().build(), entity);
+
+        assertThat(bodyOf(httpClient.sentRequests.getFirst())).contains("eewimage:refresh", "components");
+        assertThat(bodyOf(httpClient.asyncRequests.getFirst())).contains("eewimage:refresh", "components");
+        var sent = org.mockito.ArgumentCaptor.forClass(MessageCreateSpec.class);
+        verify(service).directSendMessagePassErrors(eq(123L), sent.capture());
+        assertThat(sent.getValue().componentsOrElse(List.of())).hasSize(1);
+        assertThat(sent.getValue().embedsOrElse(List.of()).getFirst().imageOrElse(null))
+                .isEqualTo("https://example.com/map.png");
+    }
+
+    @Test
     void sendMessageAcceptsBlankWebhookSenderCustomHeader() {
         FakeHttpClient httpClient = FakeHttpClient.sendStatus(204, "");
         EEWService service = createService(httpClient, "");

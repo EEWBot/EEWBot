@@ -4,17 +4,51 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
+import discord4j.core.spec.InteractionCallbackSpec;
+import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.rest.service.ApplicationService;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class SlashCommandHandlerLifecycleTest {
+
+    @Test
+    void imageRecoveryAcknowledgesThenRemovesOnlyTheButtonWithoutLookingUpSettings() {
+        GatewayDiscordClient gateway = mock(GatewayDiscordClient.class, RETURNS_DEEP_STUBS);
+        ApplicationService service = gateway.getRestClient().getApplicationService();
+        when(service.getGlobalApplicationCommands(0)).thenReturn(Flux.empty());
+        when(service.createGlobalApplicationCommand(eq(0L), any())).thenReturn(Mono.empty());
+        when(gateway.on(ApplicationCommandInteractionEvent.class)).thenReturn(Flux.never());
+        when(gateway.on(SelectMenuInteractionEvent.class)).thenReturn(Flux.never());
+        ButtonInteractionEvent event = mock(ButtonInteractionEvent.class);
+        when(event.getCustomId()).thenReturn("eewimage:refresh");
+        when(event.deferEdit(any(InteractionCallbackSpec.class))).thenReturn(Mono.empty());
+        when(event.editReply(any(InteractionReplyEditSpec.class))).thenReturn(Mono.empty());
+        when(gateway.on(ButtonInteractionEvent.class)).thenReturn(Flux.just(event).concatWith(Flux.never()));
+        SlashCommandContext context = mock(SlashCommandContext.class);
+        when(context.client()).thenReturn(gateway);
+        when(context.shutdownFlag()).thenReturn(new AtomicBoolean());
+
+        SlashCommandHandler handler = new SlashCommandHandler(context);
+        try {
+            var edit = org.mockito.ArgumentCaptor.forClass(InteractionReplyEditSpec.class);
+            var order = inOrder(event);
+            order.verify(event).deferEdit(any(InteractionCallbackSpec.class));
+            order.verify(event).editReply(edit.capture());
+            assertThat(edit.getValue()).isEqualTo(InteractionReplyEditSpec.builder().components(List.of()).build());
+            verify(context, never()).adminRegistry();
+        } finally {
+            handler.dispose();
+        }
+    }
 
     @Test
     void disposeStopsCommandRegistrationAndAllInteractionSubscriptionsExactlyOnce() {

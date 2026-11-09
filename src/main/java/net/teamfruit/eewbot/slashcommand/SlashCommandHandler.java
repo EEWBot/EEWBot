@@ -4,8 +4,10 @@ import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEven
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.spec.InteractionCallbackSpec;
+import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.entity.discord.ImageRefreshButton;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -14,6 +16,7 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 
 import java.util.HashMap;
+import java.util.List;
 
 import static net.teamfruit.eewbot.slashcommand.SlashCommandUtils.*;
 
@@ -150,7 +153,12 @@ public class SlashCommandHandler implements Disposable {
                     }
                     return Mono.just(event);
                 })
-                .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
+                .flatMap(event -> {
+                    if (ImageRefreshButton.CUSTOM_ID.equals(event.getCustomId()))
+                        return event.deferEdit(InteractionCallbackSpec.builder().build())
+                                .then(Mono.defer(() -> event.editReply(InteractionReplyEditSpec.builder()
+                                        .components(List.of()).build()).then()));
+                    return Mono.justOrEmpty(commands.values().stream()
                                 .filter(IButtonSlashCommand.class::isInstance)
                                 .map(IButtonSlashCommand.class::cast)
                                 .filter(cmd -> cmd.getCustomIds().contains(event.getCustomId()))
@@ -172,7 +180,8 @@ public class SlashCommandHandler implements Disposable {
                         })
                         .flatMap(cmd -> cmd.onClick(ctx, event, getLanguage(ctx, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
-                        .onErrorResume(err -> Mono.empty()))
+                        .onErrorResume(err -> Mono.empty());
+                })
                 .onErrorResume(e -> {
                     Log.logger.error("Unhandled exception during ButtonInteractionEvent handling", e);
                     return Mono.empty();

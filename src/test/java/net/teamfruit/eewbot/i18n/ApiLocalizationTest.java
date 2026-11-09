@@ -48,7 +48,9 @@ class ApiLocalizationTest {
             "eewbot.scmd.quakeinfo.partial",
             "eewbot.scmd.quakeinfo.kind.announcement",
             "eewbot.scmd.quakeinfo.kind.correction",
-            "eewbot.scmd.quakeinfo.kind.cancel"
+            "eewbot.scmd.quakeinfo.kind.cancel",
+            "eewbot.scmd.image.refresh.label",
+            "eewbot.scmd.image.refresh.error.start"
     );
     private static final I18n I18N = new I18n("ja_jp");
 

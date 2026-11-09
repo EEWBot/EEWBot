@@ -11,6 +11,7 @@ import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.discord.EmbedWebhookCost;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhook;
 import net.teamfruit.eewbot.entity.discord.DiscordWebhookRequest;
+import net.teamfruit.eewbot.entity.discord.ImageRefreshButton;
 import net.teamfruit.eewbot.entity.webhooksender.WebhookSenderRequest;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
@@ -97,13 +98,15 @@ public class EEWService {
 
     public void sendMessage(final DeliveryPartition partition, final Entity entity) {
         Map<String, List<MessageCreateSpec>> msgByLang = new HashMap<>();
-        this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessages(lang, this.embedContext)));
+        this.i18n.getLanguages().keySet().forEach(lang -> msgByLang.put(lang, entity.createMessages(lang, this.embedContext)
+                .stream().map(message -> ImageRefreshButton.addTo(message, lang, this.i18n)).toList()));
 
         List<List<DiscordWebhookRequest>> webhookChunks = new ArrayList<>();
         this.i18n.getLanguages().keySet().forEach(lang -> {
             List<DiscordWebhook> webhooks = entity.createWebhooks(lang, this.embedContext);
             for (int i = 0; i < webhooks.size(); i++) {
                 DiscordWebhook webhook = webhooks.get(i);
+                ImageRefreshButton.addTo(webhook, lang, this.i18n);
                 webhook.avatar_url = this.avatarUrl;
                 while (webhookChunks.size() <= i)
                     webhookChunks.add(new ArrayList<>());
