@@ -141,13 +141,7 @@
   "eewbot.scmd.testmessage.error.configuration": "送信設定を確認できません。管理者にWebhook SenderまたはWebhookの設定確認を依頼してください。",
   "eewbot.scmd.testmessage.error.unavailable": "送信先サービスを利用できません。しばらく待ってから再度お試しください。",
   "eewbot.scmd.testmessage.error.uncertain": "送信結果を確認できませんでした。二重投稿を避けるため自動再送していません。チャンネルを確認してから、しばらく待って再度お試しください。",
-  "eewbot.scmd.quakeinfo.report": "発表日時",
-  "eewbot.scmd.quakeinfo.saved": "同期日時",
-  "eewbot.scmd.quakeinfo.old": "⚠️ 過去に発表された情報です。現在進行中の地震を示すものではありません。",
   "eewbot.scmd.quakeinfo.partial": "一部の情報を送信できませんでした。送信済みの内容は再投稿していません。",
-  "eewbot.scmd.quakeinfo.kind.announcement": "発表",
-  "eewbot.scmd.quakeinfo.kind.correction": "訂正",
-  "eewbot.scmd.quakeinfo.kind.cancel": "取消",
   "eewbot.scmd.image.refresh.label": "画像が表示されない場合はこちら",
   "eewbot.scmd.image.refresh.error.start": "画像の再読み込みを開始できません。"
 }

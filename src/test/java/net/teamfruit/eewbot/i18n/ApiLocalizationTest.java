@@ -42,13 +42,7 @@ class ApiLocalizationTest {
             "eewbot.scmd.testmessage.error.configuration",
             "eewbot.scmd.testmessage.error.unavailable",
             "eewbot.scmd.testmessage.error.uncertain",
-            "eewbot.scmd.quakeinfo.report",
-            "eewbot.scmd.quakeinfo.saved",
-            "eewbot.scmd.quakeinfo.old",
             "eewbot.scmd.quakeinfo.partial",
-            "eewbot.scmd.quakeinfo.kind.announcement",
-            "eewbot.scmd.quakeinfo.kind.correction",
-            "eewbot.scmd.quakeinfo.kind.cancel",
             "eewbot.scmd.image.refresh.label",
             "eewbot.scmd.image.refresh.error.start"
     );
