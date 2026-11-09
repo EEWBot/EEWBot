@@ -141,13 +141,7 @@
   "eewbot.scmd.testmessage.error.configuration": "Delivery configuration is invalid. Ask an administrator to check the Sender or webhook settings.",
   "eewbot.scmd.testmessage.error.unavailable": "The delivery service is unavailable. Please try again later.",
   "eewbot.scmd.testmessage.error.uncertain": "The delivery result is unknown. No automatic retry was made. Check the channel before trying again later.",
-  "eewbot.scmd.quakeinfo.report": "Issued",
-  "eewbot.scmd.quakeinfo.saved": "Synced",
-  "eewbot.scmd.quakeinfo.old": "⚠️ This is an older report; it does not indicate an earthquake currently in progress.",
   "eewbot.scmd.quakeinfo.partial": "Some messages could not be sent. Already sent messages were not reposted.",
-  "eewbot.scmd.quakeinfo.kind.announcement": "Announcement",
-  "eewbot.scmd.quakeinfo.kind.correction": "Correction",
-  "eewbot.scmd.quakeinfo.kind.cancel": "Cancelled",
   "eewbot.scmd.image.refresh.label": "Click here if the image does not appear",
   "eewbot.scmd.image.refresh.error.start": "Could not start reloading the image."
 }
