@@ -145,36 +145,19 @@ public interface EEW extends JMAReport, ExternalData {
         }
 
         boolean eewWarning = isEEWWarning();
-        if (eewWarning) {
-            if (isLastInfo()) {
-                if (isConcurrent())
-                    builder.title("eewbot.eew.eewalert.final.concurrent", getConcurrentIndex());
-                else
-                    builder.title("eewbot.eew.eewalert.final");
-            } else {
-                if (isConcurrent())
-                    builder.title("eewbot.eew.eewalert.num.concurrent", getConcurrentIndex(), getSerial());
-                else
-                    builder.title("eewbot.eew.eewalert.num", getSerial());
-            }
-            builder.color(Color.RED);
-        } else {
-            if (isLastInfo()) {
-                if (isConcurrent())
-                    builder.title("eewbot.eew.eewprediction.final.concurrent", getConcurrentIndex());
-                else
-                    builder.title("eewbot.eew.eewprediction.final");
-            } else {
-                if (isConcurrent())
-                    builder.title("eewbot.eew.eewprediction.num.concurrent", getConcurrentIndex(), getSerial());
-                else
-                    builder.title("eewbot.eew.eewprediction.num", getSerial());
-            }
-            builder.color(Color.BLUE);
-        }
+        String titleKey = "eewbot.eew." + (eewWarning ? "eewalert" : "eewprediction")
+                + (isLastInfo() ? ".final" : ".num") + (isConcurrent() ? ".concurrent" : "");
+        String title = isConcurrent()
+                ? ctx.i18n().format(lang, titleKey, getConcurrentIndex(), getSerial())
+                : ctx.i18n().format(lang, titleKey, getSerial());
+        ForecastMaxInt forecastMaxInt = getForecastMaxInt();
+        SeismicIntensity maxIntensity = SeismicIntensity.get(forecastMaxInt != null ? forecastMaxInt.from() : null);
+        builder.title("eewbot.eew.title", title,
+                ctx.i18n().get(lang, "eewbot.eew.intensity." + maxIntensity.getLegacySerializedName()),
+                ctx.i18n().get(lang, getHypocenterName()));
+        builder.color(eewWarning ? Color.RED : Color.BLUE);
         builder.timestamp(getReportDateTime());
         List<ForecastRegion> forecastRegions = getForecastRegions();
-        ForecastMaxInt forecastMaxInt = getForecastMaxInt();
         if (!Strings.CS.equals(getCondition(), "仮定震源要素")) {
             builder.addField("eewbot.eew.epicenter", getHypocenterName(), true);
             String depthCondition = getDepthCondition();
