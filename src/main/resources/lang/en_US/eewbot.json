@@ -1,4 +1,10 @@
 {
+  "eewbot.eew.title": "%s | Maximum Seismic Intensity %s · %s",
+  "eewbot.eew.intensity.unknown": "Unknown",
+  "eewbot.eew.intensity.5-": "5 Lower",
+  "eewbot.eew.intensity.5+": "5 Upper",
+  "eewbot.eew.intensity.6-": "6 Lower",
+  "eewbot.eew.intensity.6+": "6 Upper",
   "eewbot.eew.eewalert.num": "Earthquake Early Warning (Warning) No. %s",
   "eewbot.eew.eewalert.num.concurrent": "#%s Earthquake Early Warning (Warning) No. %s",
   "eewbot.eew.eewalert.final": "Earthquake Early Warning (Warning) Final Report",
