@@ -155,6 +155,8 @@ public interface EEW extends JMAReport, ExternalData {
         builder.title("eewbot.eew.title", title,
                 ctx.i18n().get(lang, "eewbot.eew.intensity." + maxIntensity.getLegacySerializedName()),
                 ctx.i18n().get(lang, getHypocenterName()));
+        ctx.intensityEmojis().getId(maxIntensity)
+                .ifPresent(id -> builder.thumbnail("https://cdn.discordapp.com/emojis/" + id.asString() + ".webp"));
         builder.color(eewWarning ? Color.RED : Color.BLUE);
         builder.timestamp(getReportDateTime());
         List<ForecastRegion> forecastRegions = getForecastRegions();
