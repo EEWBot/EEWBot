@@ -22,17 +22,6 @@ import java.util.Optional;
 public final class IntensityEmojiRegistry {
 
     private static final String ICON_BASE_URL = "https://resources.eewbot.net/intensity-icon/";
-    private static final Map<SeismicIntensity, String> ICON_NAMES = Map.of(
-            SeismicIntensity.ONE, "1",
-            SeismicIntensity.TWO, "2",
-            SeismicIntensity.THREE, "3",
-            SeismicIntensity.FOUR, "4",
-            SeismicIntensity.FIVE_MINUS, "5-minus",
-            SeismicIntensity.FIVE_PLUS, "5-plus",
-            SeismicIntensity.SIX_MINUS, "6-minus",
-            SeismicIntensity.SIX_PLUS, "6-plus",
-            SeismicIntensity.SEVEN, "7"
-    );
 
     private final Map<SeismicIntensity, CustomEmoji> emojis;
 
@@ -52,7 +41,7 @@ public final class IntensityEmojiRegistry {
                 .orElseThrow(() -> new IllegalStateException("Failed to list application emojis"));
         Map<SeismicIntensity, CustomEmoji> resolved = new EnumMap<>(SeismicIntensity.class);
         for (SeismicIntensity intensity : SeismicIntensity.values()) {
-            String iconName = ICON_NAMES.get(intensity);
+            String iconName = intensity.getIconName();
             if (iconName == null) continue;
 
             String name = "intensity_" + iconName.replace('-', '_');
