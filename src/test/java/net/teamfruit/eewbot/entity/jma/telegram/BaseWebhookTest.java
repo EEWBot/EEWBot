@@ -16,6 +16,7 @@ import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.destination.model.SeismicIntensityDeserializer;
 import net.teamfruit.eewbot.registry.destination.model.SeismicIntensitySerializer;
+import net.teamfruit.eewbot.testutil.IntensityEmojiFixtures;
 import net.teamfruit.eewbot.testutil.JsonAssertTestHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONException;
@@ -62,7 +63,7 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
     protected abstract Class<T> getImplClass();
 
     @BeforeAll
-    static void setUpBase() {
+    static void setUpBase() throws IOException {
         if (initialized) {
             return;
         }
@@ -72,7 +73,7 @@ public abstract class BaseWebhookTest<T extends AbstractJMAReport> {
         String rendererKey = System.getenv("EEWBOT_RENDERER_KEY");
         RendererQueryFactory renderer = new RendererQueryFactory(rendererAddress, rendererKey);
         QuakeInfoStore store = new QuakeInfoStore();
-        embedContext = new EmbedContext(renderer, store, i18n);
+        embedContext = new EmbedContext(renderer, store, i18n, IntensityEmojiFixtures.registry());
         rendererHash = computeRendererHash(rendererAddress, rendererKey);
 
         xmlMapper = XmlMapper.builder()

@@ -16,6 +16,7 @@ import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.destination.model.SeismicIntensityDeserializer;
 import net.teamfruit.eewbot.registry.destination.model.SeismicIntensitySerializer;
+import net.teamfruit.eewbot.testutil.IntensityEmojiFixtures;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -58,19 +59,20 @@ class AllExpectedJsonGeneratorTest {
     }
 
     @BeforeAll
-    static void setUp() {
+    static void setUp() throws IOException {
         i18n = new I18n("ja_jp");
         QuakeInfoStore store = new QuakeInfoStore();
 
         RendererQueryFactory rendererDisabled = new RendererQueryFactory(null, null);
-        embedContext = new EmbedContext(rendererDisabled, store, i18n);
+        var intensityEmojis = IntensityEmojiFixtures.registry();
+        embedContext = new EmbedContext(rendererDisabled, store, i18n, intensityEmojis);
 
         String rendererAddress = System.getenv("EEWBOT_RENDERER_ADDRESS");
         String rendererKey = System.getenv("EEWBOT_RENDERER_KEY");
         rendererHash = BaseWebhookTest.computeRendererHash(rendererAddress, rendererKey);
         if (rendererHash != null) {
             RendererQueryFactory rendererEnabled = new RendererQueryFactory(rendererAddress, rendererKey);
-            embedContextWithRenderer = new EmbedContext(rendererEnabled, store, i18n);
+            embedContextWithRenderer = new EmbedContext(rendererEnabled, store, i18n, intensityEmojis);
         }
 
         xmlMapper = XmlMapper.builder()
