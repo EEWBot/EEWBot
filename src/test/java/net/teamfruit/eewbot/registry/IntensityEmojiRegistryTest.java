@@ -41,10 +41,13 @@ class IntensityEmojiRegistryTest {
 
         for (int i = 0; i < INTENSITIES.size(); i++) {
             assertThat(registry.getId(INTENSITIES.get(i))).contains(Snowflake.of(100 + i));
+            assertThat(registry.getImageUrl(INTENSITIES.get(i)))
+                    .contains("https://cdn.discordapp.com/emojis/" + (100 + i) + ".webp");
             assertThat(registry.getMention(INTENSITIES.get(i)))
                     .contains("<:intensity_" + ICONS.get(i).replace('-', '_') + ":" + (100 + i) + ">");
         }
         assertThat(registry.getId(SeismicIntensity.UNKNOWN)).isEmpty();
+        assertThat(registry.getImageUrl(SeismicIntensity.UNKNOWN)).isEmpty();
         assertThat(registry.getMention(SeismicIntensity.UNKNOWN)).isEmpty();
         verify(this.application, never()).createEmoji(any(ApplicationEmojiCreateSpec.class));
         verifyNoInteractions(this.httpClient);
@@ -83,6 +86,8 @@ class IntensityEmojiRegistryTest {
         });
         for (int i = 0; i < INTENSITIES.size(); i++) {
             assertThat(registry.getId(INTENSITIES.get(i))).contains(Snowflake.of(200 + i));
+            assertThat(registry.getImageUrl(INTENSITIES.get(i)))
+                    .contains("https://cdn.discordapp.com/emojis/" + (200 + i) + ".webp");
         }
     }
 

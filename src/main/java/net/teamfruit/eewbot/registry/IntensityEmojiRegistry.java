@@ -91,6 +91,11 @@ public final class IntensityEmojiRegistry {
         return Optional.ofNullable(this.emojis.get(intensity)).map(CustomEmoji::getId);
     }
 
+    /** CDN WebP image URL, suitable for embed thumbnails. */
+    public Optional<String> getImageUrl(SeismicIntensity intensity) {
+        return this.getId(intensity).map(id -> "https://cdn.discordapp.com/emojis/" + id.asString() + ".webp");
+    }
+
     /** Discord's inline emoji syntax, suitable for embed text. */
     public Optional<String> getMention(SeismicIntensity intensity) {
         return Optional.ofNullable(this.emojis.get(intensity)).map(CustomEmoji::asFormat);

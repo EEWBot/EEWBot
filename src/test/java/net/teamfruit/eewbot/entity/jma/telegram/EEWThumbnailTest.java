@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
-import discord4j.common.util.Snowflake;
 import net.teamfruit.eewbot.Codecs;
 import net.teamfruit.eewbot.QuakeInfoStore;
 import net.teamfruit.eewbot.entity.EmbedContext;
@@ -34,10 +33,10 @@ class EEWThumbnailTest {
 
     @BeforeEach
     void setUp() {
-        when(this.emojis.getId(any())).thenAnswer(call -> {
+        when(this.emojis.getImageUrl(any())).thenAnswer(call -> {
             SeismicIntensity intensity = call.getArgument(0);
             return intensity == SeismicIntensity.UNKNOWN ? Optional.empty()
-                    : Optional.of(Snowflake.of(EMOJI_ID_BASE + intensity.getCode()));
+                    : Optional.of(emojiUrl(intensity));
         });
     }
 
@@ -83,9 +82,9 @@ class EEWThumbnailTest {
     }
 
     @Test
-    void unavailableEmojiIdHasNoThumbnail() throws Exception {
+    void unavailableEmojiImageHasNoThumbnail() throws Exception {
         EEW report = Codecs.XML_MAPPER.readValue(fixture("dmdata/eew/forecast_normal.xml"), VXSE45Impl.class);
-        when(this.emojis.getId(SeismicIntensity.FOUR)).thenReturn(Optional.empty());
+        when(this.emojis.getImageUrl(SeismicIntensity.FOUR)).thenReturn(Optional.empty());
 
         assertThumbnail(report, null);
     }
