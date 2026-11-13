@@ -308,7 +308,6 @@ class RemoteCleanupTest {
     void invalidWebhookReferencesNeverBecomeUnguardedMutations(String url) {
         queue(2, 5000, 5000);
         this.cleanup.webhooksUnavailable(Map.of(TARGET, new DeliveryTarget(TARGET, "ja_jp", url)));
-        this.cleanup.webhooksUnavailable(List.of(TARGET));
         assertThat(this.cleanup.webhookUrlsUnavailable(List.of(url))).isZero();
         this.cleanup.close();
         assertThat(this.requests).isEmpty();

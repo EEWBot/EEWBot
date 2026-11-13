@@ -18,12 +18,11 @@ public interface DestinationCleanup {
 
     void destinationsUnavailable(Collection<Long> targetIds) throws IOException;
 
-    void webhooksUnavailable(Collection<Long> targetIds) throws IOException;
-
-    /** Uses the immutable targets actually sent, so remote cleanup can compare webhook IDs. */
-    default void webhooksUnavailable(Map<Long, DeliveryTarget> failedTargets) throws IOException {
-        this.webhooksUnavailable(failedTargets.keySet());
-    }
+    /**
+     * Uses the immutable targets actually sent, so remote cleanup can compare webhook IDs.
+     * There is deliberately no target-ID-only overload: remote cleanup must never run without the expected webhook ID.
+     */
+    void webhooksUnavailable(Map<Long, DeliveryTarget> failedTargets) throws IOException;
 
     int webhookUrlsUnavailable(Collection<String> webhookUrls);
 

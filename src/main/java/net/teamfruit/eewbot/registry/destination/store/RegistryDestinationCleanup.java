@@ -2,9 +2,11 @@ package net.teamfruit.eewbot.registry.destination.store;
 
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.DestinationCleanup;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 
 /** Local cleanup adapter preserving registry write and persistence semantics. */
 public final class RegistryDestinationCleanup implements DestinationCleanup {
@@ -34,8 +36,9 @@ public final class RegistryDestinationCleanup implements DestinationCleanup {
     }
 
     @Override
-    public void webhooksUnavailable(Collection<Long> targetIds) throws IOException {
-        targetIds.forEach(targetId -> this.registry.setWebhook(targetId, null));
+    public void webhooksUnavailable(Map<Long, DeliveryTarget> failedTargets) throws IOException {
+        // The local registry owns the configuration, so the target ID alone identifies the webhook to clear.
+        failedTargets.keySet().forEach(targetId -> this.registry.setWebhook(targetId, null));
         this.registry.save();
     }
 

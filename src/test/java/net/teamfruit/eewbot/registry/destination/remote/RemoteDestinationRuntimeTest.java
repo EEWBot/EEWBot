@@ -6,6 +6,7 @@ import ch.qos.logback.classic.spi.ThrowableProxyUtil;
 import ch.qos.logback.core.read.ListAppender;
 import net.teamfruit.eewbot.EEWBot;
 import org.slf4j.LoggerFactory;
+import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.delivery.RevisionPoller;
 import net.teamfruit.eewbot.registry.destination.delivery.SnapshotDeliveryRegistry;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
@@ -15,6 +16,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -195,7 +197,7 @@ class RemoteDestinationRuntimeTest {
         cleanup.guildDeleted(TARGET);
         cleanup.destinationDeleted(TARGET);
         cleanup.destinationsUnavailable(List.of(TARGET));
-        cleanup.webhooksUnavailable(List.of(TARGET));
+        cleanup.webhooksUnavailable(Map.of(TARGET, new DeliveryTarget(TARGET, "ja_jp", URL)));
         assertThat(cleanup.webhookUrlsUnavailable(List.of(URL))).isZero();
         cleanup.save();
         assertThat(this.logs.list).hasSize(5).allSatisfy(event -> {

@@ -31,7 +31,10 @@ class RegistryDestinationCleanupTest {
     void unavailableWebhooksKeepPerTargetWritesAndOneSave() throws Exception {
         DestinationAdminRegistry admin = mock(DestinationAdminRegistry.class);
 
-        new RegistryDestinationCleanup(admin).webhooksUnavailable(List.of(1L, 2L));
+        var targets = new java.util.LinkedHashMap<Long, DeliveryTarget>();
+        targets.put(1L, new DeliveryTarget(1L, "ja_jp", null));
+        targets.put(2L, new DeliveryTarget(2L, "ja_jp", null));
+        new RegistryDestinationCleanup(admin).webhooksUnavailable(targets);
 
         var order = inOrder(admin);
         order.verify(admin).setWebhook(1L, null);

@@ -47,11 +47,6 @@ public final class RemoteDestinationCleanup implements DestinationCleanup, AutoC
         batches("destinations", "targetIds", targetIds.stream().map(RemoteDestinationCleanup::id).distinct().toList());
     }
 
-    @Override public void webhooksUnavailable(Collection<Long> targetIds) {
-        // Never fall back to unguarded target cleanup when the expected ID is missing.
-        Log.logger.warn("Remote webhook cleanup NOT applied: expected webhook IDs missing (count={})", targetIds.size());
-    }
-
     @Override public void webhooksUnavailable(Map<Long, DeliveryTarget> failedTargets) {
         List<Map<String, String>> targets = new ArrayList<>();
         for (var entry : failedTargets.entrySet()) {
