@@ -72,6 +72,23 @@ class QuakeInfoSnapshotPublisherTest {
             assertThat(body(client.sent.getLast())).contains("\"serial\":2");
         }
     }
+    @Test void renderFailuresAreNotRetriedUntilTheStoreChanges() throws Exception {
+        var store = new QuakeInfoStore(); var broken = org.mockito.Mockito.spy(quake(1));
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("synthetic")).when(broken)
+                .createEmbeds(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        store.putReport(broken); var client = new Fake();
+        try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,config())) {
+            publisher.start();
+            org.mockito.Mockito.verify(broken, org.mockito.Mockito.timeout(5000))
+                    .createEmbeds(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+            Thread.sleep(200);
+            org.mockito.Mockito.verify(broken, org.mockito.Mockito.times(1))
+                    .createEmbeds(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+            assertThat(client.sent).isEmpty();
+            store.putReport(quake(2)); await(() -> client.stored.get() == 1);
+            assertThat(body(client.sent.getLast())).contains("\"serial\":2");
+        }
+    }
     @Test void sendsOnlyOnStartAndChangedContentWithoutPeriodicResend() throws Exception {
         var store = new QuakeInfoStore(); store.putReport(quake(1)); var client = new Fake(); client.newerStored = true;
         try (var publisher = new QuakeInfoSnapshotPublisher(store,QuakeInfoSnapshotTest.context(store),client,config())) {

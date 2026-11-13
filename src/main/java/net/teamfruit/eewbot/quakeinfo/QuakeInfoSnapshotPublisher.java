@@ -28,6 +28,7 @@ public final class QuakeInfoSnapshotPublisher implements AutoCloseable {
     private long retryDelay;
     private String lastFingerprint;
     private String rejectedFingerprint;
+    private long renderFailedVersion = -1;
 
     public QuakeInfoSnapshotPublisher(QuakeInfoStore store, EmbedContext context, QuakeInfoSnapshotClient client,
                                       ConfigV2.QuakeInfoPublisher config) {
@@ -74,9 +75,9 @@ public final class QuakeInfoSnapshotPublisher implements AutoCloseable {
             failed();
             Log.logger.warn("QuakeInfo publisher synchronization failed: status={}, code={}", e.status(), e.code());
         } catch (RuntimeException e) {
-            // Renderer/transport exceptions may include input data or secrets. Never log the exception.
+            // Transport exceptions may include secrets. Never log the exception.
             failed();
-            Log.logger.warn("QuakeInfo publisher rendering or synchronization failed; retry scheduled");
+            Log.logger.warn("QuakeInfo publisher synchronization failed; retry scheduled");
         } finally {
             synchronized (this) { this.running = false; schedule(); }
         }
@@ -85,8 +86,18 @@ public final class QuakeInfoSnapshotPublisher implements AutoCloseable {
     private void synchronizeLatest() {
         long version = this.store.getUpdateVersion();
         var latest = this.store.getLatestReport();
-        if (latest.isEmpty()) return;
-        QuakeInfoSnapshot rendered = QuakeInfoSnapshot.render(latest.get(), this.context);
+        if (latest.isEmpty() || version == this.renderFailedVersion) return;
+        QuakeInfoSnapshot rendered;
+        try {
+            rendered = QuakeInfoSnapshot.render(latest.get(), this.context);
+        } catch (RuntimeException e) {
+            if (this.store.getUpdateVersion() != version) { requestSync(); return; }
+            // Rendering is deterministic for one Store state, so retrying cannot fix it. Wait for the next update.
+            // Renderer exceptions may include input data. Never log the exception.
+            this.renderFailedVersion = version;
+            Log.logger.warn("QuakeInfo publisher rendering failed; skipped until the next Store update");
+            return;
+        }
         if (this.store.getUpdateVersion() != version) { requestSync(); return; }
         String fingerprint = rendered.fingerprint();
         if (fingerprint.equals(this.rejectedFingerprint) || fingerprint.equals(this.lastFingerprint)) return;
