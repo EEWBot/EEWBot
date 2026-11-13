@@ -1,4 +1,5 @@
 {
+  "eewbot.eew.regions.others": "%s等地區",
   "eewbot.eew.eewalert.num": "緊急地震速報 (警報) 第%s報",
   "eewbot.eew.eewalert.num.concurrent": "#%s 緊急地震速報 (警報) 第%s報",
   "eewbot.eew.eewalert.final": "緊急地震速報 (警報) 最終報",
