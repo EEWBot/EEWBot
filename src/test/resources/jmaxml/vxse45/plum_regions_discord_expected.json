@@ -1,12 +1,15 @@
 {
   "embeds": [
     {
-      "title": "緊急地震速報 (警報) 第12報",
+      "title": "緊急地震速報 (警報) 第12報 | 震度5弱程度以上・石川県能登など",
       "description": "※この情報は精度が低い可能性があります",
       "timestamp": "2026-05-11T01:23:59Z",
       "color": 16711680,
       "footer": {
         "text": "気象庁"
+      },
+      "thumbnail": {
+        "url": "https://cdn.discordapp.com/emojis/1570523348050378842.webp"
       },
       "fields": [
         {

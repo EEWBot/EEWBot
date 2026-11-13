@@ -1,11 +1,14 @@
 {
   "embeds": [
     {
-      "title": "緊急地震速報 (警報) 第5報",
+      "title": "緊急地震速報 (警報) 第5報 | 最大震度5強・石川県能登地方",
       "timestamp": "2026-05-11T01:23:49Z",
       "color": 16711680,
       "footer": {
         "text": "気象庁"
+      },
+      "thumbnail": {
+        "url": "https://cdn.discordapp.com/emojis/1570523350353055816.webp"
       },
       "fields": [
         {

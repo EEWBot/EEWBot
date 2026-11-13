@@ -91,7 +91,7 @@ class DmdataGatewayDeliveryTest {
             return CompletableFuture.completedFuture(null);
         });
         GatewayManager manager = new GatewayManager(service, new ConfigV2(), 1L, scheduler, scheduler,
-                null, null, null, null, this.externalWebhookService, this.messageExecutor);
+                null, null, this.externalWebhookService, this.messageExecutor);
         this.gateway = new DmdataGateway(null, null, 1L, true, update -> {
             manager.handleDmdataEEW(update);
             this.updates.add(update);

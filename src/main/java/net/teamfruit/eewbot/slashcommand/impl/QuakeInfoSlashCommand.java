@@ -33,7 +33,7 @@ public class QuakeInfoSlashCommand implements ISlashCommand {
 
     @Override
     public Mono<Void> on(SlashCommandContext ctx, ApplicationCommandInteractionEvent event, Channel channel, String lang) {
-        EmbedContext embedCtx = new EmbedContext(ctx.rendererQueryFactory(), ctx.quakeInfoStore(), ctx.i18n());
+        EmbedContext embedCtx = new EmbedContext(ctx.rendererQueryFactory(), ctx.quakeInfoStore(), ctx.i18n(), ctx.intensityEmojis());
         return ctx.quakeInfoStore().getLatestReport()
                 .map(quakeInfo -> EmbedPacker.pack(quakeInfo.createEmbeds(lang, embedCtx, () -> new I18nEmbedBuilder(lang, embedCtx.i18n()))))
                 // embed が順序どおり届くよう、フォローアップは 1 つずつ順番に送信する

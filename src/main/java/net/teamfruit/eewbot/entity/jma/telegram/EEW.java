@@ -145,36 +145,20 @@ public interface EEW extends JMAReport, ExternalData {
         }
 
         boolean eewWarning = isEEWWarning();
-        if (eewWarning) {
-            if (isLastInfo()) {
-                if (isConcurrent())
-                    builder.title("eewbot.eew.eewalert.final.concurrent", getConcurrentIndex());
-                else
-                    builder.title("eewbot.eew.eewalert.final");
-            } else {
-                if (isConcurrent())
-                    builder.title("eewbot.eew.eewalert.num.concurrent", getConcurrentIndex(), getSerial());
-                else
-                    builder.title("eewbot.eew.eewalert.num", getSerial());
-            }
-            builder.color(Color.RED);
-        } else {
-            if (isLastInfo()) {
-                if (isConcurrent())
-                    builder.title("eewbot.eew.eewprediction.final.concurrent", getConcurrentIndex());
-                else
-                    builder.title("eewbot.eew.eewprediction.final");
-            } else {
-                if (isConcurrent())
-                    builder.title("eewbot.eew.eewprediction.num.concurrent", getConcurrentIndex(), getSerial());
-                else
-                    builder.title("eewbot.eew.eewprediction.num", getSerial());
-            }
-            builder.color(Color.BLUE);
-        }
+        String titleKey = "eewbot.eew." + (eewWarning ? "eewalert" : "eewprediction")
+                + (isLastInfo() ? ".final" : ".num") + (isConcurrent() ? ".concurrent" : "");
+        String title = isConcurrent()
+                ? ctx.i18n().format(lang, titleKey, getConcurrentIndex(), getSerial())
+                : ctx.i18n().format(lang, titleKey, getSerial());
+        ForecastMaxInt forecastMaxInt = getForecastMaxInt();
+        SeismicIntensity maxIntensity = SeismicIntensity.get(forecastMaxInt != null ? forecastMaxInt.from() : null);
+        builder.title("eewbot.eew.title", title,
+                ctx.i18n().get(lang, "eewbot.eew.intensity." + maxIntensity.getLegacySerializedName()),
+                ctx.i18n().get(lang, getHypocenterName()));
+        ctx.intensityEmojis().getImageUrl(maxIntensity).ifPresent(builder::thumbnail);
+        builder.color(eewWarning ? Color.RED : Color.BLUE);
         builder.timestamp(getReportDateTime());
         List<ForecastRegion> forecastRegions = getForecastRegions();
-        ForecastMaxInt forecastMaxInt = getForecastMaxInt();
         if (!Strings.CS.equals(getCondition(), "仮定震源要素")) {
             builder.addField("eewbot.eew.epicenter", getHypocenterName(), true);
             String depthCondition = getDepthCondition();
@@ -198,18 +182,35 @@ public interface EEW extends JMAReport, ExternalData {
                     builder.addField("eewbot.eew.plumseismicintensityplus", "eewbot.eew.near", false,
                             SeismicIntensity.get(forecastMaxInt.from()).getSimple(),
                             getHypocenterName());
+                    String intensity = ctx.i18n().get(lang, "eewbot.eew.intensity." + maxIntensity.getLegacySerializedName());
+                    builder.title("eewbot.eew.title.plum", title,
+                            ctx.i18n().format(lang, "eewbot.eew.plumseismicintensityplus", intensity),
+                            ctx.i18n().format(lang, "eewbot.eew.near", intensity, getHypocenterName()));
                 }
             } else {
-                plumRegionsByMaxInt(forecastRegions)
-                        .forEach(entry -> {
-                            if (entry.getKey().to().equals("over")) {
-                                builder.addField("eewbot.eew.plumseismicintensityplus",
-                                        entry.getValue(), false, SeismicIntensity.get(entry.getKey().from()).getSimple());
-                            } else {
-                                builder.addField("eewbot.eew.plumseismicintensity",
-                                        entry.getValue(), false, SeismicIntensity.get(entry.getKey().to()).getSimple());
-                            }
-                        });
+                List<Map.Entry<ForecastMaxInt, String>> plumGroups = plumRegionsByMaxInt(forecastRegions);
+                for (Map.Entry<ForecastMaxInt, String> entry : plumGroups) {
+                    boolean over = "over".equals(entry.getKey().to());
+                    String fieldTitleKey = over ? "eewbot.eew.plumseismicintensityplus" : "eewbot.eew.plumseismicintensity";
+                    SeismicIntensity intensity = SeismicIntensity.get(over ? entry.getKey().from() : entry.getKey().to());
+                    builder.addField(fieldTitleKey, entry.getValue(), false, intensity.getSimple());
+                    if (entry.equals(plumGroups.getFirst())) {
+                        List<ForecastRegion> plumRegions = forecastRegions.stream()
+                                .filter(ForecastRegion::plum)
+                                .filter(region -> region.forecastMaxInt() != null)
+                                .toList();
+                        String regionName = plumRegions.stream()
+                                .filter(region -> entry.getKey().equals(region.forecastMaxInt()))
+                                .findFirst().orElseThrow().name();
+                        String regionTitle = plumRegions.size() > 1
+                                ? ctx.i18n().format(lang, "eewbot.eew.regions.others", regionName)
+                                : ctx.i18n().get(lang, regionName);
+                        builder.title("eewbot.eew.title.plum", title,
+                                ctx.i18n().format(lang, fieldTitleKey,
+                                        ctx.i18n().get(lang, "eewbot.eew.intensity." + intensity.getLegacySerializedName())),
+                                regionTitle);
+                    }
+                }
             }
         }
 

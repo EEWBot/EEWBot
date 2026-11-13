@@ -55,7 +55,7 @@ public class Channel extends ChannelBase {
     }
 
     public static Channel createDefault(Long guildId, Long channelId, Long threadId, String lang) {
-        return new Channel(guildId, channelId, threadId, false, false, false, false, false, SeismicIntensity.ONE, null, lang);
+        return new Channel(guildId, channelId, threadId, false, false, false, false, false, SeismicIntensity.UNKNOWN, null, lang);
     }
 
     public boolean isEewAlert() {

@@ -1,11 +1,14 @@
 {
   "embeds": [
     {
-      "title": "緊急地震速報 (警報) 第18報",
+      "title": "緊急地震速報 (警報) 第18報 | 最大震度6弱・豊後水道",
       "timestamp": "2024-04-17T14:15:11Z",
       "color": 16711680,
       "footer": {
         "text": "気象庁"
+      },
+      "thumbnail": {
+        "url": "https://cdn.discordapp.com/emojis/1570523352655724544.webp"
       },
       "fields": [
         {

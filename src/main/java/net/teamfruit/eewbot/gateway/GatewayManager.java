@@ -1,6 +1,5 @@
 package net.teamfruit.eewbot.gateway;
 
-import discord4j.core.GatewayDiscordClient;
 import net.teamfruit.eewbot.*;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.dmdata.DmdataEEWUpdate;
@@ -14,7 +13,9 @@ import net.teamfruit.eewbot.entity.jma.telegram.VXSE52;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE53;
 import net.teamfruit.eewbot.entity.jma.telegram.VXSE61;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
-import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.entity.EmbedContext;
+import net.teamfruit.eewbot.quakeinfo.QuakeInfoSnapshotPublisher;
+import net.teamfruit.eewbot.quakeinfo.RemoteQuakeInfoSnapshotClient;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +41,17 @@ public class GatewayManager implements AutoCloseable {
 
     private final List<ScheduledFuture<?>> scheduledTasks = new ArrayList<>();
     private DmdataGateway dmdataGateway;
+    private QuakeInfoSnapshotPublisher quakeInfoPublisher;
+
+    public void initQuakeInfoPublisher(EmbedContext context) {
+        if (!this.config.getQuakeInfoPublisher().isEnabled()) return;
+        var client = new RemoteQuakeInfoSnapshotClient(this.config.getQuakeInfoPublisher());
+        try {
+            this.quakeInfoPublisher = new QuakeInfoSnapshotPublisher(
+                    this.quakeInfoStore, context, client, this.config.getQuakeInfoPublisher());
+            this.quakeInfoPublisher.start();
+        } catch (RuntimeException e) { client.close(); throw e; }
+    }
 
     public GatewayManager(
             EEWService service,
@@ -48,12 +60,10 @@ public class GatewayManager implements AutoCloseable {
             ScheduledExecutorService scheduledExecutor,
             ScheduledExecutorService dmdataReconnectExecutor,
             HttpClient httpClient,
-            GatewayDiscordClient client,
-            DestinationAdminRegistry adminRegistry,
             QuakeInfoStore quakeInfoStore,
             ExternalWebhookService externalWebhookService
     ) {
-        this(service, config, applicationId, scheduledExecutor, dmdataReconnectExecutor, httpClient, client, adminRegistry, quakeInfoStore, externalWebhookService,
+        this(service, config, applicationId, scheduledExecutor, dmdataReconnectExecutor, httpClient, quakeInfoStore, externalWebhookService,
                 Executors.newVirtualThreadPerTaskExecutor());
     }
 
@@ -64,8 +74,6 @@ public class GatewayManager implements AutoCloseable {
             ScheduledExecutorService scheduledExecutor,
             ScheduledExecutorService dmdataReconnectExecutor,
             HttpClient httpClient,
-            GatewayDiscordClient client,
-            DestinationAdminRegistry adminRegistry,
             QuakeInfoStore quakeInfoStore,
             ExternalWebhookService externalWebhookService,
             ExecutorService messageExecutor
@@ -149,7 +157,8 @@ public class GatewayManager implements AutoCloseable {
                 this.scheduledExecutor.scheduleAtFixedRate(jmaXmlGateway, jmaXMLInitialDelay, pollIntervalSeconds, TimeUnit.SECONDS)
         );
 
-        this.scheduledExecutor.execute(new JMAXmlLGateway(this.httpClient, this.quakeInfoStore, this.config.getDebug().getJmaXmlFeedRoot()));
+        this.scheduledExecutor.execute(new JMAXmlLGateway(this.httpClient, this.quakeInfoStore, this.config.getDebug().getJmaXmlFeedRoot(),
+                () -> { if (this.quakeInfoPublisher != null) this.quakeInfoPublisher.requestSync(); }));
     }
 
     void handleJMAReport(AbstractJMAReport data) {
@@ -229,6 +238,7 @@ public class GatewayManager implements AutoCloseable {
 
     @Override
     public void close() {
+        if (this.quakeInfoPublisher != null) this.quakeInfoPublisher.close();
         // 1. Cancel pending reconnects via DmdataGateway.close()
         if (this.dmdataGateway != null) {
             this.dmdataGateway.close();

@@ -1,4 +1,4 @@
-FROM amazoncorretto:25.0.4-alpine AS build
+FROM amazoncorretto:25.0.5-alpine AS build
 
 RUN apk add --no-cache binutils
 
@@ -10,7 +10,7 @@ RUN jlink \
          --compress=2 \
          --output jre-slim
 
-FROM alpine:3.24.2
+FROM alpine:3.24.4
 
 ENV JAVA_HOME=/jre
 ENV PATH="${JAVA_HOME}/bin:${PATH}"

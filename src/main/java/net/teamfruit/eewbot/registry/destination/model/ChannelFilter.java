@@ -2,14 +2,8 @@ package net.teamfruit.eewbot.registry.destination.model;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
-import org.jooq.Condition;
-import org.jooq.Field;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-
-import static org.jooq.impl.DSL.*;
 
 public class ChannelFilter {
 
@@ -132,73 +126,6 @@ public class ChannelFilter {
 
     public long getWebhookId() {
         return this.webhookId;
-    }
-
-    /**
-     * Converts this filter into a jOOQ Condition for SQL queries.
-     * Boolean fields are stored as INTEGER (0/1) in the database for both SQLite and PostgreSQL.
-     *
-     * @return jOOQ Condition representing the filter criteria
-     */
-    public Condition toCondition() {
-        List<Condition> conditions = new ArrayList<>();
-
-        if (this.hasGuildPresent) {
-            Field<Long> f = field(name("guild_id"), Long.class);
-            if (this.hasGuild != null && this.hasGuild) {
-                conditions.add(f.isNotNull());
-            } else if (this.hasGuild != null) {
-                conditions.add(f.isNull());
-            }
-        }
-        if (this.guildIdPresent) {
-            conditions.add(field(name("guild_id"), Long.class).eq(this.guildId));
-        }
-        if (this.channelIdPresent) {
-            conditions.add(field(name("channel_id"), Long.class).eq(this.channelId));
-        }
-        if (this.threadIdPresent) {
-            Field<Long> f = field(name("thread_id"), Long.class);
-            if (this.threadId != null) {
-                conditions.add(f.eq(this.threadId));
-            } else {
-                conditions.add(f.isNull());
-            }
-        }
-        if (this.isThreadPresent) {
-            Field<Long> f = field(name("thread_id"), Long.class);
-            if (this.isThread != null && this.isThread) {
-                conditions.add(f.isNotNull());
-            } else if (this.isThread != null) {
-                conditions.add(f.isNull());
-            }
-        }
-        if (this.eewAlertPresent) {
-            conditions.add(field(name("eew_alert"), Integer.class).eq(this.eewAlert ? 1 : 0));
-        }
-        if (this.eewPredictionPresent) {
-            conditions.add(field(name("eew_prediction"), Integer.class).eq(this.eewPrediction ? 1 : 0));
-        }
-        if (this.eewDecimationPresent) {
-            conditions.add(field(name("eew_decimation"), Integer.class).eq(this.eewDecimation ? 1 : 0));
-        }
-        if (this.quakeInfoPresent) {
-            conditions.add(field(name("quake_info"), Integer.class).eq(this.quakeInfo ? 1 : 0));
-        }
-        if (this.tsunamiPresent) {
-            conditions.add(field(name("tsunami"), Integer.class).eq(this.tsunami ? 1 : 0));
-        }
-        if (this.intensityPresent) {
-            conditions.add(field(name("min_intensity"), Integer.class).le(this.intensity.getCode()));
-        }
-        if (this.webhookIdPresent) {
-            conditions.add(field(name("webhook_id"), Long.class).eq(this.webhookId));
-        }
-
-        if (conditions.isEmpty()) {
-            return noCondition();
-        }
-        return conditions.stream().reduce(Condition::and).orElse(noCondition());
     }
 
     public boolean test(Channel channel) {

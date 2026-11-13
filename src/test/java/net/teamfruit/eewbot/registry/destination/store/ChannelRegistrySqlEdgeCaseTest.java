@@ -193,14 +193,13 @@ class ChannelRegistrySqlEdgeCaseTest {
     class LoadAllForSnapshotTests {
 
         @Test
-        @DisplayName("should convert null min_intensity to ONE")
-        void nullMinIntensityDefaultsToOne() {
-            // Insert with explicit values
+        @DisplayName("should preserve default min_intensity as UNKNOWN")
+        void defaultMinIntensityRemainsUnknown() {
             sqlRegistry.put(1L, Channel.createDefault(100L, 1L, null, "ja_jp"));
 
             List<DeliverySnapshot.DeliveryChannel> channels = sqlRegistry.loadAllForSnapshot();
             assertThat(channels).hasSize(1);
-            assertThat(channels.getFirst().minIntensity()).isEqualTo(SeismicIntensity.ONE);
+            assertThat(channels.getFirst().minIntensity()).isEqualTo(SeismicIntensity.UNKNOWN);
         }
 
         @Test

@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.entity.discord;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class DiscordWebhook {
 
@@ -9,6 +10,7 @@ public class DiscordWebhook {
     public String username;
     public String avatar_url;
     public List<DiscordEmbed> embeds;
+    public List<Map<String, Object>> components;
     public String thread_name;
 
     public static DiscordWebhook.Builder builder() {

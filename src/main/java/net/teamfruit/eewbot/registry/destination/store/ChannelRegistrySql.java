@@ -479,15 +479,13 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
             @Override
             public Connection getConnection() throws SQLException {
                 Connection connection = delegate.getConnection();
-                applySqlitePragmas(connection);
-                return connection;
+                return initializeSqliteConnection(connection);
             }
 
             @Override
             public Connection getConnection(String username, String password) throws SQLException {
                 Connection connection = delegate.getConnection(username, password);
-                applySqlitePragmas(connection);
-                return connection;
+                return initializeSqliteConnection(connection);
             }
 
             @Override
@@ -531,11 +529,21 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         };
     }
 
-    private static void applySqlitePragmas(Connection connection) throws SQLException {
-        try (Statement stmt = connection.createStatement()) {
-            stmt.execute("PRAGMA journal_mode=WAL");
-            stmt.execute("PRAGMA busy_timeout=5000");
-            stmt.execute("PRAGMA foreign_keys=ON");
+    private static Connection initializeSqliteConnection(Connection connection) throws SQLException {
+        try {
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("PRAGMA journal_mode=WAL");
+                stmt.execute("PRAGMA busy_timeout=5000");
+                stmt.execute("PRAGMA foreign_keys=ON");
+            }
+            return connection;
+        } catch (SQLException | RuntimeException | Error e) {
+            try {
+                connection.close();
+            } catch (SQLException closeFailure) {
+                e.addSuppressed(closeFailure);
+            }
+            throw e;
         }
     }
 
@@ -589,7 +597,7 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         if (filter == null) {
             return noCondition();
         }
-        return filter.toCondition();
+        return ChannelFilterSql.toCondition(filter);
     }
 
     private Channel mapToChannel(Record r) {

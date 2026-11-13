@@ -4,18 +4,26 @@ import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEven
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.spec.InteractionCallbackSpec;
+import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.rest.service.ApplicationService;
 import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.entity.discord.ImageRefreshButton;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.slashcommand.impl.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import reactor.core.publisher.Mono;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
 
 import java.util.HashMap;
+import java.util.List;
 
 import static net.teamfruit.eewbot.slashcommand.SlashCommandUtils.*;
 
-public class SlashCommandHandler {
+/** Owns the complete local Interactions registration and subscription lifecycle. */
+public class SlashCommandHandler implements Disposable {
+
+    private final Disposable.Composite subscriptions = Disposables.composite();
 
     public static HashMap<String, ISlashCommand> commands = new HashMap<>();
 
@@ -30,15 +38,29 @@ public class SlashCommandHandler {
     }
 
     public SlashCommandHandler(SlashCommandContext ctx) {
+        try {
+            start(ctx);
+        } catch (RuntimeException | Error e) {
+            try {
+                this.subscriptions.dispose();
+            } catch (RuntimeException | Error disposeFailure) {
+                e.addSuppressed(disposeFailure);
+            }
+            throw e;
+        }
+    }
+
+    private void start(SlashCommandContext ctx) {
         ApplicationService service = ctx.client().getRestClient().getApplicationService();
 
-        service.getGlobalApplicationCommands(ctx.applicationId())
+        this.subscriptions.add(service.getGlobalApplicationCommands(ctx.applicationId())
                 .filter(data -> !commands.containsKey(data.name()))
                 .flatMap(data -> service.deleteGlobalApplicationCommand(ctx.applicationId(), data.id().asLong()))
-                .subscribe();
-        commands.values().forEach(command -> service.createGlobalApplicationCommand(ctx.applicationId(), command.buildCommand()).subscribe());
+                .subscribe());
+        commands.values().forEach(command -> this.subscriptions.add(
+                service.createGlobalApplicationCommand(ctx.applicationId(), command.buildCommand()).subscribe()));
 
-        ctx.client().on(ApplicationCommandInteractionEvent.class)
+        this.subscriptions.add(ctx.client().on(ApplicationCommandInteractionEvent.class)
                 .flatMap(event -> {
                     if (ctx.shutdownFlag().get()) {
                         return event.reply("Bot is shutting down. Please try again later.")
@@ -81,9 +103,9 @@ public class SlashCommandHandler {
                     return Mono.empty();
                 })
                 .repeat()
-                .subscribe();
+                .subscribe());
 
-        ctx.client().on(SelectMenuInteractionEvent.class)
+        this.subscriptions.add(ctx.client().on(SelectMenuInteractionEvent.class)
                 .flatMap(event -> {
                     if (ctx.shutdownFlag().get()) {
                         return event.reply("Bot is shutting down. Please try again later.")
@@ -120,9 +142,9 @@ public class SlashCommandHandler {
                     return Mono.empty();
                 })
                 .repeat()
-                .subscribe();
+                .subscribe());
 
-        ctx.client().on(ButtonInteractionEvent.class)
+        this.subscriptions.add(ctx.client().on(ButtonInteractionEvent.class)
                 .flatMap(event -> {
                     if (ctx.shutdownFlag().get()) {
                         return event.reply("Bot is shutting down. Please try again later.")
@@ -131,7 +153,12 @@ public class SlashCommandHandler {
                     }
                     return Mono.just(event);
                 })
-                .flatMap(event -> Mono.justOrEmpty(commands.values().stream()
+                .flatMap(event -> {
+                    if (ImageRefreshButton.CUSTOM_ID.equals(event.getCustomId()))
+                        return event.deferEdit(InteractionCallbackSpec.builder().build())
+                                .then(Mono.defer(() -> event.editReply(InteractionReplyEditSpec.builder()
+                                        .components(List.of()).build()).then()));
+                    return Mono.justOrEmpty(commands.values().stream()
                                 .filter(IButtonSlashCommand.class::isInstance)
                                 .map(IButtonSlashCommand.class::cast)
                                 .filter(cmd -> cmd.getCustomIds().contains(event.getCustomId()))
@@ -153,13 +180,24 @@ public class SlashCommandHandler {
                         })
                         .flatMap(cmd -> cmd.onClick(ctx, event, getLanguage(ctx, event)))
                         .doOnError(err -> Log.logger.error("Error during {} action", event.getCustomId(), err))
-                        .onErrorResume(err -> Mono.empty()))
+                        .onErrorResume(err -> Mono.empty());
+                })
                 .onErrorResume(e -> {
                     Log.logger.error("Unhandled exception during ButtonInteractionEvent handling", e);
                     return Mono.empty();
                 })
                 .repeat()
-                .subscribe();
+                .subscribe());
+    }
+
+    @Override
+    public void dispose() {
+        this.subscriptions.dispose();
+    }
+
+    @Override
+    public boolean isDisposed() {
+        return this.subscriptions.isDisposed();
     }
 
     private static void registerCommand(ISlashCommand command) {

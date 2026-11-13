@@ -11,6 +11,7 @@ import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.i18n.I18n;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
+import net.teamfruit.eewbot.registry.destination.store.RegistryDestinationCleanup;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryPartition;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import org.junit.jupiter.api.AfterEach;
@@ -55,7 +56,7 @@ class EEWServiceDeliveryRetryTest {
     void setUp() {
         this.logs.start();
         this.logger.addAppender(this.logs);
-        this.service = spy(new EEWService(null, null, this.registry, null, null, null,
+        this.service = spy(new EEWService(null, null, new RegistryDestinationCleanup(this.registry), null, null, null,
                 this.cleanup, null, new ConfigV2(), this.scheduler));
     }
 
@@ -170,7 +171,7 @@ class EEWServiceDeliveryRetryTest {
         I18n i18n = new I18n("ja_jp");
         var partition = new DeliveryPartition(Map.of(), Map.of(
                 123L, new DeliveryTarget(123, "ja_jp", null), 456L, new DeliveryTarget(456, "ja_jp", null)));
-        this.service = spy(new EEWService(null, null, this.registry, null, i18n, null,
+        this.service = spy(new EEWService(null, null, new RegistryDestinationCleanup(this.registry), null, i18n, null,
                 this.cleanup, null, new ConfigV2(), this.scheduler));
         doReturn(Mono.error(failure(403, null))).when(this.service).directSendMessagePassErrors(eq(123L), any());
         doReturn(Mono.empty()).when(this.service).directSendMessagePassErrors(eq(456L), any());

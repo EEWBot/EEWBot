@@ -1,12 +1,15 @@
 {
   "embeds": [
     {
-      "title": "緊急地震速報 (予報) 第3報",
+      "title": "緊急地震速報 (予報) 第3報 | 最大震度4・豊後水道",
       "description": "※この情報は精度が低い可能性があります",
       "timestamp": "2024-04-17T14:14:59Z",
       "color": 255,
       "footer": {
         "text": "気象庁"
+      },
+      "thumbnail": {
+        "url": "https://cdn.discordapp.com/emojis/1570523345907355658.webp"
       },
       "fields": [
         {
