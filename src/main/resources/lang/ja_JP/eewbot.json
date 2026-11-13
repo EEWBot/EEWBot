@@ -1,5 +1,7 @@
 {
   "eewbot.eew.title": "%s | 最大震度%s・%s",
+  "eewbot.eew.title.plum": "%s | %s・%s",
+  "eewbot.eew.regions.others": "%sなど",
   "eewbot.eew.intensity.unknown": "不明",
   "eewbot.eew.intensity.1": "1",
   "eewbot.eew.intensity.2": "2",
