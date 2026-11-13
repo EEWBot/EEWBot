@@ -1,5 +1,6 @@
 {
   "eewbot.eew.title": "%s | 최대지진세기 %s・%s",
+  "eewbot.eew.regions.others": "%s 등",
   "eewbot.eew.intensity.unknown": "알수 없음",
   "eewbot.eew.intensity.5-": "5약",
   "eewbot.eew.intensity.5+": "5강",
