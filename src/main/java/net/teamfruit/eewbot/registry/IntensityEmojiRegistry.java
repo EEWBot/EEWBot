@@ -6,6 +6,7 @@ import discord4j.core.object.entity.ApplicationEmoji;
 import discord4j.core.object.entity.ApplicationInfo;
 import discord4j.core.spec.ApplicationEmojiCreateSpec;
 import discord4j.rest.util.Image;
+import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 
 import java.io.IOException;
@@ -18,12 +19,15 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 
-/** Application-owned intensity emojis, resolved once before message delivery starts. */
+/**
+ * Application-owned intensity emojis.
+ * Resolution may complete after delivery starts; until then lookups are empty and embeds omit the icon.
+ */
 public final class IntensityEmojiRegistry {
 
     private static final String ICON_BASE_URL = "https://resources.eewbot.net/intensity-icon/";
 
-    private final Map<SeismicIntensity, CustomEmoji> emojis;
+    private volatile Map<SeismicIntensity, CustomEmoji> emojis;
 
     private IntensityEmojiRegistry(Map<SeismicIntensity, CustomEmoji> emojis) {
         this.emojis = Map.copyOf(emojis);
@@ -33,8 +37,32 @@ public final class IntensityEmojiRegistry {
         return new IntensityEmojiRegistry(Map.of());
     }
 
-    /** Reuses matching names without fetching or comparing their images. */
+    /** Resolves synchronously. Listing failure is propagated; a single emoji failure only omits that emoji. */
     public static IntensityEmojiRegistry initialize(ApplicationInfo application, HttpClient httpClient) throws IOException {
+        return new IntensityEmojiRegistry(resolve(application, httpClient));
+    }
+
+    /**
+     * Returns an empty registry immediately and resolves on a daemon thread so startup never waits on
+     * emoji listing, icon downloads or emoji creation. Failures are logged and leave the registry empty.
+     */
+    public static IntensityEmojiRegistry initializeInBackground(ApplicationInfo application, HttpClient httpClient) {
+        IntensityEmojiRegistry registry = empty();
+        Thread thread = new Thread(() -> {
+            try {
+                registry.emojis = Map.copyOf(resolve(application, httpClient));
+                Log.logger.info("Intensity emojis resolved: {}", registry.emojis.size());
+            } catch (Exception e) {
+                Log.logger.warn("Failed to resolve intensity emojis; embeds will omit intensity icons", e);
+            }
+        }, "eewbot-intensity-emoji");
+        thread.setDaemon(true);
+        thread.start();
+        return registry;
+    }
+
+    /** Reuses matching names without fetching or comparing their images. */
+    private static Map<SeismicIntensity, CustomEmoji> resolve(ApplicationInfo application, HttpClient httpClient) throws IOException {
         Map<String, ApplicationEmoji> existing = application.getEmojis()
                 .collectMap(ApplicationEmoji::getName)
                 .blockOptional()
@@ -47,14 +75,20 @@ public final class IntensityEmojiRegistry {
             String name = "intensity_" + iconName.replace('-', '_');
             ApplicationEmoji emoji = existing.get(name);
             if (emoji == null) {
-                Image image = downloadImage(httpClient, iconName);
-                emoji = application.createEmoji(ApplicationEmojiCreateSpec.of(name, image))
-                        .blockOptional()
-                        .orElseThrow(() -> new IllegalStateException("Failed to create application emoji: " + name));
+                try {
+                    Image image = downloadImage(httpClient, iconName);
+                    emoji = application.createEmoji(ApplicationEmojiCreateSpec.of(name, image))
+                            .blockOptional()
+                            .orElseThrow(() -> new IllegalStateException("Failed to create application emoji: " + name));
+                } catch (IOException | RuntimeException e) {
+                    if (Thread.currentThread().isInterrupted()) throw e;
+                    Log.logger.warn("Failed to register intensity emoji {}; continuing without it", name, e);
+                    continue;
+                }
             }
             resolved.put(intensity, CustomEmoji.of(emoji.getId(), emoji.getName(), emoji.isAnimated()));
         }
-        return new IntensityEmojiRegistry(resolved);
+        return resolved;
     }
 
     private static Image downloadImage(HttpClient httpClient, String iconName) throws IOException {

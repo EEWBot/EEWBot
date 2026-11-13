@@ -123,7 +123,7 @@ public class EEWBotFactory {
             ApplicationInfo application = gateway.getApplicationInfo().blockOptional()
                     .orElseThrow(() -> new IllegalStateException("Failed to get application info"));
             long applicationId = application.getId().asLong();
-            IntensityEmojiRegistry intensityEmojis = IntensityEmojiRegistry.initialize(application, httpClient);
+            IntensityEmojiRegistry intensityEmojis = IntensityEmojiRegistry.initializeInBackground(application, httpClient);
 
             final User self = gateway.getSelf().block();
             String userName;

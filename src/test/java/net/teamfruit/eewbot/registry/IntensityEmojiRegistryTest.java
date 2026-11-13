@@ -122,25 +122,69 @@ class IntensityEmojiRegistryTest {
     }
 
     @Test
-    void failedDownloadDoesNotUploadAnErrorPage() throws Exception {
+    void failedDownloadDoesNotUploadAnErrorPageAndOmitsOnlyThatEmoji() throws Exception {
         when(this.application.getEmojis()).thenReturn(Flux.empty());
         stubDownload(404, new byte[0]);
 
-        assertThatThrownBy(() -> IntensityEmojiRegistry.initialize(this.application, this.httpClient))
-                .isInstanceOf(IOException.class).hasMessageContaining("1: HTTP 404");
+        IntensityEmojiRegistry registry = IntensityEmojiRegistry.initialize(this.application, this.httpClient);
 
+        verify(this.httpClient, times(9)).send(any(), any());
         verify(this.application, never()).createEmoji(any(ApplicationEmojiCreateSpec.class));
+        for (SeismicIntensity intensity : INTENSITIES) {
+            assertThat(registry.getId(intensity)).isEmpty();
+        }
     }
 
     @Test
-    void creationFailureIsPropagated() throws Exception {
-        when(this.application.getEmojis()).thenReturn(Flux.empty());
+    void creationFailureSkipsThatEmojiAndKeepsTheRest() throws Exception {
+        List<ApplicationEmoji> existing = existingEmojis();
+        when(this.application.getEmojis()).thenReturn(Flux.fromIterable(existing.subList(1, 9)));
         stubDownload(200, new byte[]{1});
         when(this.application.createEmoji(any(ApplicationEmojiCreateSpec.class)))
                 .thenReturn(Mono.error(new IllegalStateException("create failed")));
 
-        assertThatThrownBy(() -> IntensityEmojiRegistry.initialize(this.application, this.httpClient))
-                .isInstanceOf(IllegalStateException.class).hasMessage("create failed");
+        IntensityEmojiRegistry registry = IntensityEmojiRegistry.initialize(this.application, this.httpClient);
+
+        assertThat(registry.getId(SeismicIntensity.ONE)).isEmpty();
+        for (int i = 1; i < INTENSITIES.size(); i++) {
+            assertThat(registry.getId(INTENSITIES.get(i))).contains(Snowflake.of(100 + i));
+        }
+    }
+
+    @Test
+    void backgroundInitializationReturnsImmediatelyAndFillsLater() throws Exception {
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        List<ApplicationEmoji> existing = existingEmojis();
+        when(this.application.getEmojis()).thenReturn(Flux.defer(() -> {
+            try {
+                release.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return Flux.fromIterable(existing);
+        }));
+
+        IntensityEmojiRegistry registry = IntensityEmojiRegistry.initializeInBackground(this.application, this.httpClient);
+        assertThat(registry.getId(SeismicIntensity.ONE)).isEmpty();
+
+        release.countDown();
+        long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+        while (registry.getId(SeismicIntensity.SEVEN).isEmpty() && System.nanoTime() < deadline) Thread.sleep(10);
+        for (int i = 0; i < INTENSITIES.size(); i++) {
+            assertThat(registry.getId(INTENSITIES.get(i))).contains(Snowflake.of(100 + i));
+        }
+    }
+
+    @Test
+    void backgroundListingFailureLeavesTheRegistryEmpty() throws Exception {
+        when(this.application.getEmojis()).thenReturn(Flux.error(new IllegalStateException("list failed")));
+
+        IntensityEmojiRegistry registry = IntensityEmojiRegistry.initializeInBackground(this.application, this.httpClient);
+
+        verify(this.application, timeout(5000)).getEmojis();
+        Thread.sleep(50);
+        assertThat(registry.getId(SeismicIntensity.ONE)).isEmpty();
+        verify(this.application, never()).createEmoji(any(ApplicationEmojiCreateSpec.class));
     }
 
     @Test
