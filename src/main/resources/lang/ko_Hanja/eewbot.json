@@ -1,5 +1,6 @@
 {
   "eewbot.eew.title": "%s | 最大 震度 %s・%s",
+  "eewbot.eew.regions.others": "%s 等",
   "eewbot.eew.eewalert.num": "緊急 地震 速報 (警報) 第%s報",
   "eewbot.eew.eewalert.num.concurrent": "#%s 緊急 地震 速報 (警報) 第%s報",
   "eewbot.eew.eewalert.final": "緊急 地震 速報 (警報) 最終 報告",
