@@ -8,6 +8,9 @@
       "footer": {
         "text": "気象庁"
       },
+      "thumbnail": {
+        "url": "https://cdn.discordapp.com/emojis/1570523348050378842.webp"
+      },
       "fields": [
         {
           "name": "震央",

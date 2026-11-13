@@ -13,6 +13,7 @@ import discord4j.rest.service.ChannelService;
 import discord4j.rest.util.MultipartRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import net.teamfruit.eewbot.i18n.I18n;
+import net.teamfruit.eewbot.registry.IntensityEmojiRegistry;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
@@ -72,7 +73,7 @@ class TestMessageSlashCommandTest {
         // Even with a sender configured, a destination without a webhook uses Discord REST.
         config.getWebhookSender().setAddress("http://sender.test");
         this.context = new SlashCommandContext(this.admin, I18N, config, this.gateway, this.http,
-                "EEWBot", "https://example.com/avatar.png", null, null, 1L, new AtomicBoolean());
+                "EEWBot", "https://example.com/avatar.png", null, null, 1L, new AtomicBoolean(), IntensityEmojiRegistry.empty());
     }
 
     @ParameterizedTest

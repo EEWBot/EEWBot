@@ -6,6 +6,7 @@ import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
 import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.thread.ThreadChannelDeleteEvent;
+import discord4j.core.object.entity.ApplicationInfo;
 import discord4j.core.object.entity.User;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.gateway.intent.Intent;
@@ -14,6 +15,7 @@ import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.renderer.RendererQueryFactory;
 import net.teamfruit.eewbot.gateway.GatewayManager;
 import net.teamfruit.eewbot.i18n.I18n;
+import net.teamfruit.eewbot.registry.IntensityEmojiRegistry;
 import net.teamfruit.eewbot.registry.JsonRegistry;
 import net.teamfruit.eewbot.registry.config.ConfigV2;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
@@ -118,7 +120,10 @@ public class EEWBotFactory {
                     .reduce(0, Integer::sum)
                     .subscribe(sum -> Log.logger.info("Connected to {} shard(s), {} guild(s)!", shardCount, sum)));
 
-            long applicationId = gateway.getSelfId().asLong();
+            ApplicationInfo application = gateway.getApplicationInfo().blockOptional()
+                    .orElseThrow(() -> new IllegalStateException("Failed to get application info"));
+            long applicationId = application.getId().asLong();
+            IntensityEmojiRegistry intensityEmojis = IntensityEmojiRegistry.initialize(application, httpClient);
 
             final User self = gateway.getSelf().block();
             String userName;
@@ -133,7 +138,7 @@ public class EEWBotFactory {
 
             // 9. Service construction
             QuakeInfoStore quakeInfoStore = new QuakeInfoStore();
-            EmbedContext embedContext = new EmbedContext(rendererQueryFactory, quakeInfoStore, i18n);
+            EmbedContext embedContext = new EmbedContext(rendererQueryFactory, quakeInfoStore, i18n, intensityEmojis);
             EEWService service = new EEWService(
                     gateway, deliveryRegistry, destinationCleanup,
                     avatarUrl, i18n, embedContext,
@@ -150,7 +155,7 @@ public class EEWBotFactory {
             startLocalInteractions(management, () -> new SlashCommandHandler(new SlashCommandContext(
                     management.adminRegistry(), i18n, config, connectedGateway, httpClient,
                     userName, avatarUrl, rendererQueryFactory,
-                    quakeInfoStore, applicationId, shutdownFlag
+                    quakeInfoStore, applicationId, shutdownFlag, intensityEmojis
             )), subscriptions);
 
             // 11. Build EEWBot
