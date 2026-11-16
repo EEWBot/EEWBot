@@ -10,10 +10,13 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
 
 /** Existing webhook-sender transport shared by delivery and local Interactions. */
 public final class WebhookSenderClient {
+
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     private final HttpClient httpClient;
     private final URI address;
@@ -51,6 +54,8 @@ public final class WebhookSenderClient {
     private HttpRequest.Builder request(String path) {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(replacePathPreservingQuery(this.address, path))
+                // A stalled sender must fail so delivery can fall back to direct webhooks.
+                .timeout(REQUEST_TIMEOUT)
                 .header("User-Agent", "EEWBot");
         if (this.header.length > 0) builder.headers(this.header);
         return builder;

@@ -31,6 +31,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -46,6 +47,8 @@ public class EEWService {
     private interface SenderFallback {
         void onFailed(Map<Long, DeliveryTarget> channels, int fromChunkIndex);
     }
+
+    private static final Duration WEBHOOK_REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     private final GatewayDiscordClient gateway;
     private final String avatarUrl;
@@ -226,6 +229,8 @@ public class EEWService {
                         return CompletableFuture.completedFuture(false);
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create(channel.webhookUrl()))
+                            // Bounds the fan-out wait below and lets a stalled webhook fall back to the bot.
+                            .timeout(WEBHOOK_REQUEST_TIMEOUT)
                             .header("User-Agent", "EEWBot")
                             .header("Content-Type", "application/json")
                             .POST(HttpRequest.BodyPublishers.ofString(body))

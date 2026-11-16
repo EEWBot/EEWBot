@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
@@ -78,7 +79,7 @@ public class EEWBotFactory {
         ExternalWebhookService externalWebhookService = null;
         List<Disposable> subscriptions = new ArrayList<>();
         try {
-            HttpClient httpClient = HttpClient.newHttpClient();
+            HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
             // 5. Initialize I18n and renderer
             I18n i18n = new I18n(config.getBase().getDefaultLanguage());

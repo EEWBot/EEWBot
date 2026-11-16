@@ -35,6 +35,7 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +95,7 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create(baseUrl))
                             .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                            .timeout(Duration.ofSeconds(5))
                             .build();
                     HttpResponse<Void> response = ctx.httpClient().send(request, HttpResponse.BodyHandlers.discarding());
                     int status = response.statusCode();
