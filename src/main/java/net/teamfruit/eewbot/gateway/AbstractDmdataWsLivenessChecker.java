@@ -69,7 +69,7 @@ public abstract class AbstractDmdataWsLivenessChecker implements Runnable {
                     MDC.put("gateway.task", "liveness-reconnect");
                     try {
                         this.gateway.reconnectWebSocket(connection);
-                    } catch (EEWGatewayException e) {
+                    } catch (EEWGatewayException | RuntimeException e) {
                         Log.logger.error("Failed to reconnect DMDATA WebSocket", e);
                     } finally {
                         MDC.clear();

@@ -157,4 +157,25 @@ class DmdataGatewayReconnectTest {
         // reconnecting should be reset to false
         assertThat(connection.isReconnectFailed()).isFalse();
     }
+
+    @Test
+    void scheduledTask_marksConnectionFailedWhenReconnectThrowsUnchecked() throws Exception {
+        when(this.reconnectScheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+                .thenAnswer(invocation -> this.mockFuture);
+        when(this.dmdataAPI.openSocketList()).thenThrow(new IllegalStateException("unexpected"));
+
+        DmdataGateway.WebSocketConnection connection = this.gateway.new WebSocketConnection("test-1", "wss://test", true);
+        var field = DmdataGateway.class.getDeclaredField("webSocket1");
+        field.setAccessible(true);
+        field.set(this.gateway, connection);
+
+        connection.new WebSocketListener().onClose(mock(java.net.http.WebSocket.class), 1000, "test");
+        var captor = org.mockito.ArgumentCaptor.forClass(Runnable.class);
+        verify(this.reconnectScheduler).schedule(captor.capture(), anyLong(), any(TimeUnit.class));
+
+        captor.getValue().run();
+
+        // The liveness checker only retries connections flagged as failed.
+        assertThat(connection.isReconnectFailed()).isTrue();
+    }
 }

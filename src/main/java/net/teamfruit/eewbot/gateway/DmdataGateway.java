@@ -47,6 +47,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
     public static final String WS_BASE = "wss://ws.api.dmdata.jp/v2/websocket";
     public static final String WS_BASE_TOKYO = "wss://ws-tokyo.api.dmdata.jp/v2/websocket";
     public static final String WS_BASE_OSAKA = "wss://ws-osaka.api.dmdata.jp/v2/websocket";
+    private static final Duration HANDSHAKE_TIMEOUT = Duration.ofSeconds(10);
 
     private final java.net.http.HttpClient httpClient;
     private final DmdataAPI dmdataAPI;
@@ -375,44 +376,34 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
             if (this.closed)
                 throw new EEWGatewayException("DMDATA gateway is closed");
 
-            WebSocketConnection connection = new WebSocketConnection(connectionName, wsBaseURI, hasForecastContract);
-            CompletableFuture<WebSocket> future = this.httpClient.newWebSocketBuilder().buildAsync(URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()), connection.getListener());
-            future.whenComplete((ws, ex) -> {
-                MDC.put("gateway", "dmdata");
-                MDC.put("gateway.connection", connectionName);
-                try {
-                    if (ex != null) {
-                        Log.logger.error("DMDATA WebSocket {}: handshake failed", connectionName, ex);
-                        onError(new EEWGatewayException("WebSocket handshake failed", ex));
-                        connection.reconnectFailed = true;
-                    } else {
-                        connection.setWebSocket(ws);
-                    }
-                } finally {
-                    MDC.clear();
-                }
-            });
-            return connection;
+            return openWebSocket(connectionName, wsBaseURI, hasForecastContract, URI.create(wsBaseURI + "?ticket=" + socketStart.getTicket()));
         } else {
-            WebSocketConnection connection = new WebSocketConnection(connectionName, wsBaseURI, hasForecastContract);
-            CompletableFuture<WebSocket> future = this.httpClient.newWebSocketBuilder().buildAsync(URI.create(wsBaseURI), connection.getListener());
-            future.whenComplete((ws, ex) -> {
-                MDC.put("gateway", "dmdata");
-                MDC.put("gateway.connection", connectionName);
-                try {
-                    if (ex != null) {
-                        Log.logger.error("DMDATA WebSocket {}: handshake failed", connectionName, ex);
-                        onError(new EEWGatewayException("WebSocket handshake failed", ex));
-                        connection.reconnectFailed = true;
-                    } else {
-                        connection.setWebSocket(ws);
-                    }
-                } finally {
-                    MDC.clear();
-                }
-            });
-            return connection;
+            return openWebSocket(connectionName, wsBaseURI, hasForecastContract, URI.create(wsBaseURI));
         }
+    }
+
+    private WebSocketConnection openWebSocket(String connectionName, String wsBaseURI, boolean hasForecastContract, URI uri) {
+        WebSocketConnection connection = new WebSocketConnection(connectionName, wsBaseURI, hasForecastContract);
+        WebSocket.Builder builder = this.httpClient.newWebSocketBuilder();
+        // A handshake that never completes would leave the slot occupied with no retry signal.
+        builder.connectTimeout(HANDSHAKE_TIMEOUT);
+        CompletableFuture<WebSocket> future = builder.buildAsync(uri, connection.getListener());
+        future.whenComplete((ws, ex) -> {
+            MDC.put("gateway", "dmdata");
+            MDC.put("gateway.connection", connectionName);
+            try {
+                if (ex != null) {
+                    Log.logger.error("DMDATA WebSocket {}: handshake failed", connectionName, ex);
+                    onError(new EEWGatewayException("WebSocket handshake failed", ex));
+                    connection.reconnectFailed = true;
+                } else {
+                    connection.setWebSocket(ws);
+                }
+            } finally {
+                MDC.clear();
+            }
+        });
+        return connection;
     }
 
     public void reconnectWebSocket(WebSocketConnection listener) throws EEWGatewayException {
@@ -711,6 +702,11 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                         reconnectWebSocket(WebSocketConnection.this);
                     } catch (EEWGatewayException e) {
                         DmdataGateway.this.onError(e);
+                        WebSocketConnection.this.reconnectFailed = true;
+                    } catch (RuntimeException e) {
+                        // An unchecked failure must still mark the connection for the liveness
+                        // checker; otherwise nothing would ever retry it.
+                        DmdataGateway.this.onError(new EEWGatewayException("Unexpected failure while reconnecting to DMDATA", e));
                         WebSocketConnection.this.reconnectFailed = true;
                     } finally {
                         WebSocketConnection.this.reconnecting = false;

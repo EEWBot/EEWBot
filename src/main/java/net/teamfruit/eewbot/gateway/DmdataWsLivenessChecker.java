@@ -26,7 +26,7 @@ public class DmdataWsLivenessChecker extends AbstractDmdataWsLivenessChecker {
                         MDC.put("gateway.task", "liveness-dead-check");
                         try {
                             this.gateway.reconnectDeadWebSocketsBasedOnDmData();
-                        } catch (EEWGatewayException e) {
+                        } catch (EEWGatewayException | RuntimeException e) {
                             Log.logger.error("Failed to check dead DMDATA WebSockets", e);
                         } finally {
                             MDC.clear();
