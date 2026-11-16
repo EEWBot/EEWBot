@@ -14,26 +14,19 @@ import net.teamfruit.eewbot.entity.dmdata.ws.*;
 import net.teamfruit.eewbot.entity.jma.JMAStatus;
 import net.teamfruit.eewbot.entity.jma.telegram.AbstractEEW;
 import net.teamfruit.eewbot.entity.jma.telegram.EEW;
-import net.teamfruit.eewbot.entity.jma.telegram.VXSE43Impl;
-import net.teamfruit.eewbot.entity.jma.telegram.VXSE45Impl;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.MDC;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipInputStream;
 
 public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
 
@@ -537,29 +530,15 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                                 Log.logger.warn("DMDATA WebSocket {}: data version is not 2.0, may not be compatible", WebSocketConnection.this.connectionName);
                             }
 
-                            String bodyString;
-                            if (Strings.CS.equals(wsData.getCompression(), "gzip")) {
-                                bodyString = decompressGZIPBase64(wsData.getBody());
-                            } else if (Strings.CS.equals(wsData.getCompression(), "zip")) {
-                                bodyString = decompressZipBase64(wsData.getBody());
-                            } else {
-                                bodyString = wsData.getBody();
-                            }
+                            String bodyString = DmdataTelegramDecoder.decodeBody(wsData);
                             Log.logger.debug("DMDATA WebSocket {}: data body: {}", WebSocketConnection.this.connectionName, bodyString);
 
                             String telegramType = wsData.getHead().getType();
-                            Class<? extends AbstractEEW> eewClass;
-                            if ("VXSE45".equals(telegramType)) {
-                                eewClass = VXSE45Impl.class;
-                            } else if ("VXSE43".equals(telegramType)) {
-                                eewClass = VXSE43Impl.class;
-                            } else {
+                            AbstractEEW eew = DmdataTelegramDecoder.parse(telegramType, bodyString);
+                            if (eew == null) {
                                 Log.logger.warn("DMDATA WebSocket {}: unknown telegram type: {}", WebSocketConnection.this.connectionName, telegramType);
                                 break;
                             }
-
-                            AbstractEEW eew = Codecs.XML_MAPPER.readValue(bodyString, eewClass);
-                            eew.setRawData(bodyString);
                             boolean isTest = wsData.getHead().isTest() || eew.getStatus() != JMAStatus.通常;
                             MDC.put("event.id", eew.getEventId());
                             MDC.put("event.type", "eew");
@@ -618,39 +597,5 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                 WebSocketConnection.this.disconnected();
             }
         }
-    }
-
-    public static String decompressGZIPBase64(String compressedBase64) throws IOException {
-        byte[] compressedBytes = Base64.getDecoder().decode(compressedBase64);
-
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedBytes);
-        GZIPInputStream gzipInputStream = new GZIPInputStream(byteArrayInputStream);
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-        byte[] buffer = new byte[1024];
-        int len;
-        while ((len = gzipInputStream.read(buffer)) != -1) {
-            byteArrayOutputStream.write(buffer, 0, len);
-        }
-
-        return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
-    }
-
-    public static String decompressZipBase64(String compressedBase64) throws IOException {
-        byte[] compressedBytes = Base64.getDecoder().decode(compressedBase64);
-
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedBytes);
-        ZipInputStream zipInputStream = new ZipInputStream(byteArrayInputStream);
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-        zipInputStream.getNextEntry();
-
-        byte[] buffer = new byte[1024];
-        int len;
-        while ((len = zipInputStream.read(buffer)) != -1) {
-            byteArrayOutputStream.write(buffer, 0, len);
-        }
-
-        return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
     }
 }
