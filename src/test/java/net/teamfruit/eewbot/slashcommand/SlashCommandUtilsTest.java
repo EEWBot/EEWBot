@@ -4,6 +4,7 @@ import discord4j.core.object.entity.channel.GuildChannel;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSettingKey;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.junit.jupiter.api.Test;
@@ -99,7 +100,7 @@ class SlashCommandUtilsTest {
         }
 
         @Override
-        public void set(long key, String name, boolean bool) {
+        public void set(long key, ChannelSettingKey setting, boolean enabled) {
             throw new UnsupportedOperationException();
         }
 

@@ -9,6 +9,7 @@ import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliveryTarget;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSettingKey;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.jooq.*;
 import org.jooq.Record;
@@ -34,14 +35,6 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
      * Must match the DB schema DEFAULT for the lang column.
      */
     private static final String DEFAULT_LANG = "ja_jp";
-
-    private static final Map<String, String> SETTABLE_BOOLEAN_COLUMNS = Map.of(
-            "eewAlert", "eew_alert",
-            "eewPrediction", "eew_prediction",
-            "eewDecimation", "eew_decimation",
-            "quakeInfo", "quake_info",
-            "tsunami", "tsunami"
-    );
 
     // === Table ===
     private static final Table<?> DESTINATIONS = table(name("destinations"));
@@ -214,9 +207,20 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
         return total;
     }
 
+    /** Exhaustive by construction: a new setting does not compile until it has a column. */
+    private static Field<Integer> column(ChannelSettingKey setting) {
+        return switch (setting) {
+            case EEW_ALERT -> EEW_ALERT;
+            case EEW_PREDICTION -> EEW_PREDICTION;
+            case EEW_DECIMATION -> EEW_DECIMATION;
+            case QUAKE_INFO -> QUAKE_INFO;
+            case TSUNAMI -> TSUNAMI;
+        };
+    }
+
     @Override
-    public void set(long key, String name, boolean bool) {
-        setWithDsl(this.dsl, key, name, bool);
+    public void set(long key, ChannelSettingKey setting, boolean enabled) {
+        setWithDsl(this.dsl, key, setting, enabled);
     }
 
     /**
@@ -224,20 +228,15 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
      *
      * @return number of rows updated
      */
-    public int setWithDsl(DSLContext tx, long key, String name, boolean bool) {
-        String columnName = SETTABLE_BOOLEAN_COLUMNS.get(name);
-        if (columnName == null) {
-            throw new IllegalArgumentException("Unknown or non-settable column: " + name);
-        }
-
+    public int setWithDsl(DSLContext tx, long key, ChannelSettingKey setting, boolean enabled) {
         return tx.update(DESTINATIONS)
-                .set(field(name(columnName), Integer.class), bool ? 1 : 0)
+                .set(column(setting), enabled ? 1 : 0)
                 .where(TARGET_ID.eq(key))
                 .execute();
     }
 
     @Override
-    public void setAll(long key, Map<String, Boolean> values) {
+    public void setAll(long key, Map<ChannelSettingKey, Boolean> values) {
         setAllWithDsl(this.dsl, key, values);
     }
 
@@ -246,24 +245,16 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
      *
      * @return number of rows updated
      */
-    public int setAllWithDsl(DSLContext tx, long key, Map<String, Boolean> values) {
+    public int setAllWithDsl(DSLContext tx, long key, Map<ChannelSettingKey, Boolean> values) {
         if (values.isEmpty()) {
             return 0;
         }
-        UpdateSetFirstStep<?> update = tx.update(DESTINATIONS);
-        UpdateSetMoreStep<?> step = null;
-        for (Map.Entry<String, Boolean> entry : values.entrySet()) {
-            String columnName = SETTABLE_BOOLEAN_COLUMNS.get(entry.getKey());
-            if (columnName == null) {
-                throw new IllegalArgumentException("Unknown or non-settable column: " + entry.getKey());
-            }
-            step = (step == null ? update : step)
-                    .set(field(name(columnName), Integer.class), entry.getValue() ? 1 : 0);
-        }
-        if (step != null) {
-            return step.where(TARGET_ID.eq(key)).execute();
-        }
-        return 0;
+        Map<Field<Integer>, Integer> assignments = new LinkedHashMap<>();
+        values.forEach((setting, enabled) -> assignments.put(column(setting), enabled ? 1 : 0));
+        return tx.update(DESTINATIONS)
+                .set(assignments)
+                .where(TARGET_ID.eq(key))
+                .execute();
     }
 
     @Override

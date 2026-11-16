@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.registry.destination.store;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.delivery.DeliverySnapshot;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSettingKey;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.jooq.SQLDialect;
 import org.junit.jupiter.api.*;
@@ -64,63 +65,35 @@ class ChannelRegistrySqlEdgeCaseTest {
     }
 
     @Nested
-    @DisplayName("set() validation - unknown column names")
-    class SetValidation {
+    @DisplayName("set()/setAll() cover every setting")
+    class SettingColumns {
 
-        /**
-         * Note: Channel.set(unknownName) silently ignores unknown fields (ifPresent pattern),
-         * but ChannelRegistrySql.setWithDsl(unknownName) throws IllegalArgumentException.
-         * This asymmetry is by design: the SQL layer validates strictly against SETTABLE_BOOLEAN_COLUMNS.
-         */
         @Test
-        @DisplayName("set() with unknown column name should throw IllegalArgumentException")
-        void setUnknownColumnThrows() {
-            sqlRegistry.put(1L, Channel.createDefault(100L, 1L, null, "ja_jp"));
+        @DisplayName("set() writes the column of each setting independently")
+        void setWritesEachSettingIndependently() {
+            for (ChannelSettingKey setting : ChannelSettingKey.values()) {
+                sqlRegistry.put(1L, Channel.createDefault(100L, 1L, null, "ja_jp"));
 
-            assertThatThrownBy(() -> sqlRegistry.set(1L, "nonExistentField", true))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Unknown or non-settable column");
+                sqlRegistry.set(1L, setting, true);
+
+                Channel channel = sqlRegistry.get(1L);
+                for (ChannelSettingKey other : ChannelSettingKey.values())
+                    assertThat(other.isEnabled(channel)).as("%s after setting %s", other, setting).isEqualTo(other == setting);
+                sqlRegistry.remove(1L);
+            }
         }
 
         @Test
-        @DisplayName("set() with valid column names should not throw")
-        void setValidColumnsDoesNotThrow() {
+        @DisplayName("setAll() applies on and off values in one update")
+        void setAllAppliesMixedValues() {
             sqlRegistry.put(1L, Channel.createDefault(100L, 1L, null, "ja_jp"));
+            sqlRegistry.set(1L, ChannelSettingKey.TSUNAMI, true);
 
-            sqlRegistry.set(1L, "eewAlert", true);
-            sqlRegistry.set(1L, "eewPrediction", true);
-            sqlRegistry.set(1L, "eewDecimation", true);
-            sqlRegistry.set(1L, "quakeInfo", true);
+            sqlRegistry.setAll(1L, Map.of(ChannelSettingKey.EEW_ALERT, true, ChannelSettingKey.TSUNAMI, false));
 
-            Channel ch = sqlRegistry.get(1L);
-            assertThat(ch.isEewAlert()).isTrue();
-            assertThat(ch.isEewPrediction()).isTrue();
-            assertThat(ch.isEewDecimation()).isTrue();
-            assertThat(ch.isQuakeInfo()).isTrue();
-        }
-    }
-
-    @Nested
-    @DisplayName("setAll() validation - unknown column names")
-    class SetAllValidation {
-
-        @Test
-        @DisplayName("setAll() with unknown column name should throw IllegalArgumentException")
-        void setAllUnknownColumnThrows() {
-            sqlRegistry.put(1L, Channel.createDefault(100L, 1L, null, "ja_jp"));
-
-            assertThatThrownBy(() -> sqlRegistry.setAll(1L, Map.of("unknownField", true)))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Unknown or non-settable column");
-        }
-
-        @Test
-        @DisplayName("setAll() with mixed valid and unknown columns should throw on unknown")
-        void setAllMixedThrows() {
-            sqlRegistry.put(1L, Channel.createDefault(100L, 1L, null, "ja_jp"));
-
-            assertThatThrownBy(() -> sqlRegistry.setAll(1L, Map.of("eewAlert", true, "badField", false)))
-                    .isInstanceOf(IllegalArgumentException.class);
+            Channel channel = sqlRegistry.get(1L);
+            assertThat(channel.isEewAlert()).isTrue();
+            assertThat(channel.isTsunami()).isFalse();
         }
 
         @Test

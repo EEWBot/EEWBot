@@ -4,6 +4,7 @@ import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.DestinationAdminRegistry;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSettingKey;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 
 import java.util.Collection;
@@ -115,11 +116,11 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
     }
 
     @Override
-    public void set(long key, String name, boolean bool) {
+    public void set(long key, ChannelSettingKey setting, boolean enabled) {
         AtomicInteger affected = new AtomicInteger();
         this.delegate.getDsl().transaction(ctx -> {
             org.jooq.DSLContext tx = ctx.dsl();
-            int rows = this.delegate.setWithDsl(tx, key, name, bool);
+            int rows = this.delegate.setWithDsl(tx, key, setting, enabled);
             if (rows > 0) {
                 this.revisionStore.incrementWithDsl(tx);
                 affected.set(rows);
@@ -131,7 +132,7 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
     }
 
     @Override
-    public void setAll(long key, java.util.Map<String, Boolean> values) {
+    public void setAll(long key, Map<ChannelSettingKey, Boolean> values) {
         if (values.isEmpty()) {
             return;
         }

@@ -1,47 +1,15 @@
 package net.teamfruit.eewbot.registry.destination.model;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.i18n.I18nKey;
-
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("FieldMayBeFinal")
 public class Channel extends ChannelBase {
 
-    public static final List<String> COMMAND_KEYS;
-
-    static {
-        COMMAND_KEYS = Arrays.stream(Channel.class.getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(ChannelSetting.class))
-                .map(Field::getName)
-                .toList();
-    }
-
-    @ChannelSetting(ChannelSettingType.BASE)
-    @I18nKey("eewbot.scmd.setup.base.eewalert.label")
     private boolean eewAlert;
-
-    @ChannelSetting(ChannelSettingType.BASE)
-    @I18nKey("eewbot.scmd.setup.base.eewprediction.label")
     private boolean eewPrediction;
-
-    @ChannelSetting(ChannelSettingType.BASE)
-    @I18nKey("eewbot.scmd.setup.base.quakeinfo.label")
     private boolean quakeInfo;
-
-    @ChannelSetting(ChannelSettingType.BASE)
-    @I18nKey("eewbot.scmd.setup.base.tsunami.label")
     private boolean tsunami;
-
-    @ChannelSetting(ChannelSettingType.MODIFIER)
-    @I18nKey("eewbot.scmd.setup.modifier.eewdecimation.label")
     private boolean eewDecimation;
-
     private SeismicIntensity minIntensity;
 
     public Channel(final Long guildId, final Long channelId, final Long threadId, final boolean eewAlert, final boolean eewPrediction, final boolean eewDecimation, final boolean quakeInfo, final boolean tsunami, final SeismicIntensity minIntensity, ChannelWebhook webhook, String lang) {
@@ -84,53 +52,6 @@ public class Channel extends ChannelBase {
 
     public void setMinIntensity(SeismicIntensity minIntensity) {
         this.minIntensity = minIntensity;
-    }
-
-    /*
-     * TODO: minIntensity
-     */
-    public boolean value(final String name) {
-        return Arrays.stream(getClass().getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(ChannelSetting.class) && field.getName().equals(name))
-                .map(field -> {
-                    try {
-                        return field.getBoolean(this);
-                    } catch (IllegalArgumentException | IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .findAny().orElseThrow(IllegalArgumentException::new);
-    }
-
-    public void set(final String name, final boolean bool) {
-        Arrays.stream(getClass().getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(ChannelSetting.class) && field.getName().equals(name))
-                .findAny().ifPresent(field -> {
-                    try {
-                        field.setBoolean(this, bool);
-                    } catch (IllegalArgumentException | IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-    }
-
-    public Map<String, Boolean> getSettingsByType(ChannelSettingType type) {
-        return Arrays.stream(getClass().getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(ChannelSetting.class) && field.getAnnotation(ChannelSetting.class).value() == type)
-                .collect(Collectors.toMap(Field::getName, field -> {
-                    try {
-                        return field.getBoolean(this);
-                    } catch (IllegalArgumentException | IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    }
-                }));
-    }
-
-    public static Optional<String> toI18nKey(String fieldName) {
-        return Arrays.stream(Channel.class.getDeclaredFields())
-                .filter(field -> field.getName().equals(fieldName) && field.isAnnotationPresent(I18nKey.class))
-                .map(field -> field.getAnnotation(I18nKey.class).value())
-                .findAny();
     }
 
     @Override

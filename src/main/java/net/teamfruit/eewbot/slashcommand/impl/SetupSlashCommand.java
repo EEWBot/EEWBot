@@ -19,7 +19,7 @@ import net.teamfruit.eewbot.Log;
 import net.teamfruit.eewbot.LogSanitizer;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
-import net.teamfruit.eewbot.registry.destination.model.ChannelSetting;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSettingKey;
 import net.teamfruit.eewbot.registry.destination.model.ChannelSettingType;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import net.teamfruit.eewbot.slashcommand.ISelectMenuSlashCommand;
@@ -31,7 +31,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -237,16 +236,16 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
     }
 
     private SelectMenu buildSelectMenu(SlashCommandContext ctx, ChannelSettingType type, long channelId, String lang) {
-        Map<String, Boolean> fields = ctx.adminRegistry().get(channelId).getSettingsByType(type);
-        return SelectMenu.of(type.getCustomId(), fields.entrySet().stream().map(entry -> {
-                    String label = ctx.i18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + "." + entry.getKey().toLowerCase() + ".label");
-                    SelectMenu.Option option = entry.getValue() ? SelectMenu.Option.ofDefault(label, entry.getKey()) : SelectMenu.Option.of(label, entry.getKey());
-                    option = option.withDescription(ctx.i18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + "." + entry.getKey().toLowerCase() + ".desc"));
-                    return option;
+        Channel channel = ctx.adminRegistry().get(channelId);
+        List<ChannelSettingKey> settings = ChannelSettingKey.ofType(type);
+        return SelectMenu.of(type.getCustomId(), settings.stream().map(setting -> {
+                    String label = ctx.i18n().get(lang, setting.labelKey());
+                    SelectMenu.Option option = setting.isEnabled(channel) ? SelectMenu.Option.ofDefault(label, setting.id()) : SelectMenu.Option.of(label, setting.id());
+                    return option.withDescription(ctx.i18n().get(lang, setting.descriptionKey()));
                 }).collect(Collectors.toList()))
                 .withPlaceholder(ctx.i18n().get(lang, "eewbot.scmd.setup." + type.getCustomId() + ".placeholder"))
                 .withMinValues(0)
-                .withMaxValues(fields.size());
+                .withMaxValues(settings.size());
     }
 
     private SelectMenu buildSensitivitySelectMenu(SlashCommandContext ctx, long channelId, String lang) {
@@ -273,15 +272,10 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
 
     private Mono<Message> applyChannel(SlashCommandContext ctx, SelectMenuInteractionEvent event, String lang) {
         long targetId = event.getInteraction().getChannelId().asLong();
-        Map<String, Boolean> settings = Arrays.stream(Channel.class.getDeclaredFields())
-                .filter(field -> {
-                    if (!field.isAnnotationPresent(ChannelSetting.class))
-                        return false;
-                    ChannelSetting annotation = field.getAnnotation(ChannelSetting.class);
-                    return annotation != null && annotation.value().getCustomId().equals(event.getCustomId());
-                })
-                .map(Field::getName)
-                .collect(Collectors.toMap(name -> name, name -> event.getValues().contains(name)));
+        // Every setting of the submitted menu is written: selected ones on, the rest off.
+        Map<ChannelSettingKey, Boolean> settings = Arrays.stream(ChannelSettingKey.values())
+                .filter(setting -> setting.type().getCustomId().equals(event.getCustomId()))
+                .collect(Collectors.toMap(setting -> setting, setting -> event.getValues().contains(setting.id())));
         ctx.adminRegistry().setAll(targetId, settings);
         try {
             ctx.adminRegistry().save();
@@ -292,8 +286,8 @@ public class SetupSlashCommand implements ISelectMenuSlashCommand {
             return event.createFollowup(ctx.i18n().get(lang, "eewbot.scmd.setup." + event.getCustomId() + ".followup.none"));
         return event.createFollowup(ctx.i18n().format(lang, "eewbot.scmd.setup." + event.getCustomId() + ".followup.any",
                 event.getValues().stream()
-                        .map(value -> Channel.toI18nKey(value)
-                                .map(key -> ctx.i18n().format(lang, key))
+                        .map(value -> ChannelSettingKey.fromId(value)
+                                .map(setting -> ctx.i18n().format(lang, setting.labelKey()))
                                 .orElse(""))
                         .collect(Collectors.joining(", "))));
     }

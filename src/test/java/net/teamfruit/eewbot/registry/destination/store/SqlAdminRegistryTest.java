@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.registry.destination.store;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSettingKey;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.jooq.SQLDialect;
 import org.junit.jupiter.api.*;
@@ -79,7 +80,7 @@ class SqlAdminRegistryTest {
             adminRegistry.put(1L, defaultChannel());
             onWriteCount.set(0);
 
-            adminRegistry.set(1L, "eewAlert", true);
+            adminRegistry.set(1L, ChannelSettingKey.EEW_ALERT, true);
 
             assertThat(onWriteCount.get()).isEqualTo(1);
             assertThat(adminRegistry.get(1L).isEewAlert()).isTrue();
@@ -91,7 +92,7 @@ class SqlAdminRegistryTest {
             adminRegistry.put(1L, defaultChannel());
             onWriteCount.set(0);
 
-            adminRegistry.setAll(1L, Map.of("eewAlert", true, "quakeInfo", true));
+            adminRegistry.setAll(1L, Map.of(ChannelSettingKey.EEW_ALERT, true, ChannelSettingKey.QUAKE_INFO, true));
 
             assertThat(onWriteCount.get()).isEqualTo(1);
             Channel ch = adminRegistry.get(1L);
@@ -288,7 +289,7 @@ class SqlAdminRegistryTest {
         @DisplayName("multiple writes should increment revision correctly")
         void multipleWritesIncrementRevision() {
             adminRegistry.put(1L, defaultChannel());
-            adminRegistry.set(1L, "eewAlert", true);
+            adminRegistry.set(1L, ChannelSettingKey.EEW_ALERT, true);
             adminRegistry.setLang(1L, "en_us");
 
             // 3 writes = 3 revision increments

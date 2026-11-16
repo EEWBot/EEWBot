@@ -3,6 +3,7 @@ package net.teamfruit.eewbot.registry.destination;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSettingKey;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 
 import java.io.IOException;
@@ -20,10 +21,10 @@ public interface DestinationAdminRegistry {
 
     void remove(long key);
 
-    void set(long key, String name, boolean bool);
+    void set(long key, ChannelSettingKey setting, boolean enabled);
 
-    default void setAll(long key, Map<String, Boolean> values) {
-        values.forEach((name, bool) -> set(key, name, bool));
+    default void setAll(long key, Map<ChannelSettingKey, Boolean> values) {
+        values.forEach((setting, enabled) -> set(key, setting, enabled));
     }
 
     void setMinIntensity(long key, SeismicIntensity intensity);

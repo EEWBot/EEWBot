@@ -2,6 +2,7 @@ package net.teamfruit.eewbot.registry.destination.store;
 
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.registry.destination.model.Channel;
+import net.teamfruit.eewbot.registry.destination.model.ChannelSettingKey;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
 import org.jooq.SQLDialect;
 import org.junit.jupiter.api.*;
@@ -65,7 +66,7 @@ class SqlAdminRegistryNonExistentTargetTest {
         @Test
         @DisplayName("set() on non-existent target is a no-op")
         void setNonExistentIsNoop() {
-            adminRegistry.set(NON_EXISTENT, "eewAlert", true);
+            adminRegistry.set(NON_EXISTENT, ChannelSettingKey.EEW_ALERT, true);
 
             assertThat(revisionStore.getRevision()).isZero();
             assertThat(onWriteCount.get()).isZero();
@@ -74,7 +75,7 @@ class SqlAdminRegistryNonExistentTargetTest {
         @Test
         @DisplayName("setAll() on non-existent target is a no-op")
         void setAllNonExistentIsNoop() {
-            adminRegistry.setAll(NON_EXISTENT, Map.of("eewAlert", true, "quakeInfo", false));
+            adminRegistry.setAll(NON_EXISTENT, Map.of(ChannelSettingKey.EEW_ALERT, true, ChannelSettingKey.QUAKE_INFO, false));
 
             assertThat(revisionStore.getRevision()).isZero();
             assertThat(onWriteCount.get()).isZero();
