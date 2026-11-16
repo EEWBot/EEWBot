@@ -186,8 +186,43 @@ class DmdataGatewayInitializationTest {
         runJobs();
         assertThat(this.gateway.getWebSocket1()).isNotSameAs(failed);
         assertThat(this.gateway.getWebSocket1().getWebSocket()).isSameAs(socket);
-        assertThat(failed.replaced).isTrue();
+        assertThat(failed.isReplaced()).isTrue();
         verify(this.api, times(2)).socketStart(any());
+    }
+
+    @Test
+    void disconnectedSocketIsReplacedByDelayedReconnect() throws Exception {
+        this.gateway.run();
+        var original = this.gateway.getWebSocket1();
+        this.listeners.getFirst().onClose(this.sockets.getFirst(), 1006, "abnormal");
+        var task = org.mockito.ArgumentCaptor.forClass(Runnable.class);
+        verify(this.scheduler).schedule(task.capture(), eq(3L), eq(TimeUnit.SECONDS));
+
+        task.getValue().run();
+
+        assertThat(this.gateway.getWebSocket1()).isNotSameAs(original);
+        assertThat(this.gateway.getWebSocket1().getWebSocket()).isSameAs(this.sockets.get(1));
+        assertThat(original.isReplaced()).isTrue();
+        new DmdataWsDebugLivenessChecker(this.gateway, this.scheduler).run();
+        assertThat(this.jobs).isEmpty();
+    }
+
+    @Test
+    void checkedFailureInDelayedReconnectIsRetriedByLivenessCheck() throws Exception {
+        this.gateway.run();
+        var original = this.gateway.getWebSocket1();
+        this.listeners.getFirst().onClose(this.sockets.getFirst(), 1006, "abnormal");
+        var task = org.mockito.ArgumentCaptor.forClass(Runnable.class);
+        verify(this.scheduler).schedule(task.capture(), eq(3L), eq(TimeUnit.SECONDS));
+        when(this.api.openSocketList()).thenThrow(new IOException("unavailable")).thenReturn(this.socketList);
+
+        task.getValue().run();
+        assertThat(original.isReconnectFailed()).isTrue();
+
+        new DmdataWsDebugLivenessChecker(this.gateway, this.scheduler).run();
+        runJobs();
+        assertThat(original.isReplaced()).isTrue();
+        assertThat(this.gateway.getWebSocket1().getWebSocket()).isSameAs(this.sockets.get(1));
     }
 
     @Test

@@ -61,7 +61,7 @@ class DmdataGatewayReconnectTest {
     @Test
     void onDisconnected_doesNotScheduleWhenReplaced() {
         DmdataGateway.WebSocketConnection connection = this.gateway.new WebSocketConnection("test-1", "wss://test", true);
-        connection.replaced = true;
+        connection.state.replaced();
 
         // Get listener and call onDisconnected via onClose
         DmdataGateway.WebSocketConnection.WebSocketListener listener = connection.new WebSocketListener();
@@ -77,14 +77,8 @@ class DmdataGatewayReconnectTest {
     void onDisconnected_doesNotScheduleWhenAlreadyReconnecting() {
         DmdataGateway.WebSocketConnection connection = this.gateway.new WebSocketConnection("test-1", "wss://test", true);
 
-        // Simulate already reconnecting
-        try {
-            var field = DmdataGateway.WebSocketConnection.class.getDeclaredField("reconnecting");
-            field.setAccessible(true);
-            field.set(connection, true);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        // Simulate a reconnect that is already queued
+        assertThat(connection.state.scheduleReconnect()).isTrue();
 
         DmdataGateway.WebSocketConnection.WebSocketListener listener = connection.new WebSocketListener();
 
@@ -151,7 +145,7 @@ class DmdataGatewayReconnectTest {
         Runnable scheduledTask = captor.getValue();
 
         // Mark as replaced before running
-        connection.replaced = true;
+        connection.state.replaced();
         scheduledTask.run();
 
         // reconnecting should be reset to false
@@ -176,6 +170,53 @@ class DmdataGatewayReconnectTest {
         captor.getValue().run();
 
         // The liveness checker only retries connections flagged as failed.
+        assertThat(connection.isReconnectFailed()).isTrue();
+    }
+
+    @Test
+    void repeatedDisconnectSignalsScheduleOnlyOneReconnect() {
+        when(this.reconnectScheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+                .thenAnswer(invocation -> this.mockFuture);
+        DmdataGateway.WebSocketConnection connection = this.gateway.new WebSocketConnection("test-1", "wss://test", true);
+        var listener = connection.new WebSocketListener();
+        java.net.http.WebSocket socket = mock(java.net.http.WebSocket.class);
+        when(socket.isOutputClosed()).thenReturn(true);
+
+        listener.onError(socket, new java.io.IOException("reset"));
+        listener.onClose(socket, 1006, "abnormal");
+
+        verify(this.reconnectScheduler, times(1)).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+    }
+
+    @Test
+    void deadCheckReconnectsSocketThatCanNoLongerSignalClose() throws Exception {
+        when(this.reconnectScheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+                .thenAnswer(invocation -> this.mockFuture);
+        when(this.dmdataAPI.openSocketList()).thenReturn(
+                net.teamfruit.eewbot.Codecs.GSON.fromJson("{\"items\":[]}", net.teamfruit.eewbot.entity.dmdata.api.DmdataSocketList.class));
+        DmdataGateway.WebSocketConnection connection = this.gateway.new WebSocketConnection("test-1", "wss://test", true);
+        var field = DmdataGateway.class.getDeclaredField("webSocket1");
+        field.setAccessible(true);
+        field.set(this.gateway, connection);
+        java.net.http.WebSocket socket = mock(java.net.http.WebSocket.class);
+        when(socket.isOutputClosed()).thenReturn(true);
+        connection.setWebSocket(socket);
+
+        this.gateway.reconnectDeadWebSocketsBasedOnDmData();
+
+        // sendClose on a closed socket yields no onClose, so the dead check must schedule directly.
+        verify(socket, never()).sendClose(anyInt(), any());
+        verify(this.reconnectScheduler).schedule(any(Runnable.class), eq(3L), eq(TimeUnit.SECONDS));
+    }
+
+    @Test
+    void rejectedReconnectSchedulingLeavesConnectionRetryable() {
+        when(this.reconnectScheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+                .thenThrow(new java.util.concurrent.RejectedExecutionException("shut down"));
+        DmdataGateway.WebSocketConnection connection = this.gateway.new WebSocketConnection("test-1", "wss://test", true);
+
+        connection.new WebSocketListener().onClose(mock(java.net.http.WebSocket.class), 1000, "test");
+
         assertThat(connection.isReconnectFailed()).isTrue();
     }
 }

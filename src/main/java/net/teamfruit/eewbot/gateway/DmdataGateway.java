@@ -211,13 +211,13 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
     private void installConnection(@Nullable WebSocketConnection previous, WebSocketConnection next, boolean second) {
         synchronized (this.connectionLock) {
             if (this.closed || (second ? this.webSocket2 : this.webSocket1) != previous) {
-                next.replaced = true;
+                next.state.replaced();
                 cancelPendingReconnect(next);
                 closeWebSocketConnection(next);
                 return;
             }
             if (previous != null) {
-                previous.replaced = true;
+                previous.state.replaced();
                 cancelPendingReconnect(previous);
             }
             if (second)
@@ -274,7 +274,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                 if (ex != null) {
                     Log.logger.error("DMDATA WebSocket {}: handshake failed", connectionName, ex);
                     onError(new EEWGatewayException("WebSocket handshake failed", ex));
-                    connection.reconnectFailed = true;
+                    connection.state.handshakeFailed();
                 } else {
                     connection.setWebSocket(ws);
                 }
@@ -285,8 +285,13 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
         return connection;
     }
 
+    /**
+     * Replaces a disconnected or failed connection. Only one caller can win the transition into
+     * RECONNECTING, so the delayed reconnect task and the liveness checker never run concurrently
+     * for the same connection.
+     */
     public void reconnectWebSocket(WebSocketConnection listener) throws EEWGatewayException {
-        if (this.closed || listener.replaced)
+        if (this.closed || !listener.state.beginReconnect())
             return;
         String connectionName = listener.getConnectionName();
         try {
@@ -294,7 +299,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
             if (StringUtils.isEmpty(this.wsBaseTest)) {
                 closeWebSocketIfExist(this.dmdataAPI.openSocketList(), connectionName);
             }
-            if (this.closed || listener.replaced)
+            if (this.closed || listener.isReplaced())
                 return;
             WebSocketConnection next = connectWebSocket(listener.getWsBaseURI(), connectionName, listener.hasForecastContract());
             installConnection(listener, next, connectionName.endsWith("-2"));
@@ -303,6 +308,10 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
             throw new EEWGatewayException("DMDATA reconnect interrupted", e);
         } catch (IOException e) {
             throw new EEWGatewayException("Failed to reconnect to DMDATA", e);
+        } finally {
+            // However the attempt ended (checked, unchecked or early return), a connection that
+            // was not replaced goes back to FAILED so the liveness checker retries it.
+            listener.state.reconnectFailed();
         }
     }
 
@@ -338,15 +347,13 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
             return;
         try {
             DmdataSocketList socketList = this.dmdataAPI.openSocketList();
-            if (first != null && !first.replaced && isWebSocketDead(socketList, 1)) {
+            if (first != null && !first.isReplaced() && isWebSocketDead(socketList, 1)) {
                 Log.logger.warn("DMDATA WebSocket 1 is dead, reconnecting...");
-                if (first.getWebSocket() != null)
-                    first.getWebSocket().sendClose(1011, "Socket remains, but is not recognized by the server");
+                first.closeAsDead();
             }
-            if (this.multiConnect && second != null && !second.replaced && isWebSocketDead(socketList, 2)) {
+            if (this.multiConnect && second != null && !second.isReplaced() && isWebSocketDead(socketList, 2)) {
                 Log.logger.warn("DMDATA WebSocket 2 is dead, reconnecting...");
-                if (second.getWebSocket() != null)
-                    second.getWebSocket().sendClose(1011, "Socket remains, but is not recognized by the server");
+                second.closeAsDead();
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -370,9 +377,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
 
         private volatile WebSocket webSocket;
 
-        private volatile boolean reconnecting;
-        private volatile boolean reconnectFailed;
-        volatile boolean replaced;
+        final DmdataConnectionState state = new DmdataConnectionState();
         volatile ScheduledFuture<?> pendingReconnect;
 
         public WebSocketConnection(String connectionName, String wsBaseURI, boolean hasForecastContract) {
@@ -399,7 +404,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
 
         public void setWebSocket(WebSocket webSocket) {
             synchronized (DmdataGateway.this.connectionLock) {
-                if (DmdataGateway.this.closed || this.replaced) {
+                if (DmdataGateway.this.closed || isReplaced()) {
                     try {
                         webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "shutdown");
                     } catch (Exception e) {
@@ -408,11 +413,57 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
                     return;
                 }
                 this.webSocket = webSocket;
+                // A handshake finishing after a disconnect was already observed keeps that state.
+                this.state.opened();
             }
         }
 
+        /** True while the connection waits for the liveness checker to retry it. */
         public boolean isReconnectFailed() {
-            return this.reconnectFailed && !this.reconnecting;
+            return this.state.is(DmdataConnectionState.State.FAILED);
+        }
+
+        public boolean isReplaced() {
+            return this.state.is(DmdataConnectionState.State.REPLACED);
+        }
+
+        /** The server no longer lists this socket: close it and make sure a reconnect follows. */
+        void closeAsDead() {
+            WebSocket socket = this.webSocket;
+            if (socket == null)
+                return;
+            // Closing an already-closed socket produces no onClose callback, so drive the
+            // transition directly instead of waiting for a signal that will never come.
+            if (socket.isOutputClosed()) {
+                disconnected();
+                return;
+            }
+            socket.sendClose(1011, "Socket remains, but is not recognized by the server");
+        }
+
+        private void disconnected() {
+            if (DmdataGateway.this.closed || !this.state.scheduleReconnect())
+                return;
+            try {
+                this.pendingReconnect = DmdataGateway.this.reconnectScheduler.schedule(() -> {
+                    MDC.put("gateway", "dmdata");
+                    MDC.put("gateway.connection", this.connectionName);
+                    MDC.put("gateway.task", "reconnect");
+                    try {
+                        reconnectWebSocket(this);
+                    } catch (EEWGatewayException e) {
+                        DmdataGateway.this.onError(e);
+                    } catch (RuntimeException e) {
+                        DmdataGateway.this.onError(new EEWGatewayException("Unexpected failure while reconnecting to DMDATA", e));
+                    } finally {
+                        MDC.clear();
+                    }
+                }, 3, TimeUnit.SECONDS);
+            } catch (RejectedExecutionException e) {
+                // Shutting down; hand the connection back so it is not stranded as "scheduled".
+                this.state.scheduleFailed();
+                Log.logger.debug("Reconnect scheduling skipped (executor shut down)");
+            }
         }
 
         public WebSocketListener getListener() {
@@ -564,33 +615,7 @@ public class DmdataGateway implements Gateway<DmdataEEWUpdate> {
             }
 
             private void onDisconnected() {
-                if (DmdataGateway.this.closed || WebSocketConnection.this.reconnecting || WebSocketConnection.this.replaced) {
-                    return;
-                }
-
-                WebSocketConnection.this.reconnecting = true;
-                WebSocketConnection.this.pendingReconnect = DmdataGateway.this.reconnectScheduler.schedule(() -> {
-                    MDC.put("gateway", "dmdata");
-                    MDC.put("gateway.connection", WebSocketConnection.this.connectionName);
-                    MDC.put("gateway.task", "reconnect");
-                    try {
-                        if (DmdataGateway.this.closed || WebSocketConnection.this.replaced) {
-                            return;
-                        }
-                        reconnectWebSocket(WebSocketConnection.this);
-                    } catch (EEWGatewayException e) {
-                        DmdataGateway.this.onError(e);
-                        WebSocketConnection.this.reconnectFailed = true;
-                    } catch (RuntimeException e) {
-                        // An unchecked failure must still mark the connection for the liveness
-                        // checker; otherwise nothing would ever retry it.
-                        DmdataGateway.this.onError(new EEWGatewayException("Unexpected failure while reconnecting to DMDATA", e));
-                        WebSocketConnection.this.reconnectFailed = true;
-                    } finally {
-                        WebSocketConnection.this.reconnecting = false;
-                        MDC.clear();
-                    }
-                }, 3, TimeUnit.SECONDS);
+                WebSocketConnection.this.disconnected();
             }
         }
     }
