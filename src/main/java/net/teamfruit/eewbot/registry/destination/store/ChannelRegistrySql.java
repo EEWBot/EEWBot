@@ -554,16 +554,6 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
     }
 
     private DeliverySnapshot.DeliveryChannel mapToDeliveryChannel(Record r) {
-        ChannelWebhook webhook = null;
-        String webhookUrl = r.get(WEBHOOK_URL);
-        if (webhookUrl != null) {
-            try {
-                webhook = new ChannelWebhook(webhookUrl);
-            } catch (IllegalArgumentException e) {
-                Log.logger.warn("Ignoring invalid webhook URL for snapshot: {}", ChannelWebhook.maskWebhookUrl(webhookUrl), e);
-            }
-        }
-
         // TARGET_ID is used as long primitive, must not be null
         Long targetId = toLong(r.get(TARGET_ID));
         Long channelId = toLong(r.get(CHANNEL_ID));
@@ -573,15 +563,37 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
                 channelId != null ? channelId : 0L,
                 toLong(r.get(THREAD_ID)),
                 toLong(r.get(GUILD_ID)),
-                r.get(EEW_ALERT) != null && r.get(EEW_ALERT) == 1,
-                r.get(EEW_PREDICTION) != null && r.get(EEW_PREDICTION) == 1,
-                r.get(EEW_DECIMATION) != null && r.get(EEW_DECIMATION) == 1,
-                r.get(QUAKE_INFO) != null && r.get(QUAKE_INFO) == 1,
-                r.get(TSUNAMI) != null && r.get(TSUNAMI) == 1,
-                r.get(MIN_INTENSITY) != null ? SeismicIntensity.fromCode(r.get(MIN_INTENSITY)) : SeismicIntensity.ONE,
+                flag(r, EEW_ALERT),
+                flag(r, EEW_PREDICTION),
+                flag(r, EEW_DECIMATION),
+                flag(r, QUAKE_INFO),
+                flag(r, TSUNAMI),
+                minIntensity(r),
                 r.get(LANG),
-                webhook
+                webhook(r, "snapshot")
         );
+    }
+
+    private static boolean flag(Record r, Field<Integer> column) {
+        Integer value = r.get(column);
+        return value != null && value == 1;
+    }
+
+    private static SeismicIntensity minIntensity(Record r) {
+        Integer code = r.get(MIN_INTENSITY);
+        return code != null ? SeismicIntensity.fromCode(code) : SeismicIntensity.ONE;
+    }
+
+    private static ChannelWebhook webhook(Record r, String usage) {
+        String webhookUrl = r.get(WEBHOOK_URL);
+        if (webhookUrl == null)
+            return null;
+        try {
+            return new ChannelWebhook(webhookUrl);
+        } catch (IllegalArgumentException e) {
+            Log.logger.warn("Ignoring invalid webhook URL for {}: {}", usage, ChannelWebhook.maskWebhookUrl(webhookUrl), e);
+            return null;
+        }
     }
 
     private Condition buildCondition(ChannelFilter filter) {
@@ -596,27 +608,17 @@ public class ChannelRegistrySql implements net.teamfruit.eewbot.registry.destina
             return null;
         }
 
-        ChannelWebhook webhook = null;
-        String webhookUrl = r.get(WEBHOOK_URL);
-        if (webhookUrl != null) {
-            try {
-                webhook = new ChannelWebhook(webhookUrl);
-            } catch (IllegalArgumentException e) {
-                Log.logger.warn("Ignoring invalid webhook URL for channel: {}", ChannelWebhook.maskWebhookUrl(webhookUrl), e);
-            }
-        }
-
         return new Channel(
                 toLong(r.get(GUILD_ID)),
                 toLong(r.get(CHANNEL_ID)),
                 toLong(r.get(THREAD_ID)),
-                r.get(EEW_ALERT) != null && r.get(EEW_ALERT) == 1,
-                r.get(EEW_PREDICTION) != null && r.get(EEW_PREDICTION) == 1,
-                r.get(EEW_DECIMATION) != null && r.get(EEW_DECIMATION) == 1,
-                r.get(QUAKE_INFO) != null && r.get(QUAKE_INFO) == 1,
-                r.get(TSUNAMI) != null && r.get(TSUNAMI) == 1,
-                r.get(MIN_INTENSITY) != null ? SeismicIntensity.fromCode(r.get(MIN_INTENSITY)) : SeismicIntensity.ONE,
-                webhook,
+                flag(r, EEW_ALERT),
+                flag(r, EEW_PREDICTION),
+                flag(r, EEW_DECIMATION),
+                flag(r, QUAKE_INFO),
+                flag(r, TSUNAMI),
+                minIntensity(r),
+                webhook(r, "channel"),
                 r.get(LANG)
         );
     }

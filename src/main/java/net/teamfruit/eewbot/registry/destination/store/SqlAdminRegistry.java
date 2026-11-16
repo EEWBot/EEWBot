@@ -6,11 +6,12 @@ import net.teamfruit.eewbot.registry.destination.model.Channel;
 import net.teamfruit.eewbot.registry.destination.model.ChannelFilter;
 import net.teamfruit.eewbot.registry.destination.model.ChannelSettingKey;
 import net.teamfruit.eewbot.registry.destination.model.ChannelWebhook;
+import org.jooq.DSLContext;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.ToIntFunction;
 
 /**
  * Admin registry backed by SQL database.
@@ -43,6 +44,27 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
      */
     public ChannelRegistrySql getDelegate() {
         return this.delegate;
+    }
+
+    /**
+     * Runs a write in one transaction. When it changed any row, the revision is incremented in
+     * the same transaction and the write callback fires after commit; a no-op write does neither.
+     *
+     * @return the number of rows the write affected
+     */
+    private int write(ToIntFunction<DSLContext> operation) {
+        int affected = this.delegate.getDsl().transactionResult(ctx -> {
+            DSLContext tx = ctx.dsl();
+            int rows = operation.applyAsInt(tx);
+            if (rows > 0) {
+                this.revisionStore.incrementWithDsl(tx);
+            }
+            return rows;
+        });
+        if (affected > 0) {
+            this.onWrite.run();
+        }
+        return affected;
     }
 
     // ========================================
@@ -80,55 +102,22 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
     }
 
     // ========================================
-    // Write methods - update DB with revision++ in same transaction, then notify
+    // Write methods - see write()
     // ========================================
 
     @Override
     public void remove(long key) {
-        AtomicInteger affected = new AtomicInteger();
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            int rows = this.delegate.removeWithDsl(tx, key);
-            if (rows > 0) {
-                this.revisionStore.incrementWithDsl(tx);
-                affected.set(rows);
-            }
-        });
-        if (affected.get() > 0) {
-            this.onWrite.run();
-        }
+        write(tx -> this.delegate.removeWithDsl(tx, key));
     }
 
     @Override
     public void put(long key, Channel channel) {
-        AtomicInteger affected = new AtomicInteger();
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            int rows = this.delegate.insertChannelIfAbsentWithDsl(tx, key, channel);
-            if (rows > 0) {
-                this.revisionStore.incrementWithDsl(tx);
-                affected.set(rows);
-            }
-        });
-        if (affected.get() > 0) {
-            this.onWrite.run();
-        }
+        write(tx -> this.delegate.insertChannelIfAbsentWithDsl(tx, key, channel));
     }
 
     @Override
     public void set(long key, ChannelSettingKey setting, boolean enabled) {
-        AtomicInteger affected = new AtomicInteger();
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            int rows = this.delegate.setWithDsl(tx, key, setting, enabled);
-            if (rows > 0) {
-                this.revisionStore.incrementWithDsl(tx);
-                affected.set(rows);
-            }
-        });
-        if (affected.get() > 0) {
-            this.onWrite.run();
-        }
+        write(tx -> this.delegate.setWithDsl(tx, key, setting, enabled));
     }
 
     @Override
@@ -136,87 +125,27 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
         if (values.isEmpty()) {
             return;
         }
-        AtomicInteger affected = new AtomicInteger();
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            int rows = this.delegate.setAllWithDsl(tx, key, values);
-            if (rows > 0) {
-                this.revisionStore.incrementWithDsl(tx);
-                affected.set(rows);
-            }
-        });
-        if (affected.get() > 0) {
-            this.onWrite.run();
-        }
+        write(tx -> this.delegate.setAllWithDsl(tx, key, values));
     }
 
     @Override
     public void setMinIntensity(long key, SeismicIntensity intensity) {
-        AtomicInteger affected = new AtomicInteger();
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            int rows = this.delegate.setMinIntensityWithDsl(tx, key, intensity);
-            if (rows > 0) {
-                this.revisionStore.incrementWithDsl(tx);
-                affected.set(rows);
-            }
-        });
-        if (affected.get() > 0) {
-            this.onWrite.run();
-        }
+        write(tx -> this.delegate.setMinIntensityWithDsl(tx, key, intensity));
     }
 
     @Override
     public void setWebhook(long key, ChannelWebhook webhook) {
-        AtomicInteger affected = new AtomicInteger();
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            int rows = this.delegate.setWebhookWithDsl(tx, key, webhook);
-            if (rows > 0) {
-                this.revisionStore.incrementWithDsl(tx);
-                affected.set(rows);
-            }
-        });
-        if (affected.get() > 0) {
-            this.onWrite.run();
-        }
+        write(tx -> this.delegate.setWebhookWithDsl(tx, key, webhook));
     }
 
     @Override
     public void setLang(long key, String lang) {
-        AtomicInteger affected = new AtomicInteger();
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            int rows = this.delegate.setLangWithDsl(tx, key, lang);
-            if (rows > 0) {
-                this.revisionStore.incrementWithDsl(tx);
-                affected.set(rows);
-            }
-        });
-        if (affected.get() > 0) {
-            this.onWrite.run();
-        }
+        write(tx -> this.delegate.setLangWithDsl(tx, key, lang));
     }
-
-    // ========================================
-    // Batch write methods
-    // ========================================
 
     @Override
     public int removeByGuildId(long guildId) {
-        AtomicInteger count = new AtomicInteger(0);
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            int removed = this.delegate.removeByGuildIdWithDsl(tx, guildId);
-            count.set(removed);
-            if (removed > 0) {
-                this.revisionStore.incrementWithDsl(tx);
-            }
-        });
-        if (count.get() > 0) {
-            this.onWrite.run();
-        }
-        return count.get();
+        return write(tx -> this.delegate.removeByGuildIdWithDsl(tx, guildId));
     }
 
     @Override
@@ -224,35 +153,11 @@ public class SqlAdminRegistry implements DestinationAdminRegistry {
         if (webhookUrls.isEmpty()) {
             return 0;
         }
-        AtomicInteger count = new AtomicInteger(0);
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            int cleared = this.delegate.clearWebhookByUrlsWithDsl(tx, webhookUrls);
-            count.set(cleared);
-            if (cleared > 0) {
-                this.revisionStore.incrementWithDsl(tx);
-            }
-        });
-        if (count.get() > 0) {
-            this.onWrite.run();
-        }
-        return count.get();
+        return write(tx -> this.delegate.clearWebhookByUrlsWithDsl(tx, webhookUrls));
     }
 
     @Override
     public int setLangByGuildId(long guildId, String lang) {
-        AtomicInteger count = new AtomicInteger(0);
-        this.delegate.getDsl().transaction(ctx -> {
-            org.jooq.DSLContext tx = ctx.dsl();
-            int updated = this.delegate.setLangByGuildIdWithDsl(tx, guildId, lang);
-            count.set(updated);
-            if (updated > 0) {
-                this.revisionStore.incrementWithDsl(tx);
-            }
-        });
-        if (count.get() > 0) {
-            this.onWrite.run();
-        }
-        return count.get();
+        return write(tx -> this.delegate.setLangByGuildIdWithDsl(tx, guildId, lang));
     }
 }
