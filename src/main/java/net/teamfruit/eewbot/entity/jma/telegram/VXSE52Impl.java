@@ -1,10 +1,7 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.QuakeInfoStore;
-import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
-import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
-import net.teamfruit.eewbot.entity.discord.PendingEmbed;
 import net.teamfruit.eewbot.entity.jma.JMAXmlType;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
@@ -13,30 +10,16 @@ import net.teamfruit.eewbot.entity.jma.telegram.seis.Earthquake;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Hypocenter;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.JmxSeis;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 public class VXSE52Impl extends JmxSeis implements VXSE52 {
 
-    private QuakeInfoStore quakeInfoStore;
-
-    @Override
-    public void initQuakeInfoStore(QuakeInfoStore store) {
-        this.quakeInfoStore = store;
-    }
-
-    @Override
-    public List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
-        this.quakeInfoStore = ctx.store();
-        return VXSE52.super.createEmbeds(lang, ctx, factory);
-    }
-
-    private Optional<QuakeInfo> getVXSE51() {
-        return Optional.ofNullable(this.quakeInfoStore)
+    private Optional<QuakeInfo> getVXSE51(@Nullable QuakeInfoStore references) {
+        return Optional.ofNullable(references)
                 .flatMap(store -> store.getReport(getHead().getEventID(), JMAXmlType.VXSE51));
     }
 
@@ -87,10 +70,10 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     }
 
     @Override
-    public Optional<SeismicIntensity> getQuakeInfoMaxInt() {
+    public Optional<SeismicIntensity> getQuakeInfoMaxInt(@Nullable QuakeInfoStore references) {
         if (isCancelReport())
             return Optional.empty();
-        return getVXSE51().flatMap(QuakeInfo::getQuakeInfoMaxInt)
+        return getVXSE51(references).flatMap(report -> report.getQuakeInfoMaxInt(references))
                 .filter(intensity -> intensity != SeismicIntensity.UNKNOWN);
     }
 
@@ -105,9 +88,9 @@ public class VXSE52Impl extends JmxSeis implements VXSE52 {
     }
 
     @Override
-    public Intensity.IntensityDetail getIntensityDetail() {
+    public Intensity.IntensityDetail getIntensityDetail(@Nullable QuakeInfoStore references) {
         if (isCancelReport())
             throw new IllegalStateException("Cancel report");
-        return getVXSE51().map(QuakeInfo::getIntensityDetail).orElse(null);
+        return getVXSE51(references).map(report -> report.getIntensityDetail(references)).orElse(null);
     }
 }

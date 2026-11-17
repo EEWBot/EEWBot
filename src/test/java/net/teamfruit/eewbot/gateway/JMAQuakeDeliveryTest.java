@@ -172,7 +172,7 @@ class JMAQuakeDeliveryTest {
         this.ticks.set(Duration.ofHours(6).toNanos());
         var update = report(type, 1, JMAInfoType.発表, null, START.plus(Duration.ofHours(6)));
         deliver(update);
-        assertThat(((QuakeInfo) update).getQuakeInfoMaxInt()).contains(SeismicIntensity.FIVE_PLUS);
+        assertThat(((QuakeInfo) update).getQuakeInfoMaxInt(this.store)).contains(SeismicIntensity.FIVE_PLUS);
         var low = (QuakeInfo) report(source, 2, JMAInfoType.訂正, SeismicIntensity.THREE, START.plusSeconds(1600));
         this.store.putReport(low);
         this.store.putReport((QuakeInfo) report(source, 3, JMAInfoType.取消, null, START.plusSeconds(1700)));
@@ -213,8 +213,7 @@ class JMAQuakeDeliveryTest {
         var emptyStore = new QuakeInfoStore();
         emptyStore.putReport((QuakeInfo) Codecs.XML_MAPPER.readValue(incomplete, source.getReportClass()));
         var standalone = (QuakeInfo) report(type, 1, JMAInfoType.発表, null, START.plusSeconds(1600));
-        standalone.initQuakeInfoStore(emptyStore);
-        assertThat(standalone.getQuakeInfoMaxInt()).isEmpty();
+        assertThat(standalone.getQuakeInfoMaxInt(emptyStore)).isEmpty();
         this.store.putReport((QuakeInfo) report(source, 2, JMAInfoType.発表, SeismicIntensity.THREE, START.plusSeconds(1700)));
         deliver(report(type, 2, JMAInfoType.発表, null, START.plusSeconds(1800)));
         deliver(report(type, 3, JMAInfoType.取消, null, START.plusSeconds(1900)));

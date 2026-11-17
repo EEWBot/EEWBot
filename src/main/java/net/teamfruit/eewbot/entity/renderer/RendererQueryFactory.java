@@ -155,7 +155,16 @@ public class RendererQueryFactory {
             throw new IllegalStateException("Renderer is not available");
         }
 
-        String base32768Str = generateQuakePrefecture(renderQuakePrefecture.getTime(), renderQuakePrefecture.getCoordinate(), renderQuakePrefecture.getIntensityDetail());
+        return generateQuakePrefectureURL(renderQuakePrefecture.getTime(), renderQuakePrefecture.getCoordinate(), renderQuakePrefecture.getIntensityDetail());
+    }
+
+    /** For reports whose intensity areas come from another report and so cannot be read off the report alone. */
+    public String generateQuakePrefectureURL(Instant time, @Nullable Coordinate coordinate, @Nullable Intensity.IntensityDetail observation) {
+        if (!isAvailable()) {
+            throw new IllegalStateException("Renderer is not available");
+        }
+
+        String base32768Str = generateQuakePrefecture(time, coordinate, observation);
         String normalizedBaseURL = this.baseURL.endsWith("/") ? this.baseURL : this.baseURL + "/";
         return normalizedBaseURL + base32768Str;
     }

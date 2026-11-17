@@ -41,7 +41,7 @@ public interface VXSE61 extends JMAReport, QuakeInfo, ExternalData {
             builder.addField("eewbot.quakeinfo.field.epicenter", getHypocenterName(), true);
             getDepth().ifPresent(depth -> builder.addField("eewbot.quakeinfo.field.depth", depth, true));
             builder.addField("eewbot.quakeinfo.field.magnitude", getMagnitude(), true);
-            getQuakeInfoMaxInt().ifPresent(intensity -> builder.color(intensity.getColor()));
+            getQuakeInfoMaxInt(ctx.store()).ifPresent(intensity -> builder.color(intensity.getColor()));
         }
         builder.footer(getPublishingOffice(), null);
         builder.timestamp(getReportDateTime());

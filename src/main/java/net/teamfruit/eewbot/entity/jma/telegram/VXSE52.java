@@ -11,16 +11,19 @@ import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Coordinate;
-import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, ExternalData {
+public interface VXSE52 extends JMAReport, QuakeInfo, ExternalData {
 
     Instant getOriginTime();
+
+    Instant getTime();
+
+    Coordinate getCoordinate();
 
     String getHypocenterName();
 
@@ -46,11 +49,11 @@ public interface VXSE52 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
             builder.addField("eewbot.quakeinfo.field.magnitude", getMagnitude(), true);
             getForecastComment().ifPresent(forecastComment -> builder.addField("", forecastComment.getText(), false));
             getFreeFormComment().ifPresent(freeFormComment -> builder.addField("", freeFormComment, false));
-            getQuakeInfoMaxInt().ifPresent(intensity -> builder.color(intensity.getColor()));
+            getQuakeInfoMaxInt(ctx.store()).ifPresent(intensity -> builder.color(intensity.getColor()));
 
             if (ctx.renderer().isAvailable()) {
                 try {
-                    builder.image(ctx.renderer().generateURL(this));
+                    builder.image(ctx.renderer().generateQuakePrefectureURL(getTime(), getCoordinate(), getIntensityDetail(ctx.store())));
                 } catch (Exception e) {
                     Log.logger.error("Failed to generate renderer query", e);
                 }

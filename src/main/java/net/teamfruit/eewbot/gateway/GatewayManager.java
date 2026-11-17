@@ -189,7 +189,7 @@ public class GatewayManager implements AutoCloseable {
 
     private ChannelFilter classifyQuakeInfo(AbstractJMAReport report, QuakeInfo quakeInfo) {
         if (!report.isCancelReport()) {
-            SeismicIntensity intensity = quakeInfo.getQuakeInfoMaxInt().orElse(null);
+            SeismicIntensity intensity = quakeInfo.getQuakeInfoMaxInt(this.quakeInfoStore).orElse(null);
             boolean missingObservedIntensity = report instanceof VXSE53 && intensity == null;
             boolean missingReferenceIntensity = (report instanceof VXSE61 || report instanceof VXSE52)
                     && (intensity == null || intensity == SeismicIntensity.UNKNOWN);

@@ -67,7 +67,6 @@ public class QuakeInfoStore {
     // Reference loading (including the long feed) never establishes delivery completeness.
     public void putReport(QuakeInfo report) {
         synchronized (this) {
-            report.initQuakeInfoStore(this);
             Map<JMAXmlType, History> event = event(report.getEventId());
             History history = event.computeIfAbsent(JMAXmlType.from(report.getClass()), key -> new History());
             if (isNewer(report, history.latest))
@@ -75,7 +74,7 @@ public class QuakeInfoStore {
             if (!report.isCancelReport()) {
                 if (isNewer(report, history.normal))
                     history.normal = report;
-                history.referenceMax = max(history.referenceMax, report.getQuakeInfoMaxInt().orElse(null));
+                history.referenceMax = max(history.referenceMax, report.getQuakeInfoMaxInt(this).orElse(null));
             }
             this.reports.put(report.getEventId(), event);
             if (isNewer(report, this.lastReport))

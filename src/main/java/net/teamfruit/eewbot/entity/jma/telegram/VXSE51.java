@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.entity.jma.telegram;
 
 import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.QuakeInfoStore;
 import net.teamfruit.eewbot.entity.EmbedContext;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.discord.IEmbedBuilder;
@@ -10,8 +11,10 @@ import net.teamfruit.eewbot.entity.external.QuakeInfoExternalData;
 import net.teamfruit.eewbot.entity.jma.JMAReport;
 import net.teamfruit.eewbot.entity.jma.QuakeInfo;
 import net.teamfruit.eewbot.entity.jma.telegram.common.Comment;
+import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.IntensityPref;
 import net.teamfruit.eewbot.entity.renderer.RenderQuakePrefecture;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.*;
@@ -28,6 +31,19 @@ public interface VXSE51 extends JMAReport, QuakeInfo, RenderQuakePrefecture, Ext
     Optional<Comment.CommentForm> getForecastComment();
 
     Optional<String> getFreeFormComment();
+
+    /** The intensity observed in this report; no other report is consulted. */
+    Optional<SeismicIntensity> getQuakeInfoMaxInt();
+
+    @Override
+    default Optional<SeismicIntensity> getQuakeInfoMaxInt(@Nullable QuakeInfoStore references) {
+        return getQuakeInfoMaxInt();
+    }
+
+    @Override
+    default Intensity.IntensityDetail getIntensityDetail(@Nullable QuakeInfoStore references) {
+        return getIntensityDetail();
+    }
 
     @Override
     default List<PendingEmbed> createEmbeds(String lang, EmbedContext ctx, Supplier<IEmbedBuilder> factory) {
