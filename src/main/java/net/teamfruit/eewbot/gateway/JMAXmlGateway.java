@@ -248,11 +248,15 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
     }
 
     private HttpResponse<byte[]> send(HttpRequest request) throws Exception {
+        return send(this.httpClient, request, this.requestTimeout);
+    }
+
+    static HttpResponse<byte[]> send(java.net.http.HttpClient httpClient, HttpRequest request, Duration timeout) throws Exception {
         // ofInputStream completes at headers, leaving reads outside the request deadline.
         // Wait for the whole body and explicitly cancel on timeout or interruption.
-        var response = this.httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray());
+        var response = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray());
         try {
-            return response.get(this.requestTimeout.toNanos(), TimeUnit.NANOSECONDS);
+            return response.get(timeout.toNanos(), TimeUnit.NANOSECONDS);
         } catch (TimeoutException e) {
             response.cancel(true);
             throw new HttpTimeoutException("JMA XML request timed out: " + request.uri());
