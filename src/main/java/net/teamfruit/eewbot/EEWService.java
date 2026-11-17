@@ -120,6 +120,13 @@ public class EEWService {
         if (webhookChunks.size() > 1)
             Log.logger.info("Entity does not fit in one message, splitting into {} messages", webhookChunks.size());
 
+        // Direct sends only subscribe, so start them before the webhook path, which blocks until its fan-out completes.
+        Map<Long, DeliveryTarget> directChannels = partition.direct();
+        if (!directChannels.isEmpty()) {
+            Log.logger.info("Sending message to {} channels", directChannels.size());
+            sendMessageD4J(directChannels, msgByLang);
+        }
+
         Map<Long, DeliveryTarget> webhookChannels = partition.webhook();
         if (!webhookChannels.isEmpty()) {
             WebhookFallback botFallback = (id, target, fromChunkIndex) ->
@@ -134,12 +141,6 @@ public class EEWService {
                 sendWebhookSender(webhookChunks, webhookChannels, (channels, fromChunkIndex) ->
                         sendWebhook(webhookChunks, fromChunkIndex, channels, botFallback));
             }
-        }
-
-        Map<Long, DeliveryTarget> channels = partition.direct();
-        if (!channels.isEmpty()) {
-            Log.logger.info("Sending message to {} channels", channels.size());
-            sendMessageD4J(channels, msgByLang);
         }
     }
 

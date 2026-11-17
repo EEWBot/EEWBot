@@ -231,16 +231,17 @@ public class GatewayManager implements AutoCloseable {
 
     private void submitDelivery(Runnable discordDelivery, @Nullable ExternalData externalData) {
         submitMessageOrThrow(() -> {
-            try {
-                discordDelivery.run();
-            } catch (Exception error) {
-                Log.logger.error("Discord dispatch failed after queue acceptance: {}", LogSanitizer.safeExceptionMessage(error));
-            }
+            // External webhooks only subscribe, so start them before Discord delivery, which blocks on its webhook fan-out.
             try {
                 if (externalData != null)
                     this.externalWebhookService.sendExternalWebhook(externalData);
             } catch (Exception error) {
                 Log.logger.error("External webhook dispatch failed after queue acceptance: {}", error.getClass().getSimpleName());
+            }
+            try {
+                discordDelivery.run();
+            } catch (Exception error) {
+                Log.logger.error("Discord dispatch failed after queue acceptance: {}", LogSanitizer.safeExceptionMessage(error));
             }
         });
     }
