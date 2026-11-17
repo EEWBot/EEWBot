@@ -68,12 +68,11 @@ public class QuakeInfoStore {
     public void putReport(QuakeInfo report) {
         synchronized (this) {
             report.initQuakeInfoStore(this);
-            JMAReport jma = (JMAReport) report;
             Map<JMAXmlType, History> event = event(report.getEventId());
-            History history = event.computeIfAbsent(JMAXmlType.from(jma.getClass()), key -> new History());
+            History history = event.computeIfAbsent(JMAXmlType.from(report.getClass()), key -> new History());
             if (isNewer(report, history.latest))
                 history.latest = report;
-            if (!jma.isCancelReport()) {
+            if (!report.isCancelReport()) {
                 if (isNewer(report, history.normal))
                     history.normal = report;
                 history.referenceMax = max(history.referenceMax, report.getQuakeInfoMaxInt().orElse(null));
@@ -93,15 +92,14 @@ public class QuakeInfoStore {
 
     // Called only after the message executor has accepted the ordinary report.
     public synchronized void recordDelivery(QuakeInfo report, @Nullable SeismicIntensity intensity) {
-        JMAReport jma = (JMAReport) report;
-        if (jma.isCancelReport())
+        if (report.isCancelReport())
             return;
         Map<JMAXmlType, History> event = event(report.getEventId());
-        History history = event.computeIfAbsent(JMAXmlType.from(jma.getClass()), key -> new History());
-        int serial = serial(jma);
+        History history = event.computeIfAbsent(JMAXmlType.from(report.getClass()), key -> new History());
+        int serial = serial(report);
         if (!history.deliveryStarted) {
             history.deliveryStarted = true;
-            history.complete = eventStartedHere(report) && serial == 1 && jma.getInfoType() == JMAInfoType.発表;
+            history.complete = eventStartedHere(report) && serial == 1 && report.getInfoType() == JMAInfoType.発表;
             history.reason = history.complete ? "observed event from first report" : "event predates uninterrupted history or first report is missing";
         } else if (serial < 1 || serial > history.serial + 1) {
             history.complete = false;
@@ -160,9 +158,8 @@ public class QuakeInfoStore {
             else if (report instanceof JmxSeis seis && seis.getBody() != null
                     && seis.getBody().getEarthquakes() != null && seis.getBody().getEarthquakes().size() == 1)
                 origin = seis.getBody().getEarthquakes().getFirst().getOriginTime();
-            JMAReport jma = (JMAReport) report;
-            return origin != null && origin.isAfter(this.completeSince.get()) && jma.getReportDateTime() != null
-                    && !jma.getReportDateTime().isBefore(origin);
+            return origin != null && origin.isAfter(this.completeSince.get()) && report.getReportDateTime() != null
+                    && !report.getReportDateTime().isBefore(origin);
         } catch (RuntimeException e) {
             return false;
         }
@@ -171,8 +168,8 @@ public class QuakeInfoStore {
     private static boolean isNewer(QuakeInfo candidate, @Nullable QuakeInfo previous) {
         if (previous == null)
             return true;
-        JMAReport current = (JMAReport) candidate;
-        JMAReport old = (JMAReport) previous;
+        JMAReport current = candidate;
+        JMAReport old = previous;
         int comparison = compare(current.getReportDateTime(), old.getReportDateTime());
         if (comparison == 0)
             comparison = compare(current.getDateTime(), old.getDateTime());

@@ -26,7 +26,7 @@ public record QuakeInfoSnapshot(String body, String fingerprint) {
     public static final int MAX_MESSAGE_BYTES = 64 * 1024;
 
     public static QuakeInfoSnapshot render(QuakeInfo quake, EmbedContext context) {
-        JMAReport report = (JMAReport) quake;
+        JMAReport report = quake;
         JsonObject root = new JsonObject();
         root.addProperty("eventId", quake.getEventId());
         root.addProperty("reportType", JMAXmlType.from(report.getClass()).name());

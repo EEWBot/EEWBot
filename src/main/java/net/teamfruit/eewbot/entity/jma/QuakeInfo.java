@@ -1,15 +1,13 @@
 package net.teamfruit.eewbot.entity.jma;
 
 import net.teamfruit.eewbot.QuakeInfoStore;
-import net.teamfruit.eewbot.entity.Entity;
 import net.teamfruit.eewbot.entity.SeismicIntensity;
 import net.teamfruit.eewbot.entity.jma.telegram.seis.Intensity;
 
 import java.util.Optional;
 
-public interface QuakeInfo extends Entity {
-
-    String getEventId();
+/** A JMA report about one earthquake event that carries (or references) observed intensity. */
+public interface QuakeInfo extends JMAReport {
 
     Optional<SeismicIntensity> getQuakeInfoMaxInt();
 
