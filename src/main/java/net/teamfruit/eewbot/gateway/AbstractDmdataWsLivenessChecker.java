@@ -24,7 +24,6 @@ public abstract class AbstractDmdataWsLivenessChecker implements Runnable {
 
     @Override
     public void run() {
-        Thread.currentThread().setName("eewbot-dmdata-liveness-checker-thread");
         MDC.put("gateway", "dmdata");
         MDC.put("gateway.task", "liveness");
         try {

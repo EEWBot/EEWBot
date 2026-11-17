@@ -41,6 +41,9 @@ public class GatewayManager implements AutoCloseable {
 
     private final List<ScheduledFuture<?>> scheduledTasks = new ArrayList<>();
     private DmdataGateway dmdataGateway;
+    ScheduledExecutorService livenessExecutor;
+    ScheduledExecutorService jmaXmlExecutor;
+    private Thread jmaXmlInitialLoad;
     private QuakeInfoSnapshotPublisher quakeInfoPublisher;
 
     public void initQuakeInfoPublisher(EmbedContext context) {
@@ -109,8 +112,10 @@ public class GatewayManager implements AutoCloseable {
             livenessChecker = new DmdataWsLivenessChecker(this.dmdataGateway, this.dmdataReconnectExecutor);
         }
 
+        // The check only submits work, so it gets its own thread: blocking tasks on the shared worker pool must not delay it.
+        this.livenessExecutor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "eewbot-dmdata-liveness"));
         this.scheduledTasks.add(
-                this.scheduledExecutor.scheduleAtFixedRate(livenessChecker, 30, 30, TimeUnit.SECONDS)
+                this.livenessExecutor.scheduleAtFixedRate(PeriodicTask.guarded("dmdata-liveness", livenessChecker), 30, 30, TimeUnit.SECONDS)
         );
     }
 
@@ -153,12 +158,16 @@ public class GatewayManager implements AutoCloseable {
         int pollIntervalSeconds = debugInterval > 0 ? debugInterval : 60;
 
         JMAXmlGateway jmaXmlGateway = new JMAXmlGateway(this.httpClient, this.quakeInfoStore, this::handleJMAReport, this.config.getDebug().getJmaXmlFeedRoot());
+        // The poll is the origin of quake and tsunami delivery, so blocking work on the shared worker pool must not delay it.
+        this.jmaXmlExecutor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "eewbot-jmaxml"));
         this.scheduledTasks.add(
-                this.scheduledExecutor.scheduleAtFixedRate(jmaXmlGateway, jmaXMLInitialDelay, pollIntervalSeconds, TimeUnit.SECONDS)
+                this.jmaXmlExecutor.scheduleAtFixedRate(PeriodicTask.guarded("jma-xml-poll", jmaXmlGateway), jmaXMLInitialDelay, pollIntervalSeconds, TimeUnit.SECONDS)
         );
 
-        this.scheduledExecutor.execute(new JMAXmlLGateway(this.httpClient, this.quakeInfoStore, this.config.getDebug().getJmaXmlFeedRoot(),
-                () -> { if (this.quakeInfoPublisher != null) this.quakeInfoPublisher.requestSync(); }));
+        // The one-shot initial load fetches many reports; keep it off the poll thread so it cannot delay the first poll.
+        this.jmaXmlInitialLoad = Thread.ofVirtual().name("eewbot-jmaxml-l").start(
+                new JMAXmlLGateway(this.httpClient, this.quakeInfoStore, this.config.getDebug().getJmaXmlFeedRoot(),
+                        () -> { if (this.quakeInfoPublisher != null) this.quakeInfoPublisher.requestSync(); }));
     }
 
     void handleJMAReport(AbstractJMAReport data) {
@@ -211,7 +220,7 @@ public class GatewayManager implements AutoCloseable {
     private void initWebhookSenderHealth() {
         if (StringUtils.isNotEmpty(this.config.getWebhookSender().getAddress())) {
             this.scheduledTasks.add(
-                    this.scheduledExecutor.scheduleAtFixedRate(this.service::handleWebhookSenderNotFounds, 15, 15, TimeUnit.SECONDS)
+                    this.scheduledExecutor.scheduleAtFixedRate(PeriodicTask.guarded("webhook-sender-notfounds", this.service::handleWebhookSenderNotFounds), 15, 15, TimeUnit.SECONDS)
             );
         }
     }
@@ -248,6 +257,14 @@ public class GatewayManager implements AutoCloseable {
         for (ScheduledFuture<?> task : this.scheduledTasks) {
             task.cancel(true);
         }
+        // The liveness check only submits work, so there is nothing to drain.
+        if (this.livenessExecutor != null)
+            this.livenessExecutor.shutdownNow();
+        // An interrupted poll keeps its unprocessed entries pending and returns; nothing needs draining.
+        if (this.jmaXmlExecutor != null)
+            this.jmaXmlExecutor.shutdownNow();
+        if (this.jmaXmlInitialLoad != null)
+            this.jmaXmlInitialLoad.interrupt();
 
         // 3. Drain in-flight reconnects on the dedicated executor
         if (this.dmdataReconnectExecutor != null) {

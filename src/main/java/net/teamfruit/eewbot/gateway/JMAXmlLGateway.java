@@ -47,8 +47,6 @@ public class JMAXmlLGateway implements Gateway<AbstractJMAReport> {
     public void run() {
         MDC.put("gateway", "jma-xml-l");
         try {
-            Thread.currentThread().setName("eewbot-jmaxml-thread");
-
             HttpRequest.Builder feedRequest = HttpRequest.newBuilder()
                     .uri(URI.create(this.remoteRoot + REMOTE))
                     .header("User-Agent", "eewbot")

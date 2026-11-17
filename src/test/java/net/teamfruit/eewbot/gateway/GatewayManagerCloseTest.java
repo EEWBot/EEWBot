@@ -11,7 +11,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -26,10 +28,6 @@ class GatewayManagerCloseTest {
     private ScheduledExecutorService mockScheduledExecutor;
     @Mock
     private ScheduledExecutorService mockDmdataReconnectExecutor;
-    @Mock
-    private ScheduledFuture<?> mockFuture1;
-    @Mock
-    private ScheduledFuture<?> mockFuture2;
 
     private GatewayManager gatewayManager;
 
@@ -85,28 +83,40 @@ class GatewayManagerCloseTest {
     }
 
     @Test
-    void close_cancelsAllScheduledTasks() {
-        // Return the same mock future for all scheduleAtFixedRate calls
+    void close_cancelsTasksScheduledOnSharedExecutor() {
+        var config = createMinimalConfig();
+        config.getWebhookSender().setAddress("http://localhost:1");
+        ScheduledFuture<?> future = mock(ScheduledFuture.class);
         when(this.mockScheduledExecutor.scheduleAtFixedRate(any(Runnable.class), anyLong(), anyLong(), any(TimeUnit.class)))
-                .thenReturn((ScheduledFuture) this.mockFuture1);
-
+                .thenReturn((ScheduledFuture) future);
         GatewayManager manager = new GatewayManager(
-                null, createMinimalConfig(), 0L,
+                mock(net.teamfruit.eewbot.EEWService.class), config, 0L,
                 this.mockScheduledExecutor, this.mockDmdataReconnectExecutor,
                 null, null, null,
                 this.mockMessageExecutor
         );
-
-        try {
-            manager.init();
-        } catch (Exception ignored) {
-            // Gateways may fail without real dependencies
-        }
+        manager.init();
 
         manager.close();
 
-        // Each scheduled task's future should be cancelled with interrupt
-        verify(this.mockFuture1, atLeastOnce()).cancel(true);
+        verify(future).cancel(true);
+    }
+
+    @Test
+    void close_shutsDownOwnedPeriodicExecutors() {
+        try {
+            this.gatewayManager.init();
+        } catch (Exception ignored) {
+            // Gateways may fail without real dependencies
+        }
+        assertNotNull(this.gatewayManager.livenessExecutor);
+        assertNotNull(this.gatewayManager.jmaXmlExecutor);
+
+        this.gatewayManager.close();
+
+        // shutdownNow also discards the periodic tasks scheduled on them
+        assertTrue(this.gatewayManager.livenessExecutor.isShutdown());
+        assertTrue(this.gatewayManager.jmaXmlExecutor.isShutdown());
     }
 
     private static net.teamfruit.eewbot.registry.config.ConfigV2 createMinimalConfig() {

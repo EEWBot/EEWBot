@@ -100,7 +100,6 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
 
     @Override
     public void run() {
-        Thread.currentThread().setName("eewbot-jmaxml-thread");
         try {
             pollFeed();
         } catch (InterruptedException e) {

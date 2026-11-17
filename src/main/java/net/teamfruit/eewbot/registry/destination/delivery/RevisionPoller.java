@@ -1,6 +1,7 @@
 package net.teamfruit.eewbot.registry.destination.delivery;
 
 import net.teamfruit.eewbot.Log;
+import net.teamfruit.eewbot.PeriodicTask;
 import net.teamfruit.eewbot.registry.destination.DestinationConfigSource;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -56,10 +57,11 @@ public class RevisionPoller {
             Log.logger.warn("RevisionPoller already started");
             return;
         }
+        Runnable poll = PeriodicTask.guarded("revision-poll", this::poll);
         this.pollTask = this.fixedDelay ? this.scheduler.scheduleWithFixedDelay(
-                this::poll, this.pollIntervalMs, this.pollIntervalMs, TimeUnit.MILLISECONDS
+                poll, this.pollIntervalMs, this.pollIntervalMs, TimeUnit.MILLISECONDS
         ) : this.scheduler.scheduleAtFixedRate(
-                this::poll,
+                poll,
                 this.pollIntervalMs,
                 this.pollIntervalMs,
                 TimeUnit.MILLISECONDS
