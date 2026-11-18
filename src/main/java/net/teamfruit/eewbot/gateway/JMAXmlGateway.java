@@ -47,6 +47,10 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
     private final Set<EntryKey> processed = new HashSet<>();
     private final Set<EntryKey> recent = new LinkedHashSet<>();
     private final Map<EntryKey, PendingEntry> pending = new LinkedHashMap<>();
+    // Validators of the last successful feed response. ETag is preferred: Last-Modified has
+    // only second granularity, so a feed changed within the same second can be answered with 304.
+    // The JMA origin sends no ETag, in which case only If-Modified-Since is used.
+    private String etag;
     private String lastModified;
     private boolean initialized;
 
@@ -141,6 +145,9 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
                 .uri(URI.create(this.remoteRoot + REMOTE))
                 .timeout(this.requestTimeout)
                 .header("User-Agent", "eewbot").GET();
+        // RFC 9110 §13.1.3: servers evaluate If-None-Match first and ignore If-Modified-Since then.
+        if (this.etag != null)
+            request.header("If-None-Match", this.etag);
         if (this.lastModified != null)
             request.header("If-Modified-Since", this.lastModified);
         HttpResponse<byte[]> response = send(request.build());
@@ -196,6 +203,7 @@ public class JMAXmlGateway implements Gateway<AbstractJMAReport> {
             }
         }
         this.initialized = true;
+        this.etag = response.headers().firstValue("ETag").orElse(null);
         this.lastModified = response.headers().firstValue("Last-Modified").orElse(null);
     }
 
